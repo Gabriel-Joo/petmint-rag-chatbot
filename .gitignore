@@ -1,0 +1,30 @@
+# 모델 (47GB)
+models/
+
+# 데이터 — 코드로 재생성 가능
+data/raw_pdf/
+data/pages/
+data/cache/
+data/chunks/
+data/graph/
+data/faq/
+data/finetune/
+data/eval/results/
+
+# 백업
+backups/
+scratchpad/
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.env
+
+# 로그
+*.log
+logs/

@@ -1,0 +1,2525 @@
+{
+ "description": "검색 회귀 질문 세트 — 검색을 고칠 때마다 data/search_regression.py로 돌린다. 섹션별로 고르게 + 등급 언급이 다른 섹션을 지우던 결함(2026-10-13) 겨냥 문항 + 가입 제외 확인. 질문은 원문 문구를 그대로 쓰지 않는다(BM25 문구 일치로 맞히지 않게). gold는 any-of, evidence는 gold 청크에 실재(공백 무시).",
+ "created": "2026-10-13",
+ "cases": [
+  {
+   "id": "R001",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험을 해지하면 돌려받는 돈은 언제 들어와요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R002",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "증권 받은 지 열흘 됐는데 가입을 없던 걸로 할 수 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "보험증권을 받은 날부터 15"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "청약을 철회할 수 있습니다"
+    },
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "청약을 철회할 수 있다"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R003",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "가입할 때 예전에 아팠던 걸 말 안 했으면 문제가 되나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 15,
+     "evidence": "사실대로 알려야"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "가입자 유의사항",
+     "article_num": null,
+     "evidence": "알리지 않을 경우"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R004",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험료를 두 달째 못 냈는데 바로 끊기나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 17,
+     "evidence": "납입최고(독촉)"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R005",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험료 밀려서 해지된 걸 다시 살릴 수 있어요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 30,
+     "evidence": "3년 이내에"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 18,
+     "evidence": "부활"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R006",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험 나이는 생일 기준으로 어떻게 세요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 24,
+     "evidence": "끝수는 1년으로"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R007",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보장은 정확히 언제부터 시작되는 거예요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 26,
+     "evidence": "제1회 보험료를 받은 때"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 16,
+     "evidence": "제1회 보험료를 받은 때"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R008",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험사랑 다툼이 생기면 어디에 조정을 신청하나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 39,
+     "evidence": "금융감독원장에게 조정을 신청"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험품질보증제 및 민원상담 안내",
+     "article_num": null,
+     "evidence": "분쟁조정"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R009",
+   "species": "강아지",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "설계사가 설명을 엉터리로 했으면 법 위반으로 계약을 깰 수 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "위법계약의 해지"
+    },
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 47,
+     "evidence": "계약의 해지를 요구"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R010",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "강아지가 몇 살이면 가입이 안 돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "생후 60일 이하"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R011",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "같이 사는 가족도 피보험자에 들어가나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 3,
+     "evidence": "동거 친족"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 1,
+     "evidence": "동거 친족"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R012",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "동물병원비 청구하려면 어떤 서류를 내야 하나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R013",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "서류 보내면 보험금은 며칠 만에 받아요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 5,
+     "evidence": "3영업일 이내에 보험금을 지급"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 8,
+     "evidence": "3영업일"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R014",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "다른 회사 펫보험도 들어 있는데 양쪽에서 다 받을 수 있나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 6,
+     "evidence": "다른 계약"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "비례보상"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R015",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "1년 지나서 만기 되면 이어서 다시 들 수 있나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 15,
+     "evidence": "재가입"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "가입자 유의사항",
+     "article_num": null,
+     "evidence": "재가입"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R016",
+   "species": "강아지",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "중간에 그만두고 싶으면 아무 때나 해지돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R017",
+   "species": "강아지",
+   "category": "배상책임",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "산책하다가 우리 개가 지나가던 사람을 물었어요. 보험 처리되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 1,
+     "evidence": "신체의 장해에 대한 법률상의 배상책임"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R018",
+   "species": "강아지",
+   "category": "배상책임",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "개 물림 사고에서 보험이 안 해주는 경우는 뭐가 있어요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "보상하지 않습니다"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R019",
+   "species": "강아지",
+   "category": "배상책임",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "사고 나서 피해자랑 바로 합의해도 되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "배상책임 관련 특별약관 일반조항",
+     "article_num": 8,
+     "evidence": "미리 회사의 동의를 받는 일"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R020",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "중성화 수술도 수술비로 나오나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 3,
+     "evidence": "피임목적의 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 3,
+     "evidence": "피임목적의 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "중성화, 불임 및 피임을 목적으로 한 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "중성화, 불임 및 피임을 목적으로 한 수술"
+    }
+   ],
+   "k": 5,
+   "note": "제2조 ⑥(보상하지 않는 사유: 중성화·불임·피임 수술)이 더 직접적인 근거 — 2026-10-13 gold 보강"
+  },
+  {
+   "id": "R021",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "어느 정도여야 입원으로 쳐 주나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "치료에 전념"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R022",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "가입 전부터 앓던 병도 보장받을 수 있어요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "이미 감염 또는 발병"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "이미 감염 또는 발병"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R023",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "내시경 처치는 어느 부위에 한 것까지 인정돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 4,
+     "evidence": "식도, 위 또는 장"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+     "article_num": 5,
+     "evidence": "식도, 위 또는 장"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R024",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "해외여행 가서 다친 것도 병원비가 나오나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "대한민국 이외의 지역"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "대한민국 이외의 지역"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R025",
+   "species": "강아지",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "통원 특약이 소멸되면 낸 보험료 일부라도 돌려주나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "미경과보험"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R026",
+   "species": "강아지",
+   "category": "한도",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형 수술 한도가 얼마인가요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R027",
+   "species": "강아지",
+   "category": "한도",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "실속형 Ⅱ 통원 하루 한도가 얼마예요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "10만원",
+     "coverage_type": "실속형"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R028",
+   "species": "강아지",
+   "category": "한도",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형 Ⅲ에서 MRI 찍으면 얼마까지 나와요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "MRI",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "MRI",
+     "coverage_type": "고급형"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R029",
+   "species": "강아지",
+   "category": "한도",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "통원하면 하루에 얼마까지 받을 수 있어요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "30만원",
+     "coverage_type": "고급형"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R030",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "법률비용 보장에서 항소심까지 소송으로 쳐 주나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "항소심"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R031",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "특허 관련 소송 비용도 보장돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "특허법"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R032",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "소송 걸리면 변호사비는 한 건에 얼마까지 나와요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "2,000만원"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R033",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "부담보 걸리면 그 병은 얼마 동안 보장이 안 돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+     "article_num": 2,
+     "evidence": "1개월부터5년"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R034",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "슬개골 탈구도 부담보 대상 질병 목록에 있어요?",
+   "gold": [
+    {
+     "section": "별첨",
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "슬개골"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R035",
+   "species": "강아지",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보장 제한 조건부로 가입되는 건 어떤 경우예요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+     "article_num": 1,
+     "evidence": "회사가 정한 기준에 적합하지 않은"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R036",
+   "species": "강아지",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험료를 통장에서 자동으로 빠져나가게 하고 싶어요",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "보험료 자동납입 특별약관",
+     "article_num": 1,
+     "evidence": "지정계좌"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R037",
+   "species": "강아지",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "제가 아파서 직접 청구를 못 하면 대신 청구할 사람을 정해 둘 수 있나요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "지정대리청구서비스 특별약관",
+     "article_num": 4,
+     "evidence": "지정대리청구인"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R038",
+   "species": "강아지",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "육아휴직 중이라 보험료를 잠깐 멈출 수 있을까요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "보장성보험 보험료 납입유예 특별약관",
+     "article_num": 3,
+     "evidence": "육아휴직"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R039",
+   "species": "강아지",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "장애인 보험으로 바꾸면 연말정산 공제가 되나요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "장애인전용보험전환 특별약관",
+     "article_num": 3,
+     "evidence": "특별세액공제"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R040",
+   "species": "강아지",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "동물등록 할인 받는 대신 그 돈을 기부할 수 있다던데요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "펫퍼민트 기부 특별약관",
+     "article_num": 2,
+     "evidence": "기부금"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R041",
+   "species": "강아지",
+   "category": "별표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험금이 늦게 지급되면 이자도 붙여 주나요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 8,
+     "evidence": "적립이율 계산)】에서 정한 이율로 계산한 금액을 보험금에 더하여"
+    }
+   ],
+   "k": 5,
+   "note": "보통약관 제8조 제5항도 지연이자를 직접 규정(별표1 이율) — 2026-10-13 gold 보강"
+  },
+  {
+   "id": "R042",
+   "species": "강아지",
+   "category": "별표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "장해에서 '영구적'이라는 건 어떤 상태를 말해요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표2】 장해분류표",
+     "article_num": null,
+     "evidence": "회복할 가망이 없는"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R043",
+   "species": "강아지",
+   "category": "별표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "소송 금액이 3천만원이면 변호사 보수는 얼마까지 인정돼요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표3】 소송목적의 값에 따른 변호사비용",
+     "article_num": null,
+     "evidence": "200만원"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 3,
+     "evidence": "변호사"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R044",
+   "species": "강아지",
+   "category": "별표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "1심 소송 송달료는 얼마로 잡혀 있어요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표4】 민사소송 인지액 /【별표5】 송달료",
+     "article_num": null,
+     "evidence": "송달료"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R045",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "청약서에 자필 서명을 안 했으면 어떻게 되나요?",
+   "gold": [
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "자필서명"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R046",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험금 받을 통장은 꼭 본인 이름이어야 해요?",
+   "gold": [
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "본인 명의의 통장"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R047",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험수익자는 누구를 말하는 거예요?",
+   "gold": [
+    {
+     "section": "안내_용어",
+     "section_name": "보험용어 해설",
+     "article_num": null,
+     "evidence": "보험수익자"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "보험수익자"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R048",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "메리츠 계열사끼리 제 정보를 주고받나요?",
+   "gold": [
+    {
+     "section": "안내_개인정보",
+     "section_name": "메리츠금융그룹 고객정보 취급방침",
+     "article_num": null,
+     "evidence": "그룹사간"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R049",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "고객센터 전화번호가 어떻게 되죠?",
+   "gold": [
+    {
+     "section": "약관_이용",
+     "section_name": "기타문의처 안내",
+     "article_num": null,
+     "evidence": "1566-7711"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "1566-7711"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R050",
+   "species": "강아지",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "가입할 때 약관 설명을 못 들었는데 돈 돌려받을 수 있나요?",
+   "gold": [
+    {
+     "section": "안내_절차",
+     "section_name": "보험품질보증제 및 민원상담 안내",
+     "article_num": null,
+     "evidence": "보험품질보증제"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "계약을 취소"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 21,
+     "evidence": "설명"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R051",
+   "species": "강아지",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "청약 철회 기간은 법에는 어떻게 정해져 있어요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "15일과"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "15"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R052",
+   "species": "강아지",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "어린 자녀가 남한테 피해를 주면 아이한테 배상 책임이 있나요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규3】 민법",
+     "article_num": 753,
+     "evidence": "책임을 변식할 지능"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R053",
+   "species": "강아지",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "회사가 개인정보를 모을 수 있는 경우가 어떻게 돼요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규1】 개인정보 보호법",
+     "article_num": 15,
+     "evidence": "정보주체의 동의"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R054",
+   "species": "강아지",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "제 신용정보가 잘못 올라가 있으면 고쳐 달라고 할 수 있나요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규4】 신용정보의 이용 및 보호에 관한 법률",
+     "article_num": 38,
+     "evidence": "정정을 청구"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R055",
+   "species": "강아지",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "한약제제는 무엇을 말하나요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규5】 약사법",
+     "article_num": 2,
+     "evidence": "한약제제"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R056",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형인데 해지하면 환급금 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R057",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "고급형인데 해지하면 환급금 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R058",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "실속형 Ⅱ유형인데 청약 철회는 며칠 안에 해야 돼요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "보험증권을 받은 날부터 15"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "청약을 철회할 수 있습니다"
+    },
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "청약을 철회할 수 있다"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R059",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "실속형"
+     }
+    ]
+   },
+   "query": "실속형 가입했는데 청약 철회는 며칠 안에 해야 돼요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "보험증권을 받은 날부터 15"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "청약을 철회할 수 있습니다"
+    },
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "청약을 철회할 수 있다"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R060",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "기본형 가입했는데 보험금 청구 서류가 뭐예요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R061",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+      "coverage_type": "기본형"
+     }
+    ]
+   },
+   "query": "기본형 가입했는데 보험금 청구 서류가 뭐예요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R062",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "Ⅲ유형인데 보험료가 밀리면 어떻게 돼요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 17,
+     "evidence": "납입최고(독촉)"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R063",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "Ⅲ유형인데 보험료가 밀리면 어떻게 돼요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 17,
+     "evidence": "납입최고(독촉)"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R064",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형도 가입 나이 제한이 있어요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "생후 60일 이하"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R065",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "실속형은 몇 살까지 가입되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "실속형의 경우 만 10세"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R066",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "2단계 상품인데 보험금이 늦게 나오면 이자 붙나요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 5,
+     "evidence": "가지급"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R067",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형인데 분쟁이 생기면 어디에 조정 신청해요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 39,
+     "evidence": "금융감독원장에게 조정을 신청"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험품질보증제 및 민원상담 안내",
+     "article_num": null,
+     "evidence": "분쟁조정"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R068",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "Ⅱ유형 가입자인데 보장 개시일이 언제예요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 26,
+     "evidence": "제1회 보험료를 받은 때"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 16,
+     "evidence": "제1회 보험료를 받은 때"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R069",
+   "species": "강아지",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "고급형인데 1년 끝나면 재가입 되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 15,
+     "evidence": "재가입"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "가입자 유의사항",
+     "article_num": null,
+     "evidence": "재가입"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R070",
+   "species": "강아지",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "MRI 찍으면 보장 얼마나 돼요?",
+   "gold": [],
+   "k": 5,
+   "note": "통원Ⅱ·입원Ⅱ 고급형 고객 — Ⅲ 청크가 나오면 안 됨"
+  },
+  {
+   "id": "R071",
+   "species": "강아지",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "실속형은 하루 한도가 얼마예요?",
+   "gold": [],
+   "k": 5,
+   "note": "고급형 고객 — 다른 등급 행이 나오면 안 됨(가정 질문은 09 앱 레이어 몫)"
+  },
+  {
+   "id": "R072",
+   "species": "강아지",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "우리 개가 다른 사람을 물었는데 배상되나요?",
+   "gold": [],
+   "k": 5,
+   "note": "배상책임 미가입 — 배상 특약·배상 일반조항이 나오면 안 됨"
+  },
+  {
+   "id": "R073",
+   "species": "강아지",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "민사소송 걸리면 변호사비 보장되나요?",
+   "gold": [],
+   "k": 5,
+   "note": "민사소송법률비용 미가입"
+  },
+  {
+   "id": "R074",
+   "species": "고양이",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험을 해지하면 돌려받는 돈은 언제 들어와요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R075",
+   "species": "고양이",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "증권 받은 지 열흘 됐는데 가입을 없던 걸로 할 수 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "보험증권을 받은 날부터 15"
+    },
+    {
+     "section": "안내_요약",
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "청약을 철회할 수 있습니다"
+    },
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "청약을 철회할 수 있다"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R076",
+   "species": "고양이",
+   "category": "보통약관",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보장은 정확히 언제부터 시작되는 거예요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 26,
+     "evidence": "제1회 보험료를 받은 때"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 16,
+     "evidence": "제1회 보험료를 받은 때"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R077",
+   "species": "고양이",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "고양이가 몇 살이면 가입이 안 돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "생후 60일 이하"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R078",
+   "species": "고양이",
+   "category": "일반조항",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "동물병원비 청구하려면 어떤 서류를 내야 하나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R079",
+   "species": "고양이",
+   "category": "의료비_한도외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "중성화 수술도 수술비로 나오나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 3,
+     "evidence": "피임목적의 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 3,
+     "evidence": "피임목적의 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "중성화, 불임 및 피임을 목적으로 한 수술"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "중성화, 불임 및 피임을 목적으로 한 수술"
+    }
+   ],
+   "k": 5,
+   "note": "제2조 ⑥(보상하지 않는 사유: 중성화·불임·피임 수술)이 더 직접적인 근거 — 2026-10-13 gold 보강"
+  },
+  {
+   "id": "R080",
+   "species": "고양이",
+   "category": "한도",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형 수술 한도가 얼마인가요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "coverage_type": "고급형"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R081",
+   "species": "고양이",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "부담보 걸리면 그 병은 얼마 동안 보장이 안 돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+     "article_num": 2,
+     "evidence": "1개월부터5년"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R082",
+   "species": "고양이",
+   "category": "선택특약_별첨",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "특정질병 목록에 눈 질환도 들어 있나요?",
+   "gold": [
+    {
+     "section": "별첨",
+     "section_name": "특정질병 분류표(반려묘)",
+     "article_num": null,
+     "evidence": "눈"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R083",
+   "species": "고양이",
+   "category": "기타_제도성",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "동물등록 할인 받는 대신 그 돈을 기부할 수 있다던데요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "펫퍼민트 Cat 기부 특별약관",
+     "article_num": 2,
+     "evidence": "기부금"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R084",
+   "species": "고양이",
+   "category": "별표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험금이 늦게 지급되면 이자도 붙여 주나요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 8,
+     "evidence": "적립이율 계산)】에서 정한 이율로 계산한 금액을 보험금에 더하여"
+    }
+   ],
+   "k": 5,
+   "note": "보통약관 제8조 제5항도 지연이자를 직접 규정(별표1 이율) — 2026-10-13 gold 보강"
+  },
+  {
+   "id": "R085",
+   "species": "고양이",
+   "category": "안내",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "보험금 받을 통장은 꼭 본인 이름이어야 해요?",
+   "gold": [
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "본인 명의의 통장"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R086",
+   "species": "고양이",
+   "category": "법규",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "청약 철회 기간은 법에는 어떻게 정해져 있어요?",
+   "gold": [
+    {
+     "section": "법규",
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "15일과"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "15"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "R087",
+   "species": "고양이",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "고급형인데 해지하면 환급금 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R088",
+   "species": "고양이",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "고급형인데 해지하면 환급금 있나요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야"
+    },
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R089",
+   "species": "고양이",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "기본형 가입했는데 보험금 청구 서류가 뭐예요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증"
+    },
+    {
+     "section": "안내_절차",
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R090",
+   "species": "고양이",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "Ⅲ유형인데 보험료가 밀리면 어떻게 돼요?",
+   "gold": [
+    {
+     "section": "보통약관",
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 17,
+     "evidence": "납입최고(독촉)"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R091",
+   "species": "고양이",
+   "category": "등급언급_타섹션",
+   "scope": {
+    "kind": "from_query"
+   },
+   "query": "실속형은 몇 살까지 가입되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "실속형의 경우 만 10세"
+    }
+   ],
+   "k": 5,
+   "note": "예전 필터: 질문의 등급·유형이 컬렉션 전체에 걸려 보통약관·일반조항 등이 후보에서 빠짐"
+  },
+  {
+   "id": "R092",
+   "species": "고양이",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "MRI 찍으면 보장 얼마나 돼요?",
+   "gold": [],
+   "k": 5,
+   "note": "통원Ⅱ·입원Ⅱ 고급형 고객 — Ⅲ 청크가 나오면 안 됨"
+  },
+  {
+   "id": "R093",
+   "species": "고양이",
+   "category": "가입제외",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "민사소송 걸리면 변호사비 보장되나요?",
+   "gold": [],
+   "k": 5,
+   "note": "민사소송법률비용 미가입"
+  },
+  {
+   "id": "R094",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "재활치료나 한방 치료 받은 것도 병원비 보장돼요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "재활치료"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "재활치료"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R095",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "자동차보험처럼 의무보험에서 나오는 소송비용도 법률비용 특약에서 또 받을 수 있어요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "의무보험에서 보상받을 수 있는 법률비용"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R096",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "상대방이 반소를 걸어오면 소송이 하나 더 생긴 걸로 쳐서 보상받나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "하나의 소송에 포함된 것으로 보며"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R097",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "개 짖는 소리나 털 날림 때문에 이웃이 배상하라고 하면 보험에서 해 주나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "소음, 냄새, 털날림"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R098",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "우리 개가 다른 개한테 병을 옮겨서 물어줘야 하면 배상책임 보상되나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "질병을 전염시켜"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R099",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "무릎뼈 탈구도 부담보 대상 질병 목록에 있나요?",
+   "gold": [
+    {
+     "section": "별첨",
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "무릎뼈 탈구"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R100",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "옴이나 벼룩 같은 외부 기생충 질환도 특정질병으로 분류돼요?",
+   "gold": [
+    {
+     "section": "별첨",
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "외부 기생충 질환"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R101",
+   "species": "강아지",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "장애인전용보험 전환할 때 항상 치료가 필요한 중증환자도 장애인으로 인정되나요?",
+   "gold": [
+    {
+     "section": "기타_제도성_특별약관",
+     "section_name": "장애인전용보험전환 특별약관",
+     "article_num": 1,
+     "evidence": "항시 치료를 요하는 중증환자"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R102",
+   "species": "고양이",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "policies",
+    "policies": [
+     {
+      "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     },
+     {
+      "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+      "coverage_type": "고급형"
+     }
+    ]
+   },
+   "query": "건강보조식품이나 한방약 값도 보험에서 나오나요?",
+   "gold": [
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "건강보조"
+    },
+    {
+     "section": "특별약관",
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "건강보조"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  },
+  {
+   "id": "R103",
+   "species": "고양이",
+   "category": "꼬리_512창밖",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "고양이 파보 바이러스도 특정질병 목록에 들어 있어요?",
+   "gold": [
+    {
+     "section": "별첨",
+     "section_name": "특정질병 분류표(반려묘)",
+     "article_num": null,
+     "evidence": "파보 바이러스"
+    }
+   ],
+   "k": 5,
+   "note": "정답 문구가 청크의 리랭커 512토큰 창(질의 포함) 밖에만 있음 — 1024 근거 검증용(2026-10-13)"
+  }
+ ]
+}
