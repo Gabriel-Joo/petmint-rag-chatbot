@@ -635,7 +635,8 @@ def print_overlap(stats: dict):
               + (f", 버린 no_answer 샘플 {stats.get('na_dropped_cover', 0)}건" if stats["na_fill"] == "drop" else ""))
 
 
-def confirm_no_answer(train: list[dict], val: list[dict], out_dir: Path, stats: dict) -> tuple[list, list, bool]:
+def confirm_no_answer(train: list[dict], val: list[dict], out_dir: Path, stats: dict,
+                      max_bad: float = CONFIRM_MAX_BAD) -> tuple[list, list, bool]:
     """q2 확인 검사(2026-10-15) — 라벨링과 **다른 모델**(na_qjudge.CONFIRM_MODEL)·별도 캐시로 실제 train/val의 no_answer 발췌를
     질문 기준으로 다시 판정한다. 같은 판정기·같은 캐시로 다시 보던 검사(v1·v2)는 자기가 거른 것을 자기가 검사해 "0건"이 구조상 당연했다.
     - 답이 있다고 본(full·partial·파싱 실패) no_answer 비율이 CONFIRM_MAX_BAD를 넘으면 두 판정기가 크게 어긋난 것 — 빌드를 멈춘다(False).
@@ -668,8 +669,8 @@ def confirm_no_answer(train: list[dict], val: list[dict], out_dir: Path, stats: 
     summary = {"build_dir": str(out_dir), "judged_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": model, "prompt": "q2",
                "independent_of": "na_qjudge q2 @ gemma4:12b (라벨링)", "samples": len(na), "excerpts": sum(ev.values()),
                "excerpt_verdicts": dict(ev), "sample_verdicts": {"no": len(na) - bad, "yes": bad}, "new_calls": n_new,
-               "max_bad": CONFIRM_MAX_BAD, "dropped": 0}
-    ok = ratio <= CONFIRM_MAX_BAD
+               "max_bad": max_bad, "dropped": 0}
+    ok = ratio <= max_bad
     if ok and bad:
         drop_pairs = {s["meta"].get("pair_id") for s in na if id(s) in flagged} - {None}
         keep = lambda s: id(s) not in flagged and not (s["meta"]["kind"] == "distract_pair" and s["meta"].get("pair_id") in drop_pairs)
@@ -679,7 +680,7 @@ def confirm_no_answer(train: list[dict], val: list[dict], out_dir: Path, stats: 
     (out_dir / "na_judge_summary_q2.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     stats["na_confirm"] = {k: summary[k] for k in ("model", "samples", "excerpt_verdicts", "sample_verdicts", "dropped", "new_calls")}
     print(f"확인 검사({model}): no_answer {len(na)}건 중 답이 있다고 본 것 {bad}건({ratio:.1%}) — "
-          + ("뺐다" if ok else f"상한 {CONFIRM_MAX_BAD:.0%} 초과, 빌드를 멈춘다"), flush=True)
+          + ("뺐다" if ok else f"상한 {max_bad:.0%} 초과, 빌드를 멈춘다"), flush=True)
     return train, val, ok
 
 
@@ -704,6 +705,8 @@ def main(argv=None):
                     help="search no_answer 발췌를 LLM 판정(data/na_judge.py 프롬프트 버전)으로 거른다. --na-cover-max와 택일, --na-fill 필수")
     ap.add_argument("--distractor-hard", action="store_true",
                     help="no_answer 방해 발췌를 가까운 오답(같은 조 → 인접 조 → 같은 문서 → 다른 문서) 순으로 고른다(2026-10-15)")
+    ap.add_argument("--confirm-max-bad", type=float, default=CONFIRM_MAX_BAD,
+                    help="q2 확인 검사가 답이 있다고 본 no_answer 비율 상한 — 넘으면 멈춘다. 1이면 멈추지 않고 그 샘플만 뺀다")
     ap.add_argument("--pair-na", action="store_true", help="no_answer마다 같은 질문·같은 방해 발췌 + 정답 발췌 양성(distract_pair)을 더한다")
     args = ap.parse_args(argv)
     if (args.na_cover_max > 0 or args.na_judge) and args.na_fill is None:
@@ -742,7 +745,7 @@ def main(argv=None):
         print("걸러낸 표본:", out_dir / "na_filtered_samples.md")
     confirmed = True
     if args.na_judge == "q2":
-        train, val, confirmed = confirm_no_answer(train, val, out_dir, stats)
+        train, val, confirmed = confirm_no_answer(train, val, out_dir, stats, args.confirm_max_bad)
         kinds = Counter(s["meta"]["kind"] for s in train + val)
         stats.update({f"kind_{k}": v for k, v in kinds.items()})
         stats["overlap"] = overlap_report(train + val)
