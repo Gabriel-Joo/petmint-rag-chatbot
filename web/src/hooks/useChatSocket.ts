@@ -86,7 +86,9 @@ function apply(state: ChatState, msg: ServerMessage): ChatState {
       return { ...state, turns: patchTurn(turns, idx, {
         status: t.status === "error" ? "error" : "done", latency_ms: msg.latency_ms, first_token_ms: msg.first_token_ms }) };
     case "error":
-      return { ...state, turns: patchTurn(turns, idx, { error: `${msg.code}: ${msg.message}`, status: "error" }) };
+      // 원장 오류(customer_data)는 상담원에게 보일 안내 문구 그대로 — 코드는 상담원에게 의미가 없다
+      return { ...state, turns: patchTurn(turns, idx, {
+        error: msg.code === "customer_data" ? msg.message : `${msg.code}: ${msg.message}`, status: "error" }) };
   }
 }
 

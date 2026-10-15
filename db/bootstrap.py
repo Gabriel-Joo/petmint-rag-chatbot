@@ -2,8 +2,10 @@
 bootstrap.py
 데이터베이스·계정 만들기(12번 1-3절) — root로 한 번 돌린다. 여러 번 돌려도 같은 결과(비밀번호는 환경변수 값으로 다시 맞춘다).
 
-  petmint  ← petmint_app   (자기 데이터베이스만)
-  runshoes ← runshoes_app  (자리만 — 스키마 없음)
+  petmint        ← petmint_app     (자기 데이터베이스 전체)
+  runshoes       ← runshoes_app    (자리만 — 스키마 없음)
+  insurance_core ← insurance_seed  (기간계 흉내. 적재·수정용 전체 권한)
+  insurance_core ← petmint_app     SELECT만 — 챗봇은 고객 원장을 읽기만 한다
 
   MYSQL_ROOT_PASSWORD=... python -m db.bootstrap
 """
@@ -12,7 +14,7 @@ import pymysql
 
 from db.conn import env, root_settings
 
-APPS = ("PETMINT", "RUNSHOES")
+APPS = ("PETMINT", "RUNSHOES", "INSURANCE_SEED")   # 각자 자기 데이터베이스에 전체 권한
 
 
 def main() -> None:
@@ -28,6 +30,13 @@ def main() -> None:
                 cur.execute("ALTER USER %s@'%%' IDENTIFIED BY %s", (user, password))
                 cur.execute(f"GRANT ALL PRIVILEGES ON `{name}`.* TO %s@'%%'", (user,))
                 print(f"{name} ← {user}")
+            # 챗봇이 고객 원장을 읽는 계정 — SELECT만. 쓰기 권한은 주지 않는다(남아 있으면 걷는다)
+            core, reader = env("PETMINT_CORE_DB_NAME"), env("PETMINT_CORE_DB_USER")
+            cur.execute("SELECT 1 FROM mysql.db WHERE Db = %s AND User = %s", (core, reader))
+            if cur.fetchone():
+                cur.execute(f"REVOKE ALL PRIVILEGES ON `{core}`.* FROM %s@'%%'", (reader,))
+            cur.execute(f"GRANT SELECT ON `{core}`.* TO %s@'%%'", (reader,))
+            print(f"{core} ← {reader} (SELECT)")
         conn.commit()
     finally:
         conn.close()

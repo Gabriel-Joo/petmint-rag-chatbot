@@ -25,7 +25,7 @@ from app.deps import agent_of
 from app.schemas import (CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ReferencesMsg, SourcesMsg,
                          TokenMsg, TurnLog, client_message_adapter)
 from app.services import titles
-from app.services.customers import CustomerStore
+from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.sessions import SessionStore
 from app.services.turn_log import TurnLogStore, pet_snapshot, retrieved_rows, scope_rows
 
@@ -67,7 +67,13 @@ async def chat(ws: WebSocket, session_id: str):
                 turn_id = str(uuid.uuid4())
                 pet = None
                 if session.mode == "업무특화":
-                    pet = customers.pet_of(session.customer_id, msg.pet_id) if msg.pet_id else None
+                    try:                                    # 원장을 턴마다 읽는다 — 이 값이 그 턴의 스냅샷
+                        pet = (await asyncio.to_thread(customers.pet_of, session.customer_id, msg.pet_id)
+                               if msg.pet_id else None)
+                    except CustomerDataError as e:          # 원장이 깨졌다 — 연결은 두고 이 턴만 거절, 자세한 건 로그에
+                        log.error("고객 원장 오류 (WS session=%s)\n%s", session_id, e)
+                        await _send(ws, ErrorMsg(turn_id=turn_id, code="customer_data", message=USER_MESSAGE))
+                        continue
                     if pet is None:
                         await _send(ws, ErrorMsg(turn_id=turn_id, code="bad_pet",
                                                  message=f"세션 고객의 반려동물이 아님: {msg.pet_id}"))

@@ -22,6 +22,8 @@ data/finetune
 # 약관 원문 — 이미지(→ Harbor)에 들어가면 안 된다. 실행할 때 볼륨으로 붙인다
 data/chunks
 data/graph
+# 고객 시드 — 고객은 기간계(insurance_core)에 있다. 이미지에는 넣지 않는다
+app/fixtures
 data/raw_pdf
 data/pages
 data/cache

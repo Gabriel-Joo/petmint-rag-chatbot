@@ -12,7 +12,9 @@ from db.conn import app_settings
 
 ROOT = Path(__file__).resolve().parent.parent
 
-CUSTOMERS_PATH = ROOT / "app" / "fixtures" / "customers.json"
+# 고객 원장 — 보험사 기간계(insurance_core)를 읽기만 한다. 다른 데이터베이스라 petmint에서 외래키를 걸지 않는다(12번 4절).
+# app/fixtures/customers.json은 시드일 뿐 앱이 읽지 않는다(db/seed_insurance_core.py가 적재)
+CORE_DB = app_settings("petmint_core")         # PETMINT_CORE_DB_HOST / _PORT / _NAME / _USER / _PASSWORD (SELECT만)
 
 # 약관 청크·참조 그래프 — 런타임에 읽는다. 이미지·git에 넣지 않는다(01번 "외부 유출 0건"). 컨테이너는 볼륨으로 붙인다
 CHUNKS_DIR = Path(os.environ.get("PETMINT_CHUNKS_DIR", ROOT / "data" / "chunks"))

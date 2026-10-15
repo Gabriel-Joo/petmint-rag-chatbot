@@ -2,15 +2,18 @@
 main.py
 09 UI FastAPI 앱. 리포 루트에서 띄운다: uvicorn app.main:app
 
-lifespan: 약관 청크·그래프 로드(없으면 기동 실패) → 고객 로드·검증 → ContextBuilder(Milvus) → MySQL 연결·스키마 확인.
+lifespan: 약관 청크·그래프 로드(없으면 기동 실패) → 고객 원장(insurance_core) 검증 → ContextBuilder(Milvus)
+→ MySQL(petmint) 연결·스키마 확인.
 어느 하나라도 안 되면 기동하지 않는다.
 web/dist가 있으면 / 에서 React 빌드물을 같이 서빙한다 — 컨테이너 하나로 배포한다.
 search-service 헬스체크·ContextBuilder는 검색을 붙일 때 넣는다.
 """
 
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pymilvus import MilvusClient
 from sqlalchemy import text
@@ -21,7 +24,7 @@ from app import config
 from app.db import make_engine
 from app.routers import articles, chat_ws, consultations, customers, feedback, sessions
 from app.services import policy_data
-from app.services.customers import CustomerStore
+from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.llm import OllamaClient
 from app.services.sessions import SessionStore
 from app.services.turn_log import TurnLogStore
@@ -32,7 +35,8 @@ MIGRATIONS = config.ROOT / "db" / "migrations" / "petmint"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     chunks, graphs = policy_data.load()                               # PolicyDataError → 기동 실패
-    app.state.customers = CustomerStore.load(config.CUSTOMERS_PATH, chunks)   # CustomerDataError → 기동 실패
+    core = make_engine(config.CORE_DB)                                # 고객 원장(기간계) — SELECT만
+    app.state.customers = CustomerStore.load(core, chunks)            # 접속 실패·CustomerDataError → 기동 실패
     # 조항 원문·참조 조문. 청크·그래프는 위에서 읽은 것을 넘긴다(rag_context 기본 경로를 쓰지 않는다)
     app.state.builder = ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
     engine = make_engine(config.DB)
@@ -48,9 +52,19 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         engine.dispose()
+        core.dispose()
 
 
 app = FastAPI(title="펫퍼민트 상담", lifespan=lifespan)
+log = logging.getLogger("app.customers")
+
+
+@app.exception_handler(CustomerDataError)
+async def customer_data_error(request: Request, e: CustomerDataError):
+    """원장이 깨졌다 → 500. 상담원에게는 문의 안내만, 어긋난 고객·값은 서버 로그에"""
+    log.error("고객 원장 오류 (%s %s)\n%s", request.method, request.url.path, e)
+    return JSONResponse(status_code=500, content={"detail": USER_MESSAGE})
+
 for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router, chat_ws.router):
     app.include_router(r)
 
