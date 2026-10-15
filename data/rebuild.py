@@ -114,6 +114,7 @@ class Run:
         self.accept_build = accept_build
         self.na_cover_max, self.na_fill, self.na_judge = na_cover_max, na_fill, na_judge
         self.distractor_hard, self.pair_na = distractor_hard, pair_na
+        self.confirm_max_bad = None
         # --src(2026-10-15): gen·check·rewrite 산출물을 다른 재구축(<src>)에서 그대로 쓰고 build·train만 이 이름으로 돈다.
         # 로그·상태는 이 이름 아래에 두고, 앞 단계 완료 표시는 처음 한 번 src 상태에서 옮겨 온다
         self.src = src
@@ -332,7 +333,8 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
     if stage == "build":
         na = ["--na-cover-max", str(run.na_cover_max)] + (["--na-fill", run.na_fill] if run.na_fill else []) \
             + (["--na-judge", run.na_judge] if run.na_judge else []) \
-            + (["--distractor-hard"] if run.distractor_hard else []) + (["--pair-na"] if run.pair_na else [])
+            + (["--distractor-hard"] if run.distractor_hard else []) + (["--pair-na"] if run.pair_na else []) \
+            + (["--confirm-max-bad", str(run.confirm_max_bad)] if run.confirm_max_bad is not None else [])
         return [py, "-m", "data.finetune_data", "--distractor", "search",
                 "--final-dir", str(run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
     if stage == "train":
@@ -646,6 +648,7 @@ def main(argv=None):
               na_cover_max=float(opts.get("na-cover-max", NA_COVER_MAX)), na_fill=opts.get("na-fill", NA_FILL),
               na_judge=None if na_judge == OFF else na_judge, src=opts.get("src"),
               distractor_hard="--distractor-hard" in flags, pair_na="--pair-na" in flags)
+    run.confirm_max_bad = float(opts["confirm-max-bad"]) if "confirm-max-bad" in opts else None
     assert run.na_judge in (None, "v1", "v2", "q2"), "--na-judge=v1|v2|q2|off"
     assert not (run.na_judge and run.na_cover_max > 0), "--na-judge와 --na-cover-max는 택일(포함률을 쓰려면 --na-judge=off)"
     assert (run.na_cover_max == 0 and not run.na_judge) or run.na_fill in ("drop", "refill"), "--na-fill=drop|refill 필요"
