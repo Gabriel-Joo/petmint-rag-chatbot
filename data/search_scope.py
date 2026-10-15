@@ -120,7 +120,7 @@ class SearchScope:
     # ----- 생성 -----
     @classmethod
     def unrestricted(cls, species: str) -> "SearchScope":
-        """가입 상담 — 필터 없음(전 등급·유형이 후보)"""
+        """필터 없음(전 등급·유형이 후보) — 등급·특약이 없는 코퍼스(인사규정), 고객 없는 질문(07 방해 발췌·04 재현용 from_query)"""
         return cls(species)
 
     @classmethod
@@ -155,7 +155,7 @@ class SearchScope:
 
     def retrieval_query(self, query: str) -> str:
         """검색(dense·BM25·리랭커)에 쓸 문장. 등급·유형을 필터가 맡을 때(medical이 있을 때)만 그 표현을 지운다 —
-        필터가 없으면(가입 상담) 질문 속 등급이 유일한 단서라 그대로 둔다."""
+        필터가 없으면(unrestricted·고객 없는 질문) 질문 속 등급이 유일한 단서라 그대로 둔다."""
         return query if self.medical is None else strip_scope_terms(query)
 
     def grade_for(self, section_name: str | None) -> str | None:
