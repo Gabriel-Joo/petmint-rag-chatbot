@@ -138,8 +138,16 @@ def auto_flags(answer: str, excerpt_text: str, evidence: str) -> dict:
             "citation_leak": bool(re.search(r"근거\s*:", answer)), "chars": len(answer)}
 
 
+def adapter_tag(path: str | Path) -> str:
+    """결과 파일 이름 — 체크포인트면 '<어댑터>@<체크포인트>'"""
+    p = Path(path)
+    return f"{p.parent.name}@{p.name}" if p.name.startswith("checkpoint-") else p.name
+
+
 class Generator:
-    def __init__(self, adapter_dir: Path):
+    """어댑터 여러 개를 한 베이스 위에 올린다(2026-10-15) — 베이스 답은 문항마다 한 번만 만든다.
+    gen(messages, None) = 베이스, gen(messages, i) = i번째 어댑터. True/False(예전 호출)는 0번/베이스"""
+    def __init__(self, adapter_dirs: Path | list[Path]):
         import torch
         from peft import PeftModel
         from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -148,14 +156,20 @@ class Generator:
         bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
                                  bnb_4bit_use_double_quant=True)    # 07 학습과 같은 양자화
         base = AutoModelForCausalLM.from_pretrained(BASE_MODEL_DIR, quantization_config=bnb, device_map="auto", dtype=torch.bfloat16)
-        self.model = PeftModel.from_pretrained(base, str(adapter_dir))
+        dirs = adapter_dirs if isinstance(adapter_dirs, list) else [adapter_dirs]
+        self.model = PeftModel.from_pretrained(base, str(dirs[0]), adapter_name="a0")
+        for i, d in enumerate(dirs[1:], 1):
+            self.model.load_adapter(str(d), adapter_name=f"a{i}")
         self.model.eval()
 
-    def __call__(self, messages: list[dict], use_adapter: bool) -> str:
+    def __call__(self, messages: list[dict], use_adapter: bool | int | None) -> str:
+        if use_adapter is True:
+            use_adapter = 0
         prompt = self.tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tok(prompt, return_tensors="pt", add_special_tokens=False).to(self.model.device)
         with self.torch.no_grad():
-            if use_adapter:
+            if use_adapter not in (None, False):
+                self.model.set_adapter(f"a{use_adapter}")
                 out = self.model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, pad_token_id=self.tok.pad_token_id)
             else:
                 with self.model.disable_adapter():
@@ -190,6 +204,47 @@ def build_inputs(builder, n_no_answer: int, note: bool = False, normalize: bool 
                       "evidence": "", "label": " / ".join(l.split("] ", 1)[1] for l in r["messages"][1]["content"].splitlines()
                                                                          if l.startswith("[발췌 ")),
                       "noted": notes, "messages": with_notes(r["messages"][:2], notes) if note else r["messages"][:2]})
+    return items
+
+
+SEARCH_TOP_K = 3      # 서비스 기본값(app/services/retrieval.py)
+SEARCH_BUDGET = 2400  # user 메시지 토큰 상한 — 학습 MAX_LENGTH 3072에서 시스템 프롬프트·생성 300토큰을 뺀 근사
+
+
+def build_search_inputs(n_no_answer: int, top_k: int = SEARCH_TOP_K) -> list[dict]:
+    """--search(2026-10-15): gold 문항에 정답 발췌 하나 대신 SearchScope를 거친 실제 검색 결과(top_k)를 넣는다.
+    학습은 여러 발췌 중 고르는 조건(07 C안)이었다 — 입력 조건 차이가 거절의 원인인지 본다. 정답이 검색 결과에 있었는지(gold_rank)도 남긴다.
+    no_answer 20건은 build_inputs와 같다(val 방해 발췌). 검색 모델은 이 함수 안에서 올리고 내린다 — 생성 모델과 GPU를 겹치지 않게."""
+    import gc
+
+    import torch
+    from transformers import AutoTokenizer
+
+    from data import rag_context, search_engine
+    tok = AutoTokenizer.from_pretrained(BASE_MODEL_DIR)
+    count = lambda t: len(tok(t, add_special_tokens=False)["input_ids"])
+    engine = search_engine.SearchEngine()
+    builder = rag_context.ContextBuilder(client=engine.client, chunks=engine.chunks)
+    gold = {it["id"]: it for it in build_inputs(builder, 0)}
+    items = []
+    for case in R.load_cases():
+        if not case["gold"]:
+            continue
+        results = rag_context.search_with_graph(engine, builder, case["query"], R.scope_of(case), top_k=top_k)
+        rank = next((i for i, r in enumerate(results, 1) if any(R.matches(r, g) for g in case["gold"])), None)
+        ex_items = [prompts.ExcerptItem.from_search_result(r) for r in results]
+        messages = prompts.build_messages(case["query"], ex_items, budget=SEARCH_BUDGET, count_tokens=count)
+        g = gold[case["id"]]
+        excerpt = messages[1]["content"].split(prompts.QUESTION_HEADER)[0]
+        items.append({**{k: g[k] for k in ("id", "kind", "category", "species", "question", "question_orig", "q_reason",
+                                            "coverage_type", "evidence", "noted")},
+                      "label": " / ".join(it.label for it in ex_items), "gold_rank": rank,
+                      "evidence_in": bool(g["evidence"]) and _flat(g["evidence"]) in _flat(excerpt), "messages": messages})
+    del engine, builder
+    gc.collect()
+    torch.cuda.empty_cache()
+    from data.rag_context import ContextBuilder
+    items += [it for it in build_inputs(ContextBuilder(), n_no_answer) if it["kind"] == "no_answer"]
     return items
 
 
@@ -394,7 +449,9 @@ def compare(off_path: Path, on_path: Path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--adapter", default=str(DEFAULT_ADAPTER))
+    ap.add_argument("--adapter", nargs="+", default=[str(DEFAULT_ADAPTER)],
+                    help="어댑터(체크포인트 폴더도 됨) 여러 개 — 베이스 답은 한 번만 만들고 어댑터마다 결과 파일을 따로 쓴다")
+    ap.add_argument("--search", action="store_true", help=f"gold 문항을 실제 검색 결과(top {SEARCH_TOP_K})로 넣는다 — 정답 포함 여부도 기록")
     ap.add_argument("--no-answer", type=int, default=20)
     ap.add_argument("--dry-run", action="store_true", help="모델 없이 입력 조립·토큰 길이만 확인(GPU 안 씀)")
     exp = ap.add_mutually_exclusive_group()
@@ -405,9 +462,15 @@ def main(argv=None):
     args = ap.parse_args(argv)
     if args.compare:
         return compare(*map(Path, args.compare))
+    assert not (args.search and (args.common_note or args.normalize_question)), "--search는 실험 A·B와 같이 쓰지 않는다"
     from data.rag_context import ContextBuilder
-    builder = ContextBuilder()
-    items = build_inputs(builder, args.no_answer, note=args.common_note, normalize=args.normalize_question or args.show_normalize)
+    if args.search:
+        items = build_search_inputs(args.no_answer)
+        g = [it for it in items if it["kind"] == "gold"]
+        print(f"검색 입력: gold {len(g)}건 중 정답이 top {SEARCH_TOP_K}에 있음 {sum(it['gold_rank'] is not None for it in g)}건, "
+              f"evidence 문구가 발췌에 있음 {sum(it['evidence_in'] for it in g)}건")
+    else:
+        items = build_inputs(ContextBuilder(), args.no_answer, note=args.common_note, normalize=args.normalize_question or args.show_normalize)
     # 등급 거절 그룹(compare의 정의: 질문에 등급·유형) 중 등급 없는 단위는 전부 변환돼야 한다
     missed = [it["id"] for it in items if it["kind"] == "gold" and it.get("coverage_type") is None and it["q_reason"] != "변환"
               and (mentioned_grade(it["question_orig"]) or mentioned_type(it["question_orig"]))]
@@ -430,34 +493,41 @@ def main(argv=None):
     if args.dry_run:
         gen = lambda messages, use_adapter: "(dry-run)"
     else:
-        if not Path(args.adapter).exists():
-            sys.exit(f"어댑터 없음: {args.adapter}")
-        gen = Generator(Path(args.adapter))
-    rows = []
+        missing = [a for a in args.adapter if not Path(a).exists()]
+        if missing:
+            sys.exit(f"어댑터 없음: {missing}")
+        gen = Generator([Path(a) for a in args.adapter])
+    rows_by = {i: [] for i in range(len(args.adapter))}
     for n, it in enumerate(items, 1):
         excerpt = it["messages"][1]["content"].split(prompts.QUESTION_HEADER)[0]
-        base, ft = gen(it["messages"], False), gen(it["messages"], True)
-        rows.append({**{k: v for k, v in it.items() if k != "messages"}, "base": base, "ft": ft,
-                     "base_flags": auto_flags(base, excerpt, it["evidence"]), "ft_flags": auto_flags(ft, excerpt, it["evidence"])})
+        base = gen(it["messages"], None)
+        for i in rows_by:
+            ft = gen(it["messages"], i)
+            rows_by[i].append({**{k: v for k, v in it.items() if k != "messages"}, "base": base, "ft": ft,
+                               "base_flags": auto_flags(base, excerpt, it["evidence"]), "ft_flags": auto_flags(ft, excerpt, it["evidence"])})
         if n % 10 == 0:
             print(f"  {n}/{len(items)}", flush=True)
-    summary = summarize(rows)
-    tag = ("dryrun" if args.dry_run else Path(args.adapter).name) + ("_note" if args.common_note else "") \
-        + ("_qnorm" if args.normalize_question else "")
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    jpath = RESULTS_DIR / f"answer_eval_{stamp}_{tag}.json"
-    jpath.write_text(json.dumps({"adapter": args.adapter, "common_note": args.common_note, "normalize_question": args.normalize_question,
-                                 "summary": summary, "label_summary": label_summary(rows), "rows": rows}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    mpath = (RESULTS_DIR if args.dry_run else REVIEW_DIR) / f"answer_eval_{stamp}_{tag}.md"
-    write_md(rows, summary, mpath, args.adapter + (" · 공통 표기 on" if args.common_note else "")
-             + (" · 질문 정규화 on" if args.normalize_question else ""))
-    saved = [jpath, mpath]
+    saved = []
+    for i, adapter in enumerate(args.adapter):
+        rows = rows_by[i]
+        summary = summarize(rows)
+        tag = ("dryrun" if args.dry_run else adapter_tag(adapter)) + ("_note" if args.common_note else "") \
+            + ("_qnorm" if args.normalize_question else "") + ("_search" if args.search else "")
+        jpath = RESULTS_DIR / f"answer_eval_{stamp}_{tag}.json"
+        jpath.write_text(json.dumps({"adapter": adapter, "common_note": args.common_note, "normalize_question": args.normalize_question,
+                                     "search": args.search, "summary": summary, "label_summary": label_summary(rows), "rows": rows},
+                                    ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        mpath = (RESULTS_DIR if args.dry_run else REVIEW_DIR) / f"answer_eval_{stamp}_{tag}.md"
+        write_md(rows, summary, mpath, adapter + (" · 공통 표기 on" if args.common_note else "")
+                 + (" · 질문 정규화 on" if args.normalize_question else "") + (f" · 검색 입력 top {SEARCH_TOP_K}" if args.search else ""))
+        saved += [jpath, mpath]
+        print(adapter_tag(adapter), json.dumps(summary, ensure_ascii=False))
     if args.normalize_question:
         qpath = mpath.with_name(mpath.stem + "_questions.md")
         qpath.write_text("\n".join(normalize_log(items)) + "\n", encoding="utf-8")
         saved.append(qpath)
-    print(json.dumps(summary, ensure_ascii=False, indent=1))
     print("저장:", *saved)
 
 

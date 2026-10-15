@@ -57,6 +57,42 @@ full 또는 partial이면 답이 되는 발췌 문구를 발췌에서 그대로 
 반드시 JSON 한 개로만 답하세요: {"verdict": "full" 또는 "partial" 또는 "none", "quote": "발췌에서 그대로 옮긴 문구(none이면 빈 문자열)", "reason": "한 문장"}"""
 
 
+# q2(2026-10-15): q1은 rebuild 표본 200건에서 73건을 잡았으나 10건을 읽어 보니 4건이 과했다 — 비슷한 조항(선천적·유전적 질병)을
+# 질문(기왕증)의 답으로 보거나, 해지 '조건'을 해지 '후 조치'의 답으로 봤다. 인용 문구가 발췌에 없는 판정도 96건 중 10건.
+# 고친 것: (1) "비슷한 조항"과 "질문에 답이 됨"을 가르는 예시를 넣는다 (2) 인용이 발췌에 그대로 없으면 판정을 인정하지 않는다
+# (한 번 다시 묻고, 그래도 없으면 none + quote_fail — 근거 없는 주장은 판정이 아니다). 기준(질문, 답변 미제공)은 q1과 같다.
+QJUDGE_SYSTEM_V2 = """당신은 반려동물 보험 약관 상담 데이터 검수자입니다. 고객 [질문]과 약관 [발췌] 하나가 주어집니다.
+[발췌]만 읽은 상담원이 [질문]이 묻는 바로 그것에 맞는 답을 할 수 있는지 판정하세요. 발췌 밖의 지식은 쓰지 않습니다.
+
+- full: 질문이 묻는 것에 대한 결론을 발췌의 문장·숫자만으로 말할 수 있다.
+- partial: 질문이 묻는 것의 일부는 발췌로 답할 수 있다 — 여러 가지를 묻는 질문 중 하나, 결론은 있으나 조건이 빠진 경우,
+  결론을 정하는 조건·숫자·기간 하나만 있는 경우.
+- none: 발췌로는 질문이 묻는 것에 답할 수 없다.
+
+가장 중요한 구분 — "비슷한 조항이 있다"는 "질문에 답이 된다"가 아니다:
+- 질문 "가입 전부터 앓던 병도 보상되나요?" / 발췌 "반려동물의 선천적, 유전적 질병에 의한 손해(보험계약 이전부터 인지할 수 있는 증상 포함)"
+  → none. 선천적·유전적 질병 조항이지, 가입 전에 이미 발병한 질병(기왕증) 조항이 아니다. 발췌에 "보험계약일 이전에 이미 발병한 질병"이 있어야 답이 된다.
+- 질문 "알릴 의무 위반으로 계약이 해지되면 회사는 무엇을 해 주나요?" / 발췌 "회사는 그 사실을 안 날부터 1개월 이내에 계약을 해지할 수 있다"
+  → none. 질문은 해지 '후'의 처리(환급금 등)를 묻는데, 발췌는 해지할 수 있는 '조건'만 말한다.
+- 질문 "보장 제한은 언제부터 적용되나요?" / 발췌 "부담보 기간은 1개월부터 5년 또는 계약의 보험기간"
+  → none. 질문은 시작 시점을, 발췌는 기간의 길이를 말한다.
+- 질문 "투견으로 쓰다가 다친 병원비도 받을 수 있나요?" / 발췌 "투견 등 흥행 목적으로 사육하는 개는 가입 대상이 아닙니다"
+  → full. 표현은 달라도 질문에 대한 결론(받을 수 없다)이 발췌에서 바로 나온다.
+- 질문 "변호사 비용 한도가 얼마인가요?" / 발췌 "별표3의 한도 내에서 실제 부담한 보수 중 자기부담금 10만원 초과분" (별표3 표는 없음)
+  → partial. 한도를 정하는 방식과 자기부담금은 있으나 한도 금액은 없다.
+같은 단어나 같은 주제, 용어 정의, 배경 설명만 있으면 none이다.
+
+그 밖의 주의:
+- 같은 규정이 여러 특약·조문에 같은 문장으로 적혀 있다. 문장이 같은 규정이면 특약 이름·조 번호가 질문과 달라도 답할 수 있는 것으로 본다.
+- 한도·비율·기간처럼 특약·등급·통원/입원·반려견/반려묘마다 다른 숫자는, 질문이 지정한 대상의 숫자가 아니면 답이 아니다.
+
+full 또는 partial이면 질문에 답이 되는 발췌 문구를 발췌에서 한 군데, 글자 그대로 옮겨 적으세요(고치거나 줄이거나 이어 붙이지 말 것).
+그대로 옮길 문구가 없다면 답이 되지 않는 것이므로 none입니다.
+반드시 JSON 한 개로만 답하세요: {"verdict": "full" 또는 "partial" 또는 "none", "quote": "발췌에서 그대로 옮긴 문구(none이면 빈 문자열)", "reason": "한 문장"}"""
+PROMPTS = {"q1": QJUDGE_SYSTEM, "q2": QJUDGE_SYSTEM_V2}
+CONFIRM_MODEL = "qwen3:14b"     # 확인 검사 — 라벨링(JUDGE_MODEL)과 다른 모델. Apache 2.0, 로컬
+
+
 def _flat(t: str) -> str:
     return re.sub(r"\s+", "", t or "")
 
@@ -65,12 +101,30 @@ def build_prompt(question: str, excerpt: str) -> str:
     return f"[질문]\n{question}\n\n[발췌]\n{excerpt}"
 
 
-def cache_key(question: str, excerpt: str) -> str:
-    return hashlib.md5(f"q1|{question}|{excerpt}".encode()).hexdigest()
+def cache_key(question: str, excerpt: str, ver: str = "q1", model: str = faq_judge.JUDGE_MODEL) -> str:
+    # q1 키는 첫 실행 그대로(캐시 재사용). 다른 버전·모델은 키에 넣어 섞이지 않게 한다
+    tag = ver if model == faq_judge.JUDGE_MODEL else f"{ver}@{model}"
+    return hashlib.md5(f"{tag}|{question}|{excerpt}".encode()).hexdigest()
 
 
-def judge(question: str, excerpt: str) -> dict:
-    body = {"model": faq_judge.JUDGE_MODEL, "system": QJUDGE_SYSTEM, "prompt": build_prompt(question, excerpt), "stream": False,
+def quote_ok(res: dict, excerpt: str) -> bool | None:
+    if res["verdict"] in (None, "none"):
+        return None
+    return bool(res["quote"]) and _flat(res["quote"]) in _flat(excerpt)
+
+
+def judge_checked(question: str, excerpt: str, ver: str = "q2", model: str = faq_judge.JUDGE_MODEL) -> dict:
+    """q2부터: 파싱 실패·인용 불일치는 한 번 다시 묻는다. 그래도 인용이 발췌에 없으면 판정을 인정하지 않는다(none + quote_fail)"""
+    res = judge(question, excerpt, ver, model)
+    if res["verdict"] is None or quote_ok(res, excerpt) is False:
+        res = {**judge(question, excerpt, ver, model), "retried": True}
+    if quote_ok(res, excerpt) is False:
+        res = {**res, "verdict": "none", "quote_fail": True, "claimed": res["verdict"]}
+    return res
+
+
+def judge(question: str, excerpt: str, ver: str = "q1", model: str = faq_judge.JUDGE_MODEL) -> dict:
+    body = {"model": model, "system": PROMPTS[ver], "prompt": build_prompt(question, excerpt), "stream": False,
             "format": "json", "think": False,
             "options": {"temperature": 0, "num_ctx": faq_judge.NUM_CTX, "num_predict": faq_judge.NUM_PREDICT}}
     r = requests.post(f"{faq_judge.OLLAMA_URL}/api/generate", json=body, timeout=900)
@@ -103,7 +157,7 @@ def load_samples(build_dir: Path, ver: str = "v2") -> dict[str, list[dict]]:
     return {k: sorted(v, key=lambda x: x["excerpt_no"]) for k, v in by.items()}
 
 
-def run_sample(build_dir: Path, n: int, seed: int) -> Path:
+def run_sample(build_dir: Path, n: int, seed: int, ver: str = "q1") -> Path:
     require_model()
     samples = load_samples(build_dir)
     pick = random.Random(seed).sample(sorted(samples), n)     # na_label_review_200_20261015.md와 같은 표본
@@ -112,19 +166,21 @@ def run_sample(build_dir: Path, n: int, seed: int) -> Path:
     for i, key in enumerate(pick, 1):
         exs = []
         for it in samples[key]:
-            k = cache_key(it["question"], it["excerpt"])
+            k = cache_key(it["question"], it["excerpt"], ver)
             if k not in cache:
-                res = judge(it["question"], it["excerpt"])
-                if res["verdict"] is None:
-                    res = {**judge(it["question"], it["excerpt"]), "retried": True}
+                if ver == "q1":
+                    res = judge(it["question"], it["excerpt"])
+                    if res["verdict"] is None:
+                        res = {**judge(it["question"], it["excerpt"]), "retried": True}
+                else:
+                    res = judge_checked(it["question"], it["excerpt"], ver)
                 cache[k] = res
                 new += 1
                 if new % SAVE_EVERY == 0:
                     _dump(cache, CACHE_PATH)
             res = cache[k]
-            quote_ok = None if res["verdict"] in (None, "none") else bool(res["quote"]) and _flat(res["quote"]) in _flat(it["excerpt"])
             exs.append({"excerpt_no": it["excerpt_no"], "label": it["excerpt_label"], "excerpt": it["excerpt"],
-                        "na_judge": it["verdict"], "na_reason": it["reason"], **res, "quote_ok": quote_ok})
+                        "na_judge": it["verdict"], "na_reason": it["reason"], **res, "quote_ok": quote_ok(res, it["excerpt"])})
         rows.append({"no": i, "sample": key, "unit_id": samples[key][0]["unit_id"], "question": samples[key][0]["question"],
                      "na_judge": "yes" if any(e["na_judge"] == "yes" for e in exs) else "no",
                      "qjudge": sample_verdict([e["verdict"] for e in exs]), "excerpts": exs})
@@ -132,20 +188,20 @@ def run_sample(build_dir: Path, n: int, seed: int) -> Path:
             print(f"  {i}/{n} (새 판정 {new}, {time.time() - t0:.0f}초)", flush=True)
     _dump(cache, CACHE_PATH)
     unload_model()
-    return write_report(build_dir, rows, n, seed)
+    return write_report(build_dir, rows, n, seed, ver)
 
 
-def write_report(build_dir: Path, rows: list[dict], n: int, seed: int) -> Path:
+def write_report(build_dir: Path, rows: list[dict], n: int, seed: int, ver: str = "q1") -> Path:
     cnt = Counter(r["qjudge"] for r in rows)
     # na_judge는 이 빌드의 no_answer를 전부 no로 통과시켰다 — 어긋남 = 질문 기준 판정이 none이 아닌 것(파싱 실패 포함)
     off = [r for r in rows if r["qjudge"] != "none"]
     bad_quote = [r for r in off if any(e["verdict"] in ("full", "partial") and not e["quote_ok"] for e in r["excerpts"])]
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
-    base = REVIEW_DIR / f"na_qjudge_{build_dir.name}_{n}_{stamp}"
-    _dump({"build_dir": str(build_dir), "n": n, "seed": seed, "model": faq_judge.JUDGE_MODEL, "counts": dict(cnt),
+    base = REVIEW_DIR / f"na_qjudge_{ver}_{build_dir.name}_{n}_{stamp}"
+    _dump({"build_dir": str(build_dir), "n": n, "seed": seed, "prompt": ver, "model": faq_judge.JUDGE_MODEL, "counts": dict(cnt),
            "rows": rows}, base.with_suffix(".json"))
     L = [f"# no_answer 질문 기준 판정 — na_judge와 어긋난 샘플 ({build_dir.name}, 표본 {n}건)", "",
-         f"- 표본: no_answer 전체에서 `random.Random({seed}).sample` {n}건. 판정기 {faq_judge.JUDGE_MODEL}, 프롬프트 `na_qjudge.QJUDGE_SYSTEM`(원래 답변 없음).",
+         f"- 표본: no_answer 전체에서 `random.Random({seed}).sample` {n}건. 판정기 {faq_judge.JUDGE_MODEL}, 프롬프트 `{ver}`(원래 답변 없음).",
          "- na_judge(v2)는 이 표본을 전부 no(답 없음)로 판정했다. 아래는 질문 기준 판정이 **없음이 아닌** 샘플 — 어긋난 것만 싣는다.",
          f"- 질문 기준 판정: 있음 {cnt.get('full', 0)} · 일부 {cnt.get('partial', 0)} · 없음 {cnt.get('none', 0)}"
          + (f" · 파싱 실패 {cnt[None]}" if cnt.get(None) else "") + f" → **어긋남 {len(off)}/{n} ({len(off) / n:.1%})**",
@@ -173,7 +229,7 @@ def main(argv=None):
     opts = dict(a[2:].split("=", 1) for a in args if a.startswith("--") and "=" in a)
     cmd = next((a for a in args if not a.startswith("--")), None)
     if cmd == "sample":
-        run_sample(Path(opts["build-dir"]), int(opts.get("n", 200)), int(opts.get("seed", 20261015)))
+        run_sample(Path(opts["build-dir"]), int(opts.get("n", 200)), int(opts.get("seed", 20261015)), opts.get("prompt", "q1"))
     else:
         raise SystemExit(__doc__)
 

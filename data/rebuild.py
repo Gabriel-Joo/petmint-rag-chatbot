@@ -98,21 +98,33 @@ GATE = {
     "max_overlap_gap": 0.30,   # 양성(distract·gold_only) 겹침 평균 − no_answer 겹침 평균 상한(느슨하게)
     "cover": OFF,              # 명사 포함률 기준 — 끔
     "max_high_ratio": OFF,
+    # 2-4(2026-10-15, docs/next_rebuild.md): 평균 차이는 꼬리를 숨긴다 — 겹침 구간별로 본다(finetune_data.overlap_bins)
+    "max_low_overlap_na": 1.5,    # 겹침 0.3 미만 구간마다(표본 30건 이상) 구간 no_answer 비율 ≤ 이 배수 × 전체 no_answer 비율
+    "min_low_overlap_pos": 0.10,  # 겹침 0.2 미만 양성 / 전체 양성 하한
+    "min_pairs": 0.9,             # 같은 질문의 양성 쌍(distract_pair)이 있는 no_answer 비율 하한(--pair-na)
 }
 
 
 class Run:
     def __init__(self, name: str, gate: dict | None = None, accept_build: bool = False,
-                 na_cover_max: float = NA_COVER_MAX, na_fill: str | None = NA_FILL, na_judge: str | None = NA_JUDGE):
+                 na_cover_max: float = NA_COVER_MAX, na_fill: str | None = NA_FILL, na_judge: str | None = NA_JUDGE,
+                 src: str | None = None, distractor_hard: bool = False, pair_na: bool = False):
         self.name = name
         self.gate = dict(GATE, **(gate or {}))
         self.accept_build = accept_build
         self.na_cover_max, self.na_fill, self.na_judge = na_cover_max, na_fill, na_judge
-        self.faq = FAQ_DIR / name
+        self.distractor_hard, self.pair_na = distractor_hard, pair_na
+        # --src(2026-10-15): gen·check·rewrite 산출물을 다른 재구축(<src>)에서 그대로 쓰고 build·train만 이 이름으로 돈다.
+        # 로그·상태는 이 이름 아래에 두고, 앞 단계 완료 표시는 처음 한 번 src 상태에서 옮겨 온다
+        self.src = src
+        self.faq = FAQ_DIR / (src or name)
         self.ft = FT_DIR / name
-        self.logs = self.faq / "logs"
+        self.logs = FAQ_DIR / name / "logs"
         self.rewrite = self.faq / "rewrite"
         self.state_path = self.logs / "state.json"
+        if src and not self.state_path.exists():
+            src_state = json.load(open(FAQ_DIR / src / "logs" / "state.json", encoding="utf-8"))
+            self.save_state({k: {**src_state[k], "from_src": src} for k in ("gen", "check", "rewrite") if k in src_state})
 
     # ---------- 상태 ----------
     def state(self) -> dict:
@@ -319,7 +331,8 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
         return [py, "-m", "data.faq_rewrite", "all", *SPECIES, f"--src={run.faq}", f"--out={run.rewrite}"], env
     if stage == "build":
         na = ["--na-cover-max", str(run.na_cover_max)] + (["--na-fill", run.na_fill] if run.na_fill else []) \
-            + (["--na-judge", run.na_judge] if run.na_judge else [])
+            + (["--na-judge", run.na_judge] if run.na_judge else []) \
+            + (["--distractor-hard"] if run.distractor_hard else []) + (["--pair-na"] if run.pair_na else [])
         return [py, "-m", "data.finetune_data", "--distractor", "search",
                 "--final-dir", str(run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
     if stage == "train":
@@ -392,10 +405,10 @@ def build_metrics(ft_dir: Path, cover: float | str | None) -> dict:
     """train/val.jsonl 메타 + stats.json 겹침 + 빌드 끝 재판정 요약에서 잰다(GPU 없음)"""
     cover = None if cover == OFF else cover
     metas = [json.loads(l)["meta"] for n in ("train.jsonl", "val.jsonl") for l in open(ft_dir / n, encoding="utf-8")]
-    st = json.load(open(ft_dir / "stats.json", encoding="utf-8"))
+    st = {**json.load(open(ft_dir / "stats.json", encoding="utf-8")), "_ft_dir": str(ft_dir)}
     na = [m for m in metas if m["kind"] == "no_answer"]
     ov = st.get("overlap", {})
-    pos = [ov[k] for k in ("distract", "gold_only") if k in ov]
+    pos = [ov[k] for k in ("distract", "gold_only", "distract_pair") if k in ov]
     pos_mean = sum(v["mean"] * v["n"] for v in pos) / sum(v["n"] for v in pos) if pos else None
     na_mean = ov.get("no_answer", {}).get("mean")
     high = sum(m.get("na_noun_cover") is not None and m["na_noun_cover"] >= cover for m in na) if cover is not None else None
@@ -405,7 +418,23 @@ def build_metrics(ft_dir: Path, cover: float | str | None) -> dict:
             "overlap_pos": round(pos_mean, 3) if pos_mean is not None else None, "overlap_na": na_mean,
             "overlap_gap": round(pos_mean - na_mean, 3) if pos_mean is not None and na_mean is not None else None,
             "na_cover_max": st.get("na_cover_max"), "na_fill": st.get("na_fill"), "na_judge": st.get("na_judge"),
-            **na_judge_metrics(ft_dir, st.get("na_judge"))}
+            **na_judge_metrics(ft_dir, st.get("na_judge")), **bin_metrics(metas, st)}
+
+
+def bin_metrics(metas: list[dict], st: dict) -> dict:
+    """2-4 — finetune_data.overlap_bins(빌드가 stats.json에 남긴 것). 없으면(옛 빌드) train/val에서 다시 잰다"""
+    b = st.get("overlap_bins")
+    if b is None:
+        from data.finetune_data import overlap_bins
+        b = overlap_bins([json.loads(l) for n in ("train.jsonl", "val.jsonl")
+                          for l in open(Path(st.get("_ft_dir", "")) / n, encoding="utf-8")]) if st.get("_ft_dir") else None
+    if b is None:
+        return {"low_bins": None, "low_pos_ratio": None, "pair_ratio": None}
+    low = {k: v for k, v in b["bins"].items() if float(k) < 0.3}
+    return {"low_bins": {k: {**v, "na_ratio": round(v["na"] / (v["na"] + v["pos"]), 4) if v["na"] + v["pos"] else 0.0}
+                         for k, v in low.items()},
+            "na_ratio_all": b["na_ratio"], "low_pos_ratio": b["low_pos_ratio"], "pair_ratio": b["pair_ratio"],
+            "short_pos_ratio": b.get("short_pos_ratio"), "short_na_ratio": b.get("short_na_ratio")}
 
 
 def na_judge_metrics(ft_dir: Path, ver: str | None) -> dict:
@@ -441,6 +470,19 @@ def check_gate(m: dict, gate: dict) -> list[str]:
         bad.append(f"no_answer {m['no_answer']}건 < 하한 {gate['min_no_answer']}건")
     if on("max_overlap_gap") and m["overlap_gap"] is not None and m["overlap_gap"] > gate["max_overlap_gap"]:
         bad.append(f"겹침 차이 {m['overlap_gap']} (양성 {m['overlap_pos']} − no_answer {m['overlap_na']}) > 상한 {gate['max_overlap_gap']}")
+    for k in ("max_low_overlap_na", "min_low_overlap_pos", "min_pairs"):
+        if on(k) and m.get("low_bins") is None:
+            bad.append(f"겹침 구간 수치 없음 — {k}를 잴 수 없다")
+    if on("max_low_overlap_na") and m.get("low_bins"):
+        lim = gate["max_low_overlap_na"] * m["na_ratio_all"]
+        for k, v in m["low_bins"].items():
+            if v["na"] + v["pos"] >= 30 and v["na_ratio"] > lim:
+                bad.append(f"겹침 {k}~ 구간 no_answer {v['na']}/{v['na'] + v['pos']} ({v['na_ratio']:.1%}) > 상한 {lim:.1%} "
+                           f"(전체 {m['na_ratio_all']:.1%} × {gate['max_low_overlap_na']})")
+    if on("min_low_overlap_pos") and m.get("low_pos_ratio") is not None and m["low_pos_ratio"] < gate["min_low_overlap_pos"]:
+        bad.append(f"겹침 0.2 미만 양성 {m['low_pos_ratio']:.1%} < 하한 {gate['min_low_overlap_pos']:.0%}")
+    if on("min_pairs") and m.get("pair_ratio") is not None and m["pair_ratio"] < gate["min_pairs"]:
+        bad.append(f"쌍이 있는 no_answer {m['pair_ratio']:.1%} < 하한 {gate['min_pairs']:.0%}")
     return bad
 
 
@@ -452,6 +494,10 @@ def run_build_gate(run: Run) -> str | None:
     run.log(f"build 검사: 전체 {m['total']}건 | no_answer {m['no_answer']}건({m['no_answer'] / max(m['total'], 1):.1%}) | 판정 no 아닌 no_answer {jb} | 포함률 ≥{m['cover']} no_answer {hr} | "
             f"겹침 양성 {m['overlap_pos']} / no_answer {m['overlap_na']} (차이 {m['overlap_gap']}) | "
             f"빌드 옵션 na_judge={m['na_judge']} na_fill={m['na_fill']} na_cover_max={m['na_cover_max']} | 기준 {run.gate}")
+    if m.get("low_bins") is not None:
+        run.log("build 검사(겹침 구간): " + ", ".join(f"{k}~ NA {v['na']}/{v['na'] + v['pos']}({v['na_ratio']:.1%})" for k, v in m["low_bins"].items())
+                + f" | 전체 NA {m['na_ratio_all']:.1%} | 겹침<0.2 양성 {m['low_pos_ratio']:.1%} | 쌍 {m['pair_ratio']:.1%}"
+                + f" | 30자 미만 질문 양성 {m['short_pos_ratio']:.1%} / NA {m['short_na_ratio']:.1%}")
     bad = check_gate(m, run.gate)
     st = run.state()
     st.setdefault("build", {})["gate"] = {"metrics": m, "criteria": run.gate, "failed": bad, "bypassed": bool(bad) and run.accept_build}
@@ -598,8 +644,9 @@ def main(argv=None):
     na_judge = opts.get("na-judge", NA_JUDGE)
     run = Run(opts.get("name", "rebuild"), gate=gate, accept_build="--accept-build" in flags,
               na_cover_max=float(opts.get("na-cover-max", NA_COVER_MAX)), na_fill=opts.get("na-fill", NA_FILL),
-              na_judge=None if na_judge == OFF else na_judge)
-    assert run.na_judge in (None, "v1", "v2"), "--na-judge=v1|v2|off"
+              na_judge=None if na_judge == OFF else na_judge, src=opts.get("src"),
+              distractor_hard="--distractor-hard" in flags, pair_na="--pair-na" in flags)
+    assert run.na_judge in (None, "v1", "v2", "q2"), "--na-judge=v1|v2|q2|off"
     assert not (run.na_judge and run.na_cover_max > 0), "--na-judge와 --na-cover-max는 택일(포함률을 쓰려면 --na-judge=off)"
     assert (run.na_cover_max == 0 and not run.na_judge) or run.na_fill in ("drop", "refill"), "--na-fill=drop|refill 필요"
     if cmd == "plan":
