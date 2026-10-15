@@ -1,0 +1,20 @@
+.turn { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-card); border: 1px solid transparent; }
+.selectable { cursor: pointer; }
+.selectable:hover { background: var(--surface); }
+.selected { border-color: var(--line); background: var(--surface); }
+
+.q { align-self: flex-end; max-width: 85%; padding: 8px 12px; border-radius: var(--radius-card); background: var(--primary-soft); white-space: pre-wrap; }
+.a { white-space: pre-wrap; line-height: 1.7; }
+.status { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); }
+.caret { display: inline-block; width: 0.5em; height: 1em; vertical-align: -2px; background: var(--primary); margin-left: 2px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { to { opacity: 0; } }
+
+.clarify { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--font-sm); }
+.err { color: var(--warn); font-size: var(--font-sm); }
+
+.foot { font-weight: var(--font-weight-caption); display: flex; gap: 10px; align-items: center; font-size: var(--turn-meta-size, var(--font-2xs)); color: var(--text-faint); flex-wrap: wrap; } /* 대화창이 크기를 정해 주면 따른다 */
+.fb { background: none; border: 1px solid transparent; border-radius: 6px; padding: 0 4px; font-size: var(--font-sm); }
+.fb:hover:not(:disabled) { border-color: var(--line); }
+.fbOn { border-color: var(--primary-soft); background: var(--primary-soft); }
+
+@media (min-width: 900px) { .mobileOnly { display: none; } }

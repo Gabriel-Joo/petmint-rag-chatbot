@@ -1,0 +1,79 @@
+/* 10-4: 모드 선택은 여백을 넉넉하게 — 캐릭터와 카드가 살아나게. 그림자·누름 효과는 global.css의 .raised .lift
+   첫 화면(.hero)은 본문 높이를 꽉 채운다 — 세 카드가 가로를 채우고 남은 높이를 아래까지 차지한다. 좁은 화면에서는 세로로 쌓는다.
+   스크롤하면 그 아래에 프로젝트 소개(.about)가 나온다 */
+.page { height: 100%; }
+.hero {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 48px 48px;
+}
+.title { font-size: var(--font-2xl); font-weight: var(--font-weight-title); margin: 0 0 32px; text-align: center; }
+
+/* 세 카드가 같은 줄(캐릭터 / 모드 이름 / 대사)을 나눠 쓴다(subgrid). 캐릭터 자리 높이가 세 카드에서 같고,
+   대사 줄 수가 달라도(사내규정 1줄, 나머지 2줄) 모드 이름이 같은 높이에 온다 */
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(360px, 1fr) auto auto;
+  column-gap: 32px;
+}
+.card {
+  grid-row: span 3;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 12px;
+  justify-items: center;
+  align-content: start;
+  min-height: 0;
+  padding: 24px 32px 32px;
+  text-align: center;
+  box-shadow: var(--shadow-2);
+}
+/* 카드 면(--card)과 바탕(--bg)이 거의 같은 흰색이라 그림자를 한 단계 키워 띄운다.
+   호버는 그림자와 올라오는 움직임만 — 배경색·밝기는 바꾸지 않는다. 카드가 커서 다른 화면(-2px)보다 많이 올린다 */
+.card:hover:not(:disabled) { transform: translateY(-6px); box-shadow: var(--shadow-4); }
+.card:active:not(:disabled) { transform: translateY(0); box-shadow: var(--shadow-2); }
+@media (prefers-reduced-motion: reduce) {
+  .card:hover:not(:disabled) { transform: none; }
+}
+
+/* 캐릭터 자리 — 세 카드가 같은 높이를 쓰고, 캐릭터는 그 안에서 아래 기준으로 붙는다.
+   .frame은 그 안에 이미지 비율(1792×2400)대로 들어가는 상자다. 정지 이미지와 영상을 이 상자에 겹쳐서 바뀔 때 크기·위치가 어긋나지 않는다.
+   이미지·영상 배경은 파일 자체가 투명하다(테두리 쪽 페이드도 파일에 들어 있다) — 카드 면이 그대로 비친다 */
+.media { position: relative; width: 100%; height: 100%; min-height: 0; container-type: size; }
+.frame {
+  position: absolute;
+  inset: 0;
+  margin: auto auto 0; /* 아래 기준 */
+  width: min(100cqw, 100cqh * 1792 / 2400);
+  height: min(100cqh, 100cqw * 2400 / 1792);
+}
+/* 정지 이미지(1792×2400)와 영상(828×1108)은 비율이 같고(차이 0.08%) 첫 프레임의 캐릭터 위치도 같다(측정 2026-10-15) —
+   같은 상자에 cover로 맞추면 바꿔 끼워도 어긋나지 않는다 */
+.still, .video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.video { pointer-events: none; }
+/* 숨김은 opacity가 아니라 visibility — 투명 영상 뒤로 비치지 않게 그리기에서 뺀다. 상자 자리는 그대로라 덜컹이지 않는다 */
+.hidden { visibility: hidden; }
+
+.name { font-size: var(--font-xl); font-weight: var(--font-weight-title); }
+.intro { font-size: var(--font-lead); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
+
+/* 프로젝트 소개 자리 — 내용이 없어도 스크롤이 생기도록 높이만 잡아 둔다 */
+.about {
+  min-height: 80vh;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 1023px) {
+  .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 32px; }
+  .card { grid-row: auto; grid-template-rows: auto auto auto; }
+  .media { height: min(60vh, 640px); }
+}
+@media (max-width: 640px) {
+  .hero { padding: 24px 16px 32px; }
+  .grid { gap: 20px; }
+  .card { padding: 16px 16px 24px; }
+}

@@ -1,0 +1,17 @@
+.bar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.input {
+  flex: 1 1 240px;
+  min-height: 40px;
+  max-height: 160px;
+  resize: none;
+  padding: 9px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  line-height: 1.4;
+}
+/* placeholder는 입력한 글보다 가볍게. 폭이 모자라면 줄바꿈 대신 말줄임 */
+.input::placeholder { color: var(--text-faint); font-weight: var(--font-weight-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.input:disabled { opacity: 0.5; }
+.input:focus { outline: none; border-color: var(--primary); }
+.closed { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); padding: 8px 0; }

@@ -1,0 +1,73 @@
+.wrap {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  width: min(360px, calc(100vw - 32px));
+  padding: 20px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  box-shadow: var(--shadow-3);
+}
+@media (max-width: 640px) {
+  .wrap { right: 16px; left: 16px; bottom: auto; top: 16px; width: auto; }
+}
+
+/* 10-3: 초록 원에서 링이 퍼지며 투명해진다. 세 개를 시차를 두고 겹친다.
+   흰 바탕에서는 가는 반투명 테두리만으로는 묻혀서, 진한 테두리 + 옅은 채움 원반으로 퍼지게 한다 */
+.phone {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--call);
+  display: grid;
+  place-items: center;
+  font-size: var(--font-call-icon);
+}
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--call);
+  background: var(--call-ring);
+  animation: ripple 2.1s ease-out infinite;
+}
+.ring:nth-child(2) { animation-delay: 0.7s; }
+.ring:nth-child(3) { animation-delay: 1.4s; }
+@keyframes ripple {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring { animation: none; opacity: 0; }
+}
+
+.body { flex: 1; min-width: 0; }
+.label { font-weight: var(--font-weight-label); font-size: var(--font-xs); color: var(--text-dim); }
+.name { font-size: var(--font-lg); font-weight: var(--font-weight-title); }
+.pets { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+.accept {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--call);
+  color: var(--card);
+  font-weight: var(--font-weight-label);
+  padding: 8px;
+}
+
+.notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  padding: 12px 16px;
+  font-size: var(--font-md);
+}
+@media (max-width: 640px) {
+  .notice { right: 16px; left: 16px; bottom: auto; top: 16px; }
+}
