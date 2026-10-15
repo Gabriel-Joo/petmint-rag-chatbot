@@ -147,6 +147,7 @@ class TurnLog(_Model):
     question: str
     rewritten_question: str | None = None
     answer: str
+    payout: dict | None = None                     # 계산 카드 결과(limit_table) 그대로 — 재계산하지 않고 저장한다. 지금은 None
     pet_id: str | None = None
     pet_name: str | None = None
     species: Species | None = None
