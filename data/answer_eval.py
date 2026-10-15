@@ -240,10 +240,14 @@ def _state(f: dict) -> str:
 
 def compare(off_path: Path, on_path: Path):
     """실험 B 대조. 그룹은 OFF 결과의 FT 거절로 정한다: 등급 거절(질문에 등급·유형) / 등급 외 거절 / 답했던 문항.
-    두 파일이 다 off면 답변 동일 수가 회귀 확인이다(greedy라 프롬프트가 같으면 답도 같아야 한다)."""
+    두 파일이 다 off면 답변 동일 수가 회귀 확인이다(greedy라 프롬프트가 같으면 답도 같아야 한다).
+    둘 다 off이고 어댑터가 다르면 어댑터 대조(2026-10-15): 처치 열이 없고, 베이스 답 동일이 입력 동일의 확인이다."""
     off, on = (json.loads(p.read_text(encoding="utf-8")) for p in (off_path, on_path))
     assert not off.get("normalize_question") and not off.get("common_note"), "OFF 자리에 처치 켠 결과가 들어왔다"
     exp_a = bool(on.get("normalize_question"))
+    swap = not on.get("normalize_question") and not on.get("common_note") and Path(off["adapter"]).name != Path(on["adapter"]).name
+    la, lb = (Path(off["adapter"]).name, Path(on["adapter"]).name) if swap else ("FT off", "FT on")
+    tcol = None if swap else ("변환 대상" if exp_a else "표기 대상")
     # 처치 대상: A는 질문이 실제로 바뀐 문항, B는 표기가 붙은 문항
     treated = (lambda b: b["question"] != b.get("question_orig", b["question"])) if exp_a else (lambda b: any(b.get("noted") or []))
     on_rows = {(r["kind"], r["id"]): r for r in on["rows"]}
@@ -262,15 +266,18 @@ def compare(off_path: Path, on_path: Path):
     groups = ["등급 거절", "등급 외 거절", "답했던 gold", "no_answer"]
 
     flag = lambda d: f"common_note={d.get('common_note', False)} normalize_question={d.get('normalize_question', False)}"
-    md = ["# 실험 A — 질문 등급 어구 제거 on/off 대조" if exp_a else "# 실험 B — 공통 조항 표기 on/off 대조", "",
+    md = [f"# 어댑터 대조 — {la} → {lb}" if swap else "# 실험 A — 질문 등급 어구 제거 on/off 대조" if exp_a
+          else "# 실험 B — 공통 조항 표기 on/off 대조", "",
           f"- OFF `{off_path.name}` ({flag(off)}) · ON `{on_path.name}` ({flag(on)})",
-          f"- 답변 동일: FT {same['ft']}/{len(pairs)} · 베이스 {same['base']}/{len(pairs)} (둘 다 off면 이 값이 전부여야 회귀 없음)",
+          f"- 답변 동일: FT {same['ft']}/{len(pairs)} · 베이스 {same['base']}/{len(pairs)}"
+          + (" (어댑터 대조: 베이스가 전부여야 입력이 같다)" if swap else " (둘 다 off면 이 값이 전부여야 회귀 없음)"),
           "- 그룹은 OFF의 FT 거절 기준. 등급 거절 = 질문에 등급(고급형·기본형·실속형) 또는 유형(Ⅰ·Ⅱ·Ⅲ)이 있는 거절",
           "- 상태: 거절 / 답·근거O(evidence 문구가 답에 있음) / 답·근거X / 외부[n](발췌에 없는 조 번호) — 자동 표시는 참고용"]
     if exp_a:
         md.append("- A는 처치 대상이 아닌 문항의 프롬프트가 OFF와 바이트 단위로 같다 → 그 문항의 답변 동일이 n/n이 아니면 정규화와 무관한 흔들림")
-    md += ["", f"| 그룹 | 문항 | {'변환 대상' if exp_a else '표기 대상'} | FT 거절 off→on | FT 해소 | FT 새 거절 | 베이스 거절 off→on | FT 답 동일 | 베이스 답 동일 |",
-           "|---|---|---|---|---|---|---|---|---|"]
+    arrow = "구→신" if swap else "off→on"
+    md += ["", f"| 그룹 | 문항 |{f' {tcol} |' if tcol else ''} FT 거절 {arrow} | FT 해소 | FT 새 거절 | 베이스 거절 {arrow} | FT 답 동일 | 베이스 답 동일 |",
+           "|---|---|---|---|---|---|---|---|" + ("---|" if tcol else "")]
     summary = {}
     for g in groups:
         sub = [(a, b) for gg, a, b in pairs if gg == g]
@@ -283,22 +290,24 @@ def compare(off_path: Path, on_path: Path):
                "ft_new_refusal": sum(not a["ft_flags"]["refused"] and b["ft_flags"]["refused"] for a, b in sub),
                "base_off": sum(a["base_flags"]["refused"] for a, _ in sub), "base_on": sum(b["base_flags"]["refused"] for _, b in sub)}
         summary[g] = row
-        md.append(f"| {g} | {row['n']} | {row['treated']} | {row['ft_off']}→{row['ft_on']} | {row['ft_unlocked']} | "
+        tcell = f" {row['treated']} |" if tcol else ""
+        md.append(f"| {g} | {row['n']} |{tcell} {row['ft_off']}→{row['ft_on']} | {row['ft_unlocked']} | "
                   f"{row['ft_new_refusal']} | {row['base_off']}→{row['base_on']} | {row['ft_same']}/{row['n']} | {row['base_same']}/{row['n']} |")
     gr, ng = summary.get("등급 거절"), summary.get("등급 외 거절")
     md += [""]
     if gr:
-        md.append(f"**핵심 — 등급 거절 FT 해소: {gr['ft_unlocked']}/{gr['n']}** (처치 대상 {gr['treated']}/{gr['n']})")
+        md.append(f"**핵심 — 등급 거절 FT 해소: {gr['ft_unlocked']}/{gr['n']}**" + ("" if swap else f" (처치 대상 {gr['treated']}/{gr['n']})"))
     if ng:
         moved = ng["n"] - ng["ft_same"]
-        md.append(f"**대조 — 등급 외 거절: FT 해소 {ng['ft_unlocked']}/{ng['n']} · 답 바뀜 {moved}/{ng['n']}** (처치 대상 {ng['treated']})"
+        md.append(f"**대조 — 등급 외 거절: FT 해소 {ng['ft_unlocked']}/{ng['n']} · 답 바뀜 {moved}/{ng['n']}**" + ("" if swap else f" (처치 대상 {ng['treated']})")
                   + (" ⚠ 처치 대상이 아닌데 답이 바뀜 — 처치와 무관한 효과가 섞였다" if exp_a and moved else ""))
     base_off, base_on = sum(r["base_off"] for r in summary.values()), sum(r["base_on"] for r in summary.values())
     md.append(f"**베이스 거절 전체: {base_off} → {base_on}** · 베이스 답 동일 {same['base']}/{len(pairs)}")
     na = summary.get("no_answer")
     if na:
         md += [f"**no_answer FT 거절 유지: {na['ft_off']} → {na['ft_on']}**"
-               + (" ⚠ 떨어짐 — 표기가 '답해도 된다'는 신호로 작동" if na["ft_on"] < na["ft_off"] else " (유지)")]
+               + (" ⚠ 떨어짐" + ("" if swap else " — 표기가 '답해도 된다'는 신호로 작동") if na["ft_on"] < na["ft_off"]
+                  else " ⚠ 늘어남" if na["ft_on"] > na["ft_off"] else " (유지)")]
 
     def detail(title: str, sel):
         nonlocal md
@@ -309,18 +318,21 @@ def compare(off_path: Path, on_path: Path):
             if exp_a:
                 md += ["", f"**질문(on)** {b['question'] if treated(b) else '(같음)'}"]
             md += ["", f"**발췌** {a['label']}" + (f" · evidence: `{a['evidence']}`" if a["evidence"] else "")
-                   + ("" if exp_a else f" · 표기: {'붙음' if treated(b) else '없음'}"), "",
-                   f"**FT off** ({_state(a['ft_flags'])}) {a['ft']}", "", f"**FT on** ({_state(b['ft_flags'])}) {b['ft']}", "",
+                   + ("" if exp_a or swap else f" · 표기: {'붙음' if treated(b) else '없음'}"), "",
+                   f"**{la}** ({_state(a['ft_flags'])}) {a['ft']}", "", f"**{lb}** ({_state(b['ft_flags'])}) {b['ft']}", "",
                    "**판정(발췌 근거?):** ____________"]
 
     unlocked = lambda w: [(g, a, b) for g, a, b in pairs if a[f"{w}_flags"]["refused"] and not b[f"{w}_flags"]["refused"]]
     detail("FT 거절 해소 — gold (답이 발췌에 근거하는지 확인)", [x for x in unlocked("ft") if x[1]["kind"] == "gold"])
     detail("FT 거절 해소 — no_answer (답하면 안 되는 문항)", [x for x in unlocked("ft") if x[1]["kind"] == "no_answer"])
-    detail("FT 새 거절 (off에선 답함)", [(g, a, b) for g, a, b in pairs if not a["ft_flags"]["refused"] and b["ft_flags"]["refused"]])
+    detail(f"FT 새 거절 ({la}에선 답함)", [(g, a, b) for g, a, b in pairs if not a["ft_flags"]["refused"] and b["ft_flags"]["refused"]])
 
-    md += ["", "## 전체 대조", "", f"| ID | 그룹 | {'변환' if exp_a else '표기'} | FT off | FT on | 베이스 off | 베이스 on | 질문 |", "|---|---|---|---|---|---|---|---|"]
+    bo, bn = ("베이스(구)", "베이스(신)") if swap else ("베이스 off", "베이스 on")
+    md += ["", "## 전체 대조", "", f"| ID | 그룹 |{'' if swap else (' 변환 |' if exp_a else ' 표기 |')} {la} | {lb} | {bo} | {bn} | 질문 |",
+           "|---|---|---|---|---|---|---|" + ("" if swap else "---|")]
     for g, a, b in pairs:
-        md.append(f"| {a['id']} | {g} | {'O' if treated(b) else '-'} | {_state(a['ft_flags'])} | {_state(b['ft_flags'])} | "
+        tmark = "" if swap else f" {'O' if treated(b) else '-'} |"
+        md.append(f"| {a['id']} | {g} |{tmark} {_state(a['ft_flags'])} | {_state(b['ft_flags'])} | "
                   f"{_state(a['base_flags'])} | {_state(b['base_flags'])} | {a['question'][:40]} |")
     mpath = REVIEW_DIR / f"answer_eval_compare_{datetime.now().strftime('%Y%m%d_%H%M')}_{off_path.stem}_vs_{on_path.stem}.md"
     mpath.write_text("\n".join(md) + "\n", encoding="utf-8")
