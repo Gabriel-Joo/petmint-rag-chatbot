@@ -122,7 +122,8 @@ export function dropChat(sessionId: string) {
 
 const historyLoaded = new Set<string>();
 
-function fromTurnOut(t: TurnOut): Turn {
+/** 서버에 남은 턴 → 화면 턴(끝난 상태). 지난 대화와 과거 상담 모달이 같이 쓴다 */
+export function turnFromOut(t: TurnOut): Turn {
   return {
     key: t.turn_id, turn_id: t.turn_id, question: t.question, pet_id: t.pet_id, sources: t.sources, answer: t.answer,
     clarify: null, clarifyChoice: null, references: t.references, calc: null, error: null, status: "done",
@@ -138,7 +139,7 @@ export async function loadHistory(sessionId: string): Promise<void> {
   if (entry(sessionId).state.turns.length) return;
   try {
     const past = await getSessionTurns(sessionId);
-    update(sessionId, (s) => ({ ...s, turns: [...past.map(fromTurnOut), ...s.turns] }));
+    update(sessionId, (s) => ({ ...s, turns: [...past.map(turnFromOut), ...s.turns] }));
   } catch (e) {
     historyLoaded.delete(sessionId);
     throw e;

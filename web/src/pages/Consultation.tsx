@@ -7,6 +7,7 @@ import { matchExclusions } from "../components/ExclusionBanner";
 import { SourcePanel } from "../components/SourcePanel";
 import { SpeciesToggle } from "../components/SpeciesToggle";
 import { ModeIcon } from "../components/ModeIcon";
+import { PastConsultations } from "../components/PastConsultations";
 import { TurnView } from "../components/TurnView";
 import { SPECIES_ICON } from "../format";
 import { useChatSocket } from "../hooks/useChatSocket";
@@ -57,7 +58,8 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
 
       <div className={s.customer}>
         <CustomerCard customer={customer} pet={pet}
-                      toggle={<SpeciesToggle pets={customer.pets} value={pet.pet_id} onChange={setPetId} />} />
+                      toggle={<SpeciesToggle pets={customer.pets} value={pet.pet_id} onChange={setPetId} />}
+                      actions={<PastConsultations customer={customer} excludeSessionId={session.session_id} />} />
       </div>
 
       <div ref={logRef} className={`raised ${s.log}`}>
