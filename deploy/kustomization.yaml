@@ -1,0 +1,28 @@
+# 펫퍼민트 — 앱 + MySQL (14번 1-7절). 적용: kubectl apply -k deploy/   (순서·사전 준비는 deploy/README.md)
+# Jenkins를 붙이면 별도 매니페스트 저장소로 옮긴다(14번 1-5절). 태그는 아래 images.newTag만 바꾼다:
+#   kustomize edit set image harbor.ronanlab.dev/petmint/petmint-app=harbor.ronanlab.dev/petmint/petmint-app:<버전>
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: petmint
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: petmint
+    includeSelectors: false
+
+resources:
+  - namespace.yaml
+  - mysql/service.yaml
+  - mysql/statefulset.yaml
+  - data/pvc.yaml
+  - app/configmap.yaml
+  - jobs/init-db.yaml
+  - app/deployment.yaml
+  - app/service.yaml
+  - app/ingress.yaml
+  # Secret은 여기 없다 — 평문을 저장소에 두지 않는다. scripts/create-secrets.sh가 클러스터에 직접 만든다
+  # data/loader-pod.yaml도 없다 — 약관 적재 때만 scripts/load-data.sh가 잠깐 띄운다
+
+images:
+  - name: harbor.ronanlab.dev/petmint/petmint-app
+    newTag: "0.1.0"          # latest 금지(10번 8절) — 롤링 중 어느 Pod가 무엇을 도는지 알 수 있어야 한다

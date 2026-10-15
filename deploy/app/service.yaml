@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: petmint-app
+  labels:
+    app.kubernetes.io/name: petmint-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app.kubernetes.io/name: petmint-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

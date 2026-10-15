@@ -10,11 +10,16 @@ bootstrap.py
   MYSQL_ROOT_PASSWORD=... python -m db.bootstrap
 """
 
+import os
+
 import pymysql
 
 from db.conn import env, root_settings
 
-APPS = ("PETMINT", "RUNSHOES", "INSURANCE_SEED")   # 각자 자기 데이터베이스에 전체 권한
+# 각자 자기 데이터베이스에 전체 권한. BOOTSTRAP_APPS로 고른다 — 클러스터의 petmint 초기화 Job은 runshoes 비밀번호를 갖지 않는다
+# (Secret은 네임스페이스별, 12번 1-3절). runshoes는 자기 네임스페이스의 Job이 같은 명령으로 만든다
+APPS = tuple(a.strip().upper() for a in os.environ.get("BOOTSTRAP_APPS", "PETMINT,RUNSHOES,INSURANCE_SEED").split(",")
+             if a.strip())
 
 
 def main() -> None:
@@ -30,6 +35,8 @@ def main() -> None:
                 cur.execute("ALTER USER %s@'%%' IDENTIFIED BY %s", (user, password))
                 cur.execute(f"GRANT ALL PRIVILEGES ON `{name}`.* TO %s@'%%'", (user,))
                 print(f"{name} ← {user}")
+            if "PETMINT" not in APPS:
+                return conn.commit()
             # 챗봇이 고객 원장을 읽는 계정 — SELECT만. 쓰기 권한은 주지 않는다(남아 있으면 걷는다)
             core, reader = env("PETMINT_CORE_DB_NAME"), env("PETMINT_CORE_DB_USER")
             cur.execute("SELECT 1 FROM mysql.db WHERE Db = %s AND User = %s", (core, reader))
