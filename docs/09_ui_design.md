@@ -426,7 +426,7 @@ json
 | 테이블 | 내용 |
 | --- | --- |
 | sessions | session_id, mode, customer_id, agent_email, title, 시작·종료 시각, deleted_at, pinned |
-| turns | turn_id, session_id, 질문, 재작성된 질문, 답변, 반려동물 스냅샷, is_hypothetical, clarified, 모델, prompt_version, index_version, first_token_ms, latency_ms, status |
+| turns | turn_id, session_id, 질문, 재작성된 질문, 답변, 반려동물 스냅샷, is_hypothetical, clarified, 모델, prompt_version, index_version, first_token_ms, latency_ms, status, payout |
 | turn_scope | 그 턴에 적용된 가입 내용. 특약 하나당 한 줄 |
 | retrieved | turn_id별 검색 결과. 본문까지 남기므로 행이 가장 많다. 그래프로 따라간 조문도 via_graph로 표시해 함께 남긴다 — 그쪽은 청크가 아니라 graph_key·rank·score가 없다 |
 | feedback | turn_id, 평가. 원본 로그는 고치지 않는다 |
