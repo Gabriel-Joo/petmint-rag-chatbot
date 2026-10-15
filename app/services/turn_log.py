@@ -74,13 +74,15 @@ class TurnLogStore:
     def record(self, log: TurnLog) -> None:
         with self.engine.begin() as c:
             c.execute(text(
-                "INSERT INTO turns (turn_id, session_id, question, rewritten_question, answer,"
+                "INSERT INTO turns (turn_id, session_id, question, rewritten_question, answer, payout,"
                 " pet_id, pet_name, species, breed, pet_age, is_hypothetical, clarified,"
                 " model, prompt_version, index_version, first_token_ms, latency_ms, status, created_at)"
-                " VALUES (:turn_id, :session_id, :question, :rewritten_question, :answer,"
+                " VALUES (:turn_id, :session_id, :question, :rewritten_question, :answer, :payout,"
                 " :pet_id, :pet_name, :species, :breed, :pet_age, :is_hypothetical, :clarified,"
                 " :model, :prompt_version, :index_version, :first_token_ms, :latency_ms, :status, :created_at)"),
-                log.model_dump(exclude={"scope", "retrieved"}) | {"created_at": log.created_at.replace(tzinfo=None)})
+                log.model_dump(exclude={"scope", "retrieved"}) | {
+                    "created_at": log.created_at.replace(tzinfo=None),
+                    "payout": None if log.payout is None else json.dumps(log.payout, ensure_ascii=False)})
             if log.scope:
                 c.execute(text("INSERT INTO turn_scope (turn_id, section_name, coverage_type, copay, excluded_conditions)"
                                " VALUES (:turn_id, :section_name, :coverage_type, :copay, :excluded_conditions)"),
