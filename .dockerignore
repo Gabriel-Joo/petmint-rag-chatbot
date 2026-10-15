@@ -1,0 +1,29 @@
+# 빌드 컨텍스트에서 뺀다 — Dockerfile이 필요한 것만 골라 COPY하지만, 컨텍스트로 넘기는 것 자체가 느리고(모델 47GB)
+# 비밀값이 섞이면 안 된다
+.git
+.gitignore
+.claude
+**/.env
+**/.env.*
+!.env.example
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints
+web/dist
+_executed
+notebooks
+models
+backups
+logs
+scratchpad
+data/faq
+data/finetune
+# 약관 원문 — 이미지(→ Harbor)에 들어가면 안 된다. 실행할 때 볼륨으로 붙인다
+data/chunks
+data/graph
+data/raw_pdf
+data/pages
+data/cache
+data/review
+data/eval

@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from data.rag_context import CHUNK_FILES
 from data.search_scope import MEDICAL_SECTIONS, SearchScope
 
 from app.schemas import Customer, Pet
@@ -36,10 +35,8 @@ class PolicyDoc:
     section_names: frozenset[str]                  # null(보통약관) 제외
 
 
-def load_policy_docs(species: str) -> dict[str, PolicyDoc]:
-    """그 종 청크 파일에 든 약관 문서들(doc_id → 메타). 한 doc_id 안에서 메타가 갈리면 청크 쪽 오류다"""
-    with open(CHUNK_FILES[species], encoding="utf-8") as f:
-        chunks = json.load(f)
+def load_policy_docs(species: str, chunks: list[dict]) -> dict[str, PolicyDoc]:
+    """그 종 청크에 든 약관 문서들(doc_id → 메타). 한 doc_id 안에서 메타가 갈리면 청크 쪽 오류다"""
     groups: dict[str, list[dict]] = {}
     for c in chunks:
         groups.setdefault(c["doc_id"], []).append(c)
@@ -106,15 +103,15 @@ class CustomerStore:
         self._docs = {d.doc_id: d for per_species in docs.values() for d in per_species.values()}
 
     @classmethod
-    def load(cls, path: Path) -> "CustomerStore":
-        """JSON 로드 + 청크 메타 대조. 어긋나면 CustomerDataError(기동 실패)"""
+    def load(cls, path: Path, chunks: dict[str, list[dict]]) -> "CustomerStore":
+        """JSON 로드 + 청크 메타 대조. 어긋나면 CustomerDataError(기동 실패). chunks는 policy_data.load()가 읽은 것"""
         with open(path, encoding="utf-8") as f:
             raw = json.load(f)
         try:
             customers = [Customer.model_validate(r) for r in raw]
         except ValueError as e:
             raise CustomerDataError(f"{path}: 스키마 오류\n{e}") from e
-        docs = {sp: load_policy_docs(sp) for sp in {p.species for c in customers for p in c.pets}}
+        docs = {sp: load_policy_docs(sp, chunks[sp]) for sp in {p.species for c in customers for p in c.pets}}
         errors = _validate(customers, docs)
         if errors:
             raise CustomerDataError(f"{path}: 고객 데이터 검증 실패 {len(errors)}건\n" + "\n".join(errors))

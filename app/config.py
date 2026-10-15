@@ -14,13 +14,21 @@ ROOT = Path(__file__).resolve().parent.parent
 
 CUSTOMERS_PATH = ROOT / "app" / "fixtures" / "customers.json"
 
+# 약관 청크·참조 그래프 — 런타임에 읽는다. 이미지·git에 넣지 않는다(01번 "외부 유출 0건"). 컨테이너는 볼륨으로 붙인다
+CHUNKS_DIR = Path(os.environ.get("PETMINT_CHUNKS_DIR", ROOT / "data" / "chunks"))
+GRAPH_DIR = Path(os.environ.get("PETMINT_GRAPH_DIR", ROOT / "data" / "graph"))
+
+# React 빌드물(web/dist) — 있으면 FastAPI가 같은 포트에서 / 로 서빙한다(09번 8절). 컨테이너는 1단계 빌드 산출물을 여기 둔다
+WEB_DIST = Path(os.environ.get("PETMINT_WEB_DIST", ROOT / "web" / "dist"))
+
 DB = app_settings("petmint")                   # PETMINT_DB_HOST / _PORT / _NAME / _USER / _PASSWORD
 
 WS_CLOSE_SESSION_NOT_FOUND = 4404              # 없는·종료된·남의 세션. 업무특화는 고객 조회로, 일반·사내규정은 새 대화로
 
-# 7-3: GPU 쓰는 것은 호스트에 두고 네트워크로 호출한다
+# 7-3: GPU 쓰는 것은 호스트에 두고 네트워크로 호출한다. Pod에서는 호스트 주소로 바꿔 준다(기본값은 호스트에서 직접 띄울 때)
 SEARCH_SERVICE_URL = os.environ.get("PETMINT_SEARCH_URL", "http://localhost:8100")
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
+MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다
 
 # 모드별 모델(9절: 어댑터는 설정값으로 빼 모델만 갈아끼운다). 이름은 GGUF 변환 후 확정
 BASE_MODEL = "tri-7b"                          # 일반·사내규정 답변 + 업무특화의 질문 재작성기(5절)
