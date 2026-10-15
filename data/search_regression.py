@@ -10,6 +10,9 @@ search_regression.py
 - run: search_fn으로 전 문항 검색 → 문항별 gold 순위와 범위 위반, 범주별 hit@1/3/5·MRR
 - legacy_search_fn: backups/pre_search_scope_20261013의 옛 검색으로 같은 세트를 돌린다(결함 재현용 기준선)
 - check_scope_consistency: scope.allows(BM25)와 Milvus 식(dense)이 같은 청크 집합을 고르는지
+- ref_gold(선택): 참조를 따라가야 답이 완성되는 문항 — gold 청크의 참조 그래프에 그 조문이 있어야 하고(정적),
+  검색 결과의 gold 청크에 그 참조가 붙어야 한다(run). 예: 인사규정 "지각 몇 번이면 징계?" 제13조 → 제35조
+코퍼스별 세트: 약관 data/eval/search_regression.json, 인사규정 data/eval/search_regression_hr.json
 """
 
 import importlib.util
@@ -23,6 +26,7 @@ from data.search_scope import MEDICAL_SECTIONS, OPTIONAL_SECTIONS, SearchScope
 
 BASE_DIR = Path(__file__).parent
 CASES_PATH = BASE_DIR / "eval" / "search_regression.json"
+HR_CASES_PATH = BASE_DIR / "eval" / "search_regression_hr.json"
 RESULTS_DIR = BASE_DIR / "eval" / "results"
 LEGACY_DIR = BASE_DIR.parent / "backups" / "pre_search_scope_20261013"
 
@@ -57,13 +61,18 @@ def matches(r: dict, gold: dict) -> bool:
     return True
 
 
-def check_static(cases: list[dict], chunks: dict[str, list[dict]]) -> list[str]:
-    """세트 자체의 정합성. 위반 메시지 목록(빈 목록이면 통과)"""
+def ref_matches(edge: list, ref: dict) -> bool:
+    """그래프 엣지 [조, 제목, 섹션, 문서, 항, 호]가 ref_gold 항목({section, section_name, article_num})을 가리키는가"""
+    return edge[2] == ref["section"] and edge[3] == ref["section_name"] and edge[0] == ref.get("article_num")
+
+
+def check_static(cases: list[dict], chunks: dict[str, list[dict]], graphs: dict | None = None) -> list[str]:
+    """세트 자체의 정합성. 위반 메시지 목록(빈 목록이면 통과). graphs를 주면 ref_gold도 검사한다"""
     errors = []
     ids = [c["id"] for c in cases]
     if len(ids) != len(set(ids)):
         errors.append("id 중복")
-    for sp in MEDICAL_SECTIONS:
+    for sp in [s for s in MEDICAL_SECTIONS if s in chunks]:
         names = {c.get("section_name") for c in chunks[sp]}
         listed = list(MEDICAL_SECTIONS[sp]) + [n for k, v in OPTIONAL_SECTIONS[sp].items() for n in (k, *v)]
         errors += [f"search_scope의 {sp} 섹션명이 청크에 없음: {n}" for n in listed if n not in names]
@@ -88,6 +97,16 @@ def check_static(cases: list[dict], chunks: dict[str, list[dict]]) -> list[str]:
                 errors.append(f"{cid}: evidence '{gd['evidence']}'가 gold에 없음 — {label}")
             if not any(scope.allows(r) for r in rows):
                 errors.append(f"{cid}: gold가 이 문항의 검색 범위 밖 — {label}")
+        if case.get("ref_gold"):
+            if graphs is None:
+                errors.append(f"{cid}: ref_gold가 있는데 graphs를 주지 않음")
+                continue
+            from data.rag_context import graph_key
+            gold_rows = [c for c in chunks[sp] if any(matches(c, g) for g in case["gold"])]
+            edges = [e for c in gold_rows for e in graphs[sp].get(graph_key(c), [])]
+            for ref in case["ref_gold"]:
+                if not any(ref_matches(e, ref) for e in edges):
+                    errors.append(f"{cid}: gold 청크의 참조 그래프에 {ref} 없음")
     return errors
 
 
@@ -126,10 +145,15 @@ def run(search_fn, cases: list[dict], top_k: int = 5) -> dict:
         scope = scope_of(case)
         results = search_fn(case["query"], scope, top_k)
         rank = next((i for i, r in enumerate(results, 1) if any(matches(r, gd) for gd in case["gold"])), None)
+        # ref_gold: gold로 잡힌 결과에 기대한 참조가 붙었는가(search_with_graph 결과의 references)
+        ref_ok = None
+        if case.get("ref_gold"):
+            got = [e for r in results if any(matches(r, gd) for gd in case["gold"]) for e in r.get("references", [])]
+            ref_ok = all(any(ref_matches(e, ref) for e in got) for ref in case["ref_gold"])
         per_case.append({
             "id": case["id"], "species": case["species"], "category": case["category"],
             "scope_kind": case["scope"]["kind"], "query": case["query"],
-            "has_gold": bool(case["gold"]), "rank": rank,
+            "has_gold": bool(case["gold"]), "rank": rank, "ref_ok": ref_ok,
             "out_of_scope": [_brief(r) for r in results if not scope.allows(r)],
             "top": [_brief(r) for r in results],
         })
@@ -150,7 +174,8 @@ def summarize(per_case: list[dict]) -> dict:
         out[cat] = {"n": len(ps), "n_gold": n,
                     "hit@1": hit(1), "hit@3": hit(3), "hit@5": hit(5),
                     "mrr": round(sum(1 / p["rank"] for p in graded if p["rank"]) / n, 3) if n else None,
-                    "out_of_scope_cases": sum(1 for p in ps if p["out_of_scope"])}
+                    "out_of_scope_cases": sum(1 for p in ps if p["out_of_scope"]),
+                    "ref_ok": sum(1 for p in ps if p.get("ref_ok")), "ref_n": sum(1 for p in ps if p.get("ref_ok") is not None)}
     return out
 
 

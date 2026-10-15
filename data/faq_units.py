@@ -15,6 +15,22 @@ FAQ_UNIT_MAX = 1500
 # 질문으로 흘렀다(10세 어린이 책임능력, 6촌 친족 등). 약관이 법규를 인용하는 부분은 참조 조문으로 이미 붙는다.
 EXCLUDE_FROM_FAQ: set[str] = {"법규"}
 
+# 사람 대상 조항 — 이 상품의 보통약관은 사람 피보험자의 상해를 보장하는 기본계약(일반상해80%이상후유장해)이라,
+# 펫 상담에서 거의 묻지 않는 조항이 섞여 있다(06 최종 QA의 약 19%, 장해분류표 한 표가 12%). 2026-10-13 확정
+# (data/review/human_target_candidates_20261013.md). 약관상 효력이 없다는 뜻이 아니라 FAQ·학습에서 뺀다는 뜻이다.
+# - 보통약관 제3·4·5·9·10·25·38조: 반려동물 특약 준용규정(일반조항 제22조, 배상책임 일반조항 제17조)이 명시적으로 제외(03-1 excluded_reference)
+# - 보통약관 제11·16·22·24조: 사람 피보험자 전용(보험금 받는 방법, 직업·운전 변경, 사망 서면동의, 사람 보험나이) — 반려동물 쪽은 일반조항이 따로 정한다
+# - 【별표2】 장해분류표: 본문 인용이 보통약관 제2·3·4조뿐(제3·4조는 위에서 제외)
+# - 이륜자동차 운전중 상해 부보장 특별약관: 사람 피보험자의 이륜차 운전 중 상해
+EXCLUDE_ARTICLES: set[tuple] = {("보통약관", None, n) for n in (3, 4, 5, 9, 10, 11, 16, 22, 24, 25, 38)}
+EXCLUDE_SECTION_NAMES: set[str] = {"【별표2】 장해분류표", "이륜자동차 운전중 상해 부보장 특별약관"}
+
+
+def is_human_target(d: dict) -> bool:
+    """단위·청크·QA 어느 것이든(section, section_name, article_num만 본다) 사람 대상 제외 조항인가"""
+    return d.get("section_name") in EXCLUDE_SECTION_NAMES or \
+        (d.get("section"), d.get("section_name"), d.get("article_num")) in EXCLUDE_ARTICLES
+
 
 def _join_records(records: list[dict]) -> str:
     text = ""
@@ -102,9 +118,15 @@ def intro_only_unit_ids(chunks: list[dict]) -> set[str]:
     return {unit_id(u) for u in merge_junyong_units(build_faq_units(chunks)) if is_intro_only(u)}
 
 
+def human_target_unit_ids(chunks: list[dict]) -> set[str]:
+    """make_units가 뺀 사람 대상 조항 단위 — 06이 기존 QA를 '제외 단위'로 표시하는 데 쓴다"""
+    return {unit_id(u) for u in merge_junyong_units(build_faq_units(chunks)) if is_human_target(u)}
+
+
 def make_units(chunks: list[dict]) -> list[dict]:
-    """05·06이 쓰는 최종 단위 = 레코드 묶음 + 준용규정 병합 − 도입 문장 단위"""
-    return [u for u in merge_junyong_units(build_faq_units(chunks)) if not is_intro_only(u)]
+    """05·06이 쓰는 최종 단위 = 레코드 묶음 + 준용규정 병합 − 도입 문장 단위 − 사람 대상 조항.
+    제외는 묶은 뒤에 하므로 다른 단위의 unit_id(레코드 위치 범위)는 바뀌지 않는다 — 기존 QA가 그대로 맞는다."""
+    return [u for u in merge_junyong_units(build_faq_units(chunks)) if not is_intro_only(u) and not is_human_target(u)]
 
 
 def unit_id(unit: dict) -> str:

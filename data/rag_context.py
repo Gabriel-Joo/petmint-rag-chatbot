@@ -495,6 +495,17 @@ def used_references(answer_body: str, refs: list[dict], unit_content: str, minle
     return keep
 
 
+def cross_article_refs(unit: dict, refs: list[dict]) -> tuple[list[dict], list[dict]]:
+    """resolve_references 결과를 (다른 조 참조, 나머지)로 나눈다. 나머지 = 단위 본문 안에서 뽑은 법령 박스 +
+    같은 문서·같은 조의 다른 항(예: 특약 제1조 실속형 → 제1조 제5항). 05 v1r 프롬프트와 참조 활용도 측정(data/ref_usage.py)이 쓴다"""
+    unit_flat = _flat_cite(unit["content"])
+    cross, other = [], []
+    for r in refs:
+        same_article = r.get("article_num") == unit.get("article_num") and r.get("section_name") == unit.get("section_name")
+        (other if same_article or _mostly_inside(r.get("content") or "", unit_flat) else cross).append(r)
+    return cross, other
+
+
 def search_with_graph(engine, builder: ContextBuilder, query: str, scope: SearchScope,
                       top_k: int = 5, candidate_k: int = 20) -> list[dict]:
     """Hybrid Search(BM25+Dense) + Reranker 상위 candidate_k개를 섹션 가중으로 재정렬해 top_k개.

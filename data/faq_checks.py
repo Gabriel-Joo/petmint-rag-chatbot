@@ -8,6 +8,7 @@ faq_checks.py
 - fix  : 결정적 변환으로 고친다(모델이 답을 고쳐 쓰는 자동 수정은 하지 않는다)
 - flag : 사람 검수 대기열로 보낸다
 """
+import math
 import re
 
 try:
@@ -269,15 +270,22 @@ def unit_cap(content_len: int) -> int:
     return max(UNIT_CAP_MIN, -(-content_len // UNIT_CAP_CHARS_PER_QA))
 
 
-def find_over_cap(faqs: list[dict], embeddings, content_len: dict[str, int]) -> dict[int, dict]:
+def weighted_cap(content_len: int, weight: float = 1.0) -> int:
+    """주제 가중치(data/topic_weights.py)를 곱한 상한 — 05가 가중치만큼 더 생성한 단위를 06이 다시 깎지 않게(2026-10-14).
+    올림, 최소 1. 가중치 1이면 unit_cap과 같다"""
+    return max(1, math.ceil(unit_cap(content_len) * weight))
+
+
+def find_over_cap(faqs: list[dict], embeddings, content_len: dict[str, int],
+                  weights: dict[str, float] | None = None) -> dict[int, dict]:
     """faqs: 앞 검사를 통과한 QA(라운드·행 순서), embeddings: 같은 순서의 정규화된 질문 임베딩, content_len: unit_id → 원문 길이.
-    단위마다 상한을 넘는 QA를 반환 {인덱스: 검사 결과}"""
+    weights: unit_id → 주제 가중치(없으면 1). 단위마다 상한을 넘는 QA를 반환 {인덱스: 검사 결과}"""
     by_unit = {}
     for i, f in enumerate(faqs):
         by_unit.setdefault(f["unit_id"], []).append(i)
     out = {}
     for uid, idx in by_unit.items():
-        cap = unit_cap(content_len[uid])
+        cap = weighted_cap(content_len[uid], (weights or {}).get(uid, 1.0))
         if len(idx) <= cap:
             continue
         clusters = []                       # 앞에서부터 대표와 유사도 ≥ 임계값이면 그 군집에, 아니면 새 군집

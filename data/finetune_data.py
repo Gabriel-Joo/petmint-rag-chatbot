@@ -10,6 +10,7 @@ C안(2026-10-13 확정): 실제 RAG 상황처럼 발췌를 주고, 검색이 빗
 방해 발췌 = 그 질문으로 실제 검색한 결과(SearchScope.unrestricted — 고객 없는 일반 질문) 중 정답 단위가 아닌 것.
 val은 unit_id 단위로 나눈다 — 같은 단위를 다른 표현으로 물은 QA가 train·val에 갈라지면 val loss가 과대평가된다.
 목표 답변은 "근거: …"를 뗀다(prompts.strip_citation) — 근거 표기는 서비스에서 코드가 단다.
+사람 대상 조항(faq_units.is_human_target — 보통약관 기본계약 전용 조문·장해분류표 등)의 QA는 뺀다(2026-10-13 확정).
 
 방해 발췌 거르기는 샘플 종류마다 엄격도가 다르다(2026-10-13 첫 생성 측정):
 - no_answer(엄격): 방해 발췌에 답이 섞이면 "있는 답을 없다고 하라"를 가르친다 → 본문+참조 전부에서 답변과 8자 이상 겹치면 제외,
@@ -19,26 +20,61 @@ val은 unit_id 단위로 나눈다 — 같은 단위를 다른 표현으로 물�
   상투구에 걸려 방해 후보가 사라졌다(1개 이상 남은 QA 60% → distract 41%에 그침, 목표 70%).
 - 종류 배정은 자격을 먼저 세고 한다: 방해 후보가 없고 엄격 후보만 있는 QA를 no_answer에 먼저 쓴다(그래야 distract 몫이 남는다).
 
-실행: python -m data.finetune_data [--search-only] (검색은 GPU 필요, 결과는 cache에 저장해 재실행 시 재사용)
+no_answer 방해 발췌 고르는 방식(--distractor, 2026-10-14):
+- legacy: 위 엄격 거르기(pick_distractors strict) — 비교용으로 남긴다.
+- search: 검색 순위 그대로 쓰고 정답 단위(같은 unit_id)와 "답이 글자로 들어 있는 것"만 뺀다(pick_search_distractors).
+  측정(첫 학습 데이터 5,343건): 질문-발췌 바이그램 겹침이 양성 0.58~0.59 vs no_answer 0.34 — 겹침만 보고 거절을 배울 수 있었다.
+  검색 캐시로 시뮬레이션(QA 4,356건, 첫 2개 발췌 본문만): 엄격 0.31 / 정답 단위만 제외 0.44 / 정답 단위 + 답변 20자·정답 40자 제외 0.39
+  (정답 단위 본문 0.49). 정답 단위만 빼면 발췌의 61%가 답변 핵심 명사를 60% 이상 담았다 — 통원↔입원 같은 문장, 같은 조의 옆 청크처럼
+  실제로 답이 들어 있는 경우라 "있는 답을 없다고 하라"를 가르친다. 그래서 같은 조 제외와 글자 겹침 관문(답변 20자·정답 단위 40자,
+  distract와 같은 기준)은 둔다. 같은 조 제외가 겹침을 낮추는 폭은 0.005뿐이었다(시뮬레이션 0.386 → 0.381).
+- search + 답 포함 거르기(--na-cover-max, 2026-10-14): 위 거르기로도 no_answer 436건 중 215건이 답변 핵심 명사를 50% 이상 담았고,
+  표본 6건 중 1건은 실제로 답이 들어 있었다 — 라벨 오류다. 발췌(본문+참조)의 핵심 명사 포함률이 기준값 이상이면 no_answer로 쓰지 않는다.
+  기준값은 포함률 분포(빌드 출력 '구간별')를 보고 사람이 정한다. 0이면 끈다(기존 search와 같은 결과).
+  거른 만큼을 어떻게 할지(--na-fill)도 사람이 고른다 — 기준값을 주면 반드시 지정해야 한다:
+    drop   : 기준값 0일 때와 같은 배정을 두고, 기준 이상인 no_answer 샘플만 버린다(no_answer가 그만큼 적어진다. 그 QA는 학습에서 빠진다)
+    refill : 후보 단계에서 거른다 — 같은 QA의 다음 순위 검색 결과, 그것도 없으면 다른 QA가 no_answer 몫(10%)을 채운다
+  걸러낸 발췌 표본은 <out-dir>/na_filtered_samples.md에 남긴다.
+- search + LLM 판정 거르기(--na-judge v1|v2, 2026-10-14): 포함률(명사 겹침)은 표본 10건 중 6건이 오탐 — 깨끗한 분리점이 없었다.
+  data/na_judge.py가 "이 발췌만 읽고 답변의 핵심을 말할 수 있는가"를 발췌 하나씩 판정한다(gemma4:12b, 캐시 공유). 판정이 no가 아닌
+  발췌(yes·unclear·파싱 실패)는 no_answer로 쓰지 않는다 — unclear는 답이 있을 수 있다고 보고 거른다(2026-10-14 결정).
+  --na-cover-max와 같이 쓸 수 없다(둘 중 하나를 고른다). --na-fill은 필수:
+    drop   : 배정은 그대로, 앞 2개 발췌 중 하나라도 no가 아니면 그 no_answer 샘플을 버린다
+    refill : 배정 후 no_answer QA마다 검색 순위대로 판정해 no인 발췌 2개를 채운다(같은 QA의 다음 순위). 하나도 없으면 그 QA는
+             gold_only로 돌리고, 배정 순서상 다음 gold_only QA(no_answer 자격 있음)가 그 몫을 채운다
+  배정이 끝난 no_answer QA만 판정하므로 판정 호출은 no_answer 몫(10%) 근처에서 끝난다. Ollama(gemma4:12b)가 떠 있어야 한다.
+  빌드 끝에 na_judge.run으로 실제 train/val의 no_answer 발췌를 다시 판정해(대부분 캐시) <out-dir>/na_judge_summary_<ver>.json을 남긴다
+  — rebuild.py 빌드 검사의 라벨 정합성 기준이 이것을 읽는다.
+
+실행: python -m data.finetune_data [--search-only] [--distractor legacy|search] [--final-dir DIR] [--out-dir DIR]
+     (검색은 GPU 필요, 결과는 cache에 저장해 재실행 시 재사용)
 """
 
 import argparse
 import hashlib
 import json
 import random
+import re
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
 from data import prompts
-from data.faq_units import make_units, unit_id
+from data.faq_units import is_human_target, make_units, unit_id
 from data.rag_context import _flat_cite, graph_key
 from data.search_scope import SearchScope
 
 BASE_DIR = Path(__file__).parent
 FINAL_FILES = {sp: BASE_DIR / "faq" / "checked" / f"petmint_{sp}_faq_final.json" for sp in ("강아지", "고양이")}
 OUT_DIR = BASE_DIR / "finetune"
-SEARCH_CACHE = OUT_DIR / "search_cache.json"
+SEARCH_CACHE = OUT_DIR / "search_cache.json"     # 질문 문자열 키 — 출력 폴더가 달라도 같은 캐시를 쓴다
+DISTRACTOR_MODES = ("legacy", "search")
+NA_NOUN_COVER_MAX = 0.0    # search no_answer 답 포함 거르기 기준(핵심 명사 포함률). 0 = 끔. 값은 분포를 보고 사람이 정한다
+NA_FILL_MODES = ("drop", "refill")
+NA_JUDGE_VERSIONS = ("v1", "v2")   # data/na_judge.PROMPTS
+COVER_BIN = 0.1            # 포함률 분포 출력 구간 폭
+FILTERED_SAMPLE_N = 10     # na_filtered_samples.md에 남길 표본 수
 BASE_MODEL_DIR = BASE_DIR.parent / "models" / "base" / "Tri-7B"
 
 SEED = 20261013
@@ -69,8 +105,13 @@ def is_val(uid: str) -> bool:
     return _h(SEED, "val", uid) % 1000 < VAL_RATIO * 1000
 
 
-def load_final(species: str) -> list[dict]:
-    return json.loads(FINAL_FILES[species].read_text(encoding="utf-8"))
+def final_files(final_dir: Path | None = None) -> dict[str, Path]:
+    """final_dir: 06 final(petmint_{종}_faq_final.json)이 있는 폴더. None이면 기존 checked/"""
+    return FINAL_FILES if final_dir is None else {sp: Path(final_dir) / p.name for sp, p in FINAL_FILES.items()}
+
+
+def load_final(species: str, final_dir: Path | None = None) -> list[dict]:
+    return json.loads(final_files(final_dir)[species].read_text(encoding="utf-8"))
 
 
 # ---------------- 방해 발췌 검색 ----------------
@@ -142,6 +183,74 @@ def pick_distractors(results: list[dict], unit: dict, answer_body: str, strict: 
     return out
 
 
+def na_text(rs: list[dict]) -> str:
+    """no_answer 발췌 글(본문 + 참조) — 포함률을 거를 때와 잴 때 같은 글을 쓴다"""
+    return " ".join(r["content"] + " ".join(x.get("content") or "" for x in r.get("reference_contents") or []) for r in rs)
+
+
+def pick_search_distractors(results: list[dict], unit: dict, answer_body: str, cover_max: float = 0.0,
+                            nouns: set[str] | None = None, filtered: list | None = None) -> list[dict]:
+    """no_answer용(search 방식). 검색 순위 순으로, 정답 조문과 답이 글자로 들어 있는 결과만 뺀다 —
+    ① 정답 단위의 레코드(같은 unit_id) ② 같은 조의 다른 청크(조번호 없는 별표·안내는 같은 문서) — 1500자를 넘는 조는 여러 단위로
+    나뉘어 같은 표·계산식이 옆 청크에 있다(표본 검수: 통원Ⅲ 제1조 고급형 계산 질문에 같은 조 다음 청크가 답을 담고 있었다)
+    ③ 본문·참조 어디든 답변과 20자 또는 정답 단위 원문과 40자 이상 겹치는 것.
+    ④ cover_max > 0이면 답변 핵심 명사(nouns) 포함률이 cover_max 이상인 것(--na-fill refill). 걸러진 것 중 ①~③을 통과한 순서로
+       앞 2개(기준값 0이었다면 쓰였을 발췌)는 filtered에 (결과, 포함률)로 남긴다."""
+    own = {graph_key(r) for r in unit["records"]}
+    own_article = (unit["section"], unit.get("section_name"), unit.get("article_num"))
+    ans_sh, unit_sh = _shingles(answer_body, LOOSE_ANSWER_OVERLAP), _shingles(unit["content"], UNIT_OVERLAP)
+    out, passed = [], 0
+    for r in results:
+        if graph_key(r) in own or (r.get("section"), r.get("section_name"), r.get("article_num")) == own_article:
+            continue
+        texts = [r["content"]] + [ref.get("content") or "" for ref in r.get("reference_contents") or []]
+        if any(_shares(ans_sh, t, LOOSE_ANSWER_OVERLAP) or _shares(unit_sh, t, UNIT_OVERLAP) for t in texts):
+            continue
+        passed += 1
+        if cover_max > 0:
+            c = noun_cover(nouns, na_text([r]))
+            if c >= cover_max:
+                if filtered is not None and passed <= 2:
+                    filtered.append((r, c))
+                continue
+        out.append(r)
+    return out
+
+
+def cover_hist(covers: list[float], width: float = COVER_BIN) -> list[tuple[str, int]]:
+    """포함률 구간별 건수 — [0,10%), [10,20%) … [90,100%] (마지막 구간은 100% 포함)"""
+    n_bins = round(1 / width)
+    counts = [0] * n_bins
+    for c in covers:
+        counts[min(int(c / width + 1e-9), n_bins - 1)] += 1
+    return [(f"{i * width:.0%}~{(i + 1) * width:.0%}", counts[i]) for i in range(n_bins)]
+
+
+def _bigrams(text: str) -> set[str]:
+    t = re.sub(r"[^0-9A-Za-z가-힣]", "", text)
+    return {t[i:i + 2] for i in range(len(t) - 1)}
+
+
+def question_overlap(question: str, excerpt: str) -> float:
+    """질문 글자 바이그램(공백·기호 제외) 중 발췌에도 있는 비율 — 양성·no_answer가 이 값만으로 갈리면 안 된다"""
+    q = _bigrams(question)
+    return len(q & _bigrams(excerpt)) / len(q) if q else 0.0
+
+
+def overlap_report(samples: list[dict]) -> dict:
+    """종류별 질문-발췌 바이그램 겹침 분포(발췌 = 프롬프트에 실제로 들어간 [약관 발췌] 전체, 라벨 포함)"""
+    by = {}
+    for s in samples:
+        excerpt, question = s["messages"][1]["content"].rsplit(f"\n\n{prompts.QUESTION_HEADER}\n", 1)
+        by.setdefault(s["meta"]["kind"], []).append(question_overlap(question, excerpt))
+    out = {}
+    for k, v in sorted(by.items()):
+        v = sorted(v)
+        out[k] = {"n": len(v), "mean": round(sum(v) / len(v), 3), "p10": round(v[len(v) // 10], 3),
+                  "median": round(v[len(v) // 2], 3), "p90": round(v[len(v) * 9 // 10], 3)}
+    return out
+
+
 def assign_kinds(entries: list[dict]) -> None:
     """entries[i]["kind"]를 정한다. 목표 비율에 맞추되 자격(방해·엄격 후보 유무)을 지킨다. 해시 순서라 재현된다."""
     n = len(entries)
@@ -183,9 +292,12 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
     if kind == "no_answer":
         picked = e["strict"][:2]
         nouns = answer_nouns(prompts.strip_citation(qa["answer"]))
-        joined = lambda rs: " ".join(r["content"] + " ".join(x.get("content") or "" for x in r.get("reference_contents") or []) for r in rs)
-        if len(picked) == 2 and noun_cover(nouns, joined(picked)) >= NOUN_COVER_MAX:
+        joined = na_text
+        if e["na_mode"] == "legacy" and len(picked) == 2 and noun_cover(nouns, joined(picked)) >= NOUN_COVER_MAX:
             picked = picked[:1]   # 둘을 합치면 답의 핵심어가 다 모이는 경우 — 하나만 쓴다
+        # search + refill: 하나씩은 기준 미만이어도 둘을 합치면 넘을 수 있다 — 하나만 쓴다(샘플 포함률이 기준 미만으로 보장된다)
+        if e.get("na_fill") == "refill" and len(picked) == 2 and noun_cover(nouns, joined(picked)) >= e["na_cover_max"]:
+            picked = picked[:1]
         items, target = [prompts.ExcerptItem.from_search_result(r) for r in picked], prompts.NO_ANSWER_TEXT
     elif kind == "distract":
         n = min(len(e["loose"]), rng.choice((1, 2)))
@@ -195,6 +307,11 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
     else:
         items, target = [gold], qa["answer"]
     gold_pos = next((i for i, it in enumerate(items) if it is gold), None)
+    # no_answer 발췌가 답변 핵심 명사를 얼마나 담았나 — 높으면 답이 들어 있을 수 있다(drop이면 build_all이 이 값으로 거른다)
+    na_cover = round(noun_cover(nouns, joined(picked)), 3) if kind == "no_answer" else None
+    if kind == "no_answer" and e.get("na_fill") == "drop" and noun_cover(nouns, joined(picked)) >= e["na_cover_max"]:
+        e["na_dropped"] = (picked, na_cover)
+        return None, "na_dropped_cover"
     protected = frozenset() if gold_pos is None else frozenset({gold_pos})
     # 예산: 전체 MAX_LENGTH에서 템플릿·시스템 프롬프트·답변을 뺀 나머지가 user 메시지 상한
     skeleton = prompts.build_training_messages(qa["question"], target, [])
@@ -211,17 +328,113 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
             "trimmed": n_items < len(items) or user.count("[참조] ") < sum(len(it.references) for it in items),
             "distractor_keys": [it.key for it in items if it is not gold],
             "round": qa.get("round"), "row": qa.get("row"), "flags": qa.get("flags", []),
-            "n_tokens": n_tokens, "n_prompt_tokens": count.prompt_len(messages),
+            "rewrite_status": qa.get("rewrite_status"),
+            "n_tokens": n_tokens, "n_prompt_tokens": count.prompt_len(messages), "distractor_mode": e["na_mode"], "na_noun_cover": na_cover,
             "prompt_version": prompts.PROMPT_VERSION}
     return {"messages": messages, "meta": meta}, "ok"
 
 
-def build_all(builder, cache: dict, count: TokenCounter) -> tuple[list, list, dict]:
-    stats, entries = Counter(), []
+def judge_no_answer(entries: list[dict], ver: str, na_fill: str, stats: Counter) -> list[dict]:
+    """--na-judge: assign_kinds 뒤 no_answer QA의 방해 발췌를 LLM 판정으로 거른다(모듈 docstring). 걸러낸 발췌 목록을 돌려준다"""
+    from data import na_judge
+    na_judge.require_model()
+    cache = na_judge.load_cache()
+    filtered, n_new, t0 = [], 0, time.time()
+
+    def verdict(e: dict, r: dict) -> dict:
+        nonlocal n_new
+        it = {"species": e["species"], "question": e["qa"]["question"].strip(),
+              "answer": prompts.strip_citation(e["qa"]["answer"]),
+              "excerpt": prompts.format_item(1, prompts.ExcerptItem.from_search_result(r))}
+        res, new = na_judge.judge_item(cache, it, ver)
+        if new:
+            n_new += 1
+            if n_new % na_judge.SAVE_EVERY == 0:
+                na_judge.save_cache(cache)
+                print(f"  no_answer 판정 새 호출 {n_new}회, {(time.time() - t0) / 60:.1f}분", flush=True)
+        return res
+
+    def clean(e: dict, candidates: list[dict]) -> list[dict]:
+        keep = []
+        for r in candidates:
+            res = verdict(e, r)
+            stats[f"na_judge_{res['verdict']}"] += 1
+            if res["verdict"] == "no":
+                keep.append(r)
+                if len(keep) == 2:
+                    break
+            else:                                    # yes·unclear·파싱 실패(None) — 답이 있을 수 있다
+                filtered.append({"qa": e["qa"], "species": e["species"], "result": r, "verdict": res["verdict"],
+                                 "reason": res.get("reason"),
+                                 "cover": noun_cover(answer_nouns(prompts.strip_citation(e["qa"]["answer"])), na_text([r]))})
+        return keep
+
+    order = sorted(range(len(entries)), key=lambda i: _h(SEED, "kind", *_qa_key(entries[i]["qa"])))   # assign_kinds와 같은 순서
+    na = [i for i in order if entries[i]["kind"] == "no_answer"]
+    if na_fill == "drop":
+        for i in na:
+            e = entries[i]
+            first = e["strict"][:2]
+            if len(clean(e, first)) < len(first):
+                e["na_judge_drop"] = True
+    else:
+        lost = 0
+        for i in na:
+            e = entries[i]
+            e["strict"] = clean(e, e["strict"])
+            if not e["strict"]:
+                e["kind"] = "gold_only"
+                lost += 1
+        stats["na_judge_no_clean"] = lost
+        # 빈 몫은 no_answer 자격 있는 다른 QA가 채운다 — gold_only 먼저, 없으면 distract에서(포함률 refill이 배정 전에 거르는 것과
+        # 같은 결과: 그쪽도 no_answer가 distract보다 먼저 배정된다). 2026-10-14 첫 빌드: 남은 자격 QA가 전부 distract라 gold_only만
+        # 보면 28건을 못 채웠다. 순서는 assign_kinds의 na_pool(방해 후보 없는 QA 먼저, 해시 순)
+        tried = set(na)
+        pool = sorted((i for i in order if entries[i]["kind"] in ("gold_only", "distract") and entries[i]["strict"]
+                       and i not in tried), key=lambda i: (entries[i]["kind"] == "distract", bool(entries[i]["loose"])))
+        for i in pool:
+            if lost == 0:
+                break
+            e = entries[i]
+            e["strict"] = clean(e, e["strict"])
+            if e["strict"]:
+                stats[f"na_judge_refilled_from_{e['kind']}"] += 1
+                e["kind"] = "no_answer"
+                lost -= 1
+                stats["na_judge_refilled_qa"] += 1
+        stats["na_judge_short"] = lost
+    na_judge.save_cache(cache)
+    na_judge.unload_model()
+    stats["na_judge_new_calls"] = n_new
+    stats["na_judge_minutes"] = round((time.time() - t0) / 60, 1)
+    print(f"no_answer LLM 판정({ver}, {na_fill}): 새 호출 {n_new}회, {(time.time() - t0) / 60:.1f}분 | "
+          f"판정 yes {stats['na_judge_yes']} / unclear {stats['na_judge_unclear']} / no {stats['na_judge_no']}"
+          f" / 실패 {stats['na_judge_None']}", flush=True)
+    return filtered
+
+
+def build_all(builder, cache: dict, count: TokenCounter, distractor: str = "legacy",
+              final_dir: Path | None = None, na_cover_max: float = NA_NOUN_COVER_MAX,
+              na_fill: str | None = None, na_judge: str | None = None) -> tuple[list, list, dict]:
+    """반환 (train, val, stats). stats["na_filtered"]에 걸러낸 no_answer 발췌(표본 파일용, stats.json에는 쓰지 않음)"""
+    assert distractor in DISTRACTOR_MODES, distractor
+    if na_judge is not None:
+        assert distractor == "search" and na_judge in NA_JUDGE_VERSIONS, "--na-judge는 search 방식에만, v1|v2"
+        assert na_cover_max == 0, "--na-judge와 --na-cover-max는 같이 쓰지 않는다 — 둘 중 하나를 고른다"
+        assert na_fill in NA_FILL_MODES, f"--na-judge를 주면 --na-fill {NA_FILL_MODES} 중 하나를 골라야 한다"
+    elif na_cover_max > 0:
+        assert distractor == "search", "--na-cover-max는 search 방식에만 쓴다(legacy는 자체 핵심 명사 관문이 있다)"
+        assert na_fill in NA_FILL_MODES, f"--na-cover-max를 주면 --na-fill {NA_FILL_MODES} 중 하나를 골라야 한다(모듈 docstring)"
+    else:
+        na_fill = None
+    stats, entries, filtered = Counter(), [], []
     for species in FINAL_FILES:
         units = {unit_id(u): u for u in make_units(builder.chunks[species])}
         golds = {}
-        for qa in load_final(species):
+        for qa in load_final(species, final_dir):
+            if is_human_target(qa):            # 사람 대상 조항(faq_units.EXCLUDE_ARTICLES·EXCLUDE_SECTION_NAMES) — 학습에서 뺀다
+                stats["excluded_human_target"] += 1
+                continue
             unit = units.get(qa["unit_id"])
             if unit is None:
                 stats["unit_missing"] += 1
@@ -234,22 +447,80 @@ def build_all(builder, cache: dict, count: TokenCounter) -> tuple[list, list, di
                 refs = builder.resolve_references(unit, species, source_chunks=unit["records"])
                 golds[qa["unit_id"]] = prompts.ExcerptItem.from_unit(unit, refs)
             body = prompts.strip_citation(qa["answer"])
-            entries.append({"qa": qa, "species": species, "gold": golds[qa["unit_id"]],
-                             "loose": pick_distractors(results, unit, body, strict=False),
-                             "strict": pick_distractors(results, unit, body, strict=True)})
+            # 검색이 결과를 못 준 질문(빈 결과)은 방해 후보가 없어 gold_only로만 간다(assign_kinds 자격)
+            stats["search_empty"] += not results
+            stats["search_hit_gold"] += any(graph_key(r) in {graph_key(x) for x in unit["records"]} for r in results)
+            if distractor == "legacy":
+                strict = pick_distractors(results, unit, body, strict=True)
+            elif na_fill == "refill" and na_judge is None:
+                cut = []
+                strict = pick_search_distractors(results, unit, body, na_cover_max, answer_nouns(body), cut)
+                filtered += [{"qa": qa, "species": species, "result": r, "cover": c} for r, c in cut]
+            else:
+                strict = pick_search_distractors(results, unit, body)
+            entries.append({"qa": qa, "species": species, "gold": golds[qa["unit_id"]], "na_mode": distractor,
+                             "na_cover_max": na_cover_max, "na_fill": None if na_judge else na_fill,
+                             "loose": pick_distractors(results, unit, body, strict=False), "strict": strict})
     stats["eligible_distract"] = sum(1 for e in entries if e["loose"])
     stats["eligible_no_answer"] = sum(1 for e in entries if e["strict"])
     assign_kinds(entries)
+    if na_judge is not None:
+        filtered += judge_no_answer(entries, na_judge, na_fill, stats)
     train, val = [], []
     for e in entries:
+        if e.get("na_judge_drop"):
+            stats["na_dropped_judge"] += 1
+            continue
         sample, why = build_sample(e, count)
         stats[why] += 1
+        if why == "na_dropped_cover":
+            filtered += [{"qa": e["qa"], "species": e["species"], "result": r, "cover": e["na_dropped"][1]}
+                         for r in e["na_dropped"][0]]
         if sample is None:
             continue
         stats[f"kind_{sample['meta']['kind']}"] += 1
         stats["trimmed"] += sample["meta"]["trimmed"]
         (val if is_val(e["qa"]["unit_id"]) else train).append(sample)
-    return train, val, dict(stats)
+    stats["overlap"] = overlap_report(train + val)
+    covers = sorted(s["meta"]["na_noun_cover"] for s in train + val if s["meta"]["kind"] == "no_answer")
+    if covers:
+        stats["no_answer_noun_cover"] = {"mean": round(sum(covers) / len(covers), 3), "median": covers[len(covers) // 2],
+                                         f"ge_{NOUN_COVER_MAX}": sum(c >= NOUN_COVER_MAX for c in covers),
+                                         "hist": cover_hist(covers)}
+    stats = dict(stats)       # Counter.update는 더하기라 문자열 값을 넣을 수 없다
+    stats.update(distractor_mode=distractor, na_cover_max=na_cover_max, na_fill=na_fill, na_judge=na_judge,
+                 na_filtered_excerpts=len(filtered), na_filtered_qas=len({_qa_key(f["qa"]) for f in filtered}),
+                 na_filtered=filtered)
+    return train, val, stats
+
+
+def write_filtered_samples(path: Path, filtered: list[dict], stats: dict, n: int = FILTERED_SAMPLE_N):
+    """걸러낸 no_answer 발췌 표본(QA당 하나, seed 고정)을 사람이 읽을 수 있게 — 정말 답이 들어 있었는지 확인용"""
+    by_qa = {}
+    for f in filtered:
+        by_qa.setdefault(_qa_key(f["qa"]), f)
+    pick = sorted(by_qa.values(), key=lambda f: _h(SEED, "filtered", *_qa_key(f["qa"])))[:n]
+    L = [f"# no_answer에서 걸러낸 발췌 — 표본 {len(pick)}건 / 걸러진 QA {len(by_qa)}건 (발췌 {len(filtered)}개)", "",
+         (f"기준: LLM 판정({stats['na_judge']}) yes·unclear" if stats.get("na_judge") else
+          f"기준: 답변 핵심 명사 포함률 ≥ {stats['na_cover_max']}")
+         + f" | 채움 방식: {stats['na_fill']} | 방해 발췌: {stats['distractor_mode']}",
+         "각 항목에서 '발췌에 답이 들어 있는가'를 읽고 판단한다. 들어 있으면 거른 것이 맞다(라벨 오류를 막음).", ""]
+    for i, f in enumerate(pick, 1):
+        qa, r = f["qa"], f["result"]
+        body = prompts.strip_citation(qa["answer"])
+        nouns = answer_nouns(body)
+        text = na_text([r])
+        L += [f"## {i}. {qa['unit_id']} (포함률 {f['cover']:.2f})", "",
+              f"- 질문: {qa['question']}", f"- 답변: {body}",
+              f"- 핵심 명사 — 발췌에 있음: {sorted(x for x in nouns if x in text)} / 없음: {sorted(x for x in nouns if x not in text)}",
+              f"- 걸러낸 발췌: {prompts.item_label(r)}"]
+        if "verdict" in f:
+            L.append(f"- LLM 판정: {f['verdict']} — {f.get('reason')}")
+        L += ["", "```", r["content"].strip()[:1200], "```"]
+        for ref in (r.get("reference_contents") or [])[:2]:
+            L += [f"참조 {ref.get('citation_label')}:", "```", (ref.get("content") or "").strip()[:500], "```"]
+        L.append("")
+    path.write_text("\n".join(L) + "\n", encoding="utf-8")
 
 
 def write_jsonl(path: Path, samples: list[dict]):
@@ -258,13 +529,52 @@ def write_jsonl(path: Path, samples: list[dict]):
             f.write(json.dumps(s, ensure_ascii=False) + "\n")
 
 
+def print_overlap(stats: dict):
+    print("\n질문-발췌 바이그램 겹침 (종류별, 발췌 = 프롬프트의 [약관 발췌] 전체)")
+    print("  기준(첫 학습 데이터, legacy): distract 0.592 / gold_only 0.581 / no_answer 0.342")
+    for k, v in stats["overlap"].items():
+        print(f"  {k:10s} n={v['n']:5d}  평균 {v['mean']:.3f}  p10 {v['p10']:.3f}  중앙 {v['median']:.3f}  p90 {v['p90']:.3f}")
+    if "no_answer_noun_cover" in stats:
+        c = stats["no_answer_noun_cover"]
+        n = sum(k for _, k in c["hist"])
+        print(f"\nno_answer 발췌의 답변 핵심 명사 포함률 ({n}건, 기준값 {stats['na_cover_max']}, 채움 {stats['na_fill']}): "
+              f"평균 {c['mean']} / 중앙 {c['median']} / {NOUN_COVER_MAX} 이상 {c[f'ge_{NOUN_COVER_MAX}']}건 — 높을수록 답이 들어 있을 위험")
+        cum = 0
+        for label, k in c["hist"]:
+            cum += k
+            print(f"  {label:>9s}  {k:4d}건  {'#' * round(k / max(n, 1) * 50):50s} 누적 {cum / max(n, 1):.0%}")
+    if stats.get("na_judge"):
+        print(f"  LLM 판정으로 걸러낸 발췌 {stats['na_filtered_excerpts']}개(QA {stats['na_filtered_qas']}건)"
+              + (f", 버린 no_answer 샘플 {stats.get('na_dropped_judge', 0)}건" if stats["na_fill"] == "drop" else
+                 f", 깨끗한 발췌가 없어 gold_only로 돌린 QA {stats.get('na_judge_no_clean', 0)}건 → 다른 QA로 채움 "
+                 f"{stats.get('na_judge_refilled_qa', 0)}건(gold_only에서 {stats.get('na_judge_refilled_from_gold_only', 0)}, "
+                 f"distract에서 {stats.get('na_judge_refilled_from_distract', 0)}) (못 채움 {stats.get('na_judge_short', 0)})"))
+    if stats.get("na_cover_max"):
+        print(f"  걸러낸 발췌 {stats['na_filtered_excerpts']}개(QA {stats['na_filtered_qas']}건)"
+              + (f", 버린 no_answer 샘플 {stats.get('na_dropped_cover', 0)}건" if stats["na_fill"] == "drop" else ""))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--search-only", action="store_true")
+    ap.add_argument("--distractor", choices=DISTRACTOR_MODES, default="legacy",
+                    help="no_answer 방해 발췌 고르는 방식(모듈 docstring). legacy = 첫 학습 데이터와 같은 방식")
+    ap.add_argument("--final-dir", type=Path, default=None, help="06 final 폴더(기본: data/faq/checked)")
+    ap.add_argument("--out-dir", type=Path, default=OUT_DIR, help="train/val/stats 출력 폴더(기본: data/finetune)")
+    ap.add_argument("--na-cover-max", type=float, default=NA_NOUN_COVER_MAX,
+                    help="search no_answer 발췌의 답변 핵심 명사 포함률 상한(이상이면 no_answer로 안 씀). 0 = 끔")
+    ap.add_argument("--na-fill", choices=NA_FILL_MODES, default=None,
+                    help="걸러낸 만큼: drop(적게 둔다) / refill(다음 순위·다른 QA로 채운다). --na-cover-max를 주면 필수")
+    ap.add_argument("--na-judge", choices=NA_JUDGE_VERSIONS, default=None,
+                    help="search no_answer 발췌를 LLM 판정(data/na_judge.py 프롬프트 버전)으로 거른다. --na-cover-max와 택일, --na-fill 필수")
     args = ap.parse_args(argv)
+    if (args.na_cover_max > 0 or args.na_judge) and args.na_fill is None:
+        ap.error("--na-cover-max나 --na-judge를 주면 --na-fill drop|refill 을 골라야 한다")
+    if args.na_cover_max > 0 and args.na_judge:
+        ap.error("--na-cover-max와 --na-judge는 같이 쓰지 않는다 — 둘 중 하나를 고른다")
     from data import rag_context
-    qas = {sp: load_final(sp) for sp in FINAL_FILES}
-    print("최종 QA:", {sp: len(v) for sp, v in qas.items()})
+    qas = {sp: load_final(sp, args.final_dir) for sp in FINAL_FILES}
+    print("최종 QA:", {sp: len(v) for sp, v in qas.items()}, "| 방해 발췌:", args.distractor)
     cache = json.loads(SEARCH_CACHE.read_text(encoding="utf-8")) if SEARCH_CACHE.exists() else {}
     missing = any(f"{sp}|{qa['question']}" not in cache for sp, v in qas.items() for qa in v)
     if missing or args.search_only:
@@ -274,20 +584,40 @@ def main(argv=None):
         cache = run_searches(engine, builder, qas)
         if args.search_only:
             return
+        if args.na_judge:      # 검색 모델(GPU)을 내리고 나서 판정 모델(Ollama)을 올린다 — 한 프로세스에서 둘이 겹치지 않게
+            import gc
+            import torch
+            del engine
+            gc.collect()
+            torch.cuda.empty_cache()
     else:
         builder = rag_context.ContextBuilder()
     count = TokenCounter()
-    train, val, stats = build_all(builder, cache, count)
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_jsonl(OUT_DIR / "train.jsonl", train)
-    write_jsonl(OUT_DIR / "val.jsonl", val)
+    train, val, stats = build_all(builder, cache, count, distractor=args.distractor, final_dir=args.final_dir,
+                                  na_cover_max=args.na_cover_max, na_fill=args.na_fill, na_judge=args.na_judge)
+    out_dir = args.out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    filtered = stats.pop("na_filtered")
+    if args.na_cover_max > 0 or args.na_judge:
+        write_filtered_samples(out_dir / "na_filtered_samples.md", filtered, stats)
+        print("걸러낸 표본:", out_dir / "na_filtered_samples.md")
+    write_jsonl(out_dir / "train.jsonl", train)
+    write_jsonl(out_dir / "val.jsonl", val)
     stats.update({"train": len(train), "val": len(val),
                   "val_units": len({s["meta"]["unit_id"] for s in val}),
                   "train_units": len({s["meta"]["unit_id"] for s in train}),
                   "unit_overlap": len({s["meta"]["unit_id"] for s in val} & {s["meta"]["unit_id"] for s in train}),
-                  "max_length": MAX_LENGTH, "prompt_version": prompts.PROMPT_VERSION, "seed": SEED})
-    (OUT_DIR / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps(stats, ensure_ascii=False, indent=1))
+                  "max_length": MAX_LENGTH, "prompt_version": prompts.PROMPT_VERSION, "seed": SEED,
+                  "final_dir": str(args.final_dir or FINAL_FILES["강아지"].parent)})
+    (out_dir / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
+    if args.na_judge:
+        # 검증: 실제로 써진 train/val의 no_answer 발췌를 프롬프트에 들어간 글 그대로 다시 판정(대부분 캐시) — 판정 yes가 남았는가
+        from data import na_judge
+        s = na_judge.run(out_dir, args.na_judge)
+        stats["na_judge_check"] = {k: s[k] for k in ("excerpts", "samples", "excerpt_verdicts", "sample_verdicts", "new_calls")}
+    (out_dir / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(json.dumps({k: v for k, v in stats.items() if k != "overlap"}, ensure_ascii=False, indent=1))
+    print_overlap(stats)
 
 
 if __name__ == "__main__":
