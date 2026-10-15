@@ -1,0 +1,105 @@
+# FastAPI + React 빌드물 한 Pod(14번 1-1절). replicas 1로 시작한다 — 세션이 DB에 있어 늘릴 수 있지만(09번 7-3절) 먼저 하나로 확인.
+# 롤링은 한 Pod씩(maxSurge 1, maxUnavailable 0, 10번 8절) — 새 Pod가 준비돼야 옛 Pod를 내린다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petmint-app
+  labels:
+    app.kubernetes.io/name: petmint-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: petmint-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: petmint-app
+    spec:
+      # Harbor 프로젝트가 private이면 scripts/create-secrets.sh가 만드는 pull Secret을 쓴다(없으면 익명으로 당긴다)
+      imagePullSecrets:
+        - name: harbor-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      # 롤링 중 WS: 옛 Pod는 preStop 동안 엔드포인트에서 빠지고, 그 뒤 SIGTERM으로 연결이 닫힌다.
+      # 클라이언트는 다음 질문 때 새 Pod로 다시 붙는다(web/src/hooks/useChatSocket.ts — 소켓이 없으면 새로 연다)
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        # 초기화 Job(스키마·원장 시드)이 끝날 때까지 기다린다 — 앱 자신도 기동 때 같은 것을 보고 실패하지만, 그러면 CrashLoop가 쌓인다
+        - name: wait-db
+          image: harbor.ronanlab.dev/petmint/petmint-app
+          command: ["python", "-m", "db.wait_ready", "--timeout", "900"]
+          envFrom:
+            - configMapRef: { name: petmint-app-config }
+          env:
+            - name: PETMINT_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: petmint-db, key: password } }
+            - name: PETMINT_CORE_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: petmint-db, key: password } }
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+      containers:
+        - name: app
+          image: harbor.ronanlab.dev/petmint/petmint-app   # 태그는 kustomization images가 붙인다
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: petmint-app-config }
+          env:
+            - name: PETMINT_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: petmint-db, key: password } }
+            - name: PETMINT_CORE_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: petmint-db, key: password } }
+          # 약관 데이터가 없으면 앱이 빠진 파일을 밝히며 exit 3(14번 1-3절) → CrashLoopBackOff로 드러난다.
+          # startupProbe가 기동(약관·원장 검증, Milvus 접속)을 기다리는 동안 liveness가 죽이지 않게 한다
+          startupProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 5
+            failureThreshold: 36            # 3분
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 20
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]     # Ingress가 엔드포인트를 뺄 시간
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/petmint
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: petmint-data
+            readOnly: true
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }

@@ -1,0 +1,18 @@
+# 약관(chunks, graph)과 고객 시드 픽스처 — 이미지에 없다(14번 1-2절). 이 볼륨에 적재한다(scripts/load-data.sh).
+#   /chunks/   petmint_강아지.json, petmint_고양이.json, hr_인사규정.json
+#   /graph/    *_graph.json
+#   /fixtures/ customers.json   (초기화 Job의 시드만 읽는다. 앱은 읽지 않는다)
+# local-path는 노드 하나에 묶인다(ReadWriteOnce) — 이 볼륨을 쓰는 Pod(적재·Job·앱)는 같은 노드로 간다.
+# 앱 replicas를 노드 여러 대에 펼치려면 ReadOnlyMany를 주는 저장소(NFS 등)로 바꿔야 한다
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: petmint-data
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi           # 실제 약 7MB

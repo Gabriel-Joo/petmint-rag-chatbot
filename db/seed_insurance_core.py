@@ -4,7 +4,10 @@ seed_insurance_core.py
 여러 번 돌려도 결과가 같다: 한 트랜잭션에서 세 테이블을 비우고 픽스처 그대로 다시 넣는다(손으로 바꾼 값도 픽스처로 돌아간다).
 insurance_seed 계정으로 돈다. 픽스처는 이미지에 넣지 않는다 — 리포에서 돌린다.
 
-  python -m db.seed_insurance_core [--fixture PATH]
+  python -m db.seed_insurance_core [--fixture PATH] [--if-empty]
+
+--if-empty: 원장에 고객이 이미 있으면 아무것도 하지 않는다. 클러스터 초기화 Job은 sync마다 다시 돌 수 있으므로 이것을 쓴다 —
+그러지 않으면 배포할 때마다 원장(손으로 바꾼 등급 등)이 픽스처로 되돌아간다. 다시 깔려면 옵션 없이 직접 돌린다.
 """
 
 import argparse
@@ -34,12 +37,21 @@ def rows(customers: list[dict]) -> tuple[list[tuple], list[tuple], list[tuple]]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fixture", type=Path, default=FIXTURE)
+    ap.add_argument("--if-empty", action="store_true")
     args = ap.parse_args()
-    cs, ps, pols = rows(json.loads(args.fixture.read_text(encoding="utf-8")))
 
     conn = pymysql.connect(**app_settings("insurance_seed").pymysql_kwargs())
     try:
         with conn.cursor() as cur:
+            if args.if_empty:
+                cur.execute("SELECT COUNT(*) FROM customers")
+                n = cur.fetchone()[0]
+                if n:
+                    print(f"insurance_core: 고객 {n}명이 이미 있다 — 건너뛴다(--if-empty)")
+                    return
+            if not args.fixture.is_file():
+                raise SystemExit(f"시드 픽스처가 없다: {args.fixture} — 볼륨에 넣었는지 확인")
+            cs, ps, pols = rows(json.loads(args.fixture.read_text(encoding="utf-8")))
             for t in ("policies", "pets", "customers"):      # 자식부터 비운다(외래키)
                 cur.execute(f"DELETE FROM {t}")
             cur.executemany("INSERT INTO customers (customer_id, name, phone) VALUES (%s, %s, %s)", cs)

@@ -1,0 +1,49 @@
+# 비밀이 아닌 접속 정보만(14번 1-4절). 비밀번호는 Secret(petmint-db, insurance-seed-db, mysql-root)에서 따로 받는다.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petmint-app-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  # 서비스 DB — 클러스터 안 MySQL(Service "mysql")
+  PETMINT_DB_HOST: mysql
+  PETMINT_DB_PORT: "3306"
+  PETMINT_DB_NAME: petmint
+  PETMINT_DB_USER: petmint_app
+  # 고객 원장(기간계 흉내) — SELECT만. 실무에서는 기간계 쪽 주소·계정으로 바꾼다
+  PETMINT_CORE_DB_HOST: mysql
+  PETMINT_CORE_DB_PORT: "3306"
+  PETMINT_CORE_DB_NAME: insurance_core
+  PETMINT_CORE_DB_USER: petmint_app
+
+  # ---- GPU 호스트에 남는 것(14번 1-1절). 값은 확인해서 채운다 ----
+  # Pod에서 localhost는 Pod 자신이다. VM 사설 네트워크의 호스트 쪽 주소를 쓴다(14번 1-4절).
+  # .invalid는 절대 풀리지 않는 이름이다 — 채우지 않으면 Milvus 접속에서 기동이 실패해 바로 드러난다
+  PETMINT_OLLAMA_URL: "http://gpu-host.invalid:11434"
+  PETMINT_SEARCH_URL: "http://gpu-host.invalid:8100"
+  PETMINT_MILVUS_URL: "http://gpu-host.invalid:19530"
+
+  # 약관 데이터 — PVC petmint-data를 /var/lib/petmint에 붙인다(이미지 기본값과 같다)
+  PETMINT_CHUNKS_DIR: /var/lib/petmint/chunks
+  PETMINT_GRAPH_DIR: /var/lib/petmint/graph
+
+  # Cloudflare Access 헤더가 없을 때의 상담원 값. 클러스터에서 헤더가 없다는 것은 Access를 거치지 않은 요청이다 — 로그에서 드러나게
+  PETMINT_DEFAULT_AGENT: no-access-header@petmint
+  PETMINT_TITLE_LLM: "1"
+---
+# 초기화 Job만 쓰는 값(앱은 쓰지 않는다)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petmint-init-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  MYSQL_HOST: mysql
+  MYSQL_PORT: "3306"
+  BOOTSTRAP_APPS: PETMINT,INSURANCE_SEED   # runshoes는 자기 네임스페이스의 Job이 만든다(Secret은 네임스페이스별)
+  INSURANCE_SEED_DB_HOST: mysql
+  INSURANCE_SEED_DB_PORT: "3306"
+  INSURANCE_SEED_DB_NAME: insurance_core
+  INSURANCE_SEED_DB_USER: insurance_seed
