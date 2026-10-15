@@ -48,6 +48,7 @@ PROJECT = BASE_DIR.parent
 BASE_MODEL_DIR = PROJECT / "models" / "base" / "Tri-7B"
 DEFAULT_ADAPTER = PROJECT / "models" / "lora_adapter" / f"{prompts.PROMPT_VERSION}_4811건"
 RESULTS_DIR = BASE_DIR / "eval" / "results"
+LABELS_PATH = BASE_DIR / "eval" / "answer_eval_labels.json"   # gold 문항별 '발췌로 답이 되는가'(2026-10-15 전수 점검)
 REVIEW_DIR = BASE_DIR / "review"
 MAX_NEW_TOKENS = 300
 
@@ -60,12 +61,23 @@ def _flat(t: str) -> str:
     return re.sub(r"[\s「」『』()\[\],.·ㆍ'\"“”]", "", t or "")
 
 
+# 한 줄(들)을 통째로 차지하는 조 제목 — "제29조(… 납입최고(독촉)와\n계약의 해지)"처럼 괄호가 겹치고 줄이 넘어가도 잡는다.
+# 본문 속 인용("제35조(해약환급금) 제1항에 따른")은 줄 끝에서 끝나지 않으므로 걸리지 않는다
+_HEADING_LINE = re.compile(r"^\s*제\s*\d+\s*조(?:의\s*\d+)?\s*\((?:[^()]|\([^()]*\))*\)\s*$", re.M)
+
+
+def _body(content: str) -> str:
+    return _HEADING_LINE.sub("", content)
+
+
 def gold_item(case: dict, builder) -> tuple[prompts.ExcerptItem, str, dict]:
-    """evidence가 든 gold 청크 1개 + 그 참조(가입 등급 힌트 포함) → (발췌, evidence, 고른 청크)"""
+    """evidence가 든 gold 청크 1개 + 그 참조(가입 등급 힌트 포함) → (발췌, evidence, 고른 청크)
+    evidence는 조 제목 줄을 뺀 본문에서 찾는다(2026-10-15) — 제목에만 걸리면 제목 한 줄짜리 청크(보통약관 제29조)나
+    다른 조 끝에 붙은 다음 조 제목(제32조의1)을 골라, 답이 없는 발췌가 들어갔다(R004·R009·R062·R063·R090)"""
     sp, scope = case["species"], R.scope_of(case)
     for g in case["gold"]:
         rows = [c for c in builder.chunks[sp] if R.matches(c, g)]
-        hit = [c for c in rows if g.get("evidence") and _flat(g["evidence"]) in _flat(c["content"])]
+        hit = [c for c in rows if g.get("evidence") and _flat(g["evidence"]) in _flat(_body(c["content"]))]
         for c in hit or rows:
             refs = builder.resolve_references(c, sp, [c], coverage_hint=scope.grade_for(c.get("section_name")))
             return prompts.ExcerptItem.from_search_result({**c, "reference_contents": refs}), g.get("evidence") or "", c
@@ -197,6 +209,24 @@ def summarize(rows: list[dict]) -> dict:
     return out
 
 
+def gold_label(case_id: str, labels: dict | None = None) -> str:
+    """answerable(거절하면 오류 — 판정 기준 A1) / partial(목표 밖, 해소 건수만 보고) / flawed(질문 결함)"""
+    labels = labels if labels is not None else json.loads(LABELS_PATH.read_text(encoding="utf-8"))
+    return "partial" if case_id in labels["partial"] else "flawed" if case_id in labels["flawed"] else "answerable"
+
+
+def label_summary(rows: list[dict]) -> dict:
+    """gold 거절을 라벨별로 센다 — 거절 오류는 answerable에서만 센다(partial은 거절도 변호 가능)"""
+    labels = json.loads(LABELS_PATH.read_text(encoding="utf-8"))
+    out = {}
+    for r in (r for r in rows if r["kind"] == "gold"):
+        d = out.setdefault(gold_label(r["id"], labels), {"n": 0, "base_refused": 0, "ft_refused": 0})
+        d["n"] += 1
+        d["base_refused"] += r["base_flags"]["refused"]
+        d["ft_refused"] += r["ft_flags"]["refused"]
+    return out
+
+
 def write_md(rows: list[dict], summary: dict, path: Path, adapter: str):
     md = ["# 파인튜닝 답변 평가 — 회귀 세트 gold 문항(정답 발췌 제공) + 답 없음 샘플", "",
           f"- 어댑터: `{adapter}` · 프롬프트 `{prompts.PROMPT_VERSION}` · greedy, 최대 {MAX_NEW_TOKENS}토큰",
@@ -207,6 +237,10 @@ def write_md(rows: list[dict], summary: dict, path: Path, adapter: str):
         kind, who = k.split("|")
         md.append(f"| {kind} | {who} | {s['n']} | {s['refused']} | {s['evidence_hit'] if s['evidence_hit'] is not None else '-'} | "
                   f"{s['foreign_article']} | {s['citation_leak']} | {s['chars_mean']}자 |")
+    ls = label_summary(rows)
+    md += ["", "gold 거절 — 라벨별(`data/eval/answer_eval_labels.json`). 거절 오류는 answerable에서만 센다:", "",
+           "| 라벨 | 문항 | 베이스 거절 | FT 거절 |", "|---|---|---|---|"]
+    md += [f"| {k} | {v['n']} | {v['base_refused']} | {v['ft_refused']} |" for k, v in sorted(ls.items())]
     for r in rows:
         flag = lambda f: " ".join(x for x, on in [("거절", f["refused"]), ("근거반영", f["evidence_hit"]),
                                                    (f"외부조문{f['foreign_article']}", f["foreign_article"]), ("근거누출", f["citation_leak"])] if on) or "-"
@@ -309,6 +343,24 @@ def compare(off_path: Path, on_path: Path):
                + (" ⚠ 떨어짐" + ("" if swap else " — 표기가 '답해도 된다'는 신호로 작동") if na["ft_on"] < na["ft_off"]
                   else " ⚠ 늘어남" if na["ft_on"] > na["ft_off"] else " (유지)")]
 
+    labels = json.loads(LABELS_PATH.read_text(encoding="utf-8"))
+    gp = [(a, b) for g, a, b in pairs if a["kind"] == "gold"]
+    fixed = set(labels.get("fixed_excerpt", []))
+    md += ["", f"### 라벨별 FT 거절 (`{LABELS_PATH.name}`) — 판정 기준 A1은 answerable만 센다", "",
+           f"| 라벨 | 문항 | {la} 거절 | {lb} 거절 | 해소 | 새 거절 |", "|---|---|---|---|---|---|"]
+    for lab in ("answerable", "partial", "flawed"):
+        sub = [(a, b) for a, b in gp if gold_label(a["id"], labels) == lab]
+        if sub:
+            md.append(f"| {lab} | {len(sub)} | {sum(a['ft_flags']['refused'] for a, _ in sub)} | {sum(b['ft_flags']['refused'] for _, b in sub)} | "
+                      f"{sum(a['ft_flags']['refused'] and not b['ft_flags']['refused'] for a, b in sub)} | "
+                      f"{sum(not a['ft_flags']['refused'] and b['ft_flags']['refused'] for a, b in sub)} |")
+    # label_summary가 있으면 청크 선택 수정(2026-10-15) 뒤의 실행이다 — 그 전 결과는 fixed_excerpt 문항에 제목뿐인 발췌가 들어갔다
+    after = [bool(d.get("label_summary")) for d in (off, on)]
+    if after[0] != after[1]:
+        md.append(f"- ⚠ 한쪽만 청크 선택 수정 뒤 결과다 — {', '.join(sorted(fixed))}의 입력이 달라 이 문항들의 비교는 의미가 없다. 같은 코드로 다시 잴 것")
+    elif not any(after):
+        md.append(f"- 두 결과 모두 청크 선택 수정 전이다 — {', '.join(sorted(fixed))}는 제목뿐인 발췌로 잰 값이다(answerable에 들어 있지만 거절이 정답이었다)")
+
     def detail(title: str, sel):
         nonlocal md
         md += ["", f"## {title} ({len(sel)}건)"]
@@ -396,7 +448,7 @@ def main(argv=None):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     jpath = RESULTS_DIR / f"answer_eval_{stamp}_{tag}.json"
     jpath.write_text(json.dumps({"adapter": args.adapter, "common_note": args.common_note, "normalize_question": args.normalize_question,
-                                 "summary": summary, "rows": rows}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+                                 "summary": summary, "label_summary": label_summary(rows), "rows": rows}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     mpath = (RESULTS_DIR if args.dry_run else REVIEW_DIR) / f"answer_eval_{stamp}_{tag}.md"
     write_md(rows, summary, mpath, args.adapter + (" · 공통 표기 on" if args.common_note else "")
              + (" · 질문 정규화 on" if args.normalize_question else ""))
