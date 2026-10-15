@@ -2,7 +2,7 @@
 seed_insurance_core.py
 고객 픽스처(app/fixtures/customers.json)를 insurance_core에 적재한다 — 기간계에 고객이 있는 상태를 만든다.
 여러 번 돌려도 결과가 같다: 한 트랜잭션에서 세 테이블을 비우고 픽스처 그대로 다시 넣는다(손으로 바꾼 값도 픽스처로 돌아간다).
-insurance_seed 계정으로 돈다. 픽스처는 이미지에 넣지 않는다 — 리포에서 돌린다.
+insurance_seed 계정으로 돈다. 픽스처는 이미지에도 git에도 넣지 않는다 — customers.example.json을 복사해 채운다.
 
   python -m db.seed_insurance_core [--fixture PATH] [--if-empty]
 
@@ -50,7 +50,8 @@ def main() -> None:
                     print(f"insurance_core: 고객 {n}명이 이미 있다 — 건너뛴다(--if-empty)")
                     return
             if not args.fixture.is_file():
-                raise SystemExit(f"시드 픽스처가 없다: {args.fixture} — 볼륨에 넣었는지 확인")
+                raise SystemExit(f"시드 픽스처가 없다: {args.fixture} — 볼륨에 넣었는지 확인"
+                                 " (저장소에는 없다: app/fixtures/customers.example.json을 복사해 채운다)")
             cs, ps, pols = rows(json.loads(args.fixture.read_text(encoding="utf-8")))
             for t in ("policies", "pets", "customers"):      # 자식부터 비운다(외래키)
                 cur.execute(f"DELETE FROM {t}")

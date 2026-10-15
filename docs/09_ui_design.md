@@ -300,8 +300,8 @@ json
 ```json
 {
   "customer_id": "C001",
-  "name": "김보호",
-  "phone": "010-1234-5678",
+  "name": "홍길동",
+  "phone": "000-0000-0000",
   "pets": [
     {
       "pet_id": "P001",
@@ -586,7 +586,7 @@ app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import�
     answer.py         scope → 검색 → 되묻기 판정 → 계산 카드 → 생성 → used_references
     turn_log.py       턴·scope·retrieved를 MySQL에 기록 (done 전)
   fixtures/
-    customers.json    샘플 고객
+    customers.example.json    샘플 고객 구조(customers.json은 이것을 복사해 채운다. git에 없다)
 
 db/                   마이그레이션 (Alembic 안 쓴다 — 앱이 ORM 없이 SQL을 직접 쓴다)
   migrations/petmint/ 번호 붙인 SQL 파일

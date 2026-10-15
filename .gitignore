@@ -31,3 +31,7 @@ logs/
 
 # 노트북 실행 결과물 — 재구축마다 쌓인다
 _executed/
+
+# 고객 픽스처 — 가짜지만 이름·전화번호 모양이라 올리지 않는다(01번 "외부 유출 0건"을 모양 기준으로).
+# customers.example.json을 복사해 채운다
+app/fixtures/customers.json

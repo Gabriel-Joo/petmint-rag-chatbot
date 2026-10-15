@@ -16,6 +16,13 @@ scripts/               create-secrets.sh · load-data.sh · apply.sh
 
 ## 처음 적용하는 순서
 
+**`app/fixtures/customers.json`은 저장소에 없다.** 가짜 데이터지만 고객 이름·전화번호 모양이라 git에서 뺐다(01번 "외부 유출 0건"을 모양 기준으로).
+`app/fixtures/customers.example.json`을 복사해 채운 뒤 시드를 돌린다 — 로컬은 `python -m db.seed_insurance_core`, 클러스터는 아래 3의 `load-data.sh`가 볼륨에 올린다.
+
+```bash
+cp app/fixtures/customers.example.json app/fixtures/customers.json   # 그리고 값을 채운다
+```
+
 ```bash
 # 0. ConfigMap의 GPU 호스트 주소 3개를 채운다(app/configmap.yaml) — VM 사설 네트워크의 호스트 쪽 주소(14번 1-4절)
 #    PETMINT_OLLAMA_URL / PETMINT_SEARCH_URL / PETMINT_MILVUS_URL. 안 채우면 Milvus 접속에서 기동이 실패한다

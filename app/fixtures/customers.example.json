@@ -1,0 +1,77 @@
+[
+  {
+    "customer_id": "C001",
+    "name": "홍길동",
+    "phone": "000-0000-0000",
+    "pets": [
+      {
+        "pet_id": "P001",
+        "name": "예시",
+        "species": "강아지",
+        "breed": "포메라니안",
+        "age": 3,
+        "policies": [
+          {
+            "doc_id": "petmint_dog_2604",
+            "product_name": "무배당 펫퍼민트 Puppy&Family보험 다이렉트2604",
+            "policy_version": "3.0.0",
+            "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+            "coverage_type": "고급형",
+            "copay": 30000,
+            "contract_date": "2026-07-15",
+            "renewal": null
+          },
+          {
+            "doc_id": "petmint_dog_2604",
+            "product_name": "무배당 펫퍼민트 Puppy&Family보험 다이렉트2604",
+            "policy_version": "3.0.0",
+            "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+            "coverage_type": "고급형",
+            "copay": 30000,
+            "contract_date": "2026-07-15",
+            "renewal": null
+          },
+          {
+            "doc_id": "petmint_dog_2604",
+            "product_name": "무배당 펫퍼민트 Puppy&Family보험 다이렉트2604",
+            "policy_version": "3.0.0",
+            "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+            "contract_date": "2026-07-15",
+            "excluded_conditions": [
+              "슬개골 탈구"
+            ]
+          }
+        ]
+      },
+      {
+        "pet_id": "P002",
+        "name": "예시2",
+        "species": "고양이",
+        "breed": "코리안 숏헤어",
+        "age": 5,
+        "policies": [
+          {
+            "doc_id": "petmint_cat_2604",
+            "product_name": "무배당 펫퍼민트 Cat&Family보험 다이렉트2604",
+            "policy_version": "3.0.0",
+            "section_name": "펫퍼민트 반려묘 통원의료비보장 특별약관",
+            "coverage_type": "기본형",
+            "copay": 30000,
+            "contract_date": "2026-07-15",
+            "renewal": null
+          },
+          {
+            "doc_id": "petmint_cat_2604",
+            "product_name": "무배당 펫퍼민트 Cat&Family보험 다이렉트2604",
+            "policy_version": "3.0.0",
+            "section_name": "펫퍼민트 반려묘 입원의료비보장 특별약관",
+            "coverage_type": "기본형",
+            "copay": 30000,
+            "contract_date": "2026-07-15",
+            "renewal": null
+          }
+        ]
+      }
+    ]
+  }
+]
