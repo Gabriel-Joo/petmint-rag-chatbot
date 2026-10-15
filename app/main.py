@@ -2,18 +2,25 @@
 main.py
 09 UI FastAPI 앱. 리포 루트에서 띄운다: uvicorn app.main:app
 
-lifespan: 고객 로드·검증(어긋나면 기동 실패) → MySQL 연결·스키마 확인(안 되면 기동 실패).
+lifespan: 약관 청크·그래프 로드(없으면 기동 실패) → 고객 로드·검증 → ContextBuilder(Milvus) → MySQL 연결·스키마 확인.
+어느 하나라도 안 되면 기동하지 않는다.
+web/dist가 있으면 / 에서 React 빌드물을 같이 서빙한다 — 컨테이너 하나로 배포한다.
 search-service 헬스체크·ContextBuilder는 검색을 붙일 때 넣는다.
 """
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pymilvus import MilvusClient
 from sqlalchemy import text
+
+from data.rag_context import ContextBuilder
 
 from app import config
 from app.db import make_engine
 from app.routers import articles, chat_ws, consultations, customers, feedback, sessions
+from app.services import policy_data
 from app.services.customers import CustomerStore
 from app.services.llm import OllamaClient
 from app.services.sessions import SessionStore
@@ -24,7 +31,10 @@ MIGRATIONS = config.ROOT / "db" / "migrations" / "petmint"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.customers = CustomerStore.load(config.CUSTOMERS_PATH)   # CustomerDataError → 기동 실패
+    chunks, graphs = policy_data.load()                               # PolicyDataError → 기동 실패
+    app.state.customers = CustomerStore.load(config.CUSTOMERS_PATH, chunks)   # CustomerDataError → 기동 실패
+    # 조항 원문·참조 조문. 청크·그래프는 위에서 읽은 것을 넘긴다(rag_context 기본 경로를 쓰지 않는다)
+    app.state.builder = ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
     engine = make_engine(config.DB)
     with engine.connect() as c:                                       # 접속 실패·스키마가 코드보다 뒤처짐 → 기동 실패
         applied = {r[0] for r in c.execute(text("SELECT version FROM schema_migrations"))}
@@ -43,3 +53,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="펫퍼민트 상담", lifespan=lifespan)
 for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router, chat_ws.router):
     app.include_router(r)
+
+# React 빌드물 — /api·/ws 라우트 뒤에 붙여 그쪽이 먼저 잡히게 한다. 빌드물이 없으면(개발 중 vite로 띄울 때) 붙이지 않는다
+if (config.WEB_DIST / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=config.WEB_DIST, html=True), name="web")

@@ -5,6 +5,8 @@ lifespan이 app.state에 올린 저장소를 라우터에 넘기는 의존성.
 
 from fastapi import Request, WebSocket
 
+from data.rag_context import ContextBuilder
+
 from app import config
 from app.services.customers import CustomerStore
 from app.services.sessions import SessionStore
@@ -13,6 +15,10 @@ from app.services.turn_log import TurnLogStore
 
 def customers(request: Request) -> CustomerStore:
     return request.app.state.customers
+
+
+def builder(request: Request) -> ContextBuilder:
+    return request.app.state.builder
 
 
 def sessions(request: Request) -> SessionStore:

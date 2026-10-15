@@ -1,0 +1,12 @@
+# 앱 컨테이너(Dockerfile)용 — GPU를 쓰지 않는 것만. 검색 모델·학습 도구는 호스트 llm_env에 있다(09번 7-3절).
+# 버전은 개발 환경(llm_env)에서 돌려 본 것에 맞춘다.
+fastapi==0.143.1
+uvicorn==0.54.0
+websockets==16.1.1           # uvicorn의 WebSocket 구현(/ws/chat)
+pydantic==2.13.5
+SQLAlchemy==2.0.54
+PyMySQL==1.2.3
+cryptography==50.0.1         # MySQL 8 기본 인증(caching_sha2_password)
+httpx==0.28.1                # Ollama·search-service 호출
+python-dotenv==1.2.3         # 로컬 .env(이미지에는 없다 — 환경변수로 받는다)
+pymilvus==3.0.2              # data/rag_context.py가 모듈 맨 위에서 import한다. ContextBuilder를 붙이면 조항 원문 조회에 쓴다
