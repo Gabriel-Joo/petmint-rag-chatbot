@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { listCustomers, listRecentConsultations } from "../api/client";
+import { ApiError, listCustomers, listRecentConsultations } from "../api/client";
 import { PastConsultations } from "../components/PastConsultations";
 import type { Customer } from "../api/types";
 import { relativeTime, SPECIES_ICON } from "../format";
@@ -29,7 +29,7 @@ export function CustomerSelect({ onStart, starting }: Props) {
     Promise.all([listCustomers(), listRecentConsultations()]).then(([cs, rs]) => {
       setCustomers(cs);
       setRecent(new Map(rs.map((r) => [r.customer_id, r.last_consulted_at])));
-    }, (e) => setError(String(e)));
+    }, (e) => setError(e instanceof ApiError ? e.detail : String(e))); // 500(원장 오류)이면 서버가 준 안내 문구 그대로
   }, []);
 
   const shown = useMemo(() => {
