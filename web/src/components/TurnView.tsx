@@ -15,11 +15,13 @@ interface Props {
   petLabel?: string;
   selected?: boolean;
   onSelect?: () => void;
+  /** 과거 상담 — 평가 버튼을 두지 않는다(남의 상담일 수 있고, 읽기만 하는 화면이다) */
+  readOnly?: boolean;
 }
 
 const STATUS_TEXT: Partial<Record<Turn["status"], string>> = { searching: "검색 중…", clarify: "어느 쪽을 물으시나요?" };
 
-export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect }: Props) {
+export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect, readOnly }: Props) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const streaming = turn.status === "streaming";
 
@@ -66,10 +68,12 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
           {petLabel && <span>{petLabel}</span>}
           {turn.first_token_ms !== null && <span>첫 글자 {turn.first_token_ms}ms</span>}
           {turn.latency_ms !== null && <span>전체 {turn.latency_ms}ms</span>}
-          <button className={`${s.fb} ${rating === "up" ? s.fbOn : ""}`} onClick={() => rate("up")} aria-label="좋아요"
-                  disabled={!turn.turn_id}>👍</button>
-          <button className={`${s.fb} ${rating === "down" ? s.fbOn : ""}`} onClick={() => rate("down")} aria-label="별로예요"
-                  disabled={!turn.turn_id}>👎</button>
+          {!readOnly && <>
+            <button className={`${s.fb} ${rating === "up" ? s.fbOn : ""}`} onClick={() => rate("up")} aria-label="좋아요"
+                    disabled={!turn.turn_id}>👍</button>
+            <button className={`${s.fb} ${rating === "down" ? s.fbOn : ""}`} onClick={() => rate("down")} aria-label="별로예요"
+                    disabled={!turn.turn_id}>👎</button>
+          </>}
         </div>
       )}
     </article>

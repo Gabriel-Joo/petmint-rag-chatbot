@@ -197,10 +197,14 @@ class SessionPatch(_Model):
 
 
 class TurnOut(_Model):
-    """지난 대화를 다시 열 때 화면에 그릴 턴 — turns·retrieved에서 복원"""
+    """지난 대화를 다시 열 때 화면에 그릴 턴 — turns·turn_scope·retrieved에서 복원.
+    반려동물·가입 내용은 그 턴의 스냅샷이다(12번 2-2절) — 과거 상담 화면은 지금 고객 데이터가 아니라 이 값으로 그린다"""
     turn_id: str
     question: str
     pet_id: str | None
+    pet_name: str | None = None
+    species: Species | None = None
+    scope: list[ScopeRow] = Field(default_factory=list)   # 그때 적용된 특약·등급·자기부담금·부담보
     answer: str
     sources: list["SourceItem"]
     references: list["ReferenceItem"]

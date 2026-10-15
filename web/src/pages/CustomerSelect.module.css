@@ -5,7 +5,13 @@
 .sub { font-weight: var(--font-weight-caption); color: var(--text-dim); margin: 0 0 28px; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.card { font-weight: var(--font-weight-body); text-align: left; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.card { display: flex; flex-direction: column; }
+/* 카드 본문이 상담 시작 버튼이다 — 카드 모양은 바깥 .card가 갖고 버튼은 면을 채우기만 한다 */
+.start {
+  font-weight: var(--font-weight-body); text-align: left; padding: 22px 20px 12px; display: flex; flex-direction: column; gap: 10px;
+  flex: 1; background: none; border: none; border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+.cardFoot { display: flex; justify-content: flex-end; padding: 0 20px 16px; }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .name { font-size: var(--font-lg); font-weight: var(--font-weight-title); }
 .row { min-height: 27px; }

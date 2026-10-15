@@ -1,0 +1,61 @@
+/* 과거 상담 모달(09 2-2). 상담 화면 위를 덮는다 — 배경은 흐리게, 본문은 스크롤 */
+.trigger { font-size: var(--font-sm); white-space: nowrap; }
+
+.dialog {
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  padding: 0;
+  color: var(--text);
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+}
+.dialog::backdrop { background: color-mix(in srgb, var(--text) 35%, transparent); }
+
+.body { display: flex; flex-direction: column; max-height: calc(100vh - 64px); }
+.head {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--card);
+}
+.title { font-size: var(--font-lg); margin: 0; }
+.close { background: none; border: 1px solid transparent; border-radius: var(--radius-control); padding: 2px 8px; font-size: var(--font-md); }
+.close:hover { border-color: var(--line); }
+
+.list { list-style: none; margin: 0; padding: 8px; overflow-y: auto; }
+.item {
+  width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 10px 12px; border: 1px solid transparent; border-radius: var(--radius-control); background: none;
+}
+.item:hover { background: var(--primary-soft); }
+.itemTitle { font-weight: var(--font-weight-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itemMeta {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center;
+  font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim);
+}
+.itemMeta b { font-weight: var(--font-weight-label); color: var(--text); }
+.live { color: var(--call); font-weight: var(--font-weight-label); }
+.readOnly { padding: 0 6px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+
+.detailHead { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px 0; }
+.turns { display: flex; flex-direction: column; gap: 4px; padding: 8px 6px; overflow-y: auto; min-height: 0; }
+.turn { display: flex; flex-direction: column; gap: 4px; }
+
+/* 당시 값 — 지금 고객 카드와 같은 생김새로 둬서 비교가 쉽다 */
+.snap { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 12px 0; font-size: var(--font-sm); }
+.snapLabel { font-size: var(--font-2xs); font-weight: var(--font-weight-label); color: var(--text-dim); }
+.snapPet { font-weight: var(--font-weight-label); }
+.chip { padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); white-space: nowrap; }
+.chip b { color: var(--primary); font-weight: var(--font-weight-label); }
+.excl { padding: 2px 8px; border-radius: 6px; border: 1px solid var(--warn); background: var(--warn-fill); }
+.excl b { color: var(--warn); }
+
+.note {
+  margin: 0; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--surface);
+  font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim);
+}
+.empty { padding: 24px 18px; color: var(--text-dim); font-weight: var(--font-weight-caption); }
+.err { padding: 16px 18px; color: var(--warn); }
+
+@media (max-width: 640px) {
+  .dialog { width: calc(100vw - 16px); max-height: calc(100vh - 32px); }
+  .body { max-height: calc(100vh - 32px); }
+}

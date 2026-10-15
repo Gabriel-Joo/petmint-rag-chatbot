@@ -97,10 +97,22 @@ export interface SessionPatch {
 }
 
 /** GET /api/sessions/{id}의 turns — 지난 대화를 다시 열 때 화면에 다시 그릴 턴(로그 turns·retrieved 테이블에서 뽑는다) */
+/** 그 턴에 적용된 특약 하나(turn_scope) — 당시 값이다. 고객 데이터가 바뀌어도 그대로(12번 2-2절) */
+export interface ScopeRow {
+  section_name: string;
+  coverage_type: Grade | null;
+  copay: number | null;
+  excluded_conditions: string[];
+}
+
 export interface TurnOut {
   turn_id: string;
   question: string;
   pet_id: string | null;
+  /** 그 턴의 반려동물·가입 내용 스냅샷. 과거 상담 화면은 지금 고객 데이터가 아니라 이 값으로 그린다 */
+  pet_name: string | null;
+  species: Species | null;
+  scope: ScopeRow[];
   answer: string;
   sources: SourceItem[];
   references: ReferenceItem[];

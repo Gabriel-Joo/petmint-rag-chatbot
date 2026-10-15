@@ -100,12 +100,21 @@ class TurnLogStore:
     def turns_of(self, session_id: str) -> list[TurnOut]:
         """지난 대화 — 화면에 그릴 턴(오래된 순). 근거 패널은 검색 행(rank 순), 인용은 used 행(검색 → 그래프 순)"""
         with self.engine.connect() as c:
-            turns = c.execute(text("SELECT turn_id, question, pet_id, answer, latency_ms, first_token_ms, created_at"
-                                   " FROM turns WHERE session_id = :sid ORDER BY created_at, turn_id"),
-                              dict(sid=session_id)).all()
+            turns = c.execute(text("SELECT turn_id, question, pet_id, pet_name, species, answer, latency_ms,"
+                                   " first_token_ms, created_at FROM turns WHERE session_id = :sid"
+                                   " ORDER BY created_at, turn_id"), dict(sid=session_id)).all()
+            scopes = c.execute(text("SELECT sc.turn_id, sc.section_name, sc.coverage_type, sc.copay, sc.excluded_conditions"
+                                    " FROM turn_scope sc JOIN turns t USING (turn_id) WHERE t.session_id = :sid"
+                                    " ORDER BY sc.id"), dict(sid=session_id)).all()
             rows = c.execute(text("SELECT r.* FROM retrieved r JOIN turns t USING (turn_id)"
                                   " WHERE t.session_id = :sid ORDER BY r.turn_id, r.via_graph, r.`rank`, r.id"),
                              dict(sid=session_id)).all()
+        scope: dict[str, list[ScopeRow]] = {}
+        for sc in scopes:
+            excl = sc.excluded_conditions
+            scope.setdefault(sc.turn_id, []).append(ScopeRow(
+                section_name=sc.section_name, coverage_type=sc.coverage_type, copay=sc.copay,
+                excluded_conditions=json.loads(excl) if isinstance(excl, str) else (excl or [])))
         sources: dict[str, list[SourceItem]] = {}
         refs: dict[str, list[ReferenceItem]] = {}
         for r in rows:
@@ -118,7 +127,8 @@ class TurnLogStore:
                 refs.setdefault(r.turn_id, []).append(ReferenceItem(
                     citation_label=r.citation_label or "", species=r.corpus, section=r.section,
                     section_name=r.section_name, article_num=r.article_num, paragraph_num=r.paragraph_num))
-        return [TurnOut(turn_id=t.turn_id, question=t.question, pet_id=t.pet_id, answer=t.answer,
+        return [TurnOut(turn_id=t.turn_id, question=t.question, pet_id=t.pet_id, pet_name=t.pet_name, species=t.species,
+                        scope=scope.get(t.turn_id, []), answer=t.answer,
                         sources=sources.get(t.turn_id, []), references=refs.get(t.turn_id, []),
                         latency_ms=t.latency_ms, first_token_ms=t.first_token_ms, timestamp=utc(t.created_at))
                 for t in turns]

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { listCustomers, listRecentConsultations } from "../api/client";
+import { PastConsultations } from "../components/PastConsultations";
 import type { Customer } from "../api/types";
 import { relativeTime, SPECIES_ICON } from "../format";
 import { useNow } from "../hooks/useNow";
@@ -68,26 +69,30 @@ export function CustomerSelect({ onStart, starting }: Props) {
           const excl = c.pets.flatMap((p) => p.policies.flatMap((pol) => pol.excluded_conditions));
           const last = recent.get(c.customer_id);
           return (
-            <button key={c.customer_id} className={`raised lift ${s.card}`} disabled={starting} onClick={() => onStart(c)}>
-              <div className={s.row}>
-                <span className={s.name}>{c.name}</span>
-                {/* 상담 기록이 없으면 비워 둔다 — 빈 자리가 "아직 상담한 적 없음"이다 */}
-                {last && (
-                  <time className={s.when} dateTime={last} title={new Date(last).toLocaleString("ko-KR")}>
-                    {relativeTime(last, now)}
-                  </time>
-                )}
-              </div>
-              <span className={s.phone}>{c.phone}</span>
-              <div className={s.pets}>
-                {c.pets.map((p) => (
-                  <span key={p.pet_id}>
-                    {SPECIES_ICON[p.species]} {p.name} <span className={s.petMeta}>{p.breed} · {p.age}세</span>
-                  </span>
-                ))}
-              </div>
-              {excl.length > 0 && <span className={s.excl}>부담보 {excl.join(", ")}</span>}
-            </button>
+            // 카드 = 상담 시작 버튼 + 과거 상담. 버튼 안에 버튼을 둘 수 없어 카드는 div로 두고 본문을 시작 버튼으로 덮는다
+            <div key={c.customer_id} className={`raised lift ${s.card}`}>
+              <button className={s.start} disabled={starting} onClick={() => onStart(c)}>
+                <div className={s.row}>
+                  <span className={s.name}>{c.name}</span>
+                  {/* 상담 기록이 없으면 비워 둔다 — 빈 자리가 "아직 상담한 적 없음"이다 */}
+                  {last && (
+                    <time className={s.when} dateTime={last} title={new Date(last).toLocaleString("ko-KR")}>
+                      {relativeTime(last, now)}
+                    </time>
+                  )}
+                </div>
+                <span className={s.phone}>{c.phone}</span>
+                <div className={s.pets}>
+                  {c.pets.map((p) => (
+                    <span key={p.pet_id}>
+                      {SPECIES_ICON[p.species]} {p.name} <span className={s.petMeta}>{p.breed} · {p.age}세</span>
+                    </span>
+                  ))}
+                </div>
+                {excl.length > 0 && <span className={s.excl}>부담보 {excl.join(", ")}</span>}
+              </button>
+              <div className={s.cardFoot}><PastConsultations customer={c} /></div>
+            </div>
           );
         })}
       </div>
