@@ -1,0 +1,18 @@
+.toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.opt {
+  border: 1.5px solid transparent;
+  background: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: var(--font-sm);
+  white-space: nowrap;
+}
+.opt:hover:not(:disabled) { background: var(--primary-soft); }
+.on { background: var(--primary-soft); color: var(--primary); }

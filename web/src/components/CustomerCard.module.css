@@ -1,0 +1,17 @@
+.card { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+
+/* 10번 6절 — 크기로 층을 나눈다 */
+.big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.customer { font-size: var(--font-xl); font-weight: var(--font-weight-title); }
+.pet { font-size: var(--font-lg); font-weight: var(--font-weight-label); }
+.petMeta { font-weight: var(--font-weight-caption); font-size: var(--font-md); color: var(--text-dim); }
+
+.mid { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: var(--font-sm); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); white-space: nowrap; }
+.chip b { color: var(--primary); font-weight: var(--font-weight-label); }
+
+.excl { font-size: var(--font-sm); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--warn); background: var(--warn-fill); }
+.excl b { color: var(--warn); }
+
+.small { font-weight: var(--font-weight-caption); font-size: var(--font-2xs); color: var(--text-faint); display: flex; gap: 10px; flex-wrap: wrap; }

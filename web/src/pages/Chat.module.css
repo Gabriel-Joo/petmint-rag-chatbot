@@ -1,0 +1,47 @@
+/* 왼쪽 "지난 채팅" + 오른쪽 대화창. 대화창은 사이드바를 뺀 폭을 거의 다 쓴다(좌우 여백 최소) */
+.layout { height: 100%; min-height: 0; display: flex; position: relative; }
+.page { flex: 1; min-width: 0; padding: 12px 16px; height: 100%; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+@media (max-width: 640px) { .page { padding: 8px; } }
+
+/* 사이드바와 대화창 경계 — 끌어서 폭 조절(가로만). 눈에 보이는 선은 사이드바 테두리이고, 이건 그 위에 겹친 넓은 손잡이다 */
+.resizer {
+  flex: none;
+  width: 9px;
+  margin-left: -5px; /* 사이드바 테두리 위에 걸친다 */
+  margin-right: -4px;
+  position: relative;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resizer::after { content: ""; position: absolute; inset: 0 3px; transition: background var(--lift); }
+.resizer:hover::after, .resizer:active::after, .resizer:focus-visible::after { background: var(--primary-soft); }
+.resizer:focus-visible { outline: none; }
+
+/* 캐릭터 인사 — 도마뱀 머리 옆 말풍선. 꼬리는 머리 쪽(왼쪽)을 가리킨다 */
+.head { display: flex; align-items: center; gap: 12px; font-size: var(--font-md); }
+.avatar { display: inline-flex; font-size: 1.4em; } /* 아이콘(--icon-mode: 1.5em)이 인사 글자보다 조금 크게 */
+.greeting {
+  position: relative;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-card);
+  background: var(--primary-soft);
+  color: var(--text);
+  font-weight: var(--font-weight-body);
+}
+.greeting::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  translate: 0 -50%;
+  border: 6px solid transparent;
+  border-left: 0;
+  border-right-color: var(--primary-soft);
+}
+/* 대화 글씨 — "지난 채팅" 항목 제목(--font-sm)에 맞춘다. 지연 시간 줄은 한 단계 아래(TurnView가 --turn-meta-size로 받는다) */
+.log { font-size: var(--font-sm); --turn-meta-size: var(--font-xs); flex: 1; min-height: 0; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.empty { font-weight: var(--font-weight-caption); margin: auto; text-align: center; color: var(--text-dim); font-size: var(--font-md); }
+/* 입력창은 본문보다 한 단계 작게 — 본문 크기로는 placeholder가 줄바꿈된다 */
+.composer { padding: 10px; font-size: var(--font-sm); }

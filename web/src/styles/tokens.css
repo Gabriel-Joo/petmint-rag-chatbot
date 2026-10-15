@@ -1,0 +1,80 @@
+/* 10번 10절 디자인 토큰 — 라이트 단일 모드, 흰 바탕에 보라 포인트.
+   색은 여기서만 정의한다. 컴포넌트는 var()만 참조한다(하드코딩 금지).
+   파생 토큰(투명도 변형·그림자)도 color-mix로 기본 토큰에서 만든다 — 기본값을 바꾸면 따라 바뀐다. */
+:root {
+  /* 10-1 기본 토큰 */
+  --bg: #FFFFFF;
+  --surface: #F7F6FB;      /* 카드 바깥면, 옅은 구획 */
+  --card: #FDFDFC;         /* 카드 면 — 그림자로 띄운다. 캐릭터 이미지·영상 배경 실측값(일반·업무특화 PNG 약 253/254/253, 영상 253/253/252)에 맞췄다 */
+  --line: #E9E6F2;         /* 옅은 경계선 */
+  --primary: #6C2BD9;      /* 주요 버튼, 선택된 항목의 글자 */
+  --primary-soft: #EDE4FD; /* 선택 배경, 배지, 호버 */
+  --text: #1B1725;
+  --text-dim: #6B6880;
+  --call: #16A34A;         /* 전화 전용 — 다른 데 쓰지 않는다 */
+  --warn: #EA580C;         /* 부담보 경고 */
+
+  /* 파생 */
+  --text-faint: color-mix(in srgb, var(--text-dim) 80%, var(--bg));
+  --warn-fill: color-mix(in srgb, var(--warn) 8%, var(--bg));
+  --call-ring: color-mix(in srgb, var(--call) 35%, transparent);
+
+  /* 10-2 그림자 — 깊이는 그림자로만 만든다. 1: 카드, 2: 누를 때(한 단계 위), 3: 떠 있는 알림 */
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--text) 6%, transparent),
+              0 2px 8px color-mix(in srgb, var(--text) 6%, transparent);
+  --shadow-2: 0 2px 4px color-mix(in srgb, var(--text) 8%, transparent),
+              0 8px 20px color-mix(in srgb, var(--text) 10%, transparent);
+  --shadow-3: 0 4px 8px color-mix(in srgb, var(--text) 8%, transparent),
+              0 16px 40px color-mix(in srgb, var(--text) 16%, transparent);
+  /* 4: 크게 올라오는 카드(모드 선택, -6px) */
+  --shadow-4: 0 8px 16px color-mix(in srgb, var(--text) 8%, transparent),
+              0 24px 56px color-mix(in srgb, var(--text) 18%, transparent);
+  --lift: 120ms ease-out;  /* 누름 효과 시간 — 150ms 안쪽 */
+
+  /* 모서리 */
+  --radius-card: 12px;
+  --radius-control: 8px;
+
+  /* 글자 크기 — 화면 곳곳의 px를 여기로 모았다. 크기를 바꿀 때는 배율만 고친다.
+     --text-scale: 본문·카드 글씨 전체(2배), --menu-scale: 상단바 메뉴(모드 탭, 전화 버튼, 자동 전화 토글, 3배) */
+  --text-scale: 2;
+  --menu-scale: 3;
+  --font-2xs: calc(11px * var(--text-scale));
+  --font-xs: calc(12px * var(--text-scale));
+  --font-sm: calc(13px * var(--text-scale));
+  --font-md: calc(14px * var(--text-scale));
+  --font-lead: calc(15px * var(--text-scale));
+  --font-base: calc(16px * var(--text-scale)); /* 본문 기본 */
+  --font-lg: calc(18px * var(--text-scale));
+  --font-xl: calc(20px * var(--text-scale));
+  --font-brand: calc(22px * var(--text-scale)); /* 헤더 제목 */
+  --font-2xl: calc(28px * var(--text-scale));
+  --font-icon: calc(36px * var(--text-scale));
+  --font-menu: calc(13px * var(--menu-scale));     /* 모드 탭 */
+  --font-menu-sub: calc(10px * var(--menu-scale)); /* 자동 전화, 전화 울리기 — 주된 조작이 아니라 모드 탭보다 작게 */
+  --font-call-icon: 24px;  /* 전화 알림의 56px 원 안 아이콘 — 원 크기에 묶여 있어 배율을 받지 않는다 */
+
+  /* 글꼴 — 헤더 로고("펫퍼민트 상담")만 완주대둔산체, 나머지는 전부 Wanted Sans(가변).
+     숫자가 또렷해서 금액·한도·날짜가 자주 나오는 화면에 맞다. 구분은 서체가 아니라 무게로 한다 */
+  --font-logo: "Wanju Daedunsan", "Wanted Sans Variable", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Wanted Sans Variable", "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+
+  /* 무게 — 네 단계 */
+  --font-weight-title: 800;   /* 화면 제목, 카드 제목, 고객 이름 */
+  --font-weight-label: 700;   /* 헤더 메뉴, 버튼, 탭, 라벨 */
+  --font-weight-body: 500;    /* 본문, 대화 내용, 약관 발췌 */
+  --font-weight-caption: 400; /* 부연 설명, 보조 텍스트(부제, 품종·나이 등) */
+  /* 모드 아이콘(캐릭터 머리) — 옆 글자 크기를 따라간다. 원래 13px 메뉴 기준 약 20px */
+  --icon-mode: 1.5em;
+
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* 태블릿 폭에서는 메뉴 배율만 한 단계 낮춘다 — 3배 그대로면 상단바가 두세 줄로 늘어나 화면 1/3을 차지한다 */
+@media (max-width: 1023px) {
+  :root { --menu-scale: 2; }
+}
+/* 휴대폰 폭에서는 배율을 낮춘다 — 2·3배로는 상단바와 카드가 화면을 넘는다 */
+@media (max-width: 640px) {
+  :root { --text-scale: 1.15; --menu-scale: 1.25; }
+}

@@ -1,0 +1,77 @@
+import { useState } from "react";
+import { postFeedback } from "../api/client";
+import type { Turn } from "../hooks/useChatSocket";
+import { CalcCard } from "./CalcCard";
+import { ExclusionBanner } from "./ExclusionBanner";
+import { SourcePanel } from "./SourcePanel";
+import s from "./TurnView.module.css";
+
+interface Props {
+  turn: Turn;
+  onClarify?: (turnId: string, choice: string) => void;
+  /** 답변 아래 접힌 근거: always(대화창) / mobile(상담 화면 — PC는 오른쪽 패널) / never */
+  inlineSources: "always" | "mobile" | "never";
+  exclusions?: string[];
+  petLabel?: string;
+  selected?: boolean;
+  onSelect?: () => void;
+}
+
+const STATUS_TEXT: Partial<Record<Turn["status"], string>> = { searching: "검색 중…", clarify: "어느 쪽을 물으시나요?" };
+
+export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect }: Props) {
+  const [rating, setRating] = useState<"up" | "down" | null>(null);
+  const streaming = turn.status === "streaming";
+
+  const rate = (r: "up" | "down") => {
+    if (!turn.turn_id) return;
+    setRating(r);
+    void postFeedback(turn.turn_id, { rating: r });
+  };
+
+  return (
+    <article className={`${s.turn} ${onSelect ? s.selectable : ""} ${selected ? s.selected : ""}`}
+             onClick={onSelect} aria-current={selected || undefined}>
+      <div className={s.q}>{turn.question}</div>
+
+      <ExclusionBanner matched={exclusions} />
+
+      {turn.clarify && onClarify && turn.turn_id && (
+        <div className={s.clarify} onClick={(e) => e.stopPropagation()}>
+          <span className="dim">{STATUS_TEXT.clarify}</span>
+          {turn.clarify.map((o) => (
+            <button key={o} className="btn" onClick={() => onClarify(turn.turn_id!, o)}>{o}</button>
+          ))}
+        </div>
+      )}
+      {turn.clarifyChoice && <div className={s.status}>↳ {turn.clarifyChoice} 기준</div>}
+
+      {turn.answer ? (
+        <div className={s.a}>{turn.answer}{streaming && <span className={s.caret} aria-hidden />}</div>
+      ) : (
+        turn.status === "searching" && <div className={s.status}>{STATUS_TEXT.searching}</div>
+      )}
+      {turn.error && <div className={s.err}>{turn.error}</div>}
+
+      {turn.calc && <CalcCard calc={turn.calc} />}
+
+      {inlineSources !== "never" && (
+        <div className={inlineSources === "mobile" ? s.mobileOnly : undefined} onClick={(e) => e.stopPropagation()}>
+          <SourcePanel items={turn.sources} references={turn.references} variant="inline" />
+        </div>
+      )}
+
+      {turn.status === "done" && (
+        <div className={s.foot} onClick={(e) => e.stopPropagation()}>
+          {petLabel && <span>{petLabel}</span>}
+          {turn.first_token_ms !== null && <span>첫 글자 {turn.first_token_ms}ms</span>}
+          {turn.latency_ms !== null && <span>전체 {turn.latency_ms}ms</span>}
+          <button className={`${s.fb} ${rating === "up" ? s.fbOn : ""}`} onClick={() => rate("up")} aria-label="좋아요"
+                  disabled={!turn.turn_id}>👍</button>
+          <button className={`${s.fb} ${rating === "down" ? s.fbOn : ""}`} onClick={() => rate("down")} aria-label="별로예요"
+                  disabled={!turn.turn_id}>👎</button>
+        </div>
+      )}
+    </article>
+  );
+}

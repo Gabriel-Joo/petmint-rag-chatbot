@@ -1,0 +1,11 @@
+.banner {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--warn);
+  background: var(--warn-fill);
+  font-size: var(--font-sm);
+}
+.icon { color: var(--warn); font-weight: var(--font-weight-label); }

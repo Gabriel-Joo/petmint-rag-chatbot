@@ -1,0 +1,127 @@
+/* 지난 채팅 사이드바 — 화면 폭의 1/4~1/5. 대화창 양옆 빈자리를 쓴다.
+   899px 이하에서는 펼치면 대화창 위에 떠서 덮는다(접으면 얇은 줄만 남는다) */
+.side {
+  flex: none;
+  width: clamp(240px, 22vw, 420px); /* 폭을 못 박아야 긴 제목이 사이드바를 밀어 넓히지 않고 말줄임된다 */
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.rail { width: auto; padding: 16px 8px; align-items: center; }
+
+/* 맨 위: 새 대화(넓게) + 접기 */
+.top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.newChat { flex: 1; min-width: 0; font-size: var(--font-sm); white-space: nowrap; }
+.newChat:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--card); }
+
+.title { margin: 0; font-size: var(--font-xs); font-weight: var(--font-weight-label); color: var(--text-dim); }
+.toggle {
+  margin-left: auto;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  font-size: var(--font-md);
+  line-height: 1;
+  padding: 0.2em 0.35em;
+  color: var(--text-dim);
+}
+.rail { gap: 4px; }
+.rail .toggle { margin-left: 0; }
+.toggle:hover:not(:disabled) { background: var(--card); color: var(--primary); box-shadow: var(--shadow-1); }
+
+.note { padding: 4px; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
+
+/* 고정 묶음과 나머지를 한 스크롤 안에 */
+.scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.scroll .title { padding: 6px 4px 0; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* 한 줄 = 여는 버튼 + ⋮. 줄 전체가 호버·선택 면이 된다 */
+.row { display: flex; align-items: center; min-width: 0; border-radius: var(--radius-control); }
+.row:hover, .rowMenuOpen { background: var(--card); }
+.item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: inherit;
+}
+/* 지금 열려 있는 대화 — 10-2 선택 상태(primary-soft 채움 + primary 글자). 새 대화는 목록에 없으니 아무것도 선택되지 않는다 */
+.current, .current:hover { background: var(--primary-soft); color: var(--primary); }
+.current .itemTitle { font-weight: var(--font-weight-label); }
+.current .time { color: var(--primary); }
+/* 제목이 길면 한 줄에서 말줄임. 전체 제목은 title 툴팁으로 */
+.itemTitle { font-size: var(--font-sm); font-weight: var(--font-weight-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.time { font-size: var(--font-2xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
+
+/* ⋮ — 호버(또는 키보드 포커스, 메뉴가 열린 동안)에만 보인다. 호버가 없는 터치 화면에서는 늘 보인다 */
+.more {
+  flex: none;
+  align-self: stretch;
+  padding: 0 0.4em;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  font-size: var(--font-md);
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: 0;
+}
+.row:hover .more, .row:focus-within .more, .rowMenuOpen .more { opacity: 1; }
+.more:hover { color: var(--primary); }
+@media (hover: none) { .more { opacity: 1; } }
+
+.rename {
+  flex: 1;
+  min-width: 0;
+  margin: 2px 0;
+  padding: 6px 10px;
+  font-size: var(--font-sm);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+.rename:focus { outline: none; }
+
+/* 항목 메뉴 — ⋮ 바로 아래, 오른쪽 끝을 ⋮에 맞춘다 */
+.menu {
+  position: fixed;
+  z-index: 30; /* 상단바(20) 위, 전화 알림(50) 아래 */
+  min-width: 8em;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-3);
+  font-size: var(--font-sm);
+}
+.menuItem { text-align: left; padding: 6px 10px; border: none; border-radius: var(--radius-control); background: none; white-space: nowrap; }
+.menuItem:hover { background: var(--primary-soft); color: var(--primary); }
+.dangerText, .dangerText:hover { color: var(--warn); }
+.confirm { padding: 6px 8px; }
+.confirm p { margin: 0 0 8px; font-weight: var(--font-weight-body); white-space: nowrap; }
+.confirmBtns { display: flex; gap: 6px; justify-content: flex-end; }
+.danger { border-color: var(--warn); color: var(--warn); }
+.danger:hover:not(:disabled) { background: var(--warn-fill); border-color: var(--warn); }
+
+@media (max-width: 899px) {
+  .side:not(.rail) {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 10; /* 상단바(20)보다 아래 */
+    width: min(85vw, 360px);
+    box-shadow: var(--shadow-3);
+  }
+}
