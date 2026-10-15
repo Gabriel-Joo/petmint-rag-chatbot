@@ -443,3 +443,35 @@ citation을 위치 기준(원본 처음~조각 끝까지 읽어 맥락을 잇고
   - gradient checkpointing은 처음부터 켜져 있었다(TrainingArguments, prepare_model_for_kbit_training).
 - 속도: 평균 43s/step(20 step, 862초, 0.74 samples/s). 전체 약 3.5~4시간 + eval 6회.
 - loss(답변 토큰): step 5 1.26 → 10 0.74 → 15 0.68 → 20 0.58.
+
+## 사내규정(인사규정) 코퍼스 추가 — 09 사내규정 모드용 (2026-10-13)
+**데이터**: `data/hr_preprocess.py` → `data/chunks/hr_인사규정.json`(49청크: 본칙 45·부칙 3·별표 1), `data/graph/hr_인사규정_graph.json`(엣지 7)
+- 01을 그대로 쓰지 않았다. 이유:
+  - 항 기호가 약관의 사설 글리프 ``이 아니라 실제 원문자다.
+  - pymupdf가 "제1 조", "5 일"처럼 숫자 뒤에 공백을 넣는다.
+  - 1단 문서라 sort=True가 필요 없고, sort=True로 읽으면 일부 줄의 띄어쓰기가 사라진다.
+- 청크는 조 단위다. 조가 짧고(최대 490자) 항끼리 기댄다.
+- 표 7개는 본문 자리를 마크다운으로 **치환**했다(덧붙이지 않음). 쪽을 넘어 갈라진 제30조 표는 하나로 합쳤다.
+- 검증(전처리 실행 때 assert):
+  - 원문 글자열이 정확히 일치한다(일부러 뺀 문서 제목·장 머리·반복된 표 머리글만 제외).
+  - 조 번호 연속, 장 1~8, 표 7개.
+  - 내부 인용은 전부 해석된다(외부 법령 근로기준법 2건은 원문 미수록).
+- 부칙 제1~3조는 본칙과 조 번호가 겹친다. 키는 항상 `(section, article_num)`이다(section = 본칙/부칙/별표).
+- `coverage_type`·`type`은 늘 null인 호환 필드로 남겼다. 검색 코드가 Milvus에서 이 필드를 꺼내기 때문이다.
+
+**코드에 코퍼스 등록**(백업 `backups/pre_hr_corpus_20261013/`)
+- `search_engine`·`rag_context`: COLLECTION_NAMES / CHUNK_FILES / GRAPH_FILES에 "인사규정"(컬렉션 `hr_regulation`)을 추가했다. 파일이 없는 코퍼스는 건너뛴다.
+- `rag_context.fetch_article_rows`: article_num이 None이면 section·section_name으로 조회한다(별표 참조용). 인용 표기는 문서 이름이다.
+- `rag_context.SECTION_PRIORITY`: 본칙 1.0 / 부칙 0.7.
+- `search_scope`: 인사규정은 등급 섹션이 없어 `unrestricted`만 쓴다. `from_query`는 늘 무제한이고, `for_policies`는 오류를 낸다.
+- `prompts`: `SYSTEM_PROMPT_HR`·`HR_EXCERPT_HEADER`를 추가했다. `build_messages(system=, excerpt_header=)` 기본값은 업무특화 모드 그대로다.
+- 회귀 세트 `data/eval/search_regression_hr.json` 24문항: 참조 따라가기 7(그중 ref_gold 6), 표 5, 일반 10, 부칙/본칙 구분 2.
+  - `search_regression`에 `ref_gold` 검사를 추가했다. 정적으로는 그래프 엣지가 있는지, 실행 때는 gold 결과에 그 참조가 붙는지 본다.
+  - 정적 검사 위반 0이고, 기존 약관 세트도 그대로 통과한다.
+- **남은 일(GPU)**: `python -m data.hr_index --search-check`. Milvus 적재와 회귀 세트 실행이며 아직 실행하지 않았다.
+
+## [09 구현 때 바꿀 것] SearchScope·검색 코드의 `species` → `corpus`
+- 인사규정을 추가하면서 `species` 키가 '종'이 아니라 '종 또는 코퍼스'(강아지/고양이/인사규정)를 뜻하게 됐다.
+  - 대상: `SearchScope.species`, `COLLECTION_NAMES`·`CHUNK_FILES`·`GRAPH_FILES`의 키, `search()`·`ContextBuilder` 인자 이름.
+- 이름을 바꾸면 손댈 곳이 많고(search_engine, rag_context, search_scope, search_regression, finetune_data, 04 노트북) 지금 동작에는 문제가 없다. 그래서 docstring에만 적어 두고 그대로 둔다.
+- 09에서 모드(일반/사내규정/업무특화)별 Retriever를 만들 때 함께 바꾼다. 업무특화 모드는 고객의 반려동물 종에서 corpus를 정하고, 사내규정 모드는 늘 "인사규정"이다.
