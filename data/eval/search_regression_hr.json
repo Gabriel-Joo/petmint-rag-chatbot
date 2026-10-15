@@ -1,0 +1,501 @@
+{
+ "description": "인사규정(사내규정 모드) 검색 회귀 세트 — 구어체 질문, 참조를 따라가야 답이 나오는 문항(ref_gold), 표 값, 부칙/본칙 같은 조번호 구분. 실행: search_regression.run(…, load_cases(HR_CASES_PATH)) — Milvus hr_regulation 적재 후.",
+ "created": "2026-10-13",
+ "cases": [
+  {
+   "id": "H001",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "지각을 몇 번 하면 징계를 받나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제3장 복무",
+     "article_num": 13,
+     "evidence": "월 3회 이상 무단지각"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "본칙",
+     "section_name": "제7장 상벌",
+     "article_num": 35
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제13조 ③ → 제35조(징계의 사유)"
+  },
+  {
+   "id": "H002",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "입사할 때 낸 서류에 거짓이 있으면 어떻게 되나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제2장 임용",
+     "article_num": 6,
+     "evidence": "허위사실"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "본칙",
+     "section_name": "제7장 상벌",
+     "article_num": 35
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제6조 ② → 제35조"
+  },
+  {
+   "id": "H003",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "육아휴직 다녀온 기간도 근속연수에 쳐 주나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 22,
+     "evidence": "육아휴직 및 병역휴직 기간은 근속연수에 산입"
+    },
+    {
+     "section": "본칙",
+     "section_name": "제1장 총칙",
+     "article_num": 3,
+     "evidence": "근속연수"
+    }
+   ],
+   "k": 5,
+   "note": "제22조 ④가 직접 답하고, 제3조 5호(근속연수 정의)는 제22조로 넘긴다"
+  },
+  {
+   "id": "H004",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "근속연수는 어떻게 계산하나요? 휴직한 기간도 들어가요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제1장 총칙",
+     "article_num": 3,
+     "evidence": "근속연수"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 22
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제3조 5호 → 제22조(휴직)"
+  },
+  {
+   "id": "H005",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "휴직 끝났는데 복직 신청을 안 하면 어떻게 돼요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 23,
+     "evidence": "퇴직한 것으로"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "본칙",
+     "section_name": "제8장 퇴직",
+     "article_num": 41
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제23조 ② → 제41조(퇴직의 사유)"
+  },
+  {
+   "id": "H006",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "다른 지역으로 발령 나면 이사 비용 지원되나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제2장 임용",
+     "article_num": 8,
+     "evidence": "이전지원금"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "본칙",
+     "section_name": "제5장 급여",
+     "article_num": 24
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제8조 ④ → 제24조(급여의 구성)"
+  },
+  {
+   "id": "H007",
+   "species": "인사규정",
+   "category": "참조_따라가기",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "출장 가면 숙박비랑 일비는 얼마 나와요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제3장 복무",
+     "article_num": 15,
+     "evidence": "별표1"
+    },
+    {
+     "section": "별표",
+     "section_name": "별표1 출장비 지급 기준",
+     "article_num": null,
+     "evidence": "숙박비"
+    }
+   ],
+   "k": 5,
+   "ref_gold": [
+    {
+     "section": "별표",
+     "section_name": "별표1 출장비 지급 기준",
+     "article_num": null
+    }
+   ],
+   "note": "참조를 따라가야 답이 완성됨 — ref_gold는 참조 그래프·ContextBuilder 확인용 — 제15조 ② → 별표1(출장비 지급 기준)"
+  },
+  {
+   "id": "H008",
+   "species": "인사규정",
+   "category": "표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "결혼하면 휴가 며칠 받아요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 19,
+     "evidence": "본인"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H009",
+   "species": "인사규정",
+   "category": "표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "아내가 출산하면 남편도 휴가가 나오나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 19,
+     "evidence": "배우자"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H010",
+   "species": "인사규정",
+   "category": "표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "과장급 출장 숙박비 한도가 얼마예요?",
+   "gold": [
+    {
+     "section": "별표",
+     "section_name": "별표1 출장비 지급 기준",
+     "article_num": null,
+     "evidence": "120,000원"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H011",
+   "species": "인사규정",
+   "category": "표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "감봉 징계는 얼마나 깎이나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제7장 상벌",
+     "article_num": 36,
+     "evidence": "감급"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H012",
+   "species": "인사규정",
+   "category": "표",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "과장에서 차장 되려면 몇 년 있어야 해요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제6장 교육 및 평가",
+     "article_num": 33,
+     "evidence": "과장 → 차장"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H013",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "자격증이 두 개 있으면 수당도 둘 다 받나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제5장 급여",
+     "article_num": 27,
+     "evidence": "금액이 큰 하나만"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H014",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "학위 등록금 지원받고 1년 뒤에 그만두면 돌려줘야 하나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제6장 교육 및 평가",
+     "article_num": 31,
+     "evidence": "2년 이내에 자발적으로 퇴직"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H015",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "재택근무는 일주일에 며칠까지 할 수 있어요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제3장 복무",
+     "article_num": 14,
+     "evidence": "주 2일을 초과할 수 없다"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H016",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "어린 아이를 키우는데 재택을 더 할 수 있나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제3장 복무",
+     "article_num": 14,
+     "evidence": "주 3일까지"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H017",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "연차를 다 못 쓰면 돈으로 받을 수 있어요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 17,
+     "evidence": "미사용 연차유급휴가"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H018",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "아파서 병가 내면 월급이 나오나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제4장 휴일 및 휴가",
+     "article_num": 20,
+     "evidence": "최초 30일은 유급"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H019",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "징계 결과가 억울하면 어떻게 해야 하나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제7장 상벌",
+     "article_num": 39,
+     "evidence": "재심을 청구"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H020",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "수습 기간에도 월급은 다 나오나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제2장 임용",
+     "article_num": 7,
+     "evidence": "90퍼센트"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H021",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "회사 그만두려면 언제까지 얘기해야 하나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제8장 퇴직",
+     "article_num": 42,
+     "evidence": "30일 전까지 사직서"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H022",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "계약직도 이 인사규정 적용을 받나요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제1장 총칙",
+     "article_num": 2,
+     "evidence": "복무에 관한 사항을 준용"
+    }
+   ],
+   "k": 5
+  },
+  {
+   "id": "H023",
+   "species": "인사규정",
+   "category": "부칙_구분",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "이 인사규정은 언제부터 시행됐나요?",
+   "gold": [
+    {
+     "section": "부칙",
+     "section_name": "부칙",
+     "article_num": 1,
+     "evidence": "2026년 1월 1일"
+    }
+   ],
+   "k": 5,
+   "note": "부칙 제1조(시행일) — 본칙 제1조(목적)와 섞이면 안 됨"
+  },
+  {
+   "id": "H024",
+   "species": "인사규정",
+   "category": "부칙_구분",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "규정을 바꿀 때 직원 동의가 필요한가요?",
+   "gold": [
+    {
+     "section": "부칙",
+     "section_name": "부칙",
+     "article_num": 3,
+     "evidence": "과반수의 동의"
+    }
+   ],
+   "k": 5,
+   "note": "부칙 제3조(규정의 개정) — 본칙 제3조(용어의 정의)와 구분"
+  }
+ ]
+}
