@@ -2,3 +2,8 @@
 .main { flex: 1; min-height: 0; overflow-y: auto; }
 .error { margin: 8px 24px 0; padding: 8px 12px; border-radius: var(--radius-control); border: 1px solid var(--warn); background: var(--warn-fill); font-size: var(--font-sm); display: flex; gap: 8px; }
 .error button { margin-left: auto; background: none; border: none; color: var(--text-dim); }
+/* 모드 선택 화면은 헤더 로고와 본문 제목을 같은 세로선에 맞춘다. 스크롤바가 본문(.main)에만 생겨 본문 가운데가
+   스크롤바 폭의 절반만큼 왼쪽으로 밀렸다 — 왼쪽에 같은 폭을 비워 화면 정가운데로 되돌린다.
+   폭은 useScrollbarWidth가 실제로 재서 --scrollbar-w에 넣는다. scrollbar-gutter: stable both-edges는 헤드리스에서는 맞았지만
+   실제 브라우저에서 10px 안팎 어긋나 쓰지 않는다(2026-10-16). 겹쳐 뜨는 스크롤바(macOS 등)에서는 0이라 그대로다 */
+.mainCentered { padding-left: var(--scrollbar-w, 0px); }

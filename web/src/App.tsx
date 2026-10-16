@@ -4,12 +4,13 @@
 // - 업무특화: 상담 시작 시 생성, 종료로 닫는다. 진입은 전화 받기 / 고객 조회 둘 — 같은 startConsultation으로 수렴
 // - 상담 진행 중에는 모드 전환이 잠기고 전화가 울리지 않는다. 종료 후에는 화면에 머문다(읽기 전용)
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ApiError, createSession, deleteSession } from "./api/client";
 import type { Customer, Mode, SessionOut, SessionSummary } from "./api/types";
 import { CallAlert } from "./components/CallAlert";
 import { TopBar } from "./components/TopBar";
 import { useCallSimulator } from "./hooks/useCallSimulator";
+import { useScrollbarWidth } from "./hooks/useScrollbarWidth";
 import { closeChatSocket, dropChat } from "./hooks/useChatSocket";
 import { Chat } from "./pages/Chat";
 import { Consultation, type ConsultState } from "./pages/Consultation";
@@ -118,6 +119,10 @@ export default function App() {
 
   const call = useCallSimulator({ blocked: locked || starting, onAccept: startConsultation });
 
+  // 모드 선택 화면에서 본문 가운데를 헤더 가운데(화면 정가운데)에 맞추려고 본문 스크롤바 폭을 잰다 — App.module.css .mainCentered
+  const mainRef = useRef<HTMLDivElement>(null);
+  useScrollbarWidth(mainRef, screen === "mode");
+
   const currentMode: Mode | null =
     screen === "mode" ? null : screen === "customers" || screen === "consult" ? "업무특화" : screen;
 
@@ -131,7 +136,7 @@ export default function App() {
           <button onClick={() => setError(null)} aria-label="닫기">✕</button>
         </div>
       )}
-      <div className={s.main}>
+      <div ref={mainRef} className={`${s.main} ${screen === "mode" ? s.mainCentered : ""}`}>
         {screen === "mode" && <ModeSelect onSelect={goMode} />}
         {(screen === "일반" || screen === "사내규정") && (
           <Chat key={screen} mode={screen} session={chatSessions[screen]}
