@@ -9,6 +9,7 @@ rebuild.py
 | rewrite | 06 통과 QA 질문 재작성 + 재심판 → 학습용 final | python -m data.faq_rewrite all | tri-7b → gemma4:12b |
 | build | train/val.jsonl (no_answer 방해 발췌 = 검색 방식) | python -m data.finetune_data --distractor search | 검색 임베딩(새 질문만) |
 | train | 07 QLoRA 학습(노트북 설정 그대로) | 노트북 07 (nbconvert) | Tri-7B 학습 |
+| select | 체크포인트 전부 + 최종을 축소판 30문항으로 재고 고른다 → <어댑터>/ckpt_select.json | python -m data.ckpt_select run | Tri-7B 추론 |
 
 - 단계마다 하위 프로세스로 돌린다 — 끝나면 GPU 메모리가 프로세스와 함께 풀린다. 한 번에 한 단계만 돈다(순차 + 잠금 파일).
   GPU 단계 전에는 Ollama에 올라간 모델을 내리고, Ollama 밖의 프로세스가 GPU를 쓰고 있으면(예: 열어 둔 노트북 커널) 멈춘다.
@@ -23,7 +24,7 @@ rebuild.py
   python -m data.rebuild plan                 계획·예상 주제 분포·단계별 예상 시간 (GPU·생성 없음)
   python -m data.rebuild status               단계별 완료 여부·예상 시간
   python -m data.rebuild run                  전체(끝난 단계 건너뜀)
-  python -m data.rebuild run check            한 단계만 (gen / check / rewrite / build / train)
+  python -m data.rebuild run check            한 단계만 (gen / check / rewrite / build / train / select)
   python -m data.rebuild run --from=rewrite   이 단계부터 끝까지
   --name=<이름>  (기본 rebuild)   --force  (완료 표시를 무시하고 지정 단계를 다시)
 
@@ -67,7 +68,7 @@ ADAPTER_DIR = PROJECT_DIR / "models" / "lora_adapter"
 NOTEBOOKS = PROJECT_DIR / "notebooks"
 OLLAMA_URL = "http://localhost:11434"
 SPECIES = ("강아지", "고양이")
-STAGES = ("gen", "check", "rewrite", "build", "train")
+STAGES = ("gen", "check", "rewrite", "build", "train", "select")
 GPU_FOREIGN_MIB = 500      # Ollama 밖 프로세스가 이보다 많이 쓰면 GPU 단계를 시작하지 않는다
 
 # 예상 시간 계수 — 출처를 함께 적는다. 실측이 없는 값은 (추정)
@@ -80,6 +81,10 @@ SEC_STEP = 43              # 07 1 step(batch 1 × accum 32) — KNOWN_ISSUES 202
 EPOCHS = 2                 # 노트북 07 num_train_epochs(바꾸지 않는다 — 시간 계산에만 씀)
 ACCUM = 32
 EVAL_OVERHEAD = 1.15       # eval 6회·저장(추정 15%)
+# select: 2026-10-16 answer_eval 실측(117문항) — 베이스+어댑터 3개 108분, 베이스+어댑터 10개 163분 → 문항당 베이스 43초·어댑터 4초
+SEC_EVAL_BASE = 43
+SEC_EVAL_ADAPTER = 4
+SELECT_ITEMS = 30          # data/ckpt_select.py 선택 세트
 
 SEC_NA_JUDGE = 1.0         # no_answer 판정 1건(2026-10-14 실측 803건 13.6분 = 1.01초)
 NA_JUDGE_CALLS_PER_QA = 2.5  # no_answer QA당 판정 호출(앞 2개 + yes였던 것만큼 다음 순위, 추정)
@@ -179,6 +184,10 @@ class Run:
         if stage == "train":
             a = self.adapter()
             return a is not None, f"어댑터 {a.name}" if a else "어댑터 없음"
+        if stage == "select":
+            a = self.adapter()
+            ok = a is not None and (a / "ckpt_select.json").exists()
+            return ok, f"선택 {json.load(open(a / 'ckpt_select.json', encoding='utf-8'))['best']}" if ok else "ckpt_select.json 없음"
         raise ValueError(stage)
 
     def _round_done(self, sp: str, r: int) -> bool:
@@ -242,6 +251,11 @@ class Run:
             n = json.load(open(st, encoding="utf-8"))["train"] if st.exists() else int(self._estimated_final() * 0.9)
             steps = math.ceil(n / ACCUM) * EPOCHS
             return steps * SEC_STEP * EVAL_OVERHEAD, f"train {n}건 → {steps} step × {SEC_STEP}초 × {EVAL_OVERHEAD}(eval·저장)"
+        if stage == "select":
+            a = self.adapter()
+            n = len(list(a.glob("checkpoint-*"))) + 1 if a else 10
+            return SELECT_ITEMS * (SEC_EVAL_BASE + n * SEC_EVAL_ADAPTER), \
+                f"{SELECT_ITEMS}문항 × (베이스 {SEC_EVAL_BASE}초 + 후보 {n}개 × {SEC_EVAL_ADAPTER}초)"
         raise ValueError(stage)
 
     def _count_rounds(self) -> int:
@@ -344,6 +358,8 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
                 str(NOTEBOOKS / "07_파인튜닝.ipynb"), "--output-dir", str(run.logs),
                 "--output", f"07_executed_{datetime.now():%Y%m%d_%H%M}.ipynb",
                 "--ExecutePreprocessor.timeout=-1"], env
+    if stage == "select":
+        return [py, "-m", "data.ckpt_select", "run", str(run.adapter())], env
     raise ValueError(stage)
 
 
@@ -365,10 +381,10 @@ def preflight(run: Run, stage: str):
         a = run.adapter()
         assert a is None, f"이미 어댑터가 있다: {a} — 다시 학습하려면 옮긴 뒤 --force"
     # GPU: 앞 단계가 남긴 Ollama 모델을 내리고, 다른 프로세스가 GPU를 쓰고 있으면 시작하지 않는다
-    unloaded = unload_ollama() if stage in ("build", "train", "check") else []
+    unloaded = unload_ollama() if stage in ("build", "train", "check", "select") else []
     if unloaded:
         run.log(f"{stage}: Ollama 모델 내림 {unloaded}")
-    if stage in ("build", "train"):
+    if stage in ("build", "train", "select"):
         time.sleep(3)
     others = foreign_gpu_users()
     assert not others, f"다른 프로세스가 GPU를 쓰는 중 — 끝내거나 커널을 종료할 것: {others}"
@@ -398,6 +414,10 @@ def after_stage(run: Run, stage: str):
                     + " (첫 학습 데이터: distract 0.592 / gold_only 0.581 / no_answer 0.342)")
         if stage == "train":
             run.log(f"train: 어댑터 {run.adapter()}")
+        if stage == "select":
+            sel = json.load(open(run.adapter() / "ckpt_select.json", encoding="utf-8"))
+            run.log(f"select: {sel['best']} | " + ", ".join(f"{k.split('@')[-1]} {v['errors']}({v['answerable_refused']}+{v['na_missed']})"
+                                                          for k, v in sel["scored"].items()))
     except Exception as e:      # 요약 실패는 단계 실패가 아니다
         run.log(f"{stage}: 요약 실패(무시) {e!r}")
 

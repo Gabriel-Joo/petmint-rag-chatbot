@@ -163,12 +163,15 @@ class Generator:
         self.model.eval()
 
     def __call__(self, messages: list[dict], use_adapter: bool | int | None) -> str:
+        # 0번 어댑터는 0 == False라 `not in (None, False)`로 가르면 베이스로 빠진다(2026-10-16, 첫 어댑터 결과가 베이스와 117/117 같았다)
         if use_adapter is True:
             use_adapter = 0
+        elif use_adapter is False:
+            use_adapter = None
         prompt = self.tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tok(prompt, return_tensors="pt", add_special_tokens=False).to(self.model.device)
         with self.torch.no_grad():
-            if use_adapter not in (None, False):
+            if use_adapter is not None:
                 self.model.set_adapter(f"a{use_adapter}")
                 out = self.model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, pad_token_id=self.tok.pad_token_id)
             else:
@@ -458,6 +461,7 @@ def main(argv=None):
     exp.add_argument("--common-note", action="store_true", help="실험 B: 등급 없는 발췌 끝에 공통 적용 한 줄")
     exp.add_argument("--normalize-question", action="store_true", help="실험 A: 등급 없는 단위의 질문에서 등급·유형 어구 제거")
     ap.add_argument("--show-normalize", action="store_true", help="실험 A 변환 전/후 표만 출력(모델 안 씀)")
+    ap.add_argument("--subset", type=Path, help="문항 id 목록(JSON 배열)만 잰다 — 체크포인트 고르기(data/ckpt_select.py). 결과 파일 접미사 _subset")
     ap.add_argument("--compare", nargs=2, metavar=("OFF_JSON", "ON_JSON"), help="두 결과를 문항 단위로 대조(모델 안 씀)")
     args = ap.parse_args(argv)
     if args.compare:
@@ -471,6 +475,11 @@ def main(argv=None):
               f"evidence 문구가 발췌에 있음 {sum(it['evidence_in'] for it in g)}건")
     else:
         items = build_inputs(ContextBuilder(), args.no_answer, note=args.common_note, normalize=args.normalize_question or args.show_normalize)
+    if args.subset:
+        keep = set(json.loads(args.subset.read_text(encoding="utf-8")))
+        missing_ids = keep - {it["id"] for it in items}
+        assert not missing_ids, f"--subset의 문항이 입력에 없다: {sorted(missing_ids)}"
+        items = [it for it in items if it["id"] in keep]
     # 등급 거절 그룹(compare의 정의: 질문에 등급·유형) 중 등급 없는 단위는 전부 변환돼야 한다
     missed = [it["id"] for it in items if it["kind"] == "gold" and it.get("coverage_type") is None and it["q_reason"] != "변환"
               and (mentioned_grade(it["question_orig"]) or mentioned_type(it["question_orig"]))]
@@ -509,12 +518,17 @@ def main(argv=None):
             print(f"  {n}/{len(items)}", flush=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    saved = []
+    saved, failed = [], []
     for i, adapter in enumerate(args.adapter):
         rows = rows_by[i]
+        same = sum(r["ft"] == r["base"] for r in rows)
+        if not args.dry_run and same == len(rows):
+            print(f"!! {adapter_tag(adapter)}: 어댑터 답이 베이스와 {same}/{len(rows)} 같다 — 어댑터가 안 걸렸다. 저장하지 않는다", flush=True)
+            failed.append(adapter)
+            continue
         summary = summarize(rows)
         tag = ("dryrun" if args.dry_run else adapter_tag(adapter)) + ("_note" if args.common_note else "") \
-            + ("_qnorm" if args.normalize_question else "") + ("_search" if args.search else "")
+            + ("_qnorm" if args.normalize_question else "") + ("_search" if args.search else "") + ("_subset" if args.subset else "")
         jpath = RESULTS_DIR / f"answer_eval_{stamp}_{tag}.json"
         jpath.write_text(json.dumps({"adapter": adapter, "common_note": args.common_note, "normalize_question": args.normalize_question,
                                      "search": args.search, "summary": summary, "label_summary": label_summary(rows), "rows": rows},
@@ -529,6 +543,9 @@ def main(argv=None):
         qpath.write_text("\n".join(normalize_log(items)) + "\n", encoding="utf-8")
         saved.append(qpath)
     print("저장:", *saved)
+    if failed:
+        sys.exit(f"어댑터가 안 걸린 결과 {len(failed)}개: {failed}")
+    return [p for p in saved if p.suffix == ".json"]
 
 
 if __name__ == "__main__":
