@@ -198,3 +198,12 @@ class SearchScope:
         return {"species": self.species,
                 "medical": None if self.medical is None else [[s.section_name, s.coverage_type] for s in self.medical],
                 "excluded": sorted(self.excluded)}
+
+    @classmethod
+    def from_describe(cls, d: dict) -> "SearchScope":
+        """describe()의 역 — search-service가 HTTP로 받은 dict로 되살린다. medical의 None(제한 없음)과 [](의료비 전부 제외)는
+        다른 뜻이라 그대로 구별한다. 검증은 __post_init__이 한다(모르는 종·특약·등급이면 ValueError)"""
+        medical = d["medical"]
+        return cls(d["species"],
+                   None if medical is None else tuple(Subscription(name, grade) for name, grade in medical),
+                   frozenset(d["excluded"]))
