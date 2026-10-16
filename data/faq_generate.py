@@ -236,6 +236,10 @@ def build_single_prompt(unit: dict, references: list[dict], topics: list[str] | 
 
 
 truncation_log = []
+# 실험용(data/exp_gen_model.py): 요청에 더할 필드(qwen3는 {"think": False} — 생각 출력이 num_predict를 먹는다)와 호출별 토큰·시간.
+# 전량 생성(run)은 OLLAMA_EXTRA를 비워 둔다 — 요청 본문이 노트북 05와 같다
+OLLAMA_EXTRA: dict = {}
+call_log: list[dict] = []
 
 
 def call_ollama(prompt: str, unit: dict, temperature: float, system: str | None = None) -> str:
@@ -243,9 +247,12 @@ def call_ollama(prompt: str, unit: dict, temperature: float, system: str | None 
     response = requests.post(f"{OLLAMA_URL}/api/generate", json={
         "model": MODEL_NAME, "system": system_prompt, "prompt": prompt, "stream": False,
         "options": {"temperature": temperature, "repeat_penalty": 1.1, "num_predict": NUM_PREDICT, "num_ctx": NUM_CTX},
+        **OLLAMA_EXTRA,
     })
     response.raise_for_status()
     body = response.json()
+    call_log.append({"unit_id": unit_id(unit), "model": MODEL_NAME,
+                     **{k: body.get(k) for k in ("prompt_eval_count", "eval_count", "eval_duration", "total_duration", "load_duration")}})
     used = body.get("prompt_eval_count") or 0
     if used >= PROMPT_BUDGET:
         truncation_log.append((unit_id(unit), used))
