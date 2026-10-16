@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 호스트(GPU 머신)에서 리포의 약관·시드 디렉터리를 NFS로 읽기 전용 공유한다 — 클러스터 PV(data/nfs.yaml)가 붙는 곳.
+# 호스트(GPU 머신)에서 리포의 약관·시드 디렉터리를 NFS로 읽기 전용 공유한다 — 클러스터 PV(ronanlab-infra apps/petmint/data/nfs.yaml)가 붙는 곳.
 # sudo로 사람이 한 번 돌린다. 여러 번 돌려도 같다.
 #
 #   sudo deploy/scripts/host-nfs-setup.sh            # 리포 경로는 이 스크립트 위치에서 찾는다
