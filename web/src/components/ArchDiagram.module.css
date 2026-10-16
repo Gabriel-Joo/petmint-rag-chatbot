@@ -1,0 +1,24 @@
+/* 서비스 구성도 — 색은 전부 토큰. SVG 글자 크기는 viewBox 단위라 그림과 함께 커지고 줄어든다 */
+.figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.svg { display: block; width: 100%; height: auto; font-family: var(--font-body); }
+.wide { max-width: 1000px; }
+/* 1023px 이하는 세로형 — 가로형을 줄여 쓰면 800px에서 글자가 11px까지 작아졌다 */
+.narrow { display: none; max-width: 480px; }
+@media (max-width: 1023px) {
+  .wide { display: none; }
+  .narrow { display: block; }
+}
+
+.box { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
+.boxHost { fill: var(--card); stroke: var(--primary); stroke-width: 1.5; }
+.hostGroup { fill: var(--primary-soft); stroke: var(--primary); stroke-width: 1.5; stroke-dasharray: 7 6; }
+.groupLabel { fill: var(--primary); font-weight: var(--font-weight-label); }
+
+.title { fill: var(--text); font-weight: var(--font-weight-label); }
+.sub { fill: var(--text-dim); font-weight: var(--font-weight-body); }
+
+.edge { fill: none; stroke: var(--text-dim); stroke-width: 1.5; }
+.arrowHead { fill: var(--text-dim); }
+.edgeLabel { fill: var(--text-dim); font-weight: var(--font-weight-body); }
+
+.caption { font-size: var(--font-sm); color: var(--text-dim); text-align: center; word-break: keep-all; }

@@ -8,9 +8,9 @@
   flex-direction: column;
   padding: 40px 48px 48px;
 }
-/* 글꼴은 헤더 로고와 같은 완주대둔산체. 크기는 카드 제목(.name)보다 기본 배율(2배)에서 3px 크다 — 배율을 곱해 좁은 화면에서 함께 줄어든다.
+/* 헤더 로고와 같은 글꼴(완주대둔산체)·같은 크기(--font-brand). 배율 토큰이라 좁은 화면에서 함께 줄어든다.
    이 글꼴은 Bold(700) 한 벌뿐이라 굵기는 로고처럼 700으로 부른다 */
-.title { font-family: var(--font-logo); font-size: calc(var(--font-xl) + 1.5px * var(--text-scale)); font-weight: var(--font-weight-label); margin: 0 0 32px; text-align: center; }
+.title { font-family: var(--font-logo); font-size: var(--font-brand); font-weight: var(--font-weight-label); margin: 0 0 32px; text-align: center; }
 
 /* 세 카드가 같은 줄(캐릭터 / 모드 이름 / 대사)을 나눠 쓴다(subgrid). 캐릭터 자리 높이가 세 카드에서 같고,
    대사 줄 수가 달라도(사내규정 1줄, 나머지 2줄) 모드 이름이 같은 높이에 온다 */
@@ -63,19 +63,131 @@
 .name { font-family: var(--font-logo); font-size: var(--font-xl); font-weight: var(--font-weight-label); }
 .intro { font-size: var(--font-lead); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
 
-/* 프로젝트 소개 자리 — 내용이 없어도 스크롤이 생기도록 높이만 잡아 둔다 */
+/* 프로젝트 소개 — 카드 아래로 이어진다. 바탕은 옅은 --surface로 첫 화면과 구획을 나눈다.
+   모드 소개 세 줄은 글·영상을 좌우 번갈아(지그재그) 놓고, 끝에 기술 구성 */
 .about {
-  min-height: 80vh;
   background: var(--surface);
   border-top: 1px solid var(--line);
+  padding: 96px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 120px;
 }
+.introRow, .tech { width: 100%; max-width: 1280px; margin: 0 auto; }
+
+/* 글 묶음과 영상 카드는 윗선을 맞춘다(위 기준). 사이 간격은 화면 폭에 따라 80~144px */
+.introRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+  column-gap: clamp(80px, 9vw, 144px);
+}
+/* 영상이 왼쪽, 글이 오른쪽 — DOM 순서(글 → 영상)는 그대로 두고 칸만 바꾼다 */
+.introReverse { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+.introReverse .introText { order: 2; }
+
+/* 한글은 어절 단위로 줄바꿈 — 기본값은 "습니/다."처럼 글자 사이에서 끊는다 */
+.introText { display: flex; flex-direction: column; gap: 20px; word-break: keep-all; overflow-wrap: anywhere; }
+.eyebrow { margin: 0; line-height: 1.2; font-family: var(--font-logo); font-size: var(--font-lg); font-weight: var(--font-weight-label); color: var(--primary); }
+.introBody { margin: 0; font-size: var(--font-lead); color: var(--text-dim); line-height: 1.7; }
+
+/* 섹션 제목 = 캐릭터가 하는 말. 흰 말풍선, 꼬리는 영상(캐릭터) 쪽 — 글이 왼쪽이면 오른쪽, 글이 오른쪽이면 왼쪽,
+   세로로 쌓이면 아래(영상이 아래에 온다). 꼬리는 위·오른쪽 테두리만 있는 정사각형을 돌려 만든다 */
+.bubble {
+  position: relative;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.55em 0.9em;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-1);
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-title);
+  line-height: 1.35;
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  top: 50%;
+  right: -10px;
+  transform: translateY(-50%) rotate(45deg);
+}
+.introReverse .bubble::after { right: auto; left: -10px; transform: translateY(-50%) rotate(-135deg); }
+
+/* 사양 표 — 왼쪽 항목 이름(좁게), 오른쪽 값. 줄마다 옅은 선 */
+.spec { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 8px 0 0; font-size: var(--font-md); }
+.specRow { display: contents; }
+.specRow dt, .specRow dd { padding: 10px 0; border-top: 1px solid var(--line); }
+.specRow:last-child dt, .specRow:last-child dd { border-bottom: 1px solid var(--line); }
+.specRow dt { padding-right: 24px; color: var(--text-dim); font-weight: var(--font-weight-label); }
+.specRow dd { margin: 0; }
+
+/* 캐릭터 자리 — 모드 카드처럼 흰 면 + 그림자. 영상 mp4(Safari)는 배경이 --card 색으로 차 있어 이 면 위에서 이음매가 안 보인다 */
+/* 영상 카드는 바깥쪽 끝에 붙인다 — 칸 가운데에 두면 칸이 넓을 때 글과의 간격이 칸 간격보다 들쭉날쭉 커진다 */
+.introVisual { display: flex; justify-content: flex-end; }
+.introReverse .introVisual { justify-content: flex-start; }
+.introFrame {
+  display: block;
+  width: min(100%, 520px);
+  aspect-ratio: 1792 / 2400;
+  max-height: 72vh;
+  padding: 24px;
+  background: var(--card);
+}
+.introMedia { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* 기술 구성 — 제목, 카드 8장, 구성도, 아코디언이 위에서 아래로 */
+.tech { display: flex; flex-direction: column; gap: 56px; }
+.techHeading { margin: 0; text-align: center; font-family: var(--font-logo); font-size: var(--font-2xl); font-weight: var(--font-weight-label); }
+/* 넓은 화면 4×2, 1279px 이하 2열, 640px 이하 1열 — 카드 글씨가 커서(2배) 1024px에서 4열이면 제목이 세 줄로 꺾인다 */
+.techGrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1279px) { .techGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .techGrid { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+.techCard { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 28px; word-break: keep-all; }
+.techName { font-size: var(--font-base); font-weight: var(--font-weight-label); color: var(--primary); }
+.techDesc { font-size: var(--font-sm); color: var(--text-dim); line-height: 1.6; }
+
+/* 아코디언 — 기본 접힘, 여러 개 동시에 펼침(<details>). 줄마다 옅은 선, 오른쪽 + 가 펼치면 − 로 */
+.accordion { width: 100%; max-width: 1000px; margin: 0 auto; border-top: 1px solid var(--line); }
+.acc { border-bottom: 1px solid var(--line); }
+.accSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 4px;
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-label);
+  cursor: pointer;
+  list-style: none;
+}
+.accSummary::-webkit-details-marker { display: none; }
+.accSummary::after { content: "+"; font-size: 1.2em; line-height: 1; color: var(--primary); font-weight: var(--font-weight-body); }
+.acc[open] > .accSummary::after { content: "−"; }
+.accSummary:hover { color: var(--primary); }
+.accBody { margin: 0 4px 24px; font-size: var(--font-md); color: var(--text-dim); line-height: 1.7; word-break: keep-all; }
 
 @media (max-width: 1023px) {
+  /* 소개는 세로로 쌓는다 — 글 위, 영상 아래(번갈아 놓던 순서도 풀어 늘 같은 순서) */
+  .about { padding: 64px 32px; gap: 80px; }
+  .introRow, .introReverse { grid-template-columns: minmax(0, 1fr); row-gap: 32px; }
+  .introReverse .introText { order: 0; }
+  .introVisual, .introReverse .introVisual { justify-content: center; }
+  .bubble::after, .introReverse .bubble::after { top: auto; right: auto; bottom: -10px; left: 40px; transform: rotate(135deg); }
+  .introFrame { width: min(100%, 420px); max-height: 60vh; }
   .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 32px; }
   .card { grid-row: auto; grid-template-rows: auto auto auto; }
   .media { height: min(60vh, 640px); }
 }
 @media (max-width: 640px) {
+  .about { padding: 48px 16px; gap: 64px; }
+  .introFrame { padding: 16px; }
   .hero { padding: 24px 16px 32px; }
   .grid { gap: 20px; }
   .card { padding: 16px 16px 24px; }
