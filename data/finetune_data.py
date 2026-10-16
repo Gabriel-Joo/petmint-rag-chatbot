@@ -88,6 +88,10 @@ COMPOSITIONS = {"70/20/10": {"distract": 0.70, "gold_only": 0.20, "no_answer": 0
 # --n-distract(2026-10-16): distract의 방해 발췌 수. None = 1~2개 무작위(rebuild2까지). 2 = 후보가 있으면 2개(정답 1 : 방해 2,
 # 서비스 top_k 3과 같은 발췌 수). 후보가 1개뿐이면 1개
 N_DISTRACT = None
+# --na-items(2026-10-16, B-1′ 측정): no_answer 방해 발췌 수. 2 = rebuild2까지. B-1′(--n-distract 2)에서 양성은 거의 다 발췌 3개(정답+방해 2),
+# no_answer는 2개 이하라 발췌 개수만으로 라벨이 갈렸다(3개: 양성 6,226 / no_answer 0). 3으로 두면 no_answer도 방해 3개,
+# 그 쌍의 양성은 정답 + 같은 방해 앞 2개 — 개수가 같아진다
+NA_ITEMS = 2
 
 
 def no_gold_only() -> bool:
@@ -374,7 +378,7 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
     elif kind == "distract_pair":
         # 2-1(2026-10-15): no_answer와 같은 질문·같은 방해 발췌 + 정답 발췌 → 원래 답변. 둘의 차이는 정답 발췌 하나뿐이라
         # 질문 형태(겹침·길이·등급 어구)로는 라벨을 맞힐 수 없다
-        items = [gold] + [prompts.ExcerptItem.from_search_result(r) for r in picked]
+        items = [gold] + [prompts.ExcerptItem.from_search_result(r) for r in picked[:max(NA_ITEMS - 1, 1)]]
         random.Random(_h(SEED, "pair", *_qa_key(qa))).shuffle(items)
         target = qa["answer"]
     elif kind == "distract":
@@ -415,13 +419,13 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
 
 
 def na_picked(e: dict, nouns: set[str]) -> list[dict]:
-    """no_answer(와 그 쌍)의 방해 발췌 — 판정·거르기를 통과한 후보 중 앞 2개(포함률 규칙에 걸리면 1개)"""
-    picked = e["strict"][:2]
+    """no_answer(와 그 쌍)의 방해 발췌 — 판정·거르기를 통과한 후보 중 앞 NA_ITEMS개(포함률 규칙에 걸리면 줄인다)"""
+    picked = e["strict"][:NA_ITEMS]
     if e["na_mode"] == "legacy" and len(picked) == 2 and noun_cover(nouns, na_text(picked)) >= NOUN_COVER_MAX:
         picked = picked[:1]   # 둘을 합치면 답의 핵심어가 다 모이는 경우 — 하나만 쓴다
     # search + refill: 하나씩은 기준 미만이어도 둘을 합치면 넘을 수 있다 — 하나만 쓴다(샘플 포함률이 기준 미만으로 보장된다)
-    if e.get("na_fill") == "refill" and len(picked) == 2 and noun_cover(nouns, na_text(picked)) >= e["na_cover_max"]:
-        picked = picked[:1]
+    while e.get("na_fill") == "refill" and len(picked) >= 2 and noun_cover(nouns, na_text(picked)) >= e["na_cover_max"]:
+        picked = picked[:-1]
     return picked
 
 
@@ -464,7 +468,7 @@ def judge_no_answer(entries: list[dict], ver: str, na_fill: str, stats: Counter)
             stats[f"na_judge_{res['verdict']}"] += 1
             if res["verdict"] == "no":
                 keep.append(r)
-                if len(keep) == 2:
+                if len(keep) == NA_ITEMS:
                     break
             else:                                    # yes·unclear·파싱 실패(None) — 답이 있을 수 있다
                 filtered.append({"qa": e["qa"], "species": e["species"], "result": r, "verdict": res["verdict"],
@@ -729,7 +733,7 @@ def requests_unload(model: str):
 
 
 def main(argv=None):
-    global TARGET, N_DISTRACT, SEARCH_TOP_K
+    global TARGET, N_DISTRACT, SEARCH_TOP_K, NA_ITEMS
     ap = argparse.ArgumentParser()
     ap.add_argument("--search-only", action="store_true")
     ap.add_argument("--distractor", choices=DISTRACTOR_MODES, default="legacy",
@@ -750,6 +754,8 @@ def main(argv=None):
                     help="방해 후보 검색 깊이(기본 6). 20이면 후보 없는 QA가 줄어든다(B-1 표본: 22/60 → 13/60)")
     ap.add_argument("--composition", choices=sorted(COMPOSITIONS), default="70/20/10",
                     help="distract/gold_only/no_answer 목표 비율. 90/0/10이면 방해 후보 없는 QA는 버린다(2026-10-16)")
+    ap.add_argument("--na-items", type=int, choices=(2, 3), default=NA_ITEMS,
+                    help="no_answer 방해 발췌 수. 3 = 양성(정답+방해 2)과 개수를 맞춘다(쌍의 양성은 정답+같은 방해 2)")
     ap.add_argument("--n-distract", type=int, choices=(1, 2), default=None,
                     help="distract의 방해 발췌 수(후보가 모자라면 있는 만큼). 기본 = 1~2개 무작위")
     ap.add_argument("--no-confirm", action="store_true",
@@ -757,6 +763,7 @@ def main(argv=None):
     ap.add_argument("--pair-na", action="store_true", help="no_answer마다 같은 질문·같은 방해 발췌 + 정답 발췌 양성(distract_pair)을 더한다")
     args = ap.parse_args(argv)
     TARGET, N_DISTRACT, SEARCH_TOP_K = COMPOSITIONS[args.composition], args.n_distract, args.search_top_k
+    NA_ITEMS = args.na_items
     cache_path = search_cache_path(SEARCH_TOP_K)
     if (args.na_cover_max > 0 or args.na_judge) and args.na_fill is None:
         ap.error("--na-cover-max나 --na-judge를 주면 --na-fill drop|refill 을 골라야 한다")
@@ -800,7 +807,7 @@ def main(argv=None):
         stats["overlap"] = overlap_report(train + val)
         stats["overlap_bins"] = overlap_bins(train + val)
     stats.update(distractor_hard=args.distractor_hard, pair_na=args.pair_na, composition=args.composition, search_top_k=SEARCH_TOP_K,
-                 n_distract=args.n_distract, confirm="off" if args.no_confirm else "qwen3:14b")
+                 n_distract=args.n_distract, na_items=NA_ITEMS, confirm="off" if args.no_confirm else "qwen3:14b")
     write_jsonl(out_dir / "train.jsonl", train)
     write_jsonl(out_dir / "val.jsonl", val)
     stats.update({"train": len(train), "val": len(val),

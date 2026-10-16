@@ -34,6 +34,7 @@ build 옵션(data/finetune_data.py로 넘긴다, 기본: NA_JUDGE·NA_FILL·NA_C
   --na-cover-max=<포함률> 명사 포함률로 거르기(기본 0 = 끔, --na-judge와 택일 — 쓰려면 --na-judge=off)
   --composition=90/0/10  학습 구성 distract/gold_only/no_answer(기본 70/20/10). gold_only 0이면 방해 후보 없는 QA는 버린다
   --n-distract=2         distract의 방해 발췌 수(기본 1~2 무작위)
+  --na-items=3          no_answer 방해 발췌 수(기본 2). 3 = 양성(정답+방해 2)과 발췌 개수를 맞춘다
   --search-top-k=20      방해 후보 검색 깊이(기본 6, 캐시 파일 따로). 그래도 후보가 없는 QA는 gold_only로 남는다
   --no-confirm           q2 확인 검사(qwen3:14b)를 끈다 — 빌드 뒤 사람 표본 검수로 대신(이때 --gate-max-na-judge-bad=off)
 빌드 후 검사(build 단계 끝, 미달이면 build를 실패로 기록하고 train으로 넘어가지 않는다 — 다시 부르면 build부터):
@@ -136,6 +137,7 @@ class Run:
         self.confirm_max_bad = None
         # rebuild3(2026-10-16): 학습 데이터 구성·방해 발췌 수·확인 검사 끔(finetune_data --composition/--n-distract/--no-confirm)
         self.composition, self.n_distract, self.no_confirm, self.search_top_k = None, None, False, None
+        self.na_items = None
         self.order, self.stages = "A", STAGES
         self.smoke, self.train_max_steps, self.train_save_steps, self.eval_subset = None, None, None, None
         # --src(2026-10-15): gen·check·rewrite 산출물을 다른 재구축(<src>)에서 그대로 쓰고 build·train만 이 이름으로 돈다.
@@ -417,7 +419,8 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
             + (["--confirm-max-bad", str(run.confirm_max_bad)] if run.confirm_max_bad is not None else []) \
             + (["--composition", run.composition] if run.composition else []) \
             + (["--n-distract", str(run.n_distract)] if run.n_distract else []) + (["--no-confirm"] if run.no_confirm else []) \
-            + (["--search-top-k", str(run.search_top_k)] if run.search_top_k else [])
+            + (["--search-top-k", str(run.search_top_k)] if run.search_top_k else []) \
+            + (["--na-items", str(run.na_items)] if run.na_items else [])
         return [py, "-m", "data.finetune_data", "--distractor", "search",
                 "--final-dir", str(run.check_dir if b else run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
     if stage == "review":
@@ -769,6 +772,7 @@ def main(argv=None):
     run.composition, run.n_distract = opts.get("composition"), int(opts["n-distract"]) if "n-distract" in opts else None
     run.no_confirm = "--no-confirm" in flags
     run.search_top_k = int(opts["search-top-k"]) if "search-top-k" in opts else None
+    run.na_items = int(opts["na-items"]) if "na-items" in opts else None
     run.set_order(opts.get("order", "A"))
     run.smoke = tuple(map(int, opts["smoke"].split(","))) if "smoke" in opts else None
     run.train_max_steps = int(opts["train-max-steps"]) if "train-max-steps" in opts else None
