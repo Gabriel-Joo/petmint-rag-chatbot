@@ -32,6 +32,9 @@ build 옵션(data/finetune_data.py로 넘긴다, 기본: NA_JUDGE·NA_FILL·NA_C
   --na-judge=v2|v1|off   no_answer 방해 발췌를 LLM 판정으로 거른다(기본 v2, 2026-10-14 확정). 빌드 중 gemma4:12b(Ollama)를 쓴다
   --na-fill=refill|drop  거른 만큼 채울지(기본 refill)
   --na-cover-max=<포함률> 명사 포함률로 거르기(기본 0 = 끔, --na-judge와 택일 — 쓰려면 --na-judge=off)
+  --composition=90/0/10  학습 구성 distract/gold_only/no_answer(기본 70/20/10). gold_only 0이면 방해 후보 없는 QA는 버린다
+  --n-distract=2         distract의 방해 발췌 수(기본 1~2 무작위)
+  --no-confirm           q2 확인 검사(qwen3:14b)를 끈다 — 빌드 뒤 사람 표본 검수로 대신(이때 --gate-max-na-judge-bad=off)
 빌드 후 검사(build 단계 끝, 미달이면 build를 실패로 기록하고 train으로 넘어가지 않는다 — 다시 부르면 build부터):
   --gate-max-na-judge-bad=<비율>     주 기준. 빌드 끝 재판정(na_judge_summary_<ver>.json)에서 no_answer 샘플 중 판정이 no가 아닌
                                      (yes·unclear) 비율 상한. 기본 0 — 답이 들어 있다고 판정된 발췌가 no_answer에 하나도 남으면 안 된다
@@ -120,6 +123,8 @@ class Run:
         self.na_cover_max, self.na_fill, self.na_judge = na_cover_max, na_fill, na_judge
         self.distractor_hard, self.pair_na = distractor_hard, pair_na
         self.confirm_max_bad = None
+        # rebuild3(2026-10-16): 학습 데이터 구성·방해 발췌 수·확인 검사 끔(finetune_data --composition/--n-distract/--no-confirm)
+        self.composition, self.n_distract, self.no_confirm = None, None, False
         # --src(2026-10-15): gen·check·rewrite 산출물을 다른 재구축(<src>)에서 그대로 쓰고 build·train만 이 이름으로 돈다.
         # 로그·상태는 이 이름 아래에 두고, 앞 단계 완료 표시는 처음 한 번 src 상태에서 옮겨 온다
         self.src = src
@@ -348,7 +353,9 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
         na = ["--na-cover-max", str(run.na_cover_max)] + (["--na-fill", run.na_fill] if run.na_fill else []) \
             + (["--na-judge", run.na_judge] if run.na_judge else []) \
             + (["--distractor-hard"] if run.distractor_hard else []) + (["--pair-na"] if run.pair_na else []) \
-            + (["--confirm-max-bad", str(run.confirm_max_bad)] if run.confirm_max_bad is not None else [])
+            + (["--confirm-max-bad", str(run.confirm_max_bad)] if run.confirm_max_bad is not None else []) \
+            + (["--composition", run.composition] if run.composition else []) \
+            + (["--n-distract", str(run.n_distract)] if run.n_distract else []) + (["--no-confirm"] if run.no_confirm else [])
         return [py, "-m", "data.finetune_data", "--distractor", "search",
                 "--final-dir", str(run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
     if stage == "train":
@@ -669,6 +676,8 @@ def main(argv=None):
               na_judge=None if na_judge == OFF else na_judge, src=opts.get("src"),
               distractor_hard="--distractor-hard" in flags, pair_na="--pair-na" in flags)
     run.confirm_max_bad = float(opts["confirm-max-bad"]) if "confirm-max-bad" in opts else None
+    run.composition, run.n_distract = opts.get("composition"), int(opts["n-distract"]) if "n-distract" in opts else None
+    run.no_confirm = "--no-confirm" in flags
     assert run.na_judge in (None, "v1", "v2", "q2"), "--na-judge=v1|v2|q2|off"
     assert not (run.na_judge and run.na_cover_max > 0), "--na-judge와 --na-cover-max는 택일(포함률을 쓰려면 --na-judge=off)"
     assert (run.na_cover_max == 0 and not run.na_judge) or run.na_fill in ("drop", "refill"), "--na-fill=drop|refill 필요"
