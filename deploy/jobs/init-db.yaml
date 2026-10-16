@@ -56,11 +56,11 @@ spec:
             requests: { cpu: 100m, memory: 128Mi }
             limits: { memory: 512Mi }
           volumeMounts:
-            - name: data
-              mountPath: /var/lib/petmint
+            - name: fixtures
+              mountPath: /var/lib/petmint/fixtures
               readOnly: true
       volumes:
-        - name: data
+        - name: fixtures                   # 호스트 리포 app/fixtures(NFS 읽기 전용, data/nfs.yaml)
           persistentVolumeClaim:
-            claimName: petmint-data
+            claimName: petmint-fixtures
             readOnly: true

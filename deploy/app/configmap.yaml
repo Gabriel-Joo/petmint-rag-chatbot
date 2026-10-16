@@ -25,7 +25,7 @@ data:
   # search-service는 아직 없다. .invalid는 절대 풀리지 않는 이름이다 — 띄우면 http://192.168.122.1:8100 으로 바꾼다
   PETMINT_SEARCH_URL: "http://search-service-not-deployed.invalid:8100"
 
-  # 약관 데이터 — PVC petmint-data를 /var/lib/petmint에 붙인다(이미지 기본값과 같다)
+  # 약관 데이터 — 호스트 NFS(PVC petmint-chunks·petmint-graph)를 /var/lib/petmint 아래에 붙인다(이미지 기본값과 같다)
   PETMINT_CHUNKS_DIR: /var/lib/petmint/chunks
   PETMINT_GRAPH_DIR: /var/lib/petmint/graph
 

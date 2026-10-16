@@ -1,0 +1,14 @@
+# drain·노드 점검 때 앱 Pod 둘을 한꺼번에 내보내지 않는다 — 하나는 늘 남아 요청을 받는다
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: petmint-app
+  labels:
+    app.kubernetes.io/name: petmint-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: petmint-app
