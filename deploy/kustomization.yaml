@@ -14,14 +14,14 @@ resources:
   - namespace.yaml
   - mysql/service.yaml
   - mysql/statefulset.yaml
-  - data/pvc.yaml
+  - data/nfs.yaml
   - app/configmap.yaml
   - jobs/init-db.yaml
   - app/deployment.yaml
   - app/service.yaml
+  - app/pdb.yaml
   - app/ingress.yaml
   # Secret은 여기 없다 — 평문을 저장소에 두지 않는다. scripts/create-secrets.sh가 클러스터에 직접 만든다
-  # data/loader-pod.yaml도 없다 — 약관 적재 때만 scripts/load-data.sh가 잠깐 띄운다
 
 images:
   - name: harbor.ronanlab.dev/petmint/petmint-app
