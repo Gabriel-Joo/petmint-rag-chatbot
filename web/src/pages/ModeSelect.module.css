@@ -8,7 +8,9 @@
   flex-direction: column;
   padding: 40px 48px 48px;
 }
-.title { font-size: var(--font-2xl); font-weight: var(--font-weight-title); margin: 0 0 32px; text-align: center; }
+/* 글꼴은 헤더 로고와 같은 완주대둔산체. 크기는 카드 제목(.name)보다 기본 배율(2배)에서 3px 크다 — 배율을 곱해 좁은 화면에서 함께 줄어든다.
+   이 글꼴은 Bold(700) 한 벌뿐이라 굵기는 로고처럼 700으로 부른다 */
+.title { font-family: var(--font-logo); font-size: calc(var(--font-xl) + 1.5px * var(--text-scale)); font-weight: var(--font-weight-label); margin: 0 0 32px; text-align: center; }
 
 /* 세 카드가 같은 줄(캐릭터 / 모드 이름 / 대사)을 나눠 쓴다(subgrid). 캐릭터 자리 높이가 세 카드에서 같고,
    대사 줄 수가 달라도(사내규정 1줄, 나머지 2줄) 모드 이름이 같은 높이에 온다 */
@@ -57,7 +59,8 @@
 /* 숨김은 opacity가 아니라 visibility — 투명 영상 뒤로 비치지 않게 그리기에서 뺀다. 상자 자리는 그대로라 덜컹이지 않는다 */
 .hidden { visibility: hidden; }
 
-.name { font-size: var(--font-xl); font-weight: var(--font-weight-title); }
+/* 모드 이름도 로고 글꼴(완주대둔산체) — 짧은 단어라 읽기 부담이 없다. Bold(700) 한 벌뿐이라 700으로 부른다 */
+.name { font-family: var(--font-logo); font-size: var(--font-xl); font-weight: var(--font-weight-label); }
 .intro { font-size: var(--font-lead); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
 
 /* 프로젝트 소개 자리 — 내용이 없어도 스크롤이 생기도록 높이만 잡아 둔다 */
