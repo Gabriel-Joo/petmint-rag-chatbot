@@ -34,6 +34,7 @@ build 옵션(data/finetune_data.py로 넘긴다, 기본: NA_JUDGE·NA_FILL·NA_C
   --na-cover-max=<포함률> 명사 포함률로 거르기(기본 0 = 끔, --na-judge와 택일 — 쓰려면 --na-judge=off)
   --composition=90/0/10  학습 구성 distract/gold_only/no_answer(기본 70/20/10). gold_only 0이면 방해 후보 없는 QA는 버린다
   --n-distract=2         distract의 방해 발췌 수(기본 1~2 무작위)
+  --search-top-k=20      방해 후보 검색 깊이(기본 6, 캐시 파일 따로). 그래도 후보가 없는 QA는 gold_only로 남는다
   --no-confirm           q2 확인 검사(qwen3:14b)를 끈다 — 빌드 뒤 사람 표본 검수로 대신(이때 --gate-max-na-judge-bad=off)
 빌드 후 검사(build 단계 끝, 미달이면 build를 실패로 기록하고 train으로 넘어가지 않는다 — 다시 부르면 build부터):
   --gate-max-na-judge-bad=<비율>     주 기준. 빌드 끝 재판정(na_judge_summary_<ver>.json)에서 no_answer 샘플 중 판정이 no가 아닌
@@ -47,6 +48,9 @@ build 옵션(data/finetune_data.py로 넘긴다, 기본: NA_JUDGE·NA_FILL·NA_C
   --gate-cover=<포함률> --gate-max-high-ratio=<비율>  명사 포함률 기준(기본 off — 분리점이 없다는 것이 확인됐다)
   --accept-build                     미달이어도 사람이 보고 통과시킨다(수치는 그대로 로그에 남는다)
   기준 값: 숫자 / off(끔). None(미설정)은 미달로 본다 — 기준은 사람이 정한다.
+순서 B(rebuild3, 2026-10-16) — --order=B: gen(qwen3:14b) → rewrite(06 앞, qwen3:14b, 등급 어구 대체) → check(06, 입력 <이름>/rw)
+  → build → review(사람 표본 검수, data/build_review.py — 판정을 채울 때까지 멈춘다) → train → select → eval(data/ckpt_select.py evaluate)
+  소규모 시험: --name=exp_… --smoke=20,10 (종마다 앞 N단위) --train-max-steps=4 --train-save-steps=2 --eval-subset=<id 목록 json>
 시작 전 확인(run): Ollama 응답 + 실행할 단계가 쓰는 모델(tri-7b·gemma4:12b)을 실제로 한 번 올렸다 내린다. 실패하면 시작하지 않는다.
 """
 
@@ -72,6 +76,9 @@ NOTEBOOKS = PROJECT_DIR / "notebooks"
 OLLAMA_URL = "http://localhost:11434"
 SPECIES = ("강아지", "고양이")
 STAGES = ("gen", "check", "rewrite", "build", "train", "select")
+# 순서 B(rebuild3, 2026-10-16): 재작성을 06 앞으로 — 심판이 통과시킨 질문과 학습에 들어가는 질문을 같게(재심판 없음).
+# 빌드 뒤 사람 표본 검수(review), 고른 체크포인트 평가(eval)를 더한다
+STAGES_B = ("gen", "rewrite", "check", "build", "review", "train", "select", "eval")
 GPU_FOREIGN_MIB = 500      # Ollama 밖 프로세스가 이보다 많이 쓰면 GPU 단계를 시작하지 않는다
 
 # 예상 시간 계수 — 출처를 함께 적는다. 실측이 없는 값은 (추정)
@@ -92,6 +99,10 @@ SELECT_ITEMS = 30          # data/ckpt_select.py 선택 세트
 SEC_NA_JUDGE = 1.0         # no_answer 판정 1건(2026-10-14 실측 803건 13.6분 = 1.01초)
 NA_JUDGE_CALLS_PER_QA = 2.5  # no_answer QA당 판정 호출(앞 2개 + yes였던 것만큼 다음 순위, 추정)
 JUDGE_MODELS = {"gen": ["tri-7b:latest"], "check": ["gemma4:12b"], "rewrite": ["tri-7b:latest", "gemma4:12b"]}
+GEN_MODEL_B = "qwen3:14b"     # 순서 B의 생성·재작성 모델(think 끔). 심판·no_answer 판정은 gemma4:12b
+JUDGE_MODELS_B = {"gen": [GEN_MODEL_B], "rewrite": [GEN_MODEL_B], "check": ["gemma4:12b"]}
+SEC_REWRITE_PRE = 0.8         # 06 앞 재작성 1건(qwen3:14b) — B-1′ 실측 7,598건 중 첫 100건 1.3분
+SEC_EVAL_ITEM = 47            # eval: 문항당 베이스 43초 + 어댑터 4초, 정답 발췌·검색 두 번
 
 # build 단계 옵션 — no_answer 답 포함 거르기(data/finetune_data.py 모듈 docstring)
 NA_JUDGE = "v2"            # LLM 판정(2026-10-14 사람 확인 후 확정). None이면 끔
@@ -124,7 +135,9 @@ class Run:
         self.distractor_hard, self.pair_na = distractor_hard, pair_na
         self.confirm_max_bad = None
         # rebuild3(2026-10-16): 학습 데이터 구성·방해 발췌 수·확인 검사 끔(finetune_data --composition/--n-distract/--no-confirm)
-        self.composition, self.n_distract, self.no_confirm = None, None, False
+        self.composition, self.n_distract, self.no_confirm, self.search_top_k = None, None, False, None
+        self.order, self.stages = "A", STAGES
+        self.smoke, self.train_max_steps, self.train_save_steps, self.eval_subset = None, None, None, None
         # --src(2026-10-15): gen·check·rewrite 산출물을 다른 재구축(<src>)에서 그대로 쓰고 build·train만 이 이름으로 돈다.
         # 로그·상태는 이 이름 아래에 두고, 앞 단계 완료 표시는 처음 한 번 src 상태에서 옮겨 온다
         self.src = src
@@ -159,8 +172,26 @@ class Run:
         p = self.faq / "plan.json"
         return json.load(open(p, encoding="utf-8")) if p.exists() else None
 
+    def set_order(self, order: str):
+        assert order in ("A", "B"), "--order=A|B"
+        self.order, self.stages = order, (STAGES_B if order == "B" else STAGES)
+
+    @property
+    def rw(self) -> Path:
+        """순서 B: 06 앞 재작성 결과(라운드 파일) = 06 입력 폴더"""
+        return self.faq / "rw"
+
+    @property
+    def check_dir(self) -> Path:
+        return (self.rw if self.order == "B" else self.faq) / "checked"
+
+    def species(self) -> list[str]:
+        if self.smoke:
+            return [sp for sp, n in zip(SPECIES, self.smoke) if n]
+        return list(SPECIES)
+
     def final_paths(self) -> list[Path]:
-        return [self.faq / "checked" / f"petmint_{sp}_faq_final.json" for sp in SPECIES]
+        return [self.check_dir / f"petmint_{sp}_faq_final.json" for sp in self.species()]
 
     def rewrite_final_paths(self) -> list[Path]:
         return [self.rewrite / "final" / f"petmint_{sp}_faq_final.json" for sp in SPECIES]
@@ -180,9 +211,23 @@ class Run:
         if stage == "check":
             miss = [p.name for p in self.final_paths() if not p.exists()]
             return not miss, f"없음: {miss}" if miss else "final 있음"
+        if stage == "rewrite" and self.order == "B":
+            plan = self.plan()
+            todo = [] if plan is None else [(sp, r["round"]) for sp, rs in plan["rounds"].items() for r in rs
+                                            if not self._round_done(sp, r["round"], self.rw)]
+            ok = plan is not None and not todo and (self.rw / "rewrite_summary.json").exists()
+            return ok, "재작성 완료" if ok else f"남은 라운드 {len(todo)}개" + ("" if plan else " (plan.json 없음)")
         if stage == "rewrite":
             miss = [p.name for p in self.rewrite_final_paths() if not p.exists()]
             return not miss, f"없음: {miss}" if miss else "학습용 final 있음"
+        if stage == "review":
+            p = self.logs / "review_result.json"
+            ok = p.exists() and json.load(open(p, encoding="utf-8")).get("approved") is True
+            return ok, "검수 통과" if ok else ("검수 미달" if p.exists() else "검수 대기")
+        if stage == "eval":
+            a = self.adapter()
+            ok = a is not None and (a / "eval_result.json").exists()
+            return ok, "평가 있음" if ok else "eval_result.json 없음"
         if stage == "build":
             miss = [n for n in ("train.jsonl", "val.jsonl", "stats.json") if not (self.ft / n).exists()]
             return not miss, f"없음: {miss}" if miss else "train/val 있음"
@@ -195,8 +240,8 @@ class Run:
             return ok, f"선택 {json.load(open(a / 'ckpt_select.json', encoding='utf-8'))['best']}" if ok else "ckpt_select.json 없음"
         raise ValueError(stage)
 
-    def _round_done(self, sp: str, r: int) -> bool:
-        p = self.faq / f"petmint_{sp}_faq_round{r}.json"
+    def _round_done(self, sp: str, r: int, base: Path | None = None) -> bool:
+        p = (base or self.faq) / f"petmint_{sp}_faq_round{r}.json"
         return p.exists() and p.with_name(p.stem + "_failures.json").exists()
 
     def is_done(self, stage: str, st: dict | None = None) -> tuple[bool, str]:
@@ -208,13 +253,14 @@ class Run:
             return False, f"완료 표시 없음 ({why})"
         if not ok:
             return False, f"완료 표시는 있으나 산출물 이상 — {why}"
-        i = STAGES.index(stage)
+        i = self.stages.index(stage)
         if i > 0:                                       # 앞 단계도 (재귀로) 끝나 있고, 이 단계보다 먼저 끝났어야 한다
-            prev_done, prev_why = self.is_done(STAGES[i - 1], st)
+            prev = self.stages[i - 1]
+            prev_done, prev_why = self.is_done(prev, st)
             if not prev_done:
-                return False, f"앞 단계({STAGES[i - 1]})가 끝나 있지 않다 — {prev_why}"
-            if st[STAGES[i - 1]].get("finished_ts", 0) > rec.get("started_ts", 0):
-                return False, f"앞 단계({STAGES[i - 1]})가 이 단계 뒤에 다시 돌았다"
+                return False, f"앞 단계({prev})가 끝나 있지 않다 — {prev_why}"
+            if st[prev].get("finished_ts", 0) > rec.get("started_ts", 0):
+                return False, f"앞 단계({prev})가 이 단계 뒤에 다시 돌았다"
         return True, why
 
     # ---------- 예상 시간 ----------
@@ -230,13 +276,23 @@ class Run:
         if plan is None:
             plan, _ = faq_generate.plan_from_data()
         calls_total = faq_generate.plan_calls(plan)
+        b = self.order == "B"
         if stage == "gen":
+            sec = faq_generate.SEC_PER_CALL_BY_MODEL[GEN_MODEL_B] if b else faq_generate.SEC_PER_CALL
             left = sum(len(r["unit_ids"]) for sp, rs in plan["rounds"].items() for r in rs
                        if not self._round_done(sp, r["round"]))
-            return left * faq_generate.SEC_PER_CALL, f"남은 호출 {left}/{calls_total} × {faq_generate.SEC_PER_CALL}초"
-        if stage == "check":
+            return left * sec, f"남은 호출 {left}/{calls_total} × {sec}초"
+        if stage == "rewrite" and b:
             n = self._count_rounds() or calls_total * QA_PER_CALL
-            cache = self.faq / "checked" / "judge_cache.json"
+            return n * SEC_REWRITE_PRE, f"05 QA {n:.0f}건 × {SEC_REWRITE_PRE}초(qwen3:14b, 재심판 없음)"
+        if stage == "review":
+            return 0, "사람 검수(시간은 검수자에 달림)"
+        if stage == "eval":
+            n = len(json.load(open(self.eval_subset, encoding="utf-8"))) if self.eval_subset else 117
+            return 2 * n * SEC_EVAL_ITEM, f"{n}문항 × 2(정답 발췌·검색) × {SEC_EVAL_ITEM}초"
+        if stage == "check":
+            n = self._count_rounds(self.rw if b else None) or self._count_rounds() or calls_total * QA_PER_CALL
+            cache = self.check_dir / "judge_cache.json"
             done = len(json.load(open(cache, encoding="utf-8"))) if cache.exists() else 0
             todo = max(n * DET_PASS - done, 0)
             return todo * SEC_JUDGE + 600, f"QA {n:.0f}건 × 결정적 통과 {DET_PASS} − 판정 캐시 {done} → 심판 {todo:.0f}건 × {SEC_JUDGE}초 + 10분"
@@ -263,9 +319,9 @@ class Run:
                 f"{SELECT_ITEMS}문항 × (베이스 {SEC_EVAL_BASE}초 + 후보 {n}개 × {SEC_EVAL_ADAPTER}초)"
         raise ValueError(stage)
 
-    def _count_rounds(self) -> int:
+    def _count_rounds(self, base: Path | None = None) -> int:
         n = 0
-        for p in self.faq.glob("petmint_*_faq_round*.json"):
+        for p in (base or self.faq).glob("petmint_*_faq_round*.json"):
             if not p.stem.endswith("_failures"):
                 n += len(json.load(open(p, encoding="utf-8")))
         return n
@@ -339,10 +395,15 @@ def ollama_up() -> bool:
 def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
     py = sys.executable
     env = dict(os.environ, PYTHONUNBUFFERED="1")
+    b = run.order == "B"
     if stage == "gen":
-        return [py, "-m", "data.faq_generate", "run", f"--out={run.faq}"], env
+        return [py, "-m", "data.faq_generate", "run", f"--out={run.faq}"] + ([f"--model={GEN_MODEL_B}"] if b else []) \
+            + ([f"--smoke={','.join(map(str, run.smoke))}"] if run.smoke else []), env
+    if stage == "rewrite" and b:
+        return [py, "-m", "data.faq_rewrite", "pre", *run.species(), f"--src={run.faq}", f"--out={run.rw}",
+                f"--model={GEN_MODEL_B}"], env
     if stage == "check":
-        env["PETMINT_06_INPUT"] = run.name
+        env["PETMINT_06_INPUT"] = str(run.rw.relative_to(FAQ_DIR)) if b else run.name
         return [py, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute",
                 str(NOTEBOOKS / "06_품질검증.ipynb"), "--output-dir", str(run.logs),
                 "--output", f"06_executed_{datetime.now():%Y%m%d_%H%M}.ipynb",
@@ -355,18 +416,27 @@ def stage_command(run: Run, stage: str) -> tuple[list[str], dict]:
             + (["--distractor-hard"] if run.distractor_hard else []) + (["--pair-na"] if run.pair_na else []) \
             + (["--confirm-max-bad", str(run.confirm_max_bad)] if run.confirm_max_bad is not None else []) \
             + (["--composition", run.composition] if run.composition else []) \
-            + (["--n-distract", str(run.n_distract)] if run.n_distract else []) + (["--no-confirm"] if run.no_confirm else [])
+            + (["--n-distract", str(run.n_distract)] if run.n_distract else []) + (["--no-confirm"] if run.no_confirm else []) \
+            + (["--search-top-k", str(run.search_top_k)] if run.search_top_k else [])
         return [py, "-m", "data.finetune_data", "--distractor", "search",
-                "--final-dir", str(run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
+                "--final-dir", str(run.check_dir if b else run.rewrite / "final"), "--out-dir", str(run.ft), *na], env
+    if stage == "review":
+        return [py, "-m", "data.build_review", "run", f"--ft={run.ft}", f"--logs={run.logs}", f"--name={run.name}"], env
     if stage == "train":
         env["PETMINT_FT_DATA_DIR"] = str(run.ft)
         env["PETMINT_ADAPTER_TAG"] = run.name
+        if run.train_max_steps:
+            env["PETMINT_FT_MAX_STEPS"] = str(run.train_max_steps)
+        if run.train_save_steps:
+            env["PETMINT_FT_SAVE_STEPS"] = str(run.train_save_steps)
         return [py, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute",
                 str(NOTEBOOKS / "07_파인튜닝.ipynb"), "--output-dir", str(run.logs),
                 "--output", f"07_executed_{datetime.now():%Y%m%d_%H%M}.ipynb",
                 "--ExecutePreprocessor.timeout=-1"], env
     if stage == "select":
-        return [py, "-m", "data.ckpt_select", "run", str(run.adapter())], env
+        return [py, "-m", "data.ckpt_select", "run", str(run.adapter())] + ([f"--set={run.eval_subset}"] if run.eval_subset else []), env
+    if stage == "eval":
+        return [py, "-m", "data.ckpt_select", "evaluate", str(run.adapter())] + ([f"--subset={run.eval_subset}"] if run.eval_subset else []), env
     raise ValueError(stage)
 
 
@@ -376,8 +446,10 @@ def preflight(run: Run, stage: str):
         assert ollama_up(), "Ollama 응답 없음 — `docker ps -a`로 확인 후 `docker start ollama`"
     if stage == "gen":
         from data import faq_generate
+        if run.order == "B":
+            faq_generate.set_model(GEN_MODEL_B)
         faq_generate.assert_same_as_notebook()
-    if stage == "rewrite":
+    if stage == "rewrite" and run.order == "A":
         # 06을 다시 돌렸는데 재작성 입력(input.json)이 옛 final에서 만든 것이면 섞인다 — 지우지 않고 옆으로 옮긴다
         inp = run.rewrite / "input.json"
         if inp.exists() and max(p.stat().st_mtime for p in run.final_paths()) > inp.stat().st_mtime:
@@ -388,10 +460,10 @@ def preflight(run: Run, stage: str):
         a = run.adapter()
         assert a is None, f"이미 어댑터가 있다: {a} — 다시 학습하려면 옮긴 뒤 --force"
     # GPU: 앞 단계가 남긴 Ollama 모델을 내리고, 다른 프로세스가 GPU를 쓰고 있으면 시작하지 않는다
-    unloaded = unload_ollama() if stage in ("build", "train", "check", "select") else []
+    unloaded = unload_ollama() if stage in ("build", "train", "check", "select", "eval") else []
     if unloaded:
         run.log(f"{stage}: Ollama 모델 내림 {unloaded}")
-    if stage in ("build", "train", "select"):
+    if stage in ("build", "train", "select", "eval"):
         time.sleep(3)
     others = foreign_gpu_users()
     assert not others, f"다른 프로세스가 GPU를 쓰는 중 — 끝내거나 커널을 종료할 것: {others}"
@@ -406,7 +478,12 @@ def after_stage(run: Run, stage: str):
             s = faq_style.style_stats(qs)
             run.log(f"check: 최종 QA {s['n']}건 | 주제 " + ", ".join(f"{t} {v:.1%}" for t, v in s["topics"].items())
                     + f" | 라벨 누출 {s['label_leak']:.1%} | 상황형 {s['situational']:.1%}")
-        if stage == "rewrite":
+        if stage == "rewrite" and run.order == "B":
+            sm = json.load(open(run.rw / "rewrite_summary.json", encoding="utf-8"))
+            run.log(f"rewrite: 05 QA {sm['n']}건 | {sm['status']} | 실패율 {sm['fail_rate']:.1%} | 등급 어구 대상 {sm['grade_target']} · 성공 "
+                    f"{sm['grade_ok']} ({sm['grade_ok_share']:.1%}) | 라벨 누출 {sm['label_leak']:.1%} | 상황형 {sm['situational']:.1%} | "
+                    f"질문 길이 중앙 {sm['q_len_median']}")
+        if stage == "rewrite" and run.order == "A":
             from collections import Counter
             from data import faq_style
             rows = [f for p in run.rewrite_final_paths() for f in json.load(open(p, encoding="utf-8"))]
@@ -415,12 +492,24 @@ def after_stage(run: Run, stage: str):
                     f"라벨 누출 {s['label_leak']:.1%} | 상황형 {s['situational']:.1%}")
         if stage == "build":
             st = json.load(open(run.ft / "stats.json", encoding="utf-8"))
+            tot = st["train"] + st["val"]
             run.log(f"build: train {st['train']} / val {st['val']} | 종류 " +
-                    ", ".join(f"{k} {st.get('kind_' + k, 0)}" for k in ("distract", "gold_only", "no_answer")))
+                    ", ".join(f"{k} {st.get('kind_' + k, 0)} ({st.get('kind_' + k, 0) / max(tot, 1):.1%})"
+                              for k in ("distract", "distract_pair", "gold_only", "no_answer"))
+                    + f" | 방해 후보 없어 gold_only {st.get('gold_only_no_candidate', 0)} | 검색 top {st.get('search_top_k')}")
             run.log("build: 질문-발췌 바이그램 겹침 평균 " + ", ".join(f"{k} {v['mean']}" for k, v in st["overlap"].items())
                     + " (첫 학습 데이터: distract 0.592 / gold_only 0.581 / no_answer 0.342)")
         if stage == "train":
             run.log(f"train: 어댑터 {run.adapter()}")
+        if stage == "review":
+            r = json.load(open(run.logs / "review_result.json", encoding="utf-8"))
+            run.log(f"review: no_answer 답있음 {r['na_answer_present']}/{r['na_n']} (기준 ≤ {r['na_max_bad']}) | 등급 어구 틀림 "
+                    f"{r['grade_wrong']}/{r['grade_n']} · 재작성 틀림 {r['rewrite_wrong']}/{r['rewrite_n']}")
+        if stage == "eval":
+            e = json.load(open(run.adapter() / "eval_result.json", encoding="utf-8"))
+            run.log(f"eval: {e['best']} | answerable 거절 {e['answerable_refused']}/{e['answerable_n']} (85문항 {e['answerable_refused_all85']}) | "
+                    f"등급 어구 거절 {e['grade_refused']}/{e['grade_n']} | no_answer 거절 {e['na_refused']}/{e['na_n']} | "
+                    f"검색(정답 top 3 안) 거절 {e['search_gold_in_refused']}/{e['search_gold_in_n']} | 기준 {e['pass']}")
         if stage == "select":
             sel = json.load(open(run.adapter() / "ckpt_select.json", encoding="utf-8"))
             run.log(f"select: {sel['best']} | " + ", ".join(f"{k.split('@')[-1]} {v['errors']}({v['answerable_refused']}+{v['na_missed']})"
@@ -614,7 +703,7 @@ def cmd_status(run: Run):
     st = run.state()
     total = 0.0
     print(f"## 단계 ({run.name}) — 출력 {run.faq}, {run.ft}")
-    for s in STAGES:
+    for s in run.stages:
         done, why = run.is_done(s, st)
         rec = st.get(s, {})
         if done:
@@ -636,7 +725,8 @@ def cmd_run(run: Run, stages: list[str], force: bool):
         raise SystemExit(f"이미 실행 중인 rebuild가 있다({run.logs / 'rebuild.lock'}) — 끝난 뒤 다시")
     run.log(f"==== run {stages} (force={force}) ====")
     todo = [s for s in stages if force or not run.is_done(s)[0]]
-    need = sorted({m for s in todo for m in JUDGE_MODELS.get(s, [])} | ({"gemma4:12b"} if "build" in todo and run.na_judge else set()))
+    models = JUDGE_MODELS_B if run.order == "B" else JUDGE_MODELS
+    need = sorted({m for s in todo for m in models.get(s, [])} | ({"gemma4:12b"} if "build" in todo and run.na_judge else set()))
     if need:
         bad = ollama_models_ready(need)
         if bad:
@@ -650,11 +740,11 @@ def cmd_run(run: Run, stages: list[str], force: bool):
         if done and not force:
             run.log(f"{s}: 건너뜀 — 이미 완료 ({why})")
             continue
-        i = STAGES.index(s)
+        i = run.stages.index(s)
         if i > 0:
-            prev_done, prev_why = run.is_done(STAGES[i - 1])
+            prev_done, prev_why = run.is_done(run.stages[i - 1])
             if not prev_done:
-                run.log(f"{s}: 시작하지 않음 — 앞 단계 {STAGES[i - 1]}가 끝나지 않았다({prev_why})")
+                run.log(f"{s}: 시작하지 않음 — 앞 단계 {run.stages[i - 1]}가 끝나지 않았다({prev_why})")
                 raise SystemExit(1)
         if not run_stage(run, s):
             raise SystemExit(1)
@@ -678,6 +768,13 @@ def main(argv=None):
     run.confirm_max_bad = float(opts["confirm-max-bad"]) if "confirm-max-bad" in opts else None
     run.composition, run.n_distract = opts.get("composition"), int(opts["n-distract"]) if "n-distract" in opts else None
     run.no_confirm = "--no-confirm" in flags
+    run.search_top_k = int(opts["search-top-k"]) if "search-top-k" in opts else None
+    run.set_order(opts.get("order", "A"))
+    run.smoke = tuple(map(int, opts["smoke"].split(","))) if "smoke" in opts else None
+    run.train_max_steps = int(opts["train-max-steps"]) if "train-max-steps" in opts else None
+    run.train_save_steps = int(opts["train-save-steps"]) if "train-save-steps" in opts else None
+    run.eval_subset = Path(opts["eval-subset"]) if "eval-subset" in opts else None
+    assert not run.smoke or run.name.startswith("exp_"), "--smoke는 exp_로 시작하는 이름에만 — 06이 고른 단위만 검사하는 실험 모드를 켠다"
     assert run.na_judge in (None, "v1", "v2", "q2"), "--na-judge=v1|v2|q2|off"
     assert not (run.na_judge and run.na_cover_max > 0), "--na-judge와 --na-cover-max는 택일(포함률을 쓰려면 --na-judge=off)"
     assert (run.na_cover_max == 0 and not run.na_judge) or run.na_fill in ("drop", "refill"), "--na-fill=drop|refill 필요"
@@ -687,13 +784,13 @@ def main(argv=None):
         cmd_status(run)
     elif cmd == "run":
         if len(pos) > 1:
-            assert all(p in STAGES for p in pos[1:]), f"단계는 {STAGES}"
-            stages = [s for s in STAGES if s in pos[1:]]
+            assert all(p in run.stages for p in pos[1:]), f"단계는 {run.stages}"
+            stages = [s for s in run.stages if s in pos[1:]]
         elif "from" in opts:
-            assert opts["from"] in STAGES, f"단계는 {STAGES}"
-            stages = list(STAGES[STAGES.index(opts["from"]):])
+            assert opts["from"] in run.stages, f"단계는 {run.stages}"
+            stages = list(run.stages[run.stages.index(opts["from"]):])
         else:
-            stages = list(STAGES)
+            stages = list(run.stages)
         cmd_run(run, stages, "--force" in flags)
     else:
         raise SystemExit(__doc__)

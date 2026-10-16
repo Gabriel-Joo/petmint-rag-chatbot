@@ -27,6 +27,7 @@ faq_generate.py
 
 실행: python -m data.faq_generate plan               — 계획·예상 시간만(Ollama 불필요)
       python -m data.faq_generate run --out=DIR      — 생성(tri-7b, GPU). 끝난 라운드는 건너뛴다
+          --model=qwen3:14b  생성 모델 바꾸기(rebuild3, think 끔)   --smoke=20,10  소규모 시험(종마다 앞 N단위, 라운드 1 + 주제 회차 1씩)
       python -m data.faq_generate show-ref           — 참조 회차 프롬프트 예시(섹션마다 1개, 모델 호출 없음)
       python -m data.faq_generate pilot-ref [--out=data/faq/exp_r]  — 파일럿 생성(tri-7b, 참조 회차 60호출 ≈ 3분)
 """
@@ -189,11 +190,47 @@ def notebook_values(names=SHARED_WITH_NOTEBOOK) -> dict:
 
 
 def assert_same_as_notebook():
+    """프롬프트·생성 설정이 노트북 05와 같은지. 생성 모델만은 --model로 바꿀 수 있다(rebuild3 2026-10-16: qwen3:14b) —
+    노트북에는 tri-7b가 적혀 있으므로 MODEL_NAME은 바꿨을 때만 비교에서 뺀다(나머지 프롬프트·온도·길이는 그대로 비교)"""
     nb = notebook_values()
     here = globals()
-    missing = [n for n in SHARED_WITH_NOTEBOOK if n not in nb]
-    diff = [n for n in SHARED_WITH_NOTEBOOK if n in nb and nb[n] != here[n]]
+    names = [n for n in SHARED_WITH_NOTEBOOK if not (n == "MODEL_NAME" and MODEL_OVERRIDDEN)]
+    missing = [n for n in names if n not in nb]
+    diff = [n for n in names if n in nb and nb[n] != here[n]]
     assert not missing and not diff, f"노트북 05와 다름 — 없음 {missing}, 값 다름 {diff}"
+
+
+MODEL_OVERRIDDEN = False
+SEC_PER_CALL_BY_MODEL = {"tri-7b:latest": 3.1,   # 2026-10-13·15 전량 실측
+                         "qwen3:14b": 5.4}       # 실험 G(2026-10-16) 호출당 시간 비 1.75 × 3.1 — 추정
+
+
+def set_model(model: str):
+    """생성 모델 바꾸기. qwen3는 think 끔 — 생각 출력이 num_predict를 먹어 JSON이 잘린다"""
+    global MODEL_NAME, OLLAMA_EXTRA, MODEL_OVERRIDDEN, SEC_PER_CALL
+    MODEL_OVERRIDDEN = model != MODEL_NAME or MODEL_OVERRIDDEN
+    MODEL_NAME = model
+    OLLAMA_EXTRA = {"think": False} if model.startswith("qwen3") else {}
+    SEC_PER_CALL = SEC_PER_CALL_BY_MODEL.get(model, SEC_PER_CALL)
+
+
+def smoke_plan(plan: dict, n_by_sp: dict[str, int]) -> dict:
+    """소규모 시험: 종마다 생성 순서 앞 n단위만, 일반 라운드 1 + 주제마다 첫 주제 회차 1(그 단위가 대상이면)"""
+    out = {**plan, "smoke": n_by_sp, "rounds": {}}
+    for sp, rounds in plan["rounds"].items():
+        keep = set(rounds[0]["unit_ids"][:n_by_sp.get(sp, 0)])
+        new, seen_topics = [], set()
+        for rd in rounds:
+            ids = [u for u in rd["unit_ids"] if u in keep]
+            if not ids:
+                continue
+            if rd["kind"] == "normal" and rd["round"] == 1:
+                new.append({**rd, "unit_ids": ids})
+            elif rd["kind"] == "topic" and rd["topic"] not in seen_topics:
+                seen_topics.add(rd["topic"])
+                new.append({**rd, "unit_ids": ids})
+        out["rounds"][sp] = new
+    return out
 
 
 # ---------- 프롬프트·호출 (노트북 셀 3·5·6·7과 같은 동작, v1 경로만) ----------
@@ -503,12 +540,14 @@ def _assert_model():
     assert any(m["name"] == MODEL_NAME for m in tags["models"]), f"{MODEL_NAME} 없음 — `docker start ollama` 확인"
 
 
-def generate_all(out_dir: Path, use_weights: bool = True):
+def generate_all(out_dir: Path, use_weights: bool = True, smoke: dict[str, int] | None = None):
     assert out_dir.resolve() != (PROJECT_DIR / "data" / "faq").resolve(), \
         "data/faq에는 기존 전량 라운드 파일이 있다 — round_done이 그것을 완료로 보고 건너뛴다. 새 폴더를 쓸 것"
     assert_same_as_notebook()
     builder, units = load_units()
     plan = build_plan(units, use_weights, ref_targets=ref_target_ids(builder, units) if use_weights and REF_ROUNDS else None)
+    if smoke:
+        plan = smoke_plan(plan, smoke)
     out_dir.mkdir(parents=True, exist_ok=True)
     plan_path = out_dir / "plan.json"
     if plan_path.exists():
@@ -625,7 +664,10 @@ def main(argv=None):
         print(render_plan(plan))
     elif cmd == "run":
         assert "out" in opts, "--out=<출력 폴더> 필요 (기존 data/faq 라운드 파일과 섞이지 않게)"
-        generate_all(Path(opts["out"]), use_weights)
+        if "model" in opts:
+            set_model(opts["model"])
+        smoke = dict(zip(("강아지", "고양이"), map(int, opts["smoke"].split(",")))) if "smoke" in opts else None
+        generate_all(Path(opts["out"]), use_weights, smoke)
     elif cmd == "pilot-ref":
         pilot_ref(Path(opts.get("out", PROJECT_DIR / "data" / "faq" / "exp_r")))
     elif cmd == "show-ref":

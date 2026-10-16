@@ -20,6 +20,8 @@ val loss는 끝까지 내려갔다(0.524 → 0.433) — loss로는 거절 과학
   python -m data.ckpt_select make-set                       선택 세트 만들기(모델 없음, 이미 있으면 같은지 확인)
   python -m data.ckpt_select run <어댑터 폴더>               체크포인트 전부 + 최종을 축소판으로 재고 고른다(GPU)
   python -m data.ckpt_select replay <answer_eval 결과 json…>  이미 잰 97문항 결과로 '축소판이었다면 무엇을 골랐나'(모델 없음)
+  python -m data.ckpt_select evaluate <어댑터 폴더> [--subset=…]  고른 체크포인트를 정답 발췌·검색 입력으로 재고 판정 기준과 대조(GPU)
+  run에 --set=<id 목록 json>: 소규모 시험용 작은 세트
 """
 
 import filecmp
@@ -104,12 +106,15 @@ def render(adapter_dir: Path, scored: dict[str, dict], best: str, title: str) ->
     return "\n".join(L) + "\n"
 
 
-def run(adapter_dir: Path):
+def run(adapter_dir: Path, set_path: Path | None = None):
+    """set_path: 소규모 시험용 작은 세트(기본 = 고정 선택 세트 30문항)"""
     from data import answer_eval as ae
-    ids = make_set()
+    if set_path is None:
+        make_set()
+    set_path = set_path or SET_PATH
     cands = candidates(adapter_dir)
     assert len(cands) > 1, f"{adapter_dir}에 체크포인트가 없다 — 07 save_total_limit 확인"
-    paths = ae.main(["--subset", str(SET_PATH), "--adapter", *map(str, cands)])
+    paths = ae.main(["--subset", str(set_path), "--adapter", *map(str, cands)])
     scored = {}
     for p in paths:
         d = json.loads(Path(p).read_text(encoding="utf-8"))
@@ -117,11 +122,11 @@ def run(adapter_dir: Path):
     scored = dict(sorted(scored.items(), key=lambda kv: step_of(kv[0])))
     best = pick(scored)
     best_path = next(c for c in cands if ae.adapter_tag(c) == best)
-    out = {"adapter": str(adapter_dir), "best": best, "best_path": str(best_path), "set": str(SET_PATH),
+    out = {"adapter": str(adapter_dir), "best": best, "best_path": str(best_path), "set": str(set_path),
            "scored": scored, "created": datetime.now().isoformat(timespec="seconds")}
     (adapter_dir / "ckpt_select.json").write_text(json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     md = REVIEW_DIR / f"ckpt_select_{adapter_dir.name}_{datetime.now():%Y%m%d_%H%M}.md"
-    title = f"축소판 {N_GOLD + N_NA}문항"
+    title = f"축소판 {len(json.loads(Path(set_path).read_text(encoding='utf-8')))}문항"
     md.write_text(render(adapter_dir, scored, best, title), encoding="utf-8")
     print(render(adapter_dir, scored, best, title))
     print(f"선택: {best} → {adapter_dir / 'ckpt_select.json'} | {md}")
@@ -147,6 +152,52 @@ def replay(paths: list[str]):
           f"| 전체로 고른 것: {pick({a: score(r) for a, r in rows_by.items()})}")
 
 
+# 판정 기준(사용자 확정 2026-10-16, rebuild2 기준선) — docs/next_rebuild.md 8절
+# A1 범위: 기준선(rebuild 21 → rebuild2 12)을 잰 범위 = answerable에서 점검 당시 발췌가 깨졌던 5문항을 뺀 80문항(85문항 전체도 함께 적는다)
+A1_EXCLUDE = {"R004", "R009", "R062", "R063", "R090"}
+CRITERIA = {"answerable_refused_max": 12, "grade_refused_max": 11, "na_refused_min": 14, "search_gold_in_refused_max": 9}
+
+
+def judge(gold_rows: list[dict], search_rows: list[dict]) -> dict:
+    from data import answer_eval as ae
+    from data.search_scope import mentioned_grade, mentioned_type
+    labels = json.loads(ae.LABELS_PATH.read_text(encoding="utf-8"))
+    ref = lambda r: _flags(r["ft_flags"])["refused"]
+    g = [r for r in gold_rows if r["kind"] == "gold"]
+    ans = [r for r in g if ae.gold_label(r["id"], labels) == "answerable"]
+    grade = [r for r in g if mentioned_grade(r["question"]) or mentioned_type(r["question"])]
+    na = [r for r in gold_rows if r["kind"] != "gold"]
+    s_in = [r for r in search_rows if r["kind"] == "gold" and ae.gold_label(r["id"], labels) == "answerable"
+            and r.get("gold_rank") is not None]
+    a1 = [r for r in ans if r["id"] not in A1_EXCLUDE]
+    v = {"answerable_refused": sum(map(ref, a1)), "answerable_n": len(a1),
+         "answerable_refused_all85": sum(map(ref, ans)), "answerable_all85_n": len(ans),
+         "grade_refused": sum(map(ref, grade)), "grade_n": len(grade),
+         "na_refused": sum(map(ref, na)), "na_n": len(na),
+         "search_gold_in_refused": sum(map(ref, s_in)), "search_gold_in_n": len(s_in)}
+    ok = {"answerable": v["answerable_refused"] <= CRITERIA["answerable_refused_max"],
+          "grade": v["grade_refused"] <= CRITERIA["grade_refused_max"],
+          "no_answer": v["na_refused"] >= CRITERIA["na_refused_min"],
+          "search": v["search_gold_in_refused"] <= CRITERIA["search_gold_in_refused_max"]}
+    return {**v, "pass": ok, "criteria": CRITERIA}
+
+
+def evaluate(adapter_dir: Path, subset: Path | None = None) -> dict:
+    """select가 고른 체크포인트를 정답 발췌·검색 입력으로 재고 판정 기준과 대조한다(rebuild eval 단계).
+    판정은 보고용이다 — 미달이어도 단계는 끝난다(무엇을 할지는 사람이 정한다). 선택 세트를 뺀 나머지 점수도 함께 적는다"""
+    from data import answer_eval as ae
+    sel = json.loads((adapter_dir / "ckpt_select.json").read_text(encoding="utf-8"))
+    sub = ["--subset", str(subset)] if subset else []
+    gold = json.loads(Path(ae.main([*sub, "--adapter", sel["best_path"]])[0]).read_text(encoding="utf-8"))["rows"]
+    search = json.loads(Path(ae.main([*sub, "--search", "--adapter", sel["best_path"]])[0]).read_text(encoding="utf-8"))["rows"]
+    res = {"best": sel["best"], "subset": str(subset) if subset else None, **judge(gold, search),
+           "holdout_score": report_holdout(gold) if SET_PATH.exists() else None,
+           "created": datetime.now().isoformat(timespec="seconds")}
+    (adapter_dir / "eval_result.json").write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    return res
+
+
 def report_holdout(rows: list[dict]) -> dict:
     """판정 보고용 — 선택 세트를 뺀 나머지 문항 점수"""
     ids = set(json.loads(SET_PATH.read_text(encoding="utf-8")))
@@ -159,7 +210,11 @@ def main(argv=None):
     if cmd == "make-set":
         make_set()
     elif cmd == "run":
-        run(Path(args[1]))
+        opts = dict(a[2:].split("=", 1) for a in args if a.startswith("--") and "=" in a)
+        run(Path(args[1]), Path(opts["set"]) if "set" in opts else None)
+    elif cmd == "evaluate":
+        opts = dict(a[2:].split("=", 1) for a in args if a.startswith("--") and "=" in a)
+        evaluate(Path(args[1]), Path(opts["subset"]) if "subset" in opts else None)
     elif cmd == "replay":
         replay(args[1:])
     else:
