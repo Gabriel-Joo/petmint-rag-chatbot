@@ -463,10 +463,11 @@ def preflight(run: Run, stage: str):
         a = run.adapter()
         assert a is None, f"이미 어댑터가 있다: {a} — 다시 학습하려면 옮긴 뒤 --force"
     # GPU: 앞 단계가 남긴 Ollama 모델을 내리고, 다른 프로세스가 GPU를 쓰고 있으면 시작하지 않는다
-    unloaded = unload_ollama() if stage in ("build", "train", "check", "select", "eval") else []
+    # 모든 단계에서 내린다(2026-10-16 소규모 시험): docker 안 Ollama 러너는 nvidia-smi에 프로세스 이름이 '[No data]'로 나와
+    # foreign_gpu_users가 Ollama로 알아보지 못한다. 순서 B의 gen → rewrite처럼 내리지 않고 넘어가면 앞 단계 모델이 '다른 프로세스'로 잡힌다
+    unloaded = unload_ollama()
     if unloaded:
         run.log(f"{stage}: Ollama 모델 내림 {unloaded}")
-    if stage in ("build", "train", "select", "eval"):
         time.sleep(3)
     others = foreign_gpu_users()
     assert not others, f"다른 프로세스가 GPU를 쓰는 중 — 끝내거나 커널을 종료할 것: {others}"
