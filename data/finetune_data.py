@@ -80,8 +80,9 @@ BASE_MODEL_DIR = BASE_DIR.parent / "models" / "base" / "Tri-7B"
 
 SEED = 20261013
 TARGET = {"distract": 0.70, "gold_only": 0.20, "no_answer": 0.10}
-# --composition(2026-10-16, rebuild3): "90/0/10" = distract 90 · gold_only 0 · no_answer 10. gold_only가 0이면 방해 후보가 없는 QA는
-# gold_only로 돌리지 않고 버린다(kind "dropped_no_distractor") — 서비스는 언제나 검색 결과 여러 개를 보여 준다
+# --composition(2026-10-16, rebuild3): "90/0/10" = distract 90 · gold_only 0 · no_answer 10 — "주어진 발췌는 전부 관련 있다"를
+# 가르치지 않으려고. 다만 방해 후보가 하나도 없는 QA(검색 top --search-top-k가 전부 정답 단위이거나 답이 든 발췌)는 gold_only로 남긴다.
+# B-1(top 6)에서 2,691/7,598건(35%, 특별약관 2,555)이었다 — 버리면 의료비 특약을 아예 배우지 않는다(사용자 결정 2026-10-16)
 COMPOSITIONS = {"70/20/10": {"distract": 0.70, "gold_only": 0.20, "no_answer": 0.10},
                 "90/0/10": {"distract": 0.90, "gold_only": 0.0, "no_answer": 0.10}}
 # --n-distract(2026-10-16): distract의 방해 발췌 수. None = 1~2개 무작위(rebuild2까지). 2 = 후보가 있으면 2개(정답 1 : 방해 2,
@@ -94,7 +95,7 @@ def no_gold_only() -> bool:
 
 
 def fallback_kind(e: dict) -> str:
-    """no_answer·distract가 될 수 없을 때 — gold_only 0이면 방해 후보가 있으면 distract, 없으면 버린다"""
+    """no_answer·distract가 될 수 없을 때 — gold_only 0이면 방해 후보가 있으면 distract, 없으면 gold_only(남는 몫)"""
     if not no_gold_only():
         return "gold_only"
     if not e["loose"] and e["strict"]:
@@ -102,10 +103,10 @@ def fallback_kind(e: dict) -> str:
         # --distractor-hard면 가까운 오답 순)는 있을 수 있다 — distract의 방해 발췌로 쓴다(B-1 2026-10-16: loose 없는 QA 2,691/7,598)
         e["loose"] = e["strict"]
         e["loose_from_strict"] = True
-    return "distract" if e["loose"] else "dropped_no_distractor"
+    return "distract" if e["loose"] else "gold_only"
 VAL_RATIO = 0.10
 MAX_LENGTH = 3072          # 07 학습 시퀀스 상한(토큰). 넘는 샘플은 발췌를 줄이고(fit_to_budget), 그래도 넘으면 버린다
-SEARCH_TOP_K = 6           # 방해 후보로 검색해 두는 수(정답·겹침 제외 전)
+SEARCH_TOP_K = 6           # 방해 후보로 검색해 두는 수(정답·겹침 제외 전). --search-top-k로 바꾼다(캐시 파일도 따로)
 STRICT_ANSWER_OVERLAP = 8  # no_answer: 답변과 이 길이 이상 겹치면 제외(rag_context.used_references와 같은 기준)
 LOOSE_ANSWER_OVERLAP = 20  # distract: 상투구가 아니라 내용이 겹치는 길이
 UNIT_OVERLAP = 40          # 정답 단위 원문과 이 길이 이상 겹치면(통원↔입원 반복 문장 등) 제외 — 두 종류 공통
@@ -139,6 +140,11 @@ def load_final(species: str, final_dir: Path | None = None) -> list[dict]:
 
 
 # ---------------- 방해 발췌 검색 ----------------
+def search_cache_path(top_k: int) -> Path:
+    """top 6은 기존 캐시 그대로, 그 밖의 깊이는 search_cache_k<N>.json(같은 질문이라도 결과 수가 다르다)"""
+    return SEARCH_CACHE if top_k == 6 else SEARCH_CACHE.with_name(f"search_cache_k{top_k}.json")
+
+
 def run_searches(engine, builder, qas_by_species: dict, cache_path: Path = SEARCH_CACHE) -> dict:
     """질문마다 SearchScope.unrestricted로 build_full_context 결과를 저장. 이미 있는 질문은 건너뛴다"""
     from data.rag_context import build_full_context
@@ -400,7 +406,7 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
             "trimmed": n_items < len(items) or user.count("[참조] ") < sum(len(it.references) for it in items),
             "distractor_keys": [it.key for it in items if it is not gold],
             "round": qa.get("round"), "row": qa.get("row"), "flags": qa.get("flags", []),
-            "rewrite_status": qa.get("rewrite_status"),
+            "rewrite_status": qa.get("rewrite_status"), "question_original": qa.get("question_original"),
             "n_tokens": n_tokens, "n_prompt_tokens": count.prompt_len(messages), "distractor_mode": e["na_mode"], "na_noun_cover": na_cover,
             "prompt_version": prompts.PROMPT_VERSION}
     if e.get("pair_na") and kind in ("no_answer", "distract_pair"):
@@ -573,6 +579,7 @@ def build_all(builder, cache: dict, count: TokenCounter, distractor: str = "lega
             stats["dropped_no_distractor"] += 1
             continue
         stats["distract_from_strict"] += bool(e.get("loose_from_strict")) and e["kind"] == "distract"
+        stats["gold_only_no_candidate"] += no_gold_only() and e["kind"] == "gold_only"
         sample, why = build_sample(e, count)
         stats[why] += 1
         if why == "na_dropped_cover":
@@ -722,6 +729,7 @@ def requests_unload(model: str):
 
 
 def main(argv=None):
+    global TARGET, N_DISTRACT, SEARCH_TOP_K
     ap = argparse.ArgumentParser()
     ap.add_argument("--search-only", action="store_true")
     ap.add_argument("--distractor", choices=DISTRACTOR_MODES, default="legacy",
@@ -738,6 +746,8 @@ def main(argv=None):
                     help="no_answer 방해 발췌를 가까운 오답(같은 조 → 인접 조 → 같은 문서 → 다른 문서) 순으로 고른다(2026-10-15)")
     ap.add_argument("--confirm-max-bad", type=float, default=CONFIRM_MAX_BAD,
                     help="q2 확인 검사가 답이 있다고 본 no_answer 비율 상한 — 넘으면 멈춘다. 1이면 멈추지 않고 그 샘플만 뺀다")
+    ap.add_argument("--search-top-k", type=int, default=SEARCH_TOP_K,
+                    help="방해 후보 검색 깊이(기본 6). 20이면 후보 없는 QA가 줄어든다(B-1 표본: 22/60 → 13/60)")
     ap.add_argument("--composition", choices=sorted(COMPOSITIONS), default="70/20/10",
                     help="distract/gold_only/no_answer 목표 비율. 90/0/10이면 방해 후보 없는 QA는 버린다(2026-10-16)")
     ap.add_argument("--n-distract", type=int, choices=(1, 2), default=None,
@@ -746,8 +756,8 @@ def main(argv=None):
                     help="q2 확인 검사(qwen3:14b)를 하지 않는다 — 빌드 뒤 사람 표본 검수로 대신한다(rebuild3, 2026-10-16)")
     ap.add_argument("--pair-na", action="store_true", help="no_answer마다 같은 질문·같은 방해 발췌 + 정답 발췌 양성(distract_pair)을 더한다")
     args = ap.parse_args(argv)
-    global TARGET, N_DISTRACT
-    TARGET, N_DISTRACT = COMPOSITIONS[args.composition], args.n_distract
+    TARGET, N_DISTRACT, SEARCH_TOP_K = COMPOSITIONS[args.composition], args.n_distract, args.search_top_k
+    cache_path = search_cache_path(SEARCH_TOP_K)
     if (args.na_cover_max > 0 or args.na_judge) and args.na_fill is None:
         ap.error("--na-cover-max나 --na-judge를 주면 --na-fill drop|refill 을 골라야 한다")
     if args.na_cover_max > 0 and args.na_judge:
@@ -755,13 +765,13 @@ def main(argv=None):
     from data import rag_context
     qas = {sp: load_final(sp, args.final_dir) for sp in FINAL_FILES}
     print("최종 QA:", {sp: len(v) for sp, v in qas.items()}, "| 방해 발췌:", args.distractor)
-    cache = json.loads(SEARCH_CACHE.read_text(encoding="utf-8")) if SEARCH_CACHE.exists() else {}
+    cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
     missing = any(f"{sp}|{qa['question']}" not in cache for sp, v in qas.items() for qa in v)
     if missing or args.search_only:
         from data import search_engine   # 검색이 남았을 때만 모델을 올린다(GPU)
         engine = search_engine.SearchEngine()
         builder = rag_context.ContextBuilder(client=engine.client, chunks=engine.chunks)
-        cache = run_searches(engine, builder, qas)
+        cache = run_searches(engine, builder, qas, cache_path)
         if args.search_only:
             return
         if args.na_judge:      # 검색 모델(GPU)을 내리고 나서 판정 모델(Ollama)을 올린다 — 한 프로세스에서 둘이 겹치지 않게
@@ -789,7 +799,7 @@ def main(argv=None):
         stats.update({f"kind_{k}": v for k, v in kinds.items()})
         stats["overlap"] = overlap_report(train + val)
         stats["overlap_bins"] = overlap_bins(train + val)
-    stats.update(distractor_hard=args.distractor_hard, pair_na=args.pair_na, composition=args.composition,
+    stats.update(distractor_hard=args.distractor_hard, pair_na=args.pair_na, composition=args.composition, search_top_k=SEARCH_TOP_K,
                  n_distract=args.n_distract, confirm="off" if args.no_confirm else "qwen3:14b")
     write_jsonl(out_dir / "train.jsonl", train)
     write_jsonl(out_dir / "val.jsonl", val)

@@ -60,7 +60,16 @@ REWRITE_SYSTEM = """당신은 반려동물 보험 상담 FAQ의 질문을 고객
 - 원래 질문에 있는 숫자(금액·기간·나이 등)는 그대로 남기세요. 원문에 없는 상황·나이·금액·질병명을 새로 만들지 마세요.
 - 반드시 JSON 한 개로만 답하세요: {"question": "고친 질문"}"""
 
-REWRITE_META = ("question_original", "rewrite")      # 재작성이 더하는 필드 — 보존 확인에서 빼는 것은 이것과 question뿐
+REWRITE_META = ("question_original", "rewrite", "rewrite_status")
+
+# 06 앞 재작성(순서 B, rebuild3 2026-10-16)의 등급 어구 대체 — 07번 10-7절 4번. 평가에서 "고급형인데 해지하면 환급금 있나요?"처럼
+# 등급·유형을 밝힌 공통 조항 질문 23건 중 rebuild2가 15건을 거절했다. 학습에는 그런 양성이 거의 없다.
+# 변형을 더하지 않고 대체한다 — 06이 같은 단위 안의 거의 같은 질문을 중복으로 버리고 단위 상한도 걸기 때문(사용자 승인 2026-10-16).
+GRADE_SHARE = 0.10          # 전체 QA 대비 등급 어구로 쓰는 비율(대상 = coverage_type 없는 단위의 QA)
+GRADE_WORDS = ("고급형", "기본형", "실속형")
+TYPE_WORDS = ("Ⅰ유형", "Ⅱ유형", "Ⅲ유형")
+GRADE_RULE = ("- 고객이 가입한 상품의 등급·유형 '{p}'을(를) 질문 앞부분에서 밝히세요(예: \"{p} 가입했는데 ~\", \"{p}인데 ~\"). "
+              "이 조항은 등급·유형과 관계없이 같은 내용이라 [답변]은 그대로 맞습니다. '{p}' 글자를 그대로 쓰세요.")      # 재작성이 더하는 필드 — 보존 확인에서 빼는 것은 이것과 question뿐
 
 
 # ---------- 프롬프트·호출 ----------
@@ -71,9 +80,9 @@ def build_rewrite_prompt(faq: dict, source: str) -> str:
             f"[원래 질문]\n{faq['question']}\n\n[답변]\n{faq_checks.answer_body(faq['answer'])}")
 
 
-def call_rewrite(prompt: str) -> tuple[str, int]:
+def call_rewrite(prompt: str, system: str = REWRITE_SYSTEM) -> tuple[str, int]:
     """(응답 원문, 입력 토큰 수)"""
-    body = {"model": MODEL_NAME, "system": REWRITE_SYSTEM, "prompt": prompt, "stream": False, "format": "json",
+    body = {"model": MODEL_NAME, "system": system, "prompt": prompt, "stream": False, "format": "json",
             "options": {"temperature": TEMPERATURE, "repeat_penalty": 1.1, "num_predict": NUM_PREDICT, "num_ctx": NUM_CTX},
             **OLLAMA_EXTRA}
     r = requests.post(f"{OLLAMA_URL}/api/generate", json=body, timeout=900)
@@ -106,6 +115,32 @@ def _label_tokens(text: str) -> Counter:
     return Counter(re.sub(r"\s+", "", m.group(0)) for m in faq_style.LABEL_LEAK.finditer(text or ""))
 
 
+# 답변 누출(2026-10-16, 사용자 확정): 재작성이 답변의 결론·수치를 질문에 넣으면("연간 총 보상한도는 750만원인가요?") 모델이 발췌를
+# 읽지 않고 질문만 보고 답하는 법을 배울 수 있다. 프롬프트 56행이 "상황은 원래 질문과 답변에 있는 내용으로만" 만들라고 해서 생긴다.
+# rebuild3_b1p 재작성 6,971건에서: 숫자 규칙 46건(누출 29 · 고객 상황 숫자 17 — 거절해도 원래 질문이 남아 구어체만 잃는다),
+# 어구는 4자 조각이면 1,611건(23%)이라 너무 넓어 명사형 어절 4자 이상으로 좁혔다(77건, 표본 15건 중 약 10건이 실제 누출)
+_PARTICLE = re.compile(r"(은|는|이|가|을|를|의|에|에서|으로|로|와|과|도|만|이나|나|인|일|이라|라)$")
+_VERB_END = re.compile(r"(다|면|야|지|고|기|요|서|게|며|까지|하는|되는|었|았|였)$")
+
+
+def _answer_nouns(text: str) -> set[str]:
+    """4자 이상 어절에서 조사를 뗀 명사형(동사·어미로 끝나는 것은 뺀다)"""
+    out = set()
+    for w in re.findall(r"[가-힣A-Za-z()]{4,}", text or ""):
+        w = _PARTICLE.sub("", w)
+        if len(re.sub(r"[()]", "", w)) >= 4 and not _VERB_END.search(w):
+            out.add(w)
+    return out
+
+
+def answer_leak(new_q: str, orig_q: str, body: str) -> list[str]:
+    """원래 질문에 없던 숫자·명사형 어구(4자 이상)가 답변에서 왔으면 그 목록"""
+    nums = (_bare_numbers(new_q) - _bare_numbers(orig_q)) & _bare_numbers(body)
+    o = re.sub(r"\s+", "", orig_q)
+    words = {w for w in _answer_nouns(new_q) & _answer_nouns(body) if w not in o}
+    return sorted(nums) + sorted(words)
+
+
 def check_rewrite(new_q: str, faq: dict, source: str, refs: list[dict], paragraphs: list,
                   base_checks: set[str]) -> list[str]:
     """재작성 질문의 문제 목록(빈 목록 = 통과). base_checks: 원래 질문으로 돌린 06 결정적 검사에 이미 걸린 검사 이름"""
@@ -128,6 +163,9 @@ def check_rewrite(new_q: str, faq: dict, source: str, refs: list[dict], paragrap
     new_nums = _bare_numbers(new_q) - _bare_numbers(pool)
     if new_nums:
         why.append(f"원문·답변에 없는 숫자: {sorted(new_nums)}")
+    leak = answer_leak(new_q, orig_q, body)
+    if leak:
+        why.append(f"답변 누출(원래 질문에 없던 답변의 숫자·어구): {leak}")
     # 06 결정적 검사(종·통원/입원·숫자·조문 등은 질문도 본다)를 바꾼 질문으로 다시 — 원래 없던 drop·flag가 생기면 탈락
     after = faq_checks.run_checks({**faq, "question": new_q}, source, refs, paragraphs)
     new_checks = sorted({c["check"] for c in after if c["action"] in ("drop", "flag")} - base_checks)
@@ -137,11 +175,13 @@ def check_rewrite(new_q: str, faq: dict, source: str, refs: list[dict], paragrap
 
 
 def attempt_problems(q: str | None, used: int, faq: dict, source: str, refs: list[dict], paragraphs: list,
-                     base: set[str]) -> list[str]:
+                     base: set[str], grade_phrase: str | None = None) -> list[str]:
     """시도 하나의 문제 목록(빈 목록 = 채택 가능). recheck가 저장된 시도에 같은 규칙을 다시 적용한다"""
     why = [f"입력 {used}토큰 — 잘렸을 수 있음"] if used >= PROMPT_BUDGET else []
     if q is None:
         return why + ["JSON 파싱 실패"]
+    if grade_phrase and grade_phrase.replace(" ", "") not in q.replace(" ", ""):
+        why.append(f"등급 어구 빠짐: {grade_phrase}")
     return why + check_rewrite(q, faq, source, refs, paragraphs, base)
 
 
@@ -153,22 +193,25 @@ def settle(faq: dict, attempts: list[dict]) -> tuple[str, str | None]:
     return ("parse_fail" if all(a["question"] is None for a in attempts) else "rejected"), None
 
 
-def rewrite_faq(faq: dict, unit: dict, refs: list[dict], source: str) -> dict:
-    """QA 한 건 → 질문만 바뀐 새 레코드. rewrite.status: ok / unchanged(모델이 그대로 돌려줌) / parse_fail / rejected"""
+def rewrite_faq(faq: dict, unit: dict, refs: list[dict], source: str, grade_phrase: str | None = None) -> dict:
+    """QA 한 건 → 질문만 바뀐 새 레코드. rewrite.status: ok / unchanged(모델이 그대로 돌려줌) / parse_fail / rejected.
+    grade_phrase(06 앞 재작성, 2026-10-16): 공통 조항 QA의 질문에 가입 등급·유형 어구를 넣어 쓴다(GRADE_RULE). 어구가 빠지면 실패"""
     paragraphs = [r["paragraph_num"] for r in unit["records"]]
     base = {c["check"] for c in faq_checks.run_checks(faq, source, refs, paragraphs) if c["action"] in ("drop", "flag")}
     prompt = build_rewrite_prompt(faq, source)
+    system = REWRITE_SYSTEM + "\n" + GRADE_RULE.format(p=grade_phrase) if grade_phrase else REWRITE_SYSTEM
     attempts = []
     for _ in range(MAX_ATTEMPTS):
-        raw, used = call_rewrite(prompt)
+        raw, used = call_rewrite(prompt, system)
         q = parse_question(raw)
         attempts.append({"raw": raw[:500], "prompt_tokens": used, "question": q,
-                         "why": attempt_problems(q, used, faq, source, refs, paragraphs, base)})
+                         "why": attempt_problems(q, used, faq, source, refs, paragraphs, base, grade_phrase)})
         if not attempts[-1]["why"]:
             break
     status, new_q = settle(faq, attempts)
     return {**faq, "question": new_q or faq["question"], "question_original": faq["question"],
-            "rewrite": {"status": status, "attempts": attempts, "model": MODEL_NAME, "temperature": TEMPERATURE}}
+            "rewrite": {"status": status, "attempts": attempts, "model": MODEL_NAME, "temperature": TEMPERATURE,
+                        "kind": "grade" if grade_phrase else "plain", "grade_phrase": grade_phrase}}
 
 
 # ---------- 보존 확인 ----------
@@ -438,10 +481,128 @@ def export_final(records: list[dict], out_dir: Path, species: list[str]) -> dict
     return dict(stats)
 
 
+# ---------- 06 앞 재작성(순서 B) ----------
+def _rkey(f: dict) -> str:
+    return f"{f['species']}|{f['unit_id']}|{f['question']}"
+
+
+def grade_rate(records: list[dict]) -> float:
+    """대상(coverage_type 없는 단위) 중 등급 어구로 쓸 비율 — 전체의 GRADE_SHARE가 되게"""
+    elig = sum(f.get("coverage_type") in (None, "None") for f in records)
+    return min(1.0, GRADE_SHARE * len(records) / elig) if elig else 0.0
+
+
+def grade_phrase_for(f: dict, rate: float) -> str | None:
+    """해시로 고른다(재현). 이름에 유형(Ⅰ·Ⅱ·Ⅲ)이 붙은 특약은 등급 어구만 — 다른 유형을 말하면 단위와 어긋난다"""
+    if f.get("coverage_type") not in (None, "None"):
+        return None
+    h = int(hashlib.md5(("grade|" + _rkey(f)).encode()).hexdigest(), 16)
+    if (h % 10000) / 10000 >= rate:
+        return None
+    sec = f.get("section_name") or ""
+    words = GRADE_WORDS if any(t in sec for t in ("Ⅰ", "Ⅱ", "Ⅲ")) else GRADE_WORDS + TYPE_WORDS
+    return words[(h // 10000) % len(words)]
+
+
+def run_pre(records: list[dict], idx: "UnitIndex", progress_path: Path, rate: float) -> list[dict]:
+    """05 QA(또는 B-1′의 06 final) 전부 재작성. 재작성이 실패하면 원래 질문 그대로 남는다(06이 그대로 심판). 중간 저장·재개"""
+    done = _load_json(progress_path, {})
+    out, n_new, t0 = [], 0, time.time()
+    for f in records:
+        k = _rkey(f)
+        if k not in done:
+            u, refs, source = idx.get(f["species"], f["unit_id"])
+            assert u is not None, f"현재 데이터에 없는 단위: {f['unit_id']}"
+            r = rewrite_faq(f, u, refs, source, grade_phrase_for(f, rate))
+            done[k] = {"question": r["question"], "rewrite": r["rewrite"]}
+            n_new += 1
+            if n_new % SAVE_EVERY == 0:
+                _dump(done, progress_path)
+                print(f"  재작성 {n_new}건, {(time.time() - t0) / 60:.1f}분", flush=True)
+        d = done[k]
+        st = d["rewrite"]["status"]
+        out.append({**f, "question": d["question"], "question_original": f["question"], "rewrite": d["rewrite"],
+                    "rewrite_status": st if d["rewrite"].get("kind") != "grade" else f"grade_{st}"})
+    _dump(done, progress_path)
+    if n_new:
+        print(f"재작성 새로 {n_new}건 ({(time.time() - t0) / 60:.1f}분)", flush=True)
+    return out
+
+
+def pre_summary(records: list[dict]) -> dict:
+    ok = [r for r in records if r["rewrite"]["status"] == "ok"]
+    g = [r for r in records if r["rewrite"].get("kind") == "grade"]
+    s = faq_style.style_stats([r["question"] for r in records])
+    return {"n": len(records), "status": dict(Counter(r["rewrite"]["status"] for r in records)),
+            "grade_target": len(g), "grade_ok": sum(r["rewrite"]["status"] == "ok" for r in g),
+            "grade_ok_share": round(sum(r["rewrite"]["status"] == "ok" for r in g) / max(len(records), 1), 4),
+            "fail_rate": round(1 - (len(ok) + sum(r["rewrite"]["status"] == "unchanged" for r in records)) / max(len(records), 1), 4),
+            "label_leak": round(s["label_leak"], 4), "situational": round(s["situational"], 4), "q_len_median": s["q_len_median"]}
+
+
+def set_model(model: str):
+    global MODEL_NAME, OLLAMA_EXTRA
+    MODEL_NAME = model
+    OLLAMA_EXTRA = {"think": False} if model.startswith("qwen3") else {}
+
+
+def main_pre(src: Path, out: Path, species: list[str]):
+    """순서 B: <src>의 05 라운드 파일 → 재작성한 라운드 파일을 <out>에 같은 이름으로(+ _failures.json·plan.json 복사).
+    06은 PETMINT_06_INPUT=<out>(data/faq 기준)으로 이 폴더를 읽는다. 라운드마다 완료 표시(_failures.json)를 마지막에 쓴다"""
+    import shutil
+    rounds = sorted(p for sp in species for p in src.glob(f"petmint_{sp}_faq_round*.json") if not p.stem.endswith("_failures"))
+    assert rounds, f"05 라운드 파일 없음: {src}"
+    out.mkdir(parents=True, exist_ok=True)
+    allrec = [f for p in rounds for f in _load_json(p, [])]
+    rate = grade_rate(allrec)
+    print(f"05 QA {len(allrec)}건, 라운드 파일 {len(rounds)}개 | 등급 어구 대상 비율 {rate:.3f} → 예상 {GRADE_SHARE:.0%} | 모델 {MODEL_NAME} {OLLAMA_EXTRA}")
+    idx = UnitIndex(species)
+    _assert_model(MODEL_NAME)
+    for p in rounds:
+        dst, fail = out / p.name, out / (p.stem + "_failures.json")
+        if dst.exists() and fail.exists():
+            continue
+        before = _load_json(p, [])
+        after = run_pre(before, idx, out / "progress" / f"{p.stem}.json", rate)
+        problems = preservation_problems(before, after)
+        assert not problems, f"{p.name}: 재작성이 질문 외 필드를 바꿨다:\n" + "\n".join(problems[:20])
+        _dump(after, dst)
+        shutil.copy2(p.with_name(p.stem + "_failures.json"), fail)
+        print(f"{p.name}: {len(after)}건 {dict(Counter(r['rewrite_status'] for r in after))}", flush=True)
+    if (src / "plan.json").exists():
+        shutil.copy2(src / "plan.json", out / "plan.json")      # 06이 주제 가중치(단위 상한)를 같은 계획으로 적용한다
+    _unload(MODEL_NAME)
+    recs = [f for p in rounds for f in _load_json(out / p.name, [])]
+    summ = pre_summary(recs)
+    _dump(summ, out / "rewrite_summary.json")
+    print("재작성 요약:", summ)
+
+
+def main_pre_final(src: Path, out: Path, species: list[str]):
+    """B-1′(2026-10-16): 06 final을 순서 B처럼 전부 재작성해 <out>/final/에 쓴다 — 재구축 전에 build 검사를 예측하는 용도.
+    06 재심판은 하지 않는다(rebuild3에서는 06이 재작성한 질문을 심판한다 — 그 탈락만큼 이 예측과 다르다)"""
+    recs = [f for sp in species for f in _load_json(src / "checked" / f"petmint_{sp}_faq_final.json", [])]
+    idx = UnitIndex(species)
+    recs = [f for f in recs if f["unit_id"] in idx.units[f["species"]]]
+    rate = grade_rate(recs)
+    print(f"06 final {len(recs)}건 | 등급 어구 대상 비율 {rate:.3f} | 모델 {MODEL_NAME} {OLLAMA_EXTRA}", flush=True)
+    _assert_model(MODEL_NAME)
+    after = run_pre(recs, idx, out / "progress.json", rate)
+    _unload(MODEL_NAME)
+    for sp in species:
+        _dump([r for r in after if r["species"] == sp], out / "final" / f"petmint_{sp}_faq_final.json")
+    summ = pre_summary(after)
+    _dump(summ, out / "rewrite_summary.json")
+    print("재작성 요약:", summ)
+
+
 def main(argv=None):
     """python -m data.faq_rewrite pilot [종]   — final에서 100건(기본 강아지)
        python -m data.faq_rewrite all [종...] — final 전량(판단 기준 통과 후). 끝나면 <out>/final/에 학습용 final을 쓴다
        python -m data.faq_rewrite recheck [폴더명] — 저장된 재작성 시도에 지금 검사 규칙만 다시(모델 호출 없음, 기본 pilot_강아지)
+       python -m data.faq_rewrite pre [종...] --src=<05 출력> --out=<06 입력> [--model=qwen3:14b]
+           — 순서 B(rebuild3): 05 QA 전부를 06 앞에서 재작성(공통 조항 일부는 등급 어구로). 재심판 없음
+       python -m data.faq_rewrite pre-final [종...] --src=<06 출력> --out=<폴더> [--model=…] — B-1′: 06 final을 같은 방식으로(예측용)
        단계만: --rewrite-only / --judge-only (재작성 → 생성 모델 내림 → 재심판 순서는 같다)
        입력·출력: --src=<06 출력 폴더(…/checked의 상위)> --out=<출력 폴더> (기본: data/faq, data/faq/rewrite/<모드>)"""
     args = list(sys.argv[1:] if argv is None else argv)
@@ -449,7 +610,13 @@ def main(argv=None):
     flags = {a for a in args if a.startswith("--") and "=" not in a}
     args = [a for a in args if not a.startswith("--")]
     mode = args[0] if args else "pilot"
-    assert mode in ("pilot", "all", "recheck"), "모드는 pilot, all, recheck"
+    assert mode in ("pilot", "all", "recheck", "pre", "pre-final"), "모드는 pilot, all, recheck, pre, pre-final"
+    if "model" in opts:
+        set_model(opts["model"])
+    if mode in ("pre", "pre-final"):
+        species = args[1:] or ["강아지", "고양이"]
+        (main_pre if mode == "pre" else main_pre_final)(Path(opts["src"]), Path(opts["out"]), species)
+        return
     if mode == "recheck":
         out_dir = OUT_ROOT / (args[1] if len(args) > 1 else "pilot_강아지")
         species = sorted({r["species"] for r in _load_json(out_dir / "rewritten.json", [])})
