@@ -75,12 +75,12 @@
 }
 .introRow, .tech { width: 100%; max-width: 1280px; margin: 0 auto; }
 
-/* 글 묶음과 영상 카드는 윗선을 맞춘다(위 기준). 사이 간격은 화면 폭에 따라 80~144px */
+/* 글 묶음과 영상 카드는 윗선을 맞춘다(위 기준). 사이 간격은 화면 폭에 따라 128~224px */
 .introRow {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   align-items: start;
-  column-gap: clamp(80px, 9vw, 144px);
+  column-gap: clamp(128px, 13vw, 224px);
 }
 /* 영상이 왼쪽, 글이 오른쪽 — DOM 순서(글 → 영상)는 그대로 두고 칸만 바꾼다 */
 .introReverse { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
@@ -89,6 +89,19 @@
 /* 한글은 어절 단위로 줄바꿈 — 기본값은 "습니/다."처럼 글자 사이에서 끊는다 */
 .introText { display: flex; flex-direction: column; gap: 20px; word-break: keep-all; overflow-wrap: anywhere; }
 .eyebrow { margin: 0; line-height: 1.2; font-family: var(--font-logo); font-size: var(--font-lg); font-weight: var(--font-weight-label); color: var(--primary); }
+/* 모델 구성 배지 — 라벨보다 작고 흐리게. 알약 사이에 + */
+.stack { list-style: none; margin: -8px 0 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pill {
+  padding: 0.15em 0.75em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: var(--font-2xs);
+  font-weight: var(--font-weight-label);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.stackPlus { font-size: var(--font-2xs); color: var(--text-faint); }
 .introBody { margin: 0; font-size: var(--font-lead); color: var(--text-dim); line-height: 1.7; }
 
 /* 섹션 제목 = 캐릭터가 하는 말. 흰 말풍선, 꼬리는 영상(캐릭터) 쪽 — 글이 왼쪽이면 오른쪽, 글이 오른쪽이면 왼쪽,
