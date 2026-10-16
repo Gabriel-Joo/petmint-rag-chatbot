@@ -6,7 +6,7 @@ lifespan: 약관 청크·그래프 로드(없으면 기동 실패) → 고객 �
 → MySQL(petmint) 연결·스키마 확인.
 어느 하나라도 안 되면 기동하지 않는다.
 web/dist가 있으면 / 에서 React 빌드물을 같이 서빙한다 — 컨테이너 하나로 배포한다.
-search-service 헬스체크·ContextBuilder는 검색을 붙일 때 넣는다.
+search-service 헬스체크는 검색을 붙일 때 넣는다. search-service는 청크 top-k만 돌려주고 발췌 조립은 여기서 만든 ContextBuilder가 한다.
 """
 
 import logging
