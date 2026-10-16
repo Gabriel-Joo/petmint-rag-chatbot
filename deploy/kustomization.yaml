@@ -25,4 +25,4 @@ resources:
 
 images:
   - name: harbor.ronanlab.dev/petmint/petmint-app
-    newTag: "0.1.0"          # latest 금지(10번 8절) — 롤링 중 어느 Pod가 무엇을 도는지 알 수 있어야 한다
+    newTag: "4e81fa250169"   # Jenkins가 올린 커밋 해시 12자리. latest 금지(10번 8절) — 롤링 중 어느 Pod가 무엇을 도는지 알 수 있어야 한다
