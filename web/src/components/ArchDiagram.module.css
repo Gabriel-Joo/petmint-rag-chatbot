@@ -22,3 +22,17 @@
 .edgeLabel { fill: var(--text-dim); font-weight: var(--font-weight-body); }
 
 .caption { font-size: var(--font-sm); color: var(--text-dim); text-align: center; word-break: keep-all; }
+
+/* 쿠버네티스 묶음 — 호스트(점선·연보라)와 구분되게 옅은 실선만 */
+.k8sGroup { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.k8sLabel { fill: var(--text-dim); font-weight: var(--font-weight-label); }
+.milvus { fill: var(--card); stroke: var(--primary); stroke-width: 1.5; }
+
+/* 예정(아직 배포 전) — 상자는 흐리게 + "예정" 꼬리표, 화살표는 점선 */
+.planned { opacity: 0.45; }
+.planned .box, .planned .boxHost { stroke-dasharray: 5 4; }
+.tag { fill: var(--surface); stroke: var(--text-dim); stroke-width: 1; }
+.tagText { fill: var(--text-dim); font-weight: var(--font-weight-label); }
+.edgePlanned { stroke-dasharray: 6 5; opacity: 0.55; }
+/* 조항 원문 조회 — 주 흐름이 아닌 보조 읽기라 잔 점선 */
+.edgeDotted { stroke-dasharray: 2 4; }

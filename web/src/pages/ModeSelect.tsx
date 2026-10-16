@@ -111,9 +111,10 @@ function LoopVideo({ c }: { c: Character }) {
 }
 
 /** 모드 소개 글 — 말풍선은 캐릭터 말투, 본문·표는 설명 말투 */
-interface Intro { bubble: string; body: string; spec: [string, string][] }
+interface Intro { stack: string[]; bubble: string; body: string; spec: [string, string][] }
 const INTRO: Record<Mode, Intro> = {
   일반: {
+    stack: ["Tri-7B 원본"],
     bubble: "외부로는 한 글자도 안 나가요.",
     body: "Tri-7B를 사내 서버에 직접 올려 씁니다. 질문도 답변도 네트워크를 벗어나지 않습니다. 임베딩과 생성 모두 로컬 모델이라 외부 API 호출이 0건입니다.",
     spec: [
@@ -123,10 +124,11 @@ const INTRO: Record<Mode, Intro> = {
     ],
   },
   업무특화: {
+    stack: ["Tri-7B", "LoRA", "RAG"],
     bubble: "약관은 제가 외우지 않아요. 매번 찾아서 읽어드려요.",
     body: "사실은 모델이 기억하지 않습니다. 검색이 매번 약관에서 찾아 건네고, 모델은 그것을 읽어 상담 말투로 정리합니다. 근거 조항은 코드가 조립합니다 — 모델이 쓰면 없는 조항을 지어낼 수 있기 때문입니다.",
     spec: [
-      ["청킹", "항(項) 단위 — 강아지 1,008건 / 고양이 914건"],
+      ["청킹", "항(項) 단위 — 강아지 928건 / 고양이 850건"],
       ["검색", "Hybrid(BM25 + Dense) + bge-reranker-v2-m3"],
       ["그래프", "조항 참조 관계 — \"제6항만 참조\" 같은 인용까지 추적"],
       ["필터", "등급·유형을 UI에서 확정해 검색 범위를 고정"],
@@ -134,6 +136,7 @@ const INTRO: Record<Mode, Intro> = {
     ],
   },
   사내규정: {
+    stack: ["Tri-7B 원본", "RAG"],
     bubble: "연차든 복무든, 규정에 있는 건 제가 알아요.",
     body: "같은 파이프라인에 자료만 바꿔 태웠습니다. 코퍼스가 늘어도 구조는 그대로입니다.",
     spec: [
@@ -152,6 +155,15 @@ function ModeIntro({ c, reverse }: { c: Character; reverse: boolean }) {
     <section className={`${s.introRow} ${reverse ? s.introReverse : ""}`} aria-labelledby={`intro-${c.mode}`}>
       <div className={s.introText}>
         <p className={s.eyebrow}>{c.mode}</p>
+        {/* 모델 구성 — 요소마다 작은 알약 하나, 사이는 + */}
+        <ul className={s.stack} aria-label="모델 구성">
+          {it.stack.map((x, i) => (
+            <Fragment key={x}>
+              {i > 0 && <li className={s.stackPlus} aria-hidden>+</li>}
+              <li className={s.pill}>{x}</li>
+            </Fragment>
+          ))}
+        </ul>
         <h2 id={`intro-${c.mode}`} className={s.bubble}>{it.bubble}</h2>
         <p className={s.introBody}>{it.body}</p>
         <dl className={s.spec}>
