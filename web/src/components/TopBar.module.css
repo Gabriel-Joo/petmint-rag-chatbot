@@ -18,8 +18,8 @@
 .brandRow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 12px; }
 /* 로고 아래 줄에 부제 — 두 줄 모두 가운데 */
 .brand { grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 0.1em; background: none; border: none; padding: 0; white-space: nowrap; line-height: 1.2; text-align: center; }
-/* 기본 배율(2배)에서 3px 크게 — 배율을 곱해 두어 좁은 화면에서는 함께 줄어든다 */
-.brandTitle { font-family: var(--font-logo); font-size: calc(var(--font-brand) + 1.5px * var(--text-scale)); font-weight: var(--font-weight-label); } /* 완주대둔산체는 Bold(700) 한 벌뿐 — 그보다 무겁게 부르지 않는다 */
+/* 모드 선택 화면 제목(ModeSelect .title)과 같은 크기 — 둘 다 --font-brand */
+.brandTitle { font-family: var(--font-logo); font-size: var(--font-brand); font-weight: var(--font-weight-label); } /* 완주대둔산체는 Bold(700) 한 벌뿐 — 그보다 무겁게 부르지 않는다 */
 .brandSub { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
 .fake { grid-column: 3; justify-self: start; font-weight: var(--font-weight-label); font-size: var(--font-2xs); padding: 1px 6px; border-radius: 6px; border: 1px dashed var(--text-dim); color: var(--text-dim); white-space: nowrap; }
 
@@ -51,7 +51,8 @@
 }
 
 .callWrap { position: relative; margin-left: auto; }
-.call { display: flex; gap: 24px; align-items: center; font-size: var(--font-menu-sub); color: var(--text); }
+/* 자동 전화와 전화 울리기 사이 — 글씨 크기에 비례(1.5em, 3배 배율에서 45px) */
+.call { display: flex; gap: 1.5em; align-items: center; font-size: var(--font-menu-sub); color: var(--text); }
 .switch { display: inline-flex; gap: 0.3em; align-items: center; cursor: pointer; white-space: nowrap; }
 .switch input { accent-color: var(--primary); width: 0.75em; height: 0.75em; margin: 0; }
 /* 본문 줄 높이(1.5)를 그대로 받으면 큰 메뉴 글씨에서 위아래가 부풀어 보여 1.2로 좁힌다 */

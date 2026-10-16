@@ -47,7 +47,7 @@
   --font-base: calc(16px * var(--text-scale)); /* 본문 기본 */
   --font-lg: calc(18px * var(--text-scale));
   --font-xl: calc(20px * var(--text-scale));
-  --font-brand: calc(22px * var(--text-scale)); /* 헤더 제목 */
+  --font-brand: calc(26px * var(--text-scale)); /* 헤더 로고, 모드 선택 화면 제목 — 둘은 같은 크기 */
   --font-2xl: calc(28px * var(--text-scale));
   --font-icon: calc(36px * var(--text-scale));
   --font-menu: calc(13px * var(--menu-scale));     /* 모드 탭 */
