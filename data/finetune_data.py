@@ -80,6 +80,29 @@ BASE_MODEL_DIR = BASE_DIR.parent / "models" / "base" / "Tri-7B"
 
 SEED = 20261013
 TARGET = {"distract": 0.70, "gold_only": 0.20, "no_answer": 0.10}
+# --composition(2026-10-16, rebuild3): "90/0/10" = distract 90 · gold_only 0 · no_answer 10. gold_only가 0이면 방해 후보가 없는 QA는
+# gold_only로 돌리지 않고 버린다(kind "dropped_no_distractor") — 서비스는 언제나 검색 결과 여러 개를 보여 준다
+COMPOSITIONS = {"70/20/10": {"distract": 0.70, "gold_only": 0.20, "no_answer": 0.10},
+                "90/0/10": {"distract": 0.90, "gold_only": 0.0, "no_answer": 0.10}}
+# --n-distract(2026-10-16): distract의 방해 발췌 수. None = 1~2개 무작위(rebuild2까지). 2 = 후보가 있으면 2개(정답 1 : 방해 2,
+# 서비스 top_k 3과 같은 발췌 수). 후보가 1개뿐이면 1개
+N_DISTRACT = None
+
+
+def no_gold_only() -> bool:
+    return TARGET["gold_only"] == 0
+
+
+def fallback_kind(e: dict) -> str:
+    """no_answer·distract가 될 수 없을 때 — gold_only 0이면 방해 후보가 있으면 distract, 없으면 버린다"""
+    if not no_gold_only():
+        return "gold_only"
+    if not e["loose"] and e["strict"]:
+        # loose(답변·정답 단위와 글자로 겹치는 후보를 뺀 legacy 기준)가 비어도 검색 기준 후보(strict: 정답 단위·답이 글자로 든 것 제외,
+        # --distractor-hard면 가까운 오답 순)는 있을 수 있다 — distract의 방해 발췌로 쓴다(B-1 2026-10-16: loose 없는 QA 2,691/7,598)
+        e["loose"] = e["strict"]
+        e["loose_from_strict"] = True
+    return "distract" if e["loose"] else "dropped_no_distractor"
 VAL_RATIO = 0.10
 MAX_LENGTH = 3072          # 07 학습 시퀀스 상한(토큰). 넘는 샘플은 발췌를 줄이고(fit_to_budget), 그래도 넘으면 버린다
 SEARCH_TOP_K = 6           # 방해 후보로 검색해 두는 수(정답·겹침 제외 전)
@@ -309,6 +332,10 @@ def assign_kinds(entries: list[dict]) -> None:
     d = [i for i in order if entries[i]["kind"] == "gold_only" and entries[i]["loose"]]
     for i in d[:want_d]:
         entries[i]["kind"] = "distract"
+    if no_gold_only():
+        for e in entries:
+            if e["kind"] == "gold_only":
+                e["kind"] = fallback_kind(e)
 
 
 # ---------------- 샘플 조립 ----------------
@@ -345,7 +372,7 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
         random.Random(_h(SEED, "pair", *_qa_key(qa))).shuffle(items)
         target = qa["answer"]
     elif kind == "distract":
-        n = min(len(e["loose"]), rng.choice((1, 2)))
+        n = min(len(e["loose"]), N_DISTRACT or rng.choice((1, 2)))
         items = [gold] + [prompts.ExcerptItem.from_search_result(r) for r in e["loose"][:n]]
         rng.shuffle(items)
         target = qa["answer"]
@@ -453,7 +480,7 @@ def judge_no_answer(entries: list[dict], ver: str, na_fill: str, stats: Counter)
             e = entries[i]
             e["strict"] = clean(e, e["strict"])
             if not e["strict"]:
-                e["kind"] = "gold_only"
+                e["kind"] = fallback_kind(e)
                 lost += 1
         stats["na_judge_no_clean"] = lost
         # 빈 몫은 no_answer 자격 있는 다른 QA가 채운다 — gold_only 먼저, 없으면 distract에서(포함률 refill이 배정 전에 거르는 것과
@@ -542,6 +569,10 @@ def build_all(builder, cache: dict, count: TokenCounter, distractor: str = "lega
         if e.get("na_judge_drop"):
             stats["na_dropped_judge"] += 1
             continue
+        if e["kind"] == "dropped_no_distractor":
+            stats["dropped_no_distractor"] += 1
+            continue
+        stats["distract_from_strict"] += bool(e.get("loose_from_strict")) and e["kind"] == "distract"
         sample, why = build_sample(e, count)
         stats[why] += 1
         if why == "na_dropped_cover":
@@ -707,8 +738,16 @@ def main(argv=None):
                     help="no_answer 방해 발췌를 가까운 오답(같은 조 → 인접 조 → 같은 문서 → 다른 문서) 순으로 고른다(2026-10-15)")
     ap.add_argument("--confirm-max-bad", type=float, default=CONFIRM_MAX_BAD,
                     help="q2 확인 검사가 답이 있다고 본 no_answer 비율 상한 — 넘으면 멈춘다. 1이면 멈추지 않고 그 샘플만 뺀다")
+    ap.add_argument("--composition", choices=sorted(COMPOSITIONS), default="70/20/10",
+                    help="distract/gold_only/no_answer 목표 비율. 90/0/10이면 방해 후보 없는 QA는 버린다(2026-10-16)")
+    ap.add_argument("--n-distract", type=int, choices=(1, 2), default=None,
+                    help="distract의 방해 발췌 수(후보가 모자라면 있는 만큼). 기본 = 1~2개 무작위")
+    ap.add_argument("--no-confirm", action="store_true",
+                    help="q2 확인 검사(qwen3:14b)를 하지 않는다 — 빌드 뒤 사람 표본 검수로 대신한다(rebuild3, 2026-10-16)")
     ap.add_argument("--pair-na", action="store_true", help="no_answer마다 같은 질문·같은 방해 발췌 + 정답 발췌 양성(distract_pair)을 더한다")
     args = ap.parse_args(argv)
+    global TARGET, N_DISTRACT
+    TARGET, N_DISTRACT = COMPOSITIONS[args.composition], args.n_distract
     if (args.na_cover_max > 0 or args.na_judge) and args.na_fill is None:
         ap.error("--na-cover-max나 --na-judge를 주면 --na-fill drop|refill 을 골라야 한다")
     if args.na_cover_max > 0 and args.na_judge:
@@ -744,13 +783,14 @@ def main(argv=None):
         write_filtered_samples(out_dir / "na_filtered_samples.md", filtered, stats)
         print("걸러낸 표본:", out_dir / "na_filtered_samples.md")
     confirmed = True
-    if args.na_judge == "q2":
+    if args.na_judge == "q2" and not args.no_confirm:
         train, val, confirmed = confirm_no_answer(train, val, out_dir, stats, args.confirm_max_bad)
         kinds = Counter(s["meta"]["kind"] for s in train + val)
         stats.update({f"kind_{k}": v for k, v in kinds.items()})
         stats["overlap"] = overlap_report(train + val)
         stats["overlap_bins"] = overlap_bins(train + val)
-    stats.update(distractor_hard=args.distractor_hard, pair_na=args.pair_na)
+    stats.update(distractor_hard=args.distractor_hard, pair_na=args.pair_na, composition=args.composition,
+                 n_distract=args.n_distract, confirm="off" if args.no_confirm else "qwen3:14b")
     write_jsonl(out_dir / "train.jsonl", train)
     write_jsonl(out_dir / "val.jsonl", val)
     stats.update({"train": len(train), "val": len(val),
