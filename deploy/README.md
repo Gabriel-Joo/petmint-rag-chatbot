@@ -8,7 +8,7 @@ namespace.yaml
 mysql/                 StatefulSet + headless Service. PVC(local-path 10Gi)는 Pod·StatefulSet을 지워도 남는다(Retain)
 data/pvc.yaml          약관(chunks, graph) + 고객 시드 픽스처 볼륨 petmint-data
 data/loader-pod.yaml   적재용 임시 Pod — kustomization에 없다(scripts/load-data.sh가 띄우고 지운다)
-app/configmap.yaml     비밀 아닌 접속 정보. GPU 호스트 주소 3개는 자리만(gpu-host.invalid) — 채워야 한다
+app/configmap.yaml     비밀 아닌 접속 정보. GPU 호스트(Ollama·Milvus)는 192.168.122.1, search-service는 아직 없어 자리만(.invalid)
 jobs/init-db.yaml      초기화 Job: bootstrap → migrate(petmint) → migrate(insurance_core) → seed --if-empty
 app/                   Deployment(replicas 1, 한 Pod씩 롤링) · Service · Ingress(petmint.ronanlab.dev)
 scripts/               create-secrets.sh · load-data.sh · apply.sh
@@ -24,8 +24,8 @@ cp app/fixtures/customers.example.json app/fixtures/customers.json   # 그리고
 ```
 
 ```bash
-# 0. ConfigMap의 GPU 호스트 주소 3개를 채운다(app/configmap.yaml) — VM 사설 네트워크의 호스트 쪽 주소(14번 1-4절)
-#    PETMINT_OLLAMA_URL / PETMINT_SEARCH_URL / PETMINT_MILVUS_URL. 안 채우면 Milvus 접속에서 기동이 실패한다
+# 0. ConfigMap의 GPU 호스트 주소(app/configmap.yaml) — VM 사설 네트워크의 호스트 쪽 주소(14번 1-4절)
+#    PETMINT_OLLAMA_URL·PETMINT_MILVUS_URL은 192.168.122.1로 채웠다. PETMINT_SEARCH_URL은 search-service를 띄우면 채운다
 
 # 1. Secret — 무작위 값으로 클러스터에 직접 만든다. 이미 있으면 건드리지 않는다
 deploy/scripts/create-secrets.sh
@@ -97,3 +97,18 @@ kind v0.27.0(k8s 1.32) + ingress-nginx 1.12.0, `local-path` StorageClass, 앱 �
 - WS: Ingress 경유로 질문 → 75초 쉼(클라이언트 ping 끔, nginx 기본 제한 60초) → 같은 연결로 다음 턴 정상
 - 태그 0.1.0 → 0.1.1: 새 ReplicaSet 준비 뒤 옛 Pod 종료, 롤링 중 90초간 요청 415건 실패 0. Job도 0.1.1로 다시 돌고 시드는 건너뜀
 - MySQL Pod 삭제 → 같은 PVC로 다시 떠 세션·턴 그대로(앱 재시작 없이 재접속). StatefulSet까지 지워도 PVC가 남아 그대로
+
+## 검증 기록 (2026-10-16, 실제 클러스터 — 태그 4e81fa250169)
+
+위 순서대로 적용. kubectl은 m-k8s에만 있어 호스트에서 `kubectl kustomize deploy/`로 렌더해 m-k8s의 `kubectl apply -f -`로 넣었다.
+적재는 `load-data.sh`와 같은 경로(API 서버 → exec)로 tar를 흘려 넣었다 — m-k8s 디스크에 약관을 남기지 않는다.
+
+- GPU 호스트: 워커 3대의 Pod에서 `192.168.122.1:11434/api/tags` 200, `:19530` 컬렉션 목록(petmint_dog, petmint_cat). 앱 Pod 안에서도 같다. 8100은 닫힘(search-service 없음)
+- 적재: 9개 파일 sha256 전부 일치(MANIFEST.sha256). Job 5초 완료 — 마이그레이션 petmint 4개·insurance_core 1개, 고객 10·반려동물 15·특약 37
+- 앱: MetalLB VIP·터널 원점(ClusterIP:443) 경유로 `/`·`/api/customers`(10명)·조항 원문(Milvus에서 읽음) 200, WS 한 턴(더미) 끝까지
+- MySQL: 상담 1건·턴 1건을 남기고 Pod 삭제 → 같은 PVC로 다시 떠 그대로(앱 재시작 없이 재접속). StatefulSet까지 지우고 다시 만들어도 같은 PV가 붙어 그대로
+- 롤링: Harbor에 태그가 하나뿐이라 같은 이미지를 digest 표기(`@sha256:204ed1…`)로 바꿔 Pod 스펙을 바꿨다 → 새 ReplicaSet 준비 뒤 옛 Pod 종료.
+  태그 표기로 되돌리는 롤링까지 두 번, 부하(HTTP 3종 동시·WS 5초마다 질문) 속에서 HTTP 6675건·5012건 실패 0.
+  WS는 매번 옛 Pod가 내려갈 때 1012(service restart)로 한 번 끊기고 다시 연결해 이어졌다(설계대로 — 위 Deployment 주석). Job은 다시 돌아 시드를 건너뜀
+- 검증용 상담·턴은 지웠다(sessions·turns·turn_scope·retrieved·feedback 0건). 원장은 고객 10명 그대로
+- `PETMINT_TITLE_LLM`은 GPU 실험 중이라 "0" — 제목은 첫 질문 첫 줄
