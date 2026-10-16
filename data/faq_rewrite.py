@@ -39,6 +39,7 @@ OUT_ROOT = FAQ_DIR / "rewrite"
 
 OLLAMA_URL = "http://localhost:11434"
 MODEL_NAME = "tri-7b:latest"      # 05와 같은 생성 모델(심판 gemma4:12b와 다른 모델)
+OLLAMA_EXTRA: dict = {}           # 요청에 더할 필드 — qwen3는 {"think": False}(생각 출력이 num_predict를 먹는다)
 TEMPERATURE = 0.2                 # 낮게 — 뜻을 바꾸지 않는 편집이라 다양성이 필요 없다
 NUM_CTX = 8192
 NUM_PREDICT = 200                 # 질문 하나({"question": "..."})
@@ -73,7 +74,8 @@ def build_rewrite_prompt(faq: dict, source: str) -> str:
 def call_rewrite(prompt: str) -> tuple[str, int]:
     """(응답 원문, 입력 토큰 수)"""
     body = {"model": MODEL_NAME, "system": REWRITE_SYSTEM, "prompt": prompt, "stream": False, "format": "json",
-            "options": {"temperature": TEMPERATURE, "repeat_penalty": 1.1, "num_predict": NUM_PREDICT, "num_ctx": NUM_CTX}}
+            "options": {"temperature": TEMPERATURE, "repeat_penalty": 1.1, "num_predict": NUM_PREDICT, "num_ctx": NUM_CTX},
+            **OLLAMA_EXTRA}
     r = requests.post(f"{OLLAMA_URL}/api/generate", json=body, timeout=900)
     r.raise_for_status()
     out = r.json()
