@@ -32,9 +32,9 @@ SEARCH_SERVICE_URL = os.environ.get("PETMINT_SEARCH_URL", "http://localhost:8100
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
 MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다
 
-# 모드별 모델(9절: 어댑터는 설정값으로 빼 모델만 갈아끼운다). 이름은 GGUF 변환 후 확정
-BASE_MODEL = "tri-7b"                          # 일반·사내규정 답변 + 업무특화의 질문 재작성기(5절)
-FINETUNED_MODEL = "tri-7b-rag-1"               # 업무특화 답변
+# 모드별 모델(9절: 어댑터는 설정값으로 빼 모델만 갈아끼운다). Ollama 모델 이름 — 어댑터를 바꿀 때 이미지를 다시 빌드하지 않는다
+BASE_MODEL = os.environ.get("PETMINT_MODEL_BASE", "tri-7b")            # 일반·사내규정 답변 + 업무특화의 질문 재작성기(5절)
+FINETUNED_MODEL = os.environ.get("PETMINT_MODEL_RAG", "tri-7b-rag-1")  # 업무특화 답변
 
 # 지난 채팅 제목(10번 2-1절) — 첫 질문을 베이스 모델로 한 번 요약. 끄면(0) 첫 질문 첫 줄을 잘라 쓴다
 TITLE_USE_LLM = os.environ.get("PETMINT_TITLE_LLM", "1") == "1"
