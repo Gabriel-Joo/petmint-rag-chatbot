@@ -1,4 +1,4 @@
-import type { Ringing } from "../hooks/useCallSimulator";
+import { RING_SECONDS, type Ringing } from "../hooks/useCallSimulator";
 import { SPECIES_ICON } from "../format";
 import s from "./CallAlert.module.css";
 
@@ -22,7 +22,15 @@ export function CallAlert({ ringing, notice, onAccept, onReject }: Props) {
         📞
       </div>
       <div className={s.body}>
-        <div className={s.label}>전화 수신 · {secondsLeft}초</div>
+        <div className={s.head}>
+          <span className={s.label}>전화 수신</span>
+          <span className={s.count} aria-label={`${secondsLeft}초 남음`}>
+            {secondsLeft}<span className={s.unit}>초</span>
+          </span>
+        </div>
+        <div className={s.timer} aria-hidden>
+          <div className={s.timerFill} style={{ width: `${(secondsLeft / RING_SECONDS) * 100}%` }} />
+        </div>
         <div className={s.name}>{customer.name}</div>
         <div className={s.pets}>
           {customer.pets.map((p) => `${SPECIES_ICON[p.species]} ${p.name}`).join("  ")}

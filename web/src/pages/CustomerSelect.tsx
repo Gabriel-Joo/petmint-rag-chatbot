@@ -42,7 +42,7 @@ export function CustomerSelect({ onStart, starting }: Props) {
   return (
     <main className={s.page}>
       <h1 className={s.title}>고객 조회</h1>
-      <p className={s.sub}>상담할 고객을 고르세요. 종·등급·유형은 상담 화면에서 고른 반려동물의 가입 정보로 정해집니다.</p>
+      <p className={s.sub}>상담할 고객을 고르세요. 반려동물별 가입 특약과 등급·자기부담금은 상담 화면에서 확인할 수 있습니다.</p>
 
       <div className={s.filters} role="tablist" aria-label="고객 목록">
         {TABS.map((t) => (
