@@ -25,9 +25,18 @@ faq_generate.py
    참조를 [함께 적용되는 다른 조항]으로 따로 보여 주고 두 조항이 모두 있어야 답할 수 있는 고객 질문을 만든다(SYSTEM_PROMPT_REF).
    일반·주제 회차는 v1 그대로. 파일은 round201부터, QA의 gen_kind "ref". 채택 전 파일럿: pilot-ref → 06 → python -m data.ref_usage.
 
+4. 예외 회차·표 회차(rebuild4, 2026-10-18): 97문항 판정에서 rebuild3 어댑터가 "다만·단" 단서를 빠뜨린 것(정답 발췌 14건)과
+   이율표만 보고 뜻을 뒤집은 것(R041)의 원인은 학습에 그런 질문이 거의 없다는 것이었다(청약 철회 "15일 + 예외" 질문 0건,
+   별표1 질문 18건이 전부 세부 이율 질문). 일반 회차는 그대로 두고 두 회차를 더한다.
+   - 예외 회차(EXC_ROUNDS, round301~, gen_kind "exc"): 본문에 '다만'·'단,' 단서가 있는 조항형 단위 — 원칙과 단서를 둘 다 알아야
+     답이 되는 QA 2개. 06이 단서 일치(faq_checks.check_clause_grounding)를 보고, 단위 상한에서 빼 준다(faq_checks.CAP_EXEMPT_KINDS)
+   - 표 회차(TABLE_ROUNDS, round401~, gen_kind "table"): 별표 단위(rag_context.ANNEX_CITED_BY) — 표와 그 표를 쓰는 조항 본문을
+     함께 주고, 조항의 규칙과 표의 값을 둘 다 써야 답이 되는 QA 2개. 학습 발췌도 같은 모양(별표 + [참조] 조항 본문)이 된다
+
 실행: python -m data.faq_generate plan               — 계획·예상 시간만(Ollama 불필요)
       python -m data.faq_generate run --out=DIR      — 생성(tri-7b, GPU). 끝난 라운드는 건너뛴다
           --model=qwen3:14b  생성 모델 바꾸기(rebuild3, think 끔)   --smoke=20,10  소규모 시험(종마다 앞 N단위, 라운드 1 + 주제 회차 1씩)
+          --kinds=exc,table  이 종류 회차만(소규모 시험용)   --limit=25  회차마다 종별 앞 N단위만(소규모 시험용)
       python -m data.faq_generate show-ref           — 참조 회차 프롬프트 예시(섹션마다 1개, 모델 호출 없음)
       python -m data.faq_generate pilot-ref [--out=data/faq/exp_r]  — 파일럿 생성(tri-7b, 참조 회차 60호출 ≈ 3분)
 """
@@ -147,6 +156,51 @@ assert [l for l in SYSTEM_PROMPT_ARTICLE.splitlines()
     "참조 회차 프롬프트가 v1과 근거 줄·관점 줄·JSON 줄 외에 달라졌다"
 assert SYSTEM_PROMPT_ARTICLE.split(FACT_ARTICLE, 1)[1].split("\n", 1)[0] == \
     SYSTEM_PROMPT_REF.split(FACT_REF, 1)[1].split("\n", 1)[0], "근거 줄 뒷부분(숫자 지어내기 금지)이 달라졌다"
+# 예외 회차(rebuild4) — 단서가 붙은 규정의 원칙 + 단서를 둘 다 묻는 QA 2개. 근거 줄·숫자 지어내기 금지·답변 길이 줄은 v1 그대로
+EXC_LINES = ("- 위 조항에서 '다만', '단' 등으로 시작하는 단서(예외 조건)가 붙은 규정을 골라, 그 규정의 원칙과 단서를 둘 다 알아야 "
+             "정확히 답할 수 있는 고객 질문-답변 2개를 만드세요. 서로 다른 단서를 고르세요.\n"
+             "- 답변은 원칙을 먼저 말하고, 이어서 '다만'으로 단서를 원문의 조건·기간·숫자 그대로 옮기세요.\n"
+             "- 단서는 그 규정에 붙은 것만 쓰세요. 다른 항이나 다른 규정의 단서를 섞지 말고, 원문에 없는 예외를 만들지 마세요.")
+SYSTEM_PROMPT_EXC = SYSTEM_PROMPT_ARTICLE.replace(PERSPECTIVE_ARTICLE, EXC_LINES).replace(JSON_3, JSON_2)
+assert SYSTEM_PROMPT_EXC.count(EXC_LINES) == 1 and JSON_2 in SYSTEM_PROMPT_EXC and JSON_3 not in SYSTEM_PROMPT_EXC
+EXC_MARK = re.compile(r"다만[, ]|(?<![가-힣])단[,，]|\(단[, ]")    # 본문 단서 표지 — 예외 회차 대상
+
+# 표 회차(rebuild4) — 별표 + 그 표를 쓰는 조항 본문(rag_context.ANNEX_CITED_BY). 학습 발췌와 같은 모양으로 보여 준다.
+# 소규모 시험 1차(2026-10-18, data/faq/exp_r4smoke/table_v1): "규칙 먼저"만 지시했더니 80건 중 70건이 표 한 칸만 묻는 세부 이율
+# 질문이었고 조항 규칙을 말한 답은 10건(12.5%) — rebuild3 학습 데이터와 같은 꼴이라 R041을 못 고친다. 질문 꼴·첫 문장을 못박았다
+TABLE_SECTION = "[이 표를 쓰는 조항]"
+TABLE_PROMPT_TEMPLATE = """출처: {section_name}
+{content}
+
+""" + TABLE_SECTION + """
+{cited_text}
+"""
+SYSTEM_PROMPT_TABLE = (
+    "당신은 반려동물 보험 상담 FAQ를 만드는 전문가입니다.\n"
+    f"- 주어진 표와 {TABLE_SECTION}에 적힌 사실만 근거로 질문과 답변을 만드세요. 원문에 없는 숫자, 금액, 날짜, 비율은 절대로 만들어내지 마세요.\n"
+    f"- {TABLE_SECTION}의 규칙과 표의 값을 둘 다 써야 답할 수 있는, 고객이 실제로 묻는 질문-답변 2개를 만드세요.\n"
+    f"- 질문은 {TABLE_SECTION}이 정한 상황을 고객 입장에서 묻게 하세요(예: 보험금이 늦게 나오면 이자를 더 주는지, "
+    "소송하면 변호사 비용·인지액·송달료를 얼마까지 받는지). 표의 한 칸만 묻는 질문(예: 31일~60일이면 이율이 얼마인지)은 만들지 마세요.\n"
+    f"- 답변 첫 문장은 {TABLE_SECTION}의 규칙으로 질문에 바로 답하세요(무엇을 언제 지급하는지, 지급하지 않는 경우). "
+    "둘째 문장부터 표에서 해당하는 구간·값·식을 원문 그대로 옮기세요.\n"
+    "- 표에 없는 새 금액으로 직접 계산하지 마세요.\n"
+    "- 질문에는 '별표', '표', 조문 번호(제○조)를 쓰지 마세요.\n"
+    "- 답변은 2~4문장으로 자연스럽게 설명하세요. \"근거\" 표기는 쓰지 마세요.\n"
+    + JSON_2)
+EXC_ROUNDS = 2
+EXC_ROUND_START = 301
+TABLE_ROUNDS = 8           # 대상이 종마다 3단위(별표1·3·4/5)뿐이라 회차를 많이
+TABLE_ROUND_START = 401
+
+
+def is_exc_target(unit: dict) -> bool:
+    return get_prompt_type(unit) == "조항형" and bool(EXC_MARK.search(re.sub(r"\s+", " ", unit["content"])))
+
+
+def is_table_target(unit: dict) -> bool:
+    return unit["section"] == "별표" and unit.get("section_name") in rag_context.ANNEX_CITED_BY
+
+
 # 참조 회차 수(단위마다 같은 수). temperature는 TOPIC_TEMPERATURES 순환.
 # 0 = 끔(2026-10-14 파일럿 기각, data/review/ref_usage_20261014_2053.md — 강아지 60단위 참조 회차 1회 vs v1 일반 회차 1회):
 # 참조 회차 QA 124건(1개를 지시했는데 호출당 약 2건) — 참조 내용 사용 22.6%(기준 50%), 질문 노출 25.8%(5%), 형식 실패 6.7%(5%),
@@ -214,6 +268,15 @@ def set_model(model: str):
     SEC_PER_CALL = SEC_PER_CALL_BY_MODEL.get(model, SEC_PER_CALL)
 
 
+def filter_plan(plan: dict, kinds: set[str] | None, limit: int | None) -> dict:
+    """소규모 시험: 이 종류 회차만, 회차마다 앞 limit단위만. 계획 파일(plan.json)에 kinds·limit을 남겨 본 실행 계획과 섞이지 않게"""
+    out = {**plan, "kinds": sorted(kinds) if kinds else None, "limit": limit, "rounds": {}}
+    for sp, rounds in plan["rounds"].items():
+        out["rounds"][sp] = [{**rd, "unit_ids": rd["unit_ids"][:limit] if limit else rd["unit_ids"]}
+                             for rd in rounds if not kinds or rd["kind"] in kinds]
+    return out
+
+
 def smoke_plan(plan: dict, n_by_sp: dict[str, int]) -> dict:
     """소규모 시험: 종마다 생성 순서 앞 n단위만, 일반 라운드 1 + 주제마다 첫 주제 회차 1(그 단위가 대상이면)"""
     out = {**plan, "smoke": n_by_sp, "rounds": {}}
@@ -252,8 +315,15 @@ def _refs_text(refs: list[dict], unit: dict | None = None) -> str:
     return "".join(f"\n{head(ref)}\n{ref['content']}\n" for ref in refs if ref.get("content")) or "(없음)"
 
 
-def build_single_prompt(unit: dict, references: list[dict], topics: list[str] | None = None, ref_prompt: bool = False) -> str:
+def build_single_prompt(unit: dict, references: list[dict], topics: list[str] | None = None, ref_prompt: bool = False,
+                        table_prompt: bool = False) -> str:
     content = rag_context.display_text(unit)
+    if table_prompt:
+        names = {f"{n or s}" for s, n, *_ in rag_context.ANNEX_CITED_BY[unit["section_name"]]}
+        cited = [r for r in references if any(r["citation_label"].startswith(n + " ") for n in names)]
+        assert cited, f"표 회차인데 표를 쓰는 조항이 붙지 않았다: {unit_id(unit)}"
+        return TABLE_PROMPT_TEMPLATE.format(section_name=unit["section_name"], content=content,
+                                            cited_text="".join(f"\n{r['citation_label']}\n{r['content']}\n" for r in cited))
     if get_prompt_type(unit) == "조항형" and ref_prompt:
         cross, other = rag_context.cross_article_refs(unit, references)
         prompt = REF_PROMPT_TEMPLATE.format(section_name=unit.get("section_name") or unit["section"],
@@ -357,8 +427,11 @@ def generate_for_unit(builder, unit: dict, species: str, temperature: float, kin
         f"주제 회차인데 원문이 '{topic}'을 다루지 않음: {unit_id(unit)}"
     ref_prompt = kind == "ref"
     assert not ref_prompt or has_cross_refs(unit, refs), f"참조 회차인데 다른 조 참조가 없음: {unit_id(unit)}"
-    system = {"topic": SYSTEM_PROMPT_TOPIC_V1, "ref": SYSTEM_PROMPT_REF}.get(kind)
-    parsed, raws = call_ollama_with_retry(build_single_prompt(unit, refs, topics or None, ref_prompt), unit,
+    assert kind != "exc" or is_exc_target(unit), f"예외 회차인데 본문에 단서가 없음: {unit_id(unit)}"
+    assert kind != "table" or is_table_target(unit), f"표 회차인데 별표 단위가 아님: {unit_id(unit)}"
+    system = {"topic": SYSTEM_PROMPT_TOPIC_V1, "ref": SYSTEM_PROMPT_REF, "exc": SYSTEM_PROMPT_EXC,
+              "table": SYSTEM_PROMPT_TABLE}.get(kind)
+    parsed, raws = call_ollama_with_retry(build_single_prompt(unit, refs, topics or None, ref_prompt, kind == "table"), unit,
                                           temperature=temperature, system=system)
     result = {"status": "parse_fail", "faqs": [], "rejected": [], "raw_outputs": raws, "unit_id": unit_id(unit)}
     if not parsed:
@@ -465,7 +538,9 @@ def build_plan(units: dict[str, list[dict]], use_weights: bool = True, topic_rou
     topic_rounds = dict(TOPIC_ROUNDS if topic_rounds is None else topic_rounds) if use_weights else {}
     order = shuffled_units(units)
     plan = {"use_weights": use_weights, "topic_rounds": topic_rounds, "model": MODEL_NAME,
-            "prompt_version": "v1", "ref_rounds": REF_ROUNDS if ref_targets is not None else 0, "base_gens": {}, "gens": {}, "topic_gens": {}, "rounds": {}}
+            "prompt_version": "v1", "ref_rounds": REF_ROUNDS if ref_targets is not None else 0,
+            "exc_rounds": EXC_ROUNDS if use_weights else 0, "table_rounds": TABLE_ROUNDS if use_weights else 0,
+            "base_gens": {}, "gens": {}, "topic_gens": {}, "rounds": {}}
     for sp, lst in order.items():
         base = {unit_id(u): base_gens(sp, u) for u in lst}
         w = {unit_id(u): (topic_weights.unit_weight(u) if use_weights else 1.0) for u in lst}
@@ -489,6 +564,15 @@ def build_plan(units: dict[str, list[dict]], use_weights: bool = True, topic_rou
         for k in range(plan["ref_rounds"]):
             rounds.append({"round": REF_ROUND_START + k, "kind": "ref",
                            "temperature": TOPIC_TEMPERATURES[k % len(TOPIC_TEMPERATURES)], "unit_ids": ref_ids})
+        if use_weights:
+            exc_ids = [unit_id(u) for u in lst if is_exc_target(u)]
+            for k in range(EXC_ROUNDS):
+                rounds.append({"round": EXC_ROUND_START + k, "kind": "exc",
+                               "temperature": TOPIC_TEMPERATURES[k % len(TOPIC_TEMPERATURES)], "unit_ids": exc_ids})
+            table_ids = [unit_id(u) for u in lst if is_table_target(u)]
+            for k in range(TABLE_ROUNDS):
+                rounds.append({"round": TABLE_ROUND_START + k, "kind": "table",
+                               "temperature": TOPIC_TEMPERATURES[k % len(TOPIC_TEMPERATURES)], "unit_ids": table_ids})
         plan["base_gens"][sp], plan["gens"][sp], plan["topic_gens"][sp] = base, gens, topic_gens
         plan["rounds"][sp] = rounds
     return plan
@@ -506,6 +590,9 @@ def render_plan(plan: dict) -> str:
         topic = [r for r in rounds if r["kind"] == "topic"]
         ref = [r for r in rounds if r["kind"] == "ref"]
         ref_desc = f"{len(ref)}회×{len(ref[0]['unit_ids'])}단위" if ref else "없음"
+        extra = {k: [r for r in rounds if r["kind"] == k] for k in ("exc", "table")}
+        extra_desc = " | ".join(f"{name} {len(v)}회×{len(v[0]['unit_ids'])}단위" for name, v in
+                                (("예외 회차", extra["exc"]), ("표 회차", extra["table"])) if v) or "예외·표 회차 없음"
         n_units = len(plan["gens"][sp])
         calls = sum(len(r["unit_ids"]) for r in rounds)
         base_calls = sum(plan["base_gens"][sp].values())
@@ -515,7 +602,7 @@ def render_plan(plan: dict) -> str:
         L.append(f"- {sp}: 단위 {n_units}개 | 일반 라운드 {len(normal)}개 "
                  f"(단위 수 {', '.join(str(len(r['unit_ids'])) for r in normal)}) | "
                  f"주제 회차 {', '.join(f'{t} {n}회×{u}단위' for t, (n, u) in per_topic.items()) or '없음'} | "
-                 f"참조 회차 {ref_desc} | "
+                 f"참조 회차 {ref_desc} | {extra_desc} | "
                  f"호출 {calls}회 (기존 방식 {base_calls}회) | 예상 {calls * SEC_PER_CALL / 3600:.1f}시간")
     total = plan_calls(plan)
     L.append(f"- 합계 호출 {total}회 → 예상 {total * SEC_PER_CALL / 3600:.1f}시간 (단위당 {SEC_PER_CALL}초, 2026-10-13 실측)")
@@ -540,7 +627,8 @@ def _assert_model():
     assert any(m["name"] == MODEL_NAME for m in tags["models"]), f"{MODEL_NAME} 없음 — `docker start ollama` 확인"
 
 
-def generate_all(out_dir: Path, use_weights: bool = True, smoke: dict[str, int] | None = None):
+def generate_all(out_dir: Path, use_weights: bool = True, smoke: dict[str, int] | None = None,
+                 kinds: set[str] | None = None, limit: int | None = None):
     assert out_dir.resolve() != (PROJECT_DIR / "data" / "faq").resolve(), \
         "data/faq에는 기존 전량 라운드 파일이 있다 — round_done이 그것을 완료로 보고 건너뛴다. 새 폴더를 쓸 것"
     assert_same_as_notebook()
@@ -548,6 +636,8 @@ def generate_all(out_dir: Path, use_weights: bool = True, smoke: dict[str, int] 
     plan = build_plan(units, use_weights, ref_targets=ref_target_ids(builder, units) if use_weights and REF_ROUNDS else None)
     if smoke:
         plan = smoke_plan(plan, smoke)
+    if kinds or limit:
+        plan = filter_plan(plan, kinds, limit)
     out_dir.mkdir(parents=True, exist_ok=True)
     plan_path = out_dir / "plan.json"
     if plan_path.exists():
@@ -667,7 +757,8 @@ def main(argv=None):
         if "model" in opts:
             set_model(opts["model"])
         smoke = dict(zip(("강아지", "고양이"), map(int, opts["smoke"].split(",")))) if "smoke" in opts else None
-        generate_all(Path(opts["out"]), use_weights, smoke)
+        kinds = set(opts["kinds"].split(",")) if "kinds" in opts else None
+        generate_all(Path(opts["out"]), use_weights, smoke, kinds, int(opts["limit"]) if "limit" in opts else None)
     elif cmd == "pilot-ref":
         pilot_ref(Path(opts.get("out", PROJECT_DIR / "data" / "faq" / "exp_r")))
     elif cmd == "show-ref":

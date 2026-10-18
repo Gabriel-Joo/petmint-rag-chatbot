@@ -5,7 +5,7 @@ build_review.py
 no_answer 확인 검사를 다른 모델(qwen3:14b)로 하던 것을 사람 표본으로 바꾼다. qwen 확인 검사는 12건 중 8건을 과하게 잡았고
 (data/review/na_confirm_qwen_check12_20261015.md), 같은 판정기·같은 캐시로 다시 재는 것은 구조상 0건이 나온다 — 검사가 아니다.
 
-표본(고정 seed, train+val에서): no_answer 30 · 등급 어구 양성 20 · 재작성 양성 20.
+표본(고정 seed, train+val에서): no_answer 30 · 등급 어구 양성 20 · 재작성 양성 20 · 예외·표 회차 양성 20(rebuild4~).
 - no_answer: "답없음"(라벨이 맞다) / "답있음"(발췌에 질문의 답이 있다 — 라벨 오류)
 - 양성: "맞음"(질문·발췌·답변이 맞는다) / "틀림"(재작성이 뜻을 바꿨거나 답변과 어긋난다)
 통과 기준(사용자 확정 2026-10-16): no_answer 중 "답있음" ≤ NA_MAX_BAD(3건 = 10%). 양성 "틀림"은 건수만 보고한다.
@@ -27,9 +27,9 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 REVIEW_DIR = PROJECT_DIR / "data" / "review"
 SEED = 20261016
-N = {"no_answer": 30, "grade": 20, "rewrite": 20}
+N = {"no_answer": 30, "grade": 20, "rewrite": 20, "new": 20}   # new: rebuild4 예외·표 회차(gen_kind exc·table) — 이전 빌드엔 없어 0건
 NA_MAX_BAD = 3
-ALLOWED = {"no_answer": ("답없음", "답있음"), "grade": ("맞음", "틀림"), "rewrite": ("맞음", "틀림")}
+ALLOWED = {"no_answer": ("답없음", "답있음"), "grade": ("맞음", "틀림"), "rewrite": ("맞음", "틀림"), "new": ("맞음", "틀림")}
 WAIT, FAIL = 3, 4
 
 
@@ -41,6 +41,8 @@ def group_of(s: dict) -> str | None:
     m = s["meta"]
     if m["kind"] == "no_answer":
         return "no_answer"
+    if m.get("gen_kind") in ("exc", "table"):
+        return "new"
     st = m.get("rewrite_status") or ""
     if st == "grade_ok":
         return "grade"
@@ -101,10 +103,12 @@ def run(ft: Path, logs: Path, name: str) -> int:
     res = {"approved": na_bad <= NA_MAX_BAD, "na_answer_present": na_bad, "na_n": sum(it["group"] == "no_answer" for it in v["items"]),
            "grade_wrong": c[("grade", "틀림")], "grade_n": sum(it["group"] == "grade" for it in v["items"]),
            "rewrite_wrong": c[("rewrite", "틀림")], "rewrite_n": sum(it["group"] == "rewrite" for it in v["items"]),
+           "new_wrong": c[("new", "틀림")], "new_n": sum(it["group"] == "new" for it in v["items"]),
            "na_max_bad": NA_MAX_BAD, "checked": datetime.now().isoformat(timespec="seconds")}
     (logs / "review_result.json").write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"검수 결과: no_answer 답있음 {na_bad}/{res['na_n']} (기준 ≤ {NA_MAX_BAD}) → {'통과' if res['approved'] else '미달'} | "
-          f"등급 어구 틀림 {res['grade_wrong']}/{res['grade_n']} · 재작성 틀림 {res['rewrite_wrong']}/{res['rewrite_n']}")
+          f"등급 어구 틀림 {res['grade_wrong']}/{res['grade_n']} · 재작성 틀림 {res['rewrite_wrong']}/{res['rewrite_n']} · "
+          f"예외·표 회차 틀림 {res['new_wrong']}/{res['new_n']}")
     return 0 if res["approved"] else FAIL
 
 

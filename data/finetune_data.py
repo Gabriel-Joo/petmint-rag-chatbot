@@ -411,6 +411,7 @@ def build_sample(e: dict, count: TokenCounter) -> tuple[dict | None, str]:
             "distractor_keys": [it.key for it in items if it is not gold],
             "round": qa.get("round"), "row": qa.get("row"), "flags": qa.get("flags", []),
             "rewrite_status": qa.get("rewrite_status"), "question_original": qa.get("question_original"),
+            "gen_kind": qa.get("gen_kind"),
             "n_tokens": n_tokens, "n_prompt_tokens": count.prompt_len(messages), "distractor_mode": e["na_mode"], "na_noun_cover": na_cover,
             "prompt_version": prompts.PROMPT_VERSION}
     if e.get("pair_na") and kind in ("no_answer", "distract_pair"):

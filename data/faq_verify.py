@@ -8,8 +8,10 @@ faq_verify.py
 import re
 
 try:
+    from data import limit_table as LT
     from data.limit_table import LIMIT_TABLE, LIMIT_TABLE_TYPE3, calculate_payout
 except ImportError:          # data/ 폴더에서 직접 실행할 때
+    import limit_table as LT
     from limit_table import LIMIT_TABLE, LIMIT_TABLE_TYPE3, calculate_payout
 
 MAN = r"(\d+(?:\.\d+)?)\s*만\s*원"
@@ -104,27 +106,15 @@ def verify(qa, coverage, section_name):
     return (not problems, problems)
 
 
-# ===== 별표3(소송목적의 값에 따른 변호사비용)·별표4(민사소송 인지액) 계산 검증 =====
+# ===== 별표3(소송목적의 값에 따른 변호사비용)·별표4(민사소송 인지액)·별표5(송달료) 계산 검증 =====
 # 2026-10-12 2차 검수: 구간 공식을 잘못 고르거나(2억~2억5천만원에 1억5천~2억 구간 공식) 덧셈을 틀린(55,000+600,000=645,000) 사례.
-# 구간표는 01번 청크의 [표]를 그대로 옮겼다(강아지·고양이 동일).
-LAWYER_FEE_BRACKETS = [   # (구간 상한, 기본액, 구간 하한, 비율) — 원 단위
-    (3_000_000, 300_000, 0, 0.0),
-    (20_000_000, 300_000, 3_000_000, 0.10),
-    (50_000_000, 2_000_000, 20_000_000, 0.08),
-    (100_000_000, 4_400_000, 50_000_000, 0.06),
-    (150_000_000, 7_400_000, 100_000_000, 0.04),
-    (200_000_000, 9_400_000, 150_000_000, 0.02),
-    (500_000_000, 10_400_000, 200_000_000, 0.01),
-    (float("inf"), 13_400_000, 500_000_000, 0.005),
-]
-STAMP_FEE_BRACKETS = [    # (구간 상한(미만), 기본액, 비율)
-    (10_000_000, 0, 0.005),
-    (100_000_000, 5_000, 0.0045),
-    (1_000_000_000, 55_000, 0.004),
-    (float("inf"), 555_000, 0.0035),
-]
+# 2026-10-18(rebuild4): 구간표·계산은 limit_table(lawyer_fee_limit·stamp_fee·service_fee, tests/test_legal_fees.py가 원문 [표]와
+# 대조)을 쓴다 — 여기 따로 두던 부동소수 표를 없앴다. 대조를 셋 더했다(사용자 지시 2026-10-18 "LLM 심판보다 정확하다"):
+#   ③ 질문의 소송목적의 값보다 윗구간의 비율(예: 2억5천만원에 5억 초과 구간 0.5%)  ④ 표·계산 어디에도 없는 금액
+#   ⑤ 별표5 송달료: 송달료표에 없는 금액, 민사단독·합의를 말하면서 165,000원이 없음(R044: 셋 다 110,000원)
 _UNIT = {"억": 100_000_000, "천만": 10_000_000, "백만": 1_000_000, "만": 10_000, "천": 1_000}
 _MONEY = re.compile(r"((?:\d[\d,]*(?:\.\d+)?\s*(?:억|천만|백만|만|천)\s*)+(?:\d[\d,]*\s*)?원|\d[\d,]*(?:\.\d+)?\s*원)")
+_PCT = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 
 
 def parse_won(expr: str) -> float:
@@ -140,15 +130,47 @@ def money_values(text: str) -> list[float]:
 
 
 def lawyer_fee(value: float) -> tuple[float, tuple]:
-    for upper, base, lower, rate in LAWYER_FEE_BRACKETS:
-        if value <= upper:
-            return base + (value - lower) * rate, (base, lower, rate)
+    """(변호사비용 한도, (기본액, 구간 하한, 비율)) — limit_table.lawyer_fee_limit"""
+    v = int(round(value))
+    for low, high, base, permille in LT.LAWYER_FEE_BRACKETS:
+        if high is None or v <= high:
+            return float(LT.lawyer_fee_limit(v)), (base, low, permille / 1000)
 
 
 def stamp_fee(value: float) -> tuple[float, tuple]:
-    for upper, base, rate in STAMP_FEE_BRACKETS:
-        if value < upper:
-            return base + value * rate, (base, rate)
+    """(인지액, (정액, 비율)) — limit_table.stamp_fee"""
+    v = int(round(value))
+    for low, high, base, bp in LT.STAMP_FEE_BRACKETS:
+        if high is None or v < high:
+            return float(LT.stamp_fee(v)), (base, bp / 10000)
+
+
+def _table_amounts() -> set[float]:
+    """별표3·4·5와 법률비용 특약 한도표에 적힌 금액 — 답변이 표를 옮겨 적는 것은 정상"""
+    out = {float(x) for low, high, base, _ in LT.LAWYER_FEE_BRACKETS for x in (low, high, base) if x is not None}
+    out |= {float(x) for low, high, base, _ in LT.STAMP_FEE_BRACKETS for x in (low, high, base) if x is not None}
+    out |= {float(v) for v in LT.SERVICE_FEE.values()} | {float(v) for v in LT.LEGAL_COST.values()}
+    return out
+
+
+def _bracket_rates(kind: str) -> list[tuple[float, float]]:
+    """(구간 하한, 비율 %) — 윗구간 비율 대조용"""
+    if kind == "lawyer":
+        return [(low, pm / 10) for low, _h, _b, pm in LT.LAWYER_FEE_BRACKETS]
+    return [(low, bp / 100) for low, _h, _b, bp in LT.STAMP_FEE_BRACKETS]
+
+
+def verify_service_fee(qa) -> tuple[bool, list] | None:
+    """별표5 송달료 — 답변이 송달료를 말할 때만"""
+    a = qa["answer"]
+    if "송달료" not in a:
+        return None
+    fees = {float(v) for v in LT.SERVICE_FEE.values()}
+    vals = [v for v in money_values(a) if v < 1_000_000]          # 송달료 자리 금액(소송 금액·한도 1,000만원은 제외)
+    problems = [f"송달료표에 없는 금액 {v:,.0f}원" for v in vals if v not in fees and v not in _table_amounts()]
+    if re.search(r"민사\s*(단독|합의)", a) and 165_000.0 not in vals and vals:
+        problems.append("민사단독·합의를 말하면서 165,000원이 없음(1심 단독·합의는 165,000원)")
+    return (not problems, problems)
 
 
 def verify_byeopyo(qa, section_name):
@@ -158,12 +180,14 @@ def verify_byeopyo(qa, section_name):
     kind = "lawyer" if "별표3" in name else ("stamp" if "별표4" in name else None)
     if not kind:
         return None
+    service = verify_service_fee(qa) if "별표5" in name else None
     q, a = qa["question"], qa["answer"]
     vals = money_values(re.sub(r"\(.*?\)", "", q))
     if not vals:
-        return None
+        return service
     ranged = bool(re.search(r"(사이|초과|부터|에서)", q)) and len(vals) >= 2
-    value = (min(vals) + 1) if ranged else vals[0]
+    above_one = not ranged and bool(re.search(r"(넘는|넘을|넘으면|넘어|초과|이상)", q))   # "5억원을 넘는·이상" = 그 위 구간
+    value = (min(vals) + 1) if ranged or above_one else vals[0]
     exp, bracket = lawyer_fee(value) if kind == "lawyer" else stamp_fee(value)
     problems = []
     # 결론 금액: '=' 뒤 금액 중 마지막 (계산식 안의 금액 제외)
@@ -180,4 +204,22 @@ def verify_byeopyo(qa, section_name):
                 problems.append(f"공식 기본액 {got_base:,.0f}원 ≠ 해당 구간 기본액 {bracket[0]:,.0f}원 (값 {value:,.0f}원)")
         elif not ranged and not any(abs(v - exp) <= 1 for v in money_values(a)):
             problems.append(f"정답 {exp:,.0f}원이 답변에 없음")
+    # ③ 윗구간 비율 — 소송목적의 값이 들어가는 구간보다 위 구간의 비율을 썼다(아래 구간 비율은 누진 설명으로 나올 수 있다)
+    if not ranged:
+        above = {pct for low, pct in _bracket_rates(kind) if low >= value and pct > 0}
+        cur = next(pct for low, pct in reversed(_bracket_rates(kind)) if low < value or low == 0)
+        used = {float(x) for x in _PCT.findall(a)}
+        wrong = sorted(used & (above - {cur}))
+        if wrong:
+            problems.append(f"윗구간 비율 {wrong}% (값 {value:,.0f}원의 구간 비율 {cur:g}%)")
+    # ④ 표·계산 어디에도 없는 금액 — 질문 금액, 표 금액, 정답, 해당 구간 계산의 중간값만 허용
+    if not ranged:
+        base, low = bracket[0], (bracket[1] if kind == "lawyer" else 0)
+        rate = bracket[-1]
+        allowed = _table_amounts() | set(vals) | {exp, value - low, (value - low) * rate, value * rate, base}
+        extra = [v for v in money_values(a) if not any(abs(v - x) <= 1 for x in allowed)]
+        if extra:
+            problems.append(f"표·계산에 없는 금액 {[f'{v:,.0f}원' for v in extra]} (값 {value:,.0f}원, 정답 {exp:,.0f}원)")
+    if service is not None and not service[0]:
+        problems += service[1]
     return (not problems, problems)
