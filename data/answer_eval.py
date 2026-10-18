@@ -251,6 +251,37 @@ def build_search_inputs(n_no_answer: int, top_k: int = SEARCH_TOP_K) -> list[dic
     return items
 
 
+_BLOCK_HEAD = re.compile(r"(?m)^\[발췌 (\d+)\] (.*)$")
+_REF_HEAD = re.compile(r"(?m)^\[참조\] (.*)$")
+
+
+def contexts_of(messages: list[dict]) -> list[dict] | dict:
+    """모델이 실제로 본 발췌 — 렌더된 user 메시지(fit_to_budget 뒤, 참조·공통 표기 포함)를 블록으로 되돌린다(08 Ragas의 contexts).
+    [{"label", "content", "references": [{"label", "content"}]}]. 발췌가 없으면 [].
+    되돌린 블록을 prompts.format_excerpt로 다시 렌더해 원문과 바이트 단위로 같은지 본다 — 다르면(본문에 '[참조] '로 시작하는
+    줄이 있는 등) 나눈 결과를 믿지 않고 {"raw": 원문}을 남긴다. 평가를 멈추지 않는다"""
+    user = messages[1]["content"]
+    head = user.split("\n\n" + prompts.QUESTION_HEADER + "\n")[0]
+    excerpt = head.split("\n", 1)[1] if "\n" in head else ""
+    if excerpt.strip() == prompts.NO_EXCERPT_TEXT:
+        return []
+    heads = list(_BLOCK_HEAD.finditer(excerpt))
+    blocks = []
+    for n, m in enumerate(heads):
+        body = excerpt[m.end() + 1:heads[n + 1].start() - 2 if n + 1 < len(heads) else len(excerpt)]
+        refs = list(_REF_HEAD.finditer(body))
+        content = body[:refs[0].start() - 1] if refs else body
+        references = []
+        for k, r in enumerate(refs):
+            end = refs[k + 1].start() - 1 if k + 1 < len(refs) else len(body)
+            references.append({"label": r.group(1), "content": body[r.end() + 1:end]})
+        blocks.append({"label": m.group(2), "content": content, "references": references})
+    rebuilt = prompts.format_excerpt([prompts.ExcerptItem(label=b["label"], content=b["content"],
+                                                          references=[prompts.Reference(x["label"], x["content"]) for x in b["references"]])
+                                      for b in blocks])
+    return blocks if rebuilt == excerpt else {"raw": excerpt}
+
+
 def summarize(rows: list[dict]) -> dict:
     out = {}
     for kind in ("gold", "no_answer"):
@@ -509,10 +540,11 @@ def main(argv=None):
     rows_by = {i: [] for i in range(len(args.adapter))}
     for n, it in enumerate(items, 1):
         excerpt = it["messages"][1]["content"].split(prompts.QUESTION_HEADER)[0]
+        contexts = contexts_of(it["messages"])          # 08 Ragas 입력 — 모델이 본 그대로(2026-10-18)
         base = gen(it["messages"], None)
         for i in rows_by:
             ft = gen(it["messages"], i)
-            rows_by[i].append({**{k: v for k, v in it.items() if k != "messages"}, "base": base, "ft": ft,
+            rows_by[i].append({**{k: v for k, v in it.items() if k != "messages"}, "contexts": contexts, "base": base, "ft": ft,
                                "base_flags": auto_flags(base, excerpt, it["evidence"]), "ft_flags": auto_flags(ft, excerpt, it["evidence"])})
         if n % 10 == 0:
             print(f"  {n}/{len(items)}", flush=True)
