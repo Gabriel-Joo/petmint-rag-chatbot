@@ -1,6 +1,6 @@
 ---
 
-> 상태: 설계 확정, 구현 중. 3절 SearchScope는 2026-10-13 구현 완료, 6-2·6-3절 MySQL 연동은 2026-10-15 구현 완료.
+> 상태: 설계 확정, 구현 중. 3절 SearchScope는 2026-10-13, 6-2·6-3절 MySQL 연동은 2026-10-15 구현 완료. 답변 생성(answer.py)과 search-service는 아직이라 WS는 더미 답변을 돌려준다.
 > 
 
 ---
@@ -12,7 +12,7 @@
 | 사용자 | 메리츠 펫보험 부서 상담원 (사내) |
 | 사용 맥락 | 고객 전화를 받으며 동시에 조회 |
 | 접속 환경 | 사내 PC(내부망) + 모바일(외부망, Cloudflare Tunnel) |
-| 서버 | FastAPI + WebSocket. 개발 중에는 systemd 데몬, 최종 배포는 K8s Pod (10~12단계) |
+| 서버 | FastAPI + WebSocket. 개발은 로컬 uvicorn, 배포는 K8s Pod (14번) |
 | 동시성 | FastAPI 비동기 수신 + Ollama 자체 큐 |
 
 **요건 대응**
@@ -44,6 +44,9 @@
 > **2026-10-14 평가가 이 원칙을 역으로 확증했다.** 질문에 등급 어구가 들어가면 파인튜닝 모델의 거절률이 크게 오른다(등급 언급 문항 15/19 거절). 추론 단계에서 보정하려는 두 실험이 모두 실패했다 — 발췌에 공통 적용 표기를 추가(15건 중 1건 해소, 대조군이 오히려 7건 해소)해도, 질문에서 등급 어구를 제거(15건 중 3건 해소, 새 거절 2건)해도 풀리지 않았다. **등급이 프롬프트에 들어간 뒤에는 되돌릴 방법이 없다.** UI에서 애초에 들어가지 않게 하는 것이 유일하게 작동하는 설계다.
 > 
 
+> **2026-10-15 재구축에서 학습 데이터 쪽에서도 확인됐다.** 겹침 0.3 미만에서 거절된 33건 중 17건이 등급 어구 문항이고, 답한 36건에는 3건뿐이다. 추론 단계로는 되돌릴 수 없다는 것이 데이터 분포로도 설명된다 — 07번 10절 참고.
+> 
+
 #### 1-2. 상담 업무 흐름을 그대로 반영한다
 
 실무에서는 고객이 전화하면 번호로 조회돼 가입 정보가 먼저 뜬다. "사용자가 종을 고른다"가 아니라 "고객 데이터가 조건을 정한다"가 실제 순서다.
@@ -71,7 +74,7 @@
 ```
 ┌─ 1. 모드 선택 ─────────────────────┐
 │  캐릭터 3개                          │
-│  일반 / 사내규정 / 업무특화            │
+│  일반 / 업무특화 / 사내규정            │
 └───────────────────────────────────┘
               ↓ 업무특화
 ┌─ 2. 고객 조회 ─────────────────────┐
@@ -94,9 +97,11 @@
 
 | 모드 | 소개 | 구성 |
 | --- | --- | --- |
-| 일반 | "약관은 모르지만 뭐든 물어보세요. 외부로 나가지 않아요" | Tri-7B 원본 |
-| 사내규정 | "인사·복무 규정은 제가 알아요" | Tri-7B 원본 + 인사규정 RAG |
-| 업무특화 | "펫보험 약관은 제 전문이에요. 근거 조항까지 찾아드려요" | Tri-7B 파인튜닝 + 약관 RAG |
+| 일반 | "무엇이든 물어보세요. 사내서버에서만 처리됩니다" | Tri-7B 원본 |
+| 업무특화 | "펫보험 약관은 제 전문이에요. 근거 조항까지 찾아드릴게요" | Tri-7B 파인튜닝 + 약관 RAG |
+| 사내규정 | "인사, 복무 규정은 제가 알아요" | Tri-7B 원본 + 인사규정 RAG |
+
+화면 순서도 일반 · 업무특화 · 사내규정이다.
 
 캐릭터는 이 화면에만 크게 나온다. 상담 중에는 작은 아이콘으로 현재 모드만 표시한다 — 고객 전화를 받으며 쓰는 도구라 산만하면 안 된다.
 
@@ -123,18 +128,20 @@
 
 **과거 상담 목록 — 같은 것을 두 곳에서 부른다**
 
-고객 하나에 딸린 목록 하나다(`sessions`에서 그 `customer_id`를 `started_at` 역순). 컴포넌트도 하나고, 부르는 자리만 둘이다.
+고객 하나에 딸린 목록 하나다(sessions에서 그 customer_id를 started_at 역순). 제목 없는 세션과 목록에서 지운 세션은 빠지고, 기본 50개까지 가져온다. 상담 화면에서는 진행 중인 자기 세션도 뺀다. 컴포넌트도 하나고, 부르는 자리만 둘이다.
 
 | 자리 | 상황 | 여는 방식 |
 | --- | --- | --- |
-| 고객 조회 화면의 고객 카드 안 | 전화 없이 시작할 때 | 화면 전환해도 된다 |
+| 고객 조회 화면의 고객 카드 안 | 전화 없이 시작할 때 | 모달로 덮는다 |
 | 상담 화면 상단 고객 카드 안 | 통화 중 "아까 그거" 대응 | 모달로 덮는다 |
 
-상담 화면에서 화면을 전환하면 **진행 중인 상담을 잃는다.** 닫으면 원래 자리로 돌아와야 한다.
+두 자리 모두 같은 모달을 쓴다. 상담 화면에서 화면을 전환하면 진행 중인 상담을 잃기 때문이다. 닫으면 원래 자리로 돌아와야 한다.
 
 **전화 알림은 그대로 새 상담으로 간다.** 과거 상담은 진입점이 아니라 참고다 — 1-2절의 "고객 데이터가 조건을 정한다"가 그대로 유지된다.
 
-**열린 과거 상담은 읽기 전용이다.** 대화·근거 패널·계산 카드가 **당시 값으로** 보인다(12번 2-2절 스냅샷). 등급이 바뀐 고객의 작년 상담을 열었는데 지금 등급으로 보이면 "그때 이렇게 안내했다"가 거짓이 된다.
+**열린 과거 상담은 읽기 전용이다.** 대화와 근거 패널이 **당시 값으로** 보인다(12번 2-2절 스냅샷). 등급이 바뀐 고객의 작년 상담을 열었는데 지금 등급으로 보이면 "그때 이렇게 안내했다"가 거짓이 된다.
+
+계산 카드는 아직 보이지 않는다 — 실시간 상담에서는 백엔드가 `calc` 메시지를 보내지 않고, 과거 턴 응답에도 `payout`이 실리지 않는다. DB와 스키마에는 자리가 있으므로 둘 다 넣기만 하면 된다.
 
 **거기서 이어서 질문할 수 없다.** 두 가지 이유다 — 1-3절의 "상담 한 건 = 세션 하나"가 깨지고, 지금 통화에 물어야 할 것을 과거 세션에 붙이면 **이번 통화 로그에 남지 않아** 책임 추적이 갈라진다. 물을 것이 생기면 모달을 닫고 지금 세션에 묻는다.
 
@@ -167,13 +174,11 @@
 
 #### 3. 검색 필터 — 설계 검토에서 발견한 결함
 
-**상태: 구현 완료.** 회귀 세트 93문항으로 56/87 → 75/87, MRR 0.569 → 0.677 확인. 아래는 발견 경위와 설계 근거 기록.
+**상태: 구현 완료.** 회귀 세트 93문항 시점에 56/87 → 75/87, MRR 0.569 → 0.677 확인. 지금 세트는 103문항이라 재측정이 필요하다.
 
 #### 3-1. 지금 구조에 UI 필터를 그대로 넣으면 검색이 망가진다
 
 `search_engine.py`는 등급·유형 필터를 컬렉션 전체에 건다.
-
-python
 
 ```python
 coverage_type == "고급형" and type == "Ⅱ"
@@ -268,7 +273,7 @@ SearchScope    species, subscriptions, focus_sections
 
 **재작성기는 베이스 모델을 쓴다.** 파인튜닝 모델은 "발췌를 읽고 상담 말투로 답하기"만 배우므로, 재작성을 시키면 질문을 다시 쓰지 않고 답을 해버릴 가능성이 크다.
 
-**재작성된 질문을 화면에 보여준다.** 상담원이 "내 질문이 저렇게 해석됐구나"를 알 수 있고, 틀렸으면 바로 고쳐 물을 수 있다.
+**재작성된 질문을 화면에 보여준다.** 상담원이 "내 질문이 저렇게 해석됐구나"를 알 수 있고, 틀렸으면 바로 고쳐 물을 수 있다. 아직 구현되지 않았다 — DB에는 rewritten_question으로 남지만 WS 메시지와 과거 턴 응답에 실을 자리가 없다.
 
 ```
 ┌──────────────────────────────┐
@@ -295,13 +300,11 @@ SearchScope    species, subscriptions, focus_sections
 
 가능 여부와 무관하게 특약 단위 스키마로 확정한다. 구조가 더 일반적이기 때문이다.
 
-json
-
 ```json
 {
   "customer_id": "C001",
-  "name": "홍길동",
-  "phone": "000-0000-0000",
+  "name": "김보호",
+  "phone": "010-1234-5678",
   "pets": [
     {
       "pet_id": "P001",
@@ -357,19 +360,21 @@ json
 
 #### 6-2. 세션
 
-json
-
 ```json
 {
   "session_id": "uuid",
   "mode": "업무특화",
   "customer_id": "C001",
+  "agent_email": "...",
+  "title": "...",
+  "pinned": false,
   "started_at": "...",
-  "messages": []
+  "ended_at": null,
+  "deleted_at": null
 }
 ```
 
-`pet_id`는 메시지에만 담고 세션에는 두지 않는다. 두 곳에 두면 개체 선택과 질문 사이에 값이 엇갈릴 수 있다. 서버는 메시지의 `pet_id`가 세션 고객의 것인지 검증하고 기록한다.
+턴은 세션에 담지 않고 turns 테이블에 따로 둔다. pet_id는 턴에만 담고 세션에는 두지 않는다. 두 곳에 두면 개체 선택과 질문 사이에 값이 엇갈릴 수 있다. 서버는 질문의 pet_id가 세션 고객의 것인지 검증하고 기록한다.
 
 **세션 수명**: 초안은 메모리였고, 그래서 재시작하면 사라졌다. **로그를 MySQL로 옮기기로 했으므로 세션도 같은 DB에 둔다**(6-3절) — 재시작해도 남는다. WS 재연결 시 4404를 받으면, 업무특화는 고객 조회로 돌아가고 일반·사내규정은 그 모드의 빈 대화창에서 새 세션을 연다 — 고객 조회가 없는 모드라 돌아갈 곳이 없다.
 
@@ -383,22 +388,18 @@ json
 
 #### 6-3. 로그
 
-json
-
 ```json
 {
   "turn_id": "uuid",
   "session_id": "uuid",
-  "customer_id": "C001",
   "pet_id": "P001",
-  "agent": "...",
-  "mode": "업무특화",
   "scope": { },
-  "hypothetical": false,
+  "is_hypothetical": false,
   "clarified": false,
   "question": "...",
   "rewritten_question": "...",
   "answer": "...",
+  "payout": { },
   "retrieved": [{"graph_key": "...", "score": 0.72, "content": "..."}],
   "used_references": [ ],
   "model": "...",
@@ -407,11 +408,13 @@ json
   "first_token_ms": 480,
   "latency_ms": 2300,
   "status": "ok",
-  "timestamp": "..."
+  "created_at": "..."
 }
 ```
 
-**`turn_id`가 필요한 이유**: 피드백 버튼이 가리킬 대상이 있어야 한다. 모든 서버 메시지와 로그에 넣는다.
+customer_id · agent_email · mode는 sessions에 있으므로 턴에 중복해 담지 않는다.
+
+**turn_id가 필요한 이유**: 피드백 버튼이 가리킬 대상이 있어야 한다. 모든 서버 메시지와 로그에 넣는다. 질문이 들어오기 전에 생기는 형식 오류만 예외로 turn_id=""로 보낸다.
 
 **`retrieved`에 본문까지 남기는 이유**: 08번 Ragas는 질문·답변·컨텍스트가 모두 필요하다. 키는 `rag_context.graph_key`를 쓴다 — Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다.
 
@@ -433,7 +436,7 @@ json
 
 **인덱스는 화면이 정한다.** 상세는 12번 1-1절에 있다. 지난 대화 목록은 `(agent_email, mode, deleted_at, started_at)`, 최근 상담 탭은 `started_at`, 고객별 내역은 `customer_id`다.
 
-**MySQL 인스턴스는 클러스터에 하나만 둔다.** StatefulSet + PVC. 데이터베이스를 `petmint`와 `runshoes`로 나누고, 계정도 둘로 나눠 각자 자기 데이터베이스만 접근하게 한다. Secret은 네임스페이스별로 둔다.
+**MySQL 인스턴스는 클러스터에 하나만 둔다.** StatefulSet + PVC. 데이터베이스를 petmint · insurance_core · runshoes로 나누고, 계정도 셋으로 나눠 각자 자기 데이터베이스만 접근하게 한다. insurance_core는 고객 원장이고 petmint 계정은 SELECT만 가진다(12번 4절). Secret은 네임스페이스별로 둔다.
 
 > 인스턴스를 나누지 않는 이유: 데이터베이스가 다르면 데이터는 섞이지 않지만, 같은 프로세스라 한쪽이 죽으면 둘 다 죽는다. 그런데 둘 다 포트폴리오고 트래픽도 없으므로, 16GB에 GPU 모델들이 올라가는 것을 생각하면 인스턴스 둘은 아깝다. 계정 분리로 최소 권한은 지킨다.
 > 
@@ -450,10 +453,13 @@ json
 GET    /api/customers              고객 목록
 GET    /api/customers/{id}         고객 상세
 GET    /api/customers/{id}/sessions  그 고객의 과거 상담 목록 (2-2절)
-GET    /api/sessions               지난 대화 목록 (agent_email로 거름, deleted_at IS NULL)
+GET    /api/sessions               지난 대화 목록 — mode 필수(일반·사내규정),
+                                   agent_email로 거름, 제목 없는 세션 제외,
+                                   고정한 것 먼저, limit 1~200
 POST   /api/sessions               세션 시작 (mode, customer_id)
 GET    /api/sessions/{id}          세션 상세 — 턴과 근거까지 한 번에
-PATCH  /api/sessions/{id}          제목 변경, 고정 등
+PATCH  /api/sessions/{id}          제목 변경·고정 — 일반·사내규정 전용.
+                                   업무특화는 404, 질문 전 세션은 409, 빈 제목은 422
 DELETE /api/sessions/{id}          상담 종료 / 목록에서 제거(deleted_at)
 GET    /api/consultations/recent   최근 상담 탭 — 고객 단위, 상담원으로 거르지 않는다
 GET    /api/articles/{species}/{section}/{section_name}/{article_num}
@@ -488,6 +494,7 @@ POST   /api/turns/{turn_id}/feedback
   {"type": "clarify", "turn_id": "...", "options": [...]}    되묻기
   {"type": "references", "turn_id": "...", "items": [...]}   실제 쓴 근거
   {"type": "done", "turn_id": "...", "latency_ms": 2300, "first_token_ms": 480}
+  {"type": "error", "turn_id": "...", "code": "...", "message": "..."}   오류
 ```
 
 **`sources`를 먼저 보내는 이유**: 검색 결과는 생성 전에 이미 나와 있다. 먼저 보내면 근거 패널이 0.5초 안에 찬다. 답변이 실제로 쓴 것(`used_references`)은 생성이 끝나야 알 수 있으므로 나중에 `references`로 보낸다.
@@ -495,6 +502,8 @@ POST   /api/turns/{turn_id}/feedback
 **`cancel`을 처음부터 넣는다**: 생성 중에 새 질문이 오거나 상담이 끝나면 Ollama 스트림을 취소해야 한다.
 
 **스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다.
+
+계산 카드(`calc`)는 프런트에 수신 처리가 있으나 백엔드 `ServerMessage`에 타입이 없어 보내지 않는다. 2-3절의 계산 카드는 아직 화면에 뜨지 않는다
 
 #### 7-3. 프로세스 모델
 
@@ -534,9 +543,9 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, search-service 기동 직후와 Ollama 생성 중을 나눠 측정한다.
 
-**재부팅 대응**: Ollama 컨테이너가 `restart=no`다. systemd 유닛에 Ollama·Milvus 의존성을 넣거나 재시작 정책을 바꿔야 한다.
+**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus 의존 순서는 아직 보장되지 않는다.
 
-K8s 배포 후에는 systemd 대신 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
+K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
 
 > **파인튜닝 모델은 GGUF 변환이 필요하다.**
 > 
@@ -566,39 +575,53 @@ data/                 노트북 01~08이 import하는 순수 로직. 웹 의존�
   rag_context.py      컨텍스트 조립
   limit_table.py      한도표
 
-search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용)
+search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — 아직 없음
   main.py             data/search_engine.py를 감싸는 얇은 HTTP 래퍼.
                       검색 로직을 재구현하지 않고 호출만 한다.
                       GPU 직렬화(한 번에 하나씩)는 여기 안에서 처리한다
 
 app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import만 한다 (GPU 미사용)
-  main.py             lifespan: 빌더·고객 로드 + search-service 헬스체크 + 마이그레이션 적용 검사
-  config.py           모델명, 경로, DB 접속 정보(전부 환경변수)
+  main.py             lifespan: 약관 청크·그래프 로드 + ContextBuilder·OllamaClient 생성
+                      + 고객 검증 + 마이그레이션 적용 검사
+                      (search-service 헬스체크는 검색을 붙일 때 넣는다)
+  config.py           경로, DB 접속 정보(환경변수).
+                      모델명 tri-7b · tri-7b-rag-1은 아직 코드 상수다
+  deps.py             요청 의존성
+  db.py               DB 연결
   schemas.py          Customer/Pet/Policy, Session, WS 메시지
   routers/
     customers.py  sessions.py  consultations.py  articles.py  feedback.py  chat_ws.py
   services/
-    customers.py      JSON 로드 + 검증 + pet → SearchScope 변환
+    customers.py      insurance_core 조회 + 검증 + pet → SearchScope 변환
     sessions.py       MySQL 저장소 (12번)
-    modes.py          모드별 모델·리트리버·프롬프트
-    retrieval.py      search-service HTTP 호출
+    retrieval.py      search-service HTTP 호출 — 아직 틀만 있다
     llm.py            Ollama 스트리밍 + 취소
     answer.py         scope → 검색 → 되묻기 판정 → 계산 카드 → 생성 → used_references
+                      아직 틀만 있다
+    titles.py         첫 질문으로 세션 제목 짓기
     turn_log.py       턴·scope·retrieved를 MySQL에 기록 (done 전)
+    policy_data.py    약관 청크·그래프 적재
   fixtures/
-    customers.example.json    샘플 고객 구조(customers.json은 이것을 복사해 채운다. git에 없다)
+    customers.example.json   시드용 샘플. 실제 파일은 git에 올리지 않는다
 
 db/                   마이그레이션 (Alembic 안 쓴다 — 앱이 ORM 없이 SQL을 직접 쓴다)
-  migrations/petmint/ 번호 붙인 SQL 파일
+  migrations/petmint/           번호 붙인 SQL 파일
+  migrations/insurance_core/
+  conn.py             접속 정보 (전부 환경변수, 기본값 없음)
   migrate.py          미적용 파일을 순서대로 적용, schema_migrations에 기록
-  bootstrap.py        root로 DB 둘·계정 둘 생성 (멱등)
+  bootstrap.py        root로 DB 셋·계정 셋 생성 (멱등)
+  seed_insurance_core.py        고객 원장 시드
+  wait_ready.py       앱 initContainer가 쓴다
 
 web/                  React + TypeScript (Vite)
   src/
-    pages/            ModeSelect / CustomerSelect / Chat
-    components/       SourcePanel, CalcCard, ExclusionBanner, PetSelector
-    hooks/            useChatSocket (WS 수신·turn_id별 상태)
-    api/              REST 클라이언트
+    pages/            ModeSelect / CustomerSelect / Chat / Consultation
+    components/       TopBar, ModeIcon, Composer, ChatHistory, TurnView,
+                      SourcePanel, CalcCard, ExclusionBanner, CallAlert,
+                      CustomerCard, PastConsultations, SpeciesToggle, ArchDiagram
+    hooks/            useChatSocket, useCallSimulator, useMediaQuery, useNow,
+                      useReducedMotion, useScrollbarWidth
+    api/              REST·WS 클라이언트, 타입
   dist/               빌드 결과 — FastAPI가 StaticFiles로 서빙
 ```
 
@@ -607,16 +630,16 @@ web/                  React + TypeScript (Vite)
 
 `search_scope.py`와 `prompts.py`를 `data/`에 두는 이유는 **08번 평가가 서비스와 같은 필터·프롬프트를 써야** 하기 때문이다.
 
-고객 JSON은 `app/fixtures/`에 둔다. 약관 데이터와 섞지 않는다.
+고객 데이터는 MySQL insurance_core에서 읽는다. app/fixtures/는 그 DB를 채우는 시드일 뿐이고, 실제 픽스처는 git에 올리지 않는다(14번 2-2절).
 
 ---
 
 #### 9. 정하지 못한 것
 
-- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). Milvus 색인만 남았다.
+- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). Milvus 색인과 Pod 쪽 SearchScope가 남았다.
 - **멀티턴 재작성의 실제 품질** — 재작성이 충분한지 측정하지 않았다. 부족하면 재작성기만 따로 학습할 수 있다.
 - **LangChain 사용 여부** — 재작성 → 검색 → 생성을 LCEL로 묶을지, 직접 짤지.
-- **업무특화 모드가 쓸 어댑터** — 현재 `rag-1_4811건`은 구어체 질문 97문항 중 36건을 거절한다. FAQ 재생성·재학습 후 교체 예정이다. UI는 어댑터 경로를 설정값으로 뺀다.
+- **업무특화 모드가 쓸 어댑터** — rag-1_7192건_rebuild2에서 answerable 거절이 12건까지 내려왔고, 검색 조건에서는 베이스보다 낫다(8/69 대 9/69). 등급 어구 문항만 미달이라 rebuild3를 준비 중이다(07번 10절). 모델명은 아직 코드 상수라, 교체하려면 설정값으로 빼는 작업이 먼저다.
 
 ---
 
