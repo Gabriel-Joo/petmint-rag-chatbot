@@ -147,7 +147,7 @@ class TurnLog(_Model):
     question: str
     rewritten_question: str | None = None
     answer: str
-    payout: dict | None = None                     # 계산 카드 결과(limit_table) 그대로 — 재계산하지 않고 저장한다. 지금은 None
+    payout: dict | None = None                     # 계산 카드(CalcResult.model_dump) 그대로 — 재계산하지 않고 저장한다
     pet_id: str | None = None
     pet_name: str | None = None
     species: Species | None = None
@@ -196,6 +196,17 @@ class SessionPatch(_Model):
     pinned: bool | None = None
 
 
+class CalcResult(_Model):
+    """계산 카드(09번 2-3절) — limit_table.calculate_payout 결과. WS calc 메시지·과거 턴(TurnOut.payout)·turns.payout이 같은 모양"""
+    section_name: str
+    coverage_type: Grade
+    claimed: int                                   # 청구 치료비(질문 속 금액)
+    copay: int                                     # 가입 정보의 자기부담금
+    limit: int                                     # 그 상황의 1일 지급 한도
+    payout: int
+    note: str
+
+
 class TurnOut(_Model):
     """지난 대화를 다시 열 때 화면에 그릴 턴 — turns·turn_scope·retrieved에서 복원.
     반려동물·가입 내용은 그 턴의 스냅샷이다(12번 2-2절) — 과거 상담 화면은 지금 고객 데이터가 아니라 이 값으로 그린다"""
@@ -206,6 +217,7 @@ class TurnOut(_Model):
     species: Species | None = None
     scope: list[ScopeRow] = Field(default_factory=list)   # 그때 적용된 특약·등급·자기부담금·부담보
     answer: str
+    payout: CalcResult | None = None               # 그 턴의 계산 카드(turns.payout). 없으면 None
     sources: list["SourceItem"]
     references: list["ReferenceItem"]
     latency_ms: int | None
@@ -336,14 +348,20 @@ class DoneMsg(_ServerMsg):
     first_token_ms: int | None = None
 
 
+class CalcMsg(_ServerMsg):
+    """계산 카드 — 치료비가 들어간 질문이면 sources 다음에 한 번"""
+    type: Literal["calc"] = "calc"
+    result: CalcResult
+
+
 class ErrorMsg(_ServerMsg):
-    """7-2에 없는 추가 타입 — 잘못된 메시지·남의 pet_id를 거절할 자리. 질문 전 오류면 turn_id는 빈 문자열"""
+    """잘못된 메시지·남의 pet_id·검색/생성 실패. 질문 전 오류면 turn_id는 빈 문자열"""
     type: Literal["error"] = "error"
     code: str
     message: str
 
 
-ServerMessage = Annotated[Union[SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, DoneMsg, ErrorMsg],
+ServerMessage = Annotated[Union[SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg],
                           Field(discriminator="type")]
 
 

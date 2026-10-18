@@ -9,18 +9,28 @@ app.state.builder, ...)에 엔진 대신 그대로 넘긴다(노트북은 진짜
 build_full_context가 동기이고 ContextBuilder도 Milvus를 동기로 읽으므로 search도 동기다 — 턴 파이프라인에서
 asyncio.to_thread로 통째로 돌린다.
 
-이번 범위는 인터페이스만. 구현은 search_service/main.py와 함께 한다.
+search-service가 한 번에 하나씩만 추론하므로(락) 앞 요청이 끝날 때까지 기다릴 수 있다 — 읽기 제한을 넉넉히 둔다.
 """
 
+import httpx
+
 from data.search_scope import SearchScope
+
+SEARCH_TIMEOUT = httpx.Timeout(30, connect=3)
 
 
 class Retriever:
     def __init__(self, base_url: str):
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
 
     async def health(self) -> bool:
-        raise NotImplementedError("search-service 헬스체크 — lifespan에서 부른다")
+        """search-service GET /health가 ok(모델이 GPU에 있고 Milvus에 닿는다)인가. 닿지 않으면 False"""
+        try:
+            async with httpx.AsyncClient(timeout=3) as client:
+                r = await client.get(f"{self.base_url}/health")
+            return r.status_code == 200 and r.json().get("ok") is True
+        except (httpx.HTTPError, ValueError):
+            return False
 
     def search(self, query: str, scope: SearchScope, top_k: int = 5, candidate_k: int = 20) -> list[dict]:
         """SearchEngine.search와 같은 인자·반환. 리랭커 순 청크 top_k개 — {"score", 청크 필드(content·section·section_name·
@@ -29,4 +39,7 @@ class Retriever:
         그쪽이 top_k=candidate_k로 후보를 넉넉히 받아 간다.
         query는 사용자 질문 그대로 보낸다 — scope.retrieval_query는 search-service 안의 SearchEngine.search가 적용한다.
         scope는 scope.describe()로 보내고 search-service가 같은 SearchScope로 되살린다."""
-        raise NotImplementedError("search-service 호출")
+        r = httpx.post(f"{self.base_url}/search", timeout=SEARCH_TIMEOUT,
+                       json={"query": query, "scope": scope.describe(), "top_k": top_k, "candidate_k": candidate_k})
+        r.raise_for_status()
+        return r.json()

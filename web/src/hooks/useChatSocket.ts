@@ -128,7 +128,7 @@ const historyLoaded = new Set<string>();
 export function turnFromOut(t: TurnOut): Turn {
   return {
     key: t.turn_id, turn_id: t.turn_id, question: t.question, pet_id: t.pet_id, sources: t.sources, answer: t.answer,
-    clarify: null, clarifyChoice: null, references: t.references, calc: null, error: null, status: "done",
+    clarify: null, clarifyChoice: null, references: t.references, calc: t.payout, error: null, status: "done",
     latency_ms: t.latency_ms, first_token_ms: t.first_token_ms,
   };
 }

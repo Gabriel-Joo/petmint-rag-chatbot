@@ -67,6 +67,11 @@ def retrieved_rows(sources: list[SourceItem], references: list[ReferenceItem], *
     return rows
 
 
+def _json(v):
+    """MySQL JSON 칸 — 드라이버에 따라 문자열이나 이미 풀린 값으로 온다"""
+    return json.loads(v) if isinstance(v, str) else v
+
+
 class TurnLogStore:
     def __init__(self, engine: Engine):
         self.engine = engine
@@ -100,7 +105,7 @@ class TurnLogStore:
     def turns_of(self, session_id: str) -> list[TurnOut]:
         """지난 대화 — 화면에 그릴 턴(오래된 순). 근거 패널은 검색 행(rank 순), 인용은 used 행(검색 → 그래프 순)"""
         with self.engine.connect() as c:
-            turns = c.execute(text("SELECT turn_id, question, pet_id, pet_name, species, answer, latency_ms,"
+            turns = c.execute(text("SELECT turn_id, question, pet_id, pet_name, species, answer, payout, latency_ms,"
                                    " first_token_ms, created_at FROM turns WHERE session_id = :sid"
                                    " ORDER BY created_at, turn_id"), dict(sid=session_id)).all()
             scopes = c.execute(text("SELECT sc.turn_id, sc.section_name, sc.coverage_type, sc.copay, sc.excluded_conditions"
@@ -128,7 +133,7 @@ class TurnLogStore:
                     citation_label=r.citation_label or "", species=r.corpus, section=r.section,
                     section_name=r.section_name, article_num=r.article_num, paragraph_num=r.paragraph_num))
         return [TurnOut(turn_id=t.turn_id, question=t.question, pet_id=t.pet_id, pet_name=t.pet_name, species=t.species,
-                        scope=scope.get(t.turn_id, []), answer=t.answer,
+                        scope=scope.get(t.turn_id, []), answer=t.answer, payout=_json(t.payout),
                         sources=sources.get(t.turn_id, []), references=refs.get(t.turn_id, []),
                         latency_ms=t.latency_ms, first_token_ms=t.first_token_ms, timestamp=utc(t.created_at))
                 for t in turns]
