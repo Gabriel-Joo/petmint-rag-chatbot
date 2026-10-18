@@ -1,3 +1,5 @@
+> 상태: 00~04 데이터 구축 완료, 05~08 재구축 진행 중. 09~14 화면·세션 저장·터널·배포는 구현됐다(클러스터 이주 2026-10-16). search-service와 답변 생성은 코드만 작성(2026-10-18)하고 실행 확인 전이라 배포된 앱은 더미 답변을 돌려준다. 인사규정 Milvus 색인과 15 모니터링은 시작 전.
+
 ### **1. 전체 파이프라인**
 
 ```
@@ -18,7 +20,7 @@
 12. 데이터 저장 (MySQL — 세션·턴 로그)
 13. 외부 노출과 인증 (Cloudflare Tunnel + Access)
 14. 배포 인프라 (CI/CD, Kubernetes, Docker)
-15. 모니터링 (Prometheus + Grafana) — 예정
+15. 모니터링 (Prometheus + Grafana) — △ 시작 전
 ```
 
 위 목록 중 00~07(데이터 구축 과정)을 시각화하면:
@@ -85,7 +87,7 @@ flowchart TD
 
 **search-service는 청크 top-k만 돌려주고, 발췌 조립은 Pod가 한다.** 그래프를 따라 참조 조문을 붙이고 길이 예산에 맞춰 자르는 일은 GPU가 필요 없고, 그 규칙은 자주 바뀌는 부분이라 Pod에 두어야 앱만 롤링하면 된다. 그래프는 모델이 쓰는 것이 아니라 코드가 발췌를 조립할 때 쓴다(4-1절 "근거는 코드가 조립한다"). 근거 패널에서 조항을 눌렀을 때 보여주는 원문도 Pod가 Milvus에서 바로 읽어 온다 — Milvus를 검색만 보는 것이 아니다.
 
-**아직 띄우지 않았다 — search-service와 답변 생성.** search-service는 코드가 없고 배포 설정의 주소도 `search-service-not-deployed.invalid`다. **인사규정 Milvus 컬렉션(`hr_regulation`)도 아직 적재하지 않았다.** 세 모드 모두 WebSocket이 더미 답변을 돌려주고, `answer.py`와 `retrieval.py`는 함수 틀만 있다. 위 그림은 설계이며, 실제로 도는 것은 브라우저 → 터널 → Pod → MySQL 경로와 조항 원문 조회뿐이다.
+**△ 아직 띄우지 않았다 — search-service와 답변 생성.** search-service(`search_service/main.py`)와 턴 파이프라인(`answer.py`·`retrieval.py`)은 코드 작성(2026-10-18), 실행 확인 전이다. 배포 설정의 주소는 아직 `search-service-not-deployed.invalid`다. **△ 인사규정 Milvus 컬렉션(`hr_regulation`)도 적재 전이다.** 배포된 앱은 세 모드 모두 WebSocket이 더미 답변을 돌려준다. 위 그림은 설계이며, ✓ 실제로 도는 것은 브라우저 → 터널 → Pod → MySQL 경로와 조항 원문 조회뿐이다.
 
 ---
 
@@ -323,9 +325,9 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
 - vLLM 서빙 최적화, 임베딩 모델 양자화
 - **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다
 - **부담보 동의어 대조** — 현재 프론트에서 글자 일치로만 비교한다. "무릎"과 "슬개골" 같은 동의어는 잡지 못한다
-- **09번 UI — 메타데이터 선택 받기** △ 설계만 됐다. 고객 레코드의 `section_name`·`coverage_type`을 `SearchScope`로 만드는 코드는 있으나, 지금은 기동 시 데이터 검증에만 쓰이고 턴 처리로 넘어가지 않는다
-- **09번 UI — 판단 불가 시 되묻기**△  반영됨. 설계만 됐다. 09번 4절에 조건이 정리돼 있으나 `resume_clarified`는 아직 비어 있다
+- **09번 UI — 메타데이터 선택 받기** △ 코드 작성(2026-10-18), 실행 확인 전. 고객 레코드의 `section_name`·`coverage_type`으로 만든 `SearchScope`(`customers.scope_for`)를 턴의 검색 범위로 넘긴다(`answer.scope_of`)
+- **09번 UI — 판단 불가 시 되묻기** △ 코드 작성(2026-10-18), 실행 확인 전. 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다
 - **같은 질문으로 양성과 no_answer 쌍 구성** — no_answer를 gold 빼고 만들면 겹침이 구조적으로 낮아져, 모델이 발췌를 읽지 않고 질문 형태만 보고 라벨을 맞힌다. 지금 양쪽에 다 나오는 질문은 11개뿐이다(07번 10절)
 - **VM 메모리 증설** — Vagrantfile 4096 → 8192. 호스트가 61GB에 여유 44GB라 넉넉하다. `vagrant reload`가 필요하므로 아래 노드 재배치와 함께 한다
 - **노드 재배치** — w1에 MySQL+Harbor, w2·w3에 앱, Jenkins는 w3에 둔다. Jenkins와 MySQL을 떼어놓는 것이 핵심이다. Jenkins는 빌드 때 메모리가 튀지만 서비스 경로 밖이다
-- **사내규정 모드는 전처리만 끝났다.** 청크 49개와 참조 그래프 7엣지를 만들었고 검색 코드도 같은 경로를 쓰도록 되어 있으나, Milvus 색인과 Pod 쪽 `SearchScope`가 아직이다. 2절 그림의 사내규정 경로는 설계이며 아직 돌지 않는다
+- **사내규정 모드** ✓ 전처리(청크 49개, 참조 그래프 7엣지). △ Pod 쪽 `SearchScope`(`SearchScope.unrestricted("인사규정")`)는 코드 작성(2026-10-18), 실행 확인 전. △ Milvus 색인(`python -m data.hr_index`) 전. 2절 그림의 사내규정 경로는 아직 돌지 않는다

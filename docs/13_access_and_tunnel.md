@@ -1,4 +1,5 @@
-> 상태: 터널 구축 완료, Access 정책 설정 완료(petmint는 시연용으로 로그인한 누구나). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
+> 상태: 구축 완료. 터널과 Access 정책은 설정을 마쳤다(petmint는 시연용으로 로그인한 누구나 통과).
+> cloudflared 매니페스트는 아직 ronanlab-infra에 없다(4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
 > 
 
 ---
