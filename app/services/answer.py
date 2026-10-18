@@ -204,33 +204,47 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
 def _used(answer: str, results: list[dict], items: list[prompts.ExcerptItem],
           corpus: str | None) -> tuple[list[ReferenceItem], list[dict], list[dict]]:
     """답변이 실제로 쓴 근거(08 Ragas가 쓴다). 프롬프트에 들어간 발췌만 본다(fit_to_budget이 뺀 것은 모델이 못 봤다).
-    - 검색 결과 자체: 답변과 발췌 본문이 used_references 기준(8자 이상 일치 또는 조문 언급)으로 겹치면
-    - 참조 조문·법령 박스: rag_context.used_references(검색 결과 본문에서 온 구간은 빼고 본다)
+    1) 어느 발췌를 썼나: pick_excerpts — 발췌 블록(본문+참조) 중 답변과 가장 길게 겹친 것(+ 조문 언급으로 걸린 것)
+    2) 고른 발췌 안에서: 검색 결과 자체(본문과 8자 이상 일치 또는 조문 언급), 참조 조문·법령 박스(used_references,
+       검색 결과 본문에서 온 구간은 빼고 본다). 고르지 않은 발췌의 참조는 보지 않는다
     반환: (ReferenceItem 목록, 프롬프트에 들어간 그래프 참조 전부, 그중 쓴 것) — 뒤 둘은 retrieved 그래프 행"""
     if corpus is None:
         return [], [], []
     by_key = {it.key: it for it in items}           # 위치("0", "1", …) → 프롬프트에 남은 발췌(_generate가 key를 매긴다)
+    shown = [(i, r, by_key[str(i)]) for i, r in enumerate(results) if str(i) in by_key]
+    chosen = pick_excerpts(answer, [(it.label, _block_text(it)) for _, _, it in shown])
     refs: list[ReferenceItem] = []
     graph_refs, used_graph = [], []
-    for i, r in enumerate(results):
-        item = by_key.get(str(i))
-        if item is None:
-            continue
+    for n, (i, r, item) in enumerate(shown):
         label = item.label
+        in_prompt = {(ref.label, ref.content) for ref in item.references}
+        kept = [_with_section(g, r.get("references", [])) for g in r.get("reference_contents", [])
+                if (g["citation_label"], (g.get("content") or "").strip()) in in_prompt]
+        graph_refs += kept
+        if n not in chosen:
+            continue
         if used_references(answer, [{"citation_label": label, "content": r["content"]}], ""):
             refs.append(ReferenceItem(citation_label=label, species=corpus, section=r["section"],
                                       section_name=r.get("section_name"), article_num=r.get("article_num"),
                                       paragraph_num=r.get("paragraph_num")))
-        in_prompt = {(ref.label, ref.content) for ref in item.references}
-        kept = [_with_section(g, r.get("references", [])) for g in r.get("reference_contents", [])
-                if (g["citation_label"], (g.get("content") or "").strip()) in in_prompt]
         used = used_references(answer, kept, r["content"], unit_article=r.get("article_num"))
-        graph_refs += kept
         used_graph += used
         refs += [ReferenceItem(citation_label=g["citation_label"], species=corpus, section=g["section"],
                                section_name=g.get("section_name"), article_num=g.get("article_num"),
                                paragraph_num=g.get("paragraph_num")) for g in used]
     return refs, graph_refs, used_graph
+
+
+def pick_excerpts(answer: str, blocks: list[tuple[str, str]]) -> set[int]:
+    """답변이 쓴 발췌의 위치. blocks = [(발췌 라벨, 발췌 블록 글)] — 블록은 프롬프트에 보인 본문 + 참조 본문.
+    used_references(longest_only=True): 조문 언급으로 걸린 것 + 8자 이상 겹친 것 중 가장 길게 겹친 하나(같은 길이면 모두).
+    같은 문장이 두 발췌에 다 있으면(통원/입원 제1조처럼) 둘 다 남는다 — 글자로는 가를 수 없다"""
+    cands = [{"citation_label": label, "content": text, "_i": i} for i, (label, text) in enumerate(blocks)]
+    return {c["_i"] for c in used_references(answer, cands, "", longest_only=True)}
+
+
+def _block_text(item: prompts.ExcerptItem) -> str:
+    return "\n".join([item.content, *(ref.content for ref in item.references)])
 
 
 def _with_section(g: dict, edges: list) -> dict:

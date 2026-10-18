@@ -466,12 +466,15 @@ def _mostly_inside(content: str, unit_flat: str, n: int = 12, ratio: float = 0.8
     return bool(grams) and sum(g in unit_flat for g in grams) / len(grams) >= ratio
 
 def used_references(answer_body: str, refs: list[dict], unit_content: str, minlen: int = 8,
-                    unit_article: int | None = None) -> list[dict]:
+                    unit_article: int | None = None, longest_only: bool = False) -> list[dict]:
     """답변 본문이 실제로 쓴 참조만. (1) 조문 번호 언급(법령은 법명까지, '제118조의4' 포함) 또는
     (2) 답변과 참조 본문이 minlen자 이상 일치하는 구간 — 단위 본문에도 있는 구간은 단위에서 온 것으로 보고 제외한다.
-    단, 단위 본문 안에서 뽑은 법령 박스(참조 본문이 단위 본문의 일부)는 제외 없이 일치만 본다."""
+    단, 단위 본문 안에서 뽑은 법령 박스(참조 본문이 단위 본문의 일부)는 제외 없이 일치만 본다.
+    longest_only: (2)로만 걸린 것 중 가장 길게 겹친 것만 남긴다(같은 길이면 모두). (1) 언급으로 걸린 것은 그대로.
+      서비스(app/services/answer.py)가 발췌를 고를 때 쓴다 — 같은 문구가 여러 발췌에 있으면 전부 걸리던 것을 줄인다
+      (2026-10-18 측정: 답변 234건·후보 720개, 실오판 43 → 22). 05·06 근거 표기는 기본값(False) 그대로다."""
     unit_flat = _flat_cite(unit_content)
-    keep = []
+    hits = []   # (참조, 언급, 겹침 길이)
     for r in refs:
         content = r.get("content") or ""
         m = re.match(r"\s*(.*?)\s*제(\d+)조(의\d+)?", r["citation_label"])
@@ -482,6 +485,10 @@ def used_references(answer_body: str, refs: list[dict], unit_content: str, minle
             pat = (rf"{re.escape(law)}\s*" if law else "") + rf"제\s*{num}\s*조{sub}(?!의)"
             if hang:
                 # 항까지 지정된 참조는 그 항을 언급해야 한다 — 같은 조의 다른 항을 인용한 답변에 붙지 않게
+                # 같은 조 규칙(아래 or 뒤): 단위와 참조가 같은 조이고, 답변에 '제N조'가 없이 '제k항'만 있으면 언급으로 본다.
+                # 알려진 오판(2026-10-18 합성 시험, 고치지 않음): 답변이 단위 본문 문장을 옮기다 그 안의 '제k항'을 함께 옮기면
+                # 참조를 쓰지 않았는데도 걸린다. 재현: 단위 = 보통약관 제4조 제2항, 참조 = 제4조(보험금 지급에 관한 세부규정) 제1항,
+                # 답변 = "제1항에 따라 장해지급률이 결정되었으나 그 이후 보장을 받을 수 있는 …"(제2항 본문 앞부분) → 제1항이 잡힌다
                 h = hang.group(1) or hang.group(2)
                 mention = bool(re.search(pat + rf"[^.]{{0,40}}?제\s*{h}\s*항", answer_body)) or (
                     unit_article is not None and int(num) == unit_article
@@ -490,9 +497,10 @@ def used_references(answer_body: str, refs: list[dict], unit_content: str, minle
                 mention = bool(re.search(pat, answer_body))
         inside_unit = _mostly_inside(content, unit_flat)
         overlap = _longest_shared(answer_body, content, None if inside_unit else unit_flat, minlen)
-        if mention or overlap >= minlen:
-            keep.append(r)
-    return keep
+        hits.append((r, mention, overlap))
+    best = max((o for _, _, o in hits), default=0)
+    floor = best if longest_only else minlen
+    return [r for r, mention, overlap in hits if mention or (overlap >= minlen and overlap >= floor)]
 
 
 def cross_article_refs(unit: dict, refs: list[dict]) -> tuple[list[dict], list[dict]]:
