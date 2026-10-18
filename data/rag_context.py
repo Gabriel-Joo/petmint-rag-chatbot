@@ -293,6 +293,23 @@ def shorten_whole_reference(unit_content: str, ref_num: int, rows: list[dict], a
     return assemble(kept) + f"\n(제{ref_num}조의 이하 항 생략)"
 
 
+# 별표 역참조 — 별표가 발췌(단위·검색 결과)로 들어오면 그 표를 인용하는 조항 본문을 [참조]로 붙인다.
+# 참조 그래프(03b)에는 별표로 가는 엣지가 없어(【별표1(…)】 표기를 조문 참조로 뽑지 않는다) 표만 들어가고,
+# 모델이 표를 못 읽고 주석만 옮겼다 — 2026-10-18 97문항 판정 R041·R066·R084: 이율표만 받은 정답 발췌 모드에서
+# "이자가 붙는다"는 본문을 빼고 "계약자 귀책이면 미지급" 단서만 남겨 뜻이 뒤집혔고, 보통약관 제8조 본문이 함께 들어간
+# 검색 모드에서는 맞혔다. 대상은 청크 본문에서 【별표N】을 인용하는 조항(강아지·고양이 같은 구조) 중 반려동물 상담에 쓰는 것.
+# 값: (section, section_name, article_num, paragraph_num) — paragraph_num None이면 조 전체
+ANNEX_CITED_BY = {
+    "【별표1】 보험금을 지급할 때의 적립이율 계산": [
+        ("보통약관", None, 8, 5),                                        # 보험금 지급기일 넘기면 별표1 이율로 더해 지급
+        ("특별약관", "반려동물 비용손해 관련 특별약관 일반조항", 5, 4),   # 의료비 특약 보험금의 같은 규정
+    ],
+    "【별표2】 장해분류표": [("보통약관", None, 3, None)],               # 장해지급률 80% 이상 → 가입금액 전액
+    "【별표3】 소송목적의 값에 따른 변호사비용": [("특별약관", "민사소송법률비용Ⅱ보장 특별약관", 3, 2)],
+    "【별표4】 민사소송 인지액 /【별표5】 송달료": [("특별약관", "민사소송법률비용Ⅱ보장 특별약관", 3, 2)],
+}
+
+
 class ContextBuilder:
     """참조 조문 보강기. 한 번 만들어 여러 단위(검색 결과 청크, FAQ 블록)에 재사용한다."""
 
@@ -374,6 +391,26 @@ class ContextBuilder:
             return None
         return strip_leading_title(" ".join(r["content"] for r in rows), article_num)
 
+    def annex_citing_references(self, annex_name: str | None, species: str, seen: set) -> list[dict]:
+        """별표를 인용하는 조항 본문(ANNEX_CITED_BY). 표기는 약관 이름을 앞에 붙인다 — 보통약관 제8조와 일반조항 제5조처럼
+        같은 규정이 두 약관에 있어 조번호만으로는 어느 약관인지 모른다"""
+        out = []
+        for sec, sec_name, num, para in ANNEX_CITED_BY.get(annex_name, ()):
+            rows = self.fetch_article_rows(species, sec, sec_name, num, None, para)
+            if not rows:
+                continue
+            content = strip_leading_title(" ".join(r["content"] for r in rows), num)
+            dedup = (sec, sec_name, num, content)
+            if dedup in seen:
+                continue
+            seen.add(dedup)
+            title = next((c.get("article_title") for c in self.chunks[species]
+                          if c["section"] == sec and c.get("section_name") == sec_name and c.get("article_num") == num), None)
+            out.append({"article_num": num, "article_title": title,
+                        "citation_label": f"{sec_name or sec} {reference_label(num, title, para)}",
+                        "section_name": sec_name, "paragraph_num": para, "content": content})
+        return out
+
     def resolve_references(self, unit: dict, species: str, source_chunks: list[dict] = None,
                            coverage_hint: str | None = None) -> list[dict]:
         """unit(section, section_name, article_num, coverage_type, content)에 참조 조문과 inline 법령 정의를 붙인다.
@@ -388,6 +425,8 @@ class ContextBuilder:
         enriched_refs = []
         seen = set()
         unit_norm = _norm(unit_content)
+        if unit.get("section") == "별표":
+            enriched_refs += self.annex_citing_references(unit.get("section_name"), species, seen)
         for ref_num, ref_title, ref_section, ref_section_name, ref_para, ref_ho in self.references_of(unit, species, source_chunks):
             # 그래프가 참조 대상의 section을 직접 담으므로(03번), unit의 section이 아니라 ref의 section으로 조회
             rows = self.fetch_article_rows(species, ref_section, ref_section_name, ref_num,
@@ -514,6 +553,11 @@ def cross_article_refs(unit: dict, refs: list[dict]) -> tuple[list[dict], list[d
     return cross, other
 
 
+def article_key(c: dict) -> tuple:
+    """조항 단위 키 — 같은 조의 다른 항·조각은 하나. 조번호 없는 문서(안내·별표)는 문서 하나. 등급별로 나뉜 조는 등급마다 따로"""
+    return (c.get("section"), c.get("section_name"), c.get("article_num"), c.get("coverage_type"))
+
+
 def search_with_graph(engine, builder: ContextBuilder, query: str, scope: SearchScope,
                       top_k: int = 5, candidate_k: int = 20) -> list[dict]:
     """Hybrid Search(BM25+Dense) + Reranker 상위 candidate_k개를 섹션 가중으로 재정렬해 top_k개.
@@ -524,8 +568,18 @@ def search_with_graph(engine, builder: ContextBuilder, query: str, scope: Search
         r["adjusted_score"] = r["score"] * SECTION_PRIORITY.get(r.get("section"), 0.8)
     raw_results.sort(key=lambda r: r["adjusted_score"], reverse=True)
 
+    # 조항 중복 제거: 같은 조(다른 항·조각)가 top_k 두 자리를 차지하지 않게 — 점수가 가장 높은 청크 하나만 남긴다.
+    # 조번호 없는 문서(안내·별표)는 문서 하나로 본다. search_engine.build_rerank_text의 라벨과 짝(2026-10-18 실험)
+    picked, seen = [], set()
+    for r in raw_results:
+        k = article_key(r)
+        if k in seen:
+            continue
+        seen.add(k)
+        picked.append(r)
+
     enriched = []
-    for r in raw_results[:top_k]:
+    for r in picked[:top_k]:
         enriched.append({
             "score": r["score"], "adjusted_score": r["adjusted_score"],
             "section": r["section"], "section_name": r.get("section_name"),
