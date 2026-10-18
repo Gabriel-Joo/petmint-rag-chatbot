@@ -14,7 +14,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | 프로세스 | 위치 | 이유 |
 | --- | --- | --- |
 | Ollama | GPU 호스트 | 모델 추론에 GPU |
-| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. △ 코드 작성(2026-10-18, `search_service/`), 호스트 기동 전 |
+| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✗ 호스트 기동 전(코드는 2026-10-18 작성, `search_service/`) |
 | Milvus | 호스트 도커 → Pod 가능 | GPU를 쓰지 않는다. search-service와 함께 판단한다  |
 | MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 |
 | FastAPI + React 빌드물 | Pod | GPU를 쓰지 않는다 |
@@ -65,13 +65,13 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | `PETMINT_DB_HOST` / `PORT` / `NAME` / `USER` / `PASSWORD` | MySQL |
 | `PETMINT_MILVUS_URL` | Milvus |
 | `PETMINT_OLLAMA_URL` | GPU 호스트의 Ollama |
-| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service. △ 미배포라 지금 값은 `search-service-not-deployed.invalid` |
+| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service. ✗ 미배포라 지금 값은 `search-service-not-deployed.invalid` |
 | `PETMINT_WEB_DIST` | React 빌드물 경로 |
 | `PETMINT_CORE_DB_*` | 고객 원장(`insurance_core`). 실무에서는 다른 호스트일 수 있어 따로 둔다 |
 | `PETMINT_DEFAULT_AGENT` | 내부망 직접 접속처럼 Access 헤더가 없을 때 쓸 상담원 ID |
 | `PETMINT_TITLE_LLM` | 세션 제목을 LLM으로 지을지(0/1). 재구축 중이라 지금은 0 |
-| `PETMINT_MODEL_BASE` | 일반·사내규정 모드와 재작성기가 쓸 모델 이름 (기본 tri-7b). △ 이미지 빌드·태그 커밋(9029301e8d8d), Sync 확인 전 |
-| `PETMINT_MODEL_RAG` | 업무특화 모드가 쓸 어댑터 모델 이름 (기본 tri-7b-rag-1). △ 이미지 빌드·태그 커밋(9029301e8d8d), Sync 확인 전 |
+| `PETMINT_MODEL_BASE` | 일반·사내규정 모드와 재작성기가 쓸 모델 이름 (기본 tri-7b). ✓ 이미지 빌드·태그 커밋·Sync 확인(2026-10-18) |
+| `PETMINT_MODEL_RAG` | 업무특화 모드가 쓸 어댑터 모델 이름 (기본 tri-7b-rag-1). ✓ 이미지 빌드·태그 커밋·Sync 확인(2026-10-18). ✗ 지금 값 tri-7b-rag-1은 Ollama에 없다 |
 
 DB 환경변수가 없으면 이름을 밝히며 기동이 실패한다. 코드에 접속 정보를 하드코딩하지 않는다(12번 1-2절).
 
@@ -162,7 +162,7 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 ✓ **앱이 클러스터에서 돈다 (2026-10-16).** MySQL StatefulSet → 약관·시드 적재 → 초기화 Job → 앱 순으로 올렸고, Ingress 경유로 화면·고객 조회·조항 원문·WS 한 턴까지 응답한다. ✗ 약관 적재는 API 서버를 거쳐 Pod 안으로 tar를 흘려 넣어, m-k8s 디스크에 파일이 남지 않는다(아래 — 같은 날 NFS로 바꿨다).
 
-약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). WS는 한 턴까지 응답하는 것을 확인했으나 클러스터에서는 더미 답변이다. △ `answer.py`와 search-service는 코드 작성(2026-10-18), 실행 확인 전 — 배포되어야 진짜 답이 나온다.
+약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). ✓ 일반 모드는 클러스터에서 실제 답변을 확인했다(2026-10-18). ✗ search-service는 기동 전 — 업무특화·사내규정은 이것이 붙어야 답이 나온다.
 
 #### 1-10. GitOps — ArgoCD (2026-10-16)
 
@@ -335,7 +335,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 ### 다음에 할 일
 
-**1. search-service** — △ 코드 작성(2026-10-18, `search_service/`), 호스트 기동과 ConfigMap 주소 교체 전. 이것이 붙어야 검색이 Pod에서 돌고, answer.py와 함께 더미 답변이 진짜 답변이 된다.
+**1. search-service** — ✗ 호스트 기동과 ConfigMap 주소 교체 전(코드는 2026-10-18 작성, `search_service/`). 이것이 붙어야 검색이 Pod에서 돌고, answer.py와 함께 더미 답변이 진짜 답변이 된다.
 
 **2. 08번 Ragas** — △ 검색 품질 측정. 오늘 top 3 적중 81/97을 쟀고,
 Context Recall을 제대로 보려면 이것이 필요하다.

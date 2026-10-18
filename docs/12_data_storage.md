@@ -72,7 +72,7 @@ sessions (상담 1건)
 
 **retrieved — 그 질문에 검색된 조문**
 
-`turn_id`, `rank`, `graph_key`, `score`, `content`, `used`. 턴당 3~10줄(검색 `top_k` 설정에 따른다. 답변 경로의 top_k는 3이다. △ 실제 검색 경로는 코드 작성(2026-10-18), 실행 확인 전 — 지금까지 쌓인 턴은 더미 답변이라 0줄). `used`는 답변에 실제로 쓰인 근거인지 — 08 평가에서 쓴다.
+`turn_id`, `rank`, `graph_key`, `score`, `content`, `used`. 턴당 3~10줄(검색 `top_k` 설정에 따른다. 답변 경로의 top_k는 3이다. △ 실제 검색 경로는 코드 작성(2026-10-18), ✗ search-service 기동 전 — 지금까지 쌓인 턴은 더미 답변이거나 일반 모드(검색 없음)라 0줄). `used`는 답변에 실제로 쓰인 근거인지 — 08 평가에서 쓴다.
 
 **조문 식별은 `graph_key`가 기준이다.** Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다(09번 6-3절). `section_name`+`article_num`만으로는 조문이 특정되지 않는다 — 강아지·고양이 약관에 같은 조합이 있고, 보통약관은 `section_name`이 NULL이며, 사내규정은 별도 코퍼스다.
 
