@@ -8,26 +8,28 @@ chat_ws.py
 - 턴 로그(turns·turn_scope·retrieved)는 done을 보내기 전에 쓴다 — done 뒤 목록 새로고침·피드백이 그 턴을 찾을 수 있게.
 - 첫 질문이면(세 모드 모두, 12번 1-1절) 제목 요약을 답변과 나란히 돌리고, done 전에 sessions.title에 한 번 넣는다.
   업무특화 제목은 고객 조회의 과거 상담 목록이 쓴다(09번 2-2절).
-- 지금은 answer.run_turn 대신 더미 순서(sources → token → references → done)를 보낸다. 로그는 더미 그대로 남는다.
+- 한 턴은 answer.run_turn이 낸 메시지를 그대로 보낸다(sources → calc → token… → references, 되묻기면 clarify에서 멈춤,
+  실패면 error). 턴 로그를 쓰고 제목을 넣은 뒤 done — error로 끝난 턴은 done을 보내지 않는다.
+- 되묻기에서 멈춘 턴은 연결마다 들고 있다가 clarify_answer로 잇는다. 응답 전에 새 질문이 오거나 연결이 끊기면 cancelled로 남긴다.
+- 턴은 수신 루프 안에서 차례로 돈다 — 생성 중에는 cancel을 받지 못한다(아직 cancel 미구현).
 """
 
 import asyncio
 import logging
-import time
 import uuid
+from typing import AsyncIterator
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
 from app import config
-from app.db import now, utc
 from app.deps import agent_of
-from app.schemas import (CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ReferencesMsg, SourcesMsg,
-                         TokenMsg, TurnLog, client_message_adapter)
-from app.services import titles
+from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
+from app.services import answer, titles
+from app.services.answer import TurnContext, TurnDeps
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.sessions import SessionStore
-from app.services.turn_log import TurnLogStore, pet_snapshot, retrieved_rows, scope_rows
+from app.services.turn_log import TurnLogStore
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -37,12 +39,48 @@ async def _send(ws: WebSocket, msg) -> None:
     await ws.send_text(msg.model_dump_json())
 
 
+async def _record(turn_log: TurnLogStore, ctx: TurnContext) -> None:
+    try:
+        await asyncio.to_thread(turn_log.record, ctx.log)
+    except Exception:                      # 로그 실패로 상담을 끊지 않는다 — 대신 크게 남긴다
+        log.exception("턴 로그 기록 실패: session=%s turn=%s", ctx.session.session_id, ctx.turn_id)
+
+
+async def _drive(ws: WebSocket, turn_log: TurnLogStore, ctx: TurnContext, messages: AsyncIterator[ServerMessage]) -> None:
+    """턴의 메시지를 보내고, 끝났으면(되묻기 대기가 아니면) 턴 로그를 쓴다. 보내다 연결이 끊기면 cancelled로 남긴다"""
+    try:
+        async for m in messages:
+            await _send(ws, m)
+    finally:
+        if ctx.clarify is None:
+            answer.abandon(ctx)            # 이미 끝났으면(ctx.log 있음) 그대로 둔다
+            await _record(turn_log, ctx)
+
+
 @router.websocket("/ws/chat/{session_id}")
 async def chat(ws: WebSocket, session_id: str):
     store: SessionStore = ws.app.state.sessions
     turn_log: TurnLogStore = ws.app.state.turn_log
     customers: CustomerStore = ws.app.state.customers
+    deps = TurnDeps(retriever=ws.app.state.retriever, builder=ws.app.state.builder, llm=ws.app.state.llm)
     agent = agent_of(ws)
+    pending: dict[str, TurnContext] = {}           # 되묻기 응답을 기다리는 턴
+
+    async def drop_pending() -> None:
+        for ctx in pending.values():
+            answer.abandon(ctx)
+            await _record(turn_log, ctx)
+        pending.clear()
+
+    async def finish(ctx: TurnContext, title_task: asyncio.Task | None) -> None:
+        """제목을 넣고(첫 질문) done — 되묻기 대기면 done 없이 기다린다, 실패한 턴은 error로 이미 끝났다"""
+        if title_task is not None:
+            await asyncio.to_thread(store.set_title_once, session_id, await title_task)
+        if ctx.clarify is not None:
+            pending[ctx.turn_id] = ctx
+        elif ctx.log is not None and ctx.log.status != "error":
+            await _send(ws, DoneMsg(turn_id=ctx.turn_id, latency_ms=ctx.log.latency_ms,
+                                    first_token_ms=ctx.log.first_token_ms))
 
     await ws.accept()
     if await asyncio.to_thread(store.get_open, session_id, agent) is None:
@@ -83,38 +121,29 @@ async def chat(ws: WebSocket, session_id: str):
                                              message=f"{session.mode} 모드는 pet_id를 받지 않는다"))
                     continue
 
+                await drop_pending()                        # 되묻기에 답하지 않고 새로 물었다
+
                 title_task = None
                 if session.title is None:
                     title_task = asyncio.create_task(titles.make_title(msg.text, ws.app.state.llm))
 
-                # 구현 때: scope_for(pet) → answer.run_turn(TurnContext(...))의 메시지를 그대로 흘려보내고,
-                # 끝나면 run_turn이 돌려준 TurnLog를 아래처럼 쓴다. 생성 중 새 질문이 오면 앞 턴의 cancel을 set한다
-                started = time.monotonic()
-                sources, references, answer = [], [], "(더미 답변)"
-                await _send(ws, SourcesMsg(turn_id=turn_id, items=sources))
-                await _send(ws, TokenMsg(turn_id=turn_id, text=answer))
-                await _send(ws, ReferencesMsg(turn_id=turn_id, items=references))
-                latency_ms = int((time.monotonic() - started) * 1000)
-
-                turn = TurnLog(turn_id=turn_id, session_id=session_id, question=msg.text, answer=answer,
-                               **pet_snapshot(pet), scope=scope_rows(pet),
-                               retrieved=retrieved_rows(sources, references),
-                               model=config.FINETUNED_MODEL if session.mode == "업무특화" else config.BASE_MODEL,
-                               prompt_version=config.PROMPT_VERSION, index_version=config.INDEX_VERSION,
-                               latency_ms=latency_ms, created_at=utc(now()))
-                try:
-                    await asyncio.to_thread(turn_log.record, turn)
-                except Exception:                  # 로그 실패로 상담을 끊지 않는다 — 대신 크게 남긴다
-                    log.exception("턴 로그 기록 실패: session=%s turn=%s", session_id, turn_id)
-                if title_task is not None:
-                    await asyncio.to_thread(store.set_title_once, session_id, await title_task)
-                await _send(ws, DoneMsg(turn_id=turn_id, latency_ms=latency_ms))
+                ctx = TurnContext(turn_id=turn_id, session=session, pet=pet, scope=answer.scope_of(session.mode, pet),
+                                  question=msg.text, agent=agent)
+                await _drive(ws, turn_log, ctx, answer.run_turn(ctx, deps))
+                await finish(ctx, title_task)
 
             elif isinstance(msg, CancelMsg):
-                pass                                # 구현 때: 진행 중 턴의 cancel 이벤트를 set
+                pass                                # 구현 때: 진행 중 턴의 cancel 이벤트를 set(턴을 수신 루프 밖 태스크로)
 
             elif isinstance(msg, ClarifyAnswerMsg):
-                # 구현 때: answer.resume_clarified로 같은 turn_id의 생성을 잇는다
-                await _send(ws, DoneMsg(turn_id=msg.turn_id, latency_ms=0))
+                ctx = pending.pop(msg.turn_id, None)
+                if ctx is None:
+                    await _send(ws, ErrorMsg(turn_id=msg.turn_id, code="bad_turn",
+                                             message=f"되묻기를 기다리는 턴이 아님: {msg.turn_id}"))
+                    continue
+                await _drive(ws, turn_log, ctx, answer.resume_clarified(ctx, msg.choice, deps))
+                await finish(ctx, None)
     except WebSocketDisconnect:
-        pass                                        # 구현 때: 진행 중 턴 취소
+        pass
+    finally:
+        await drop_pending()

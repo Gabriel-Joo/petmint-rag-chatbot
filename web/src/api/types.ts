@@ -114,6 +114,7 @@ export interface TurnOut {
   species: Species | null;
   scope: ScopeRow[];
   answer: string;
+  payout: CalcResult | null; // 그 턴의 계산 카드(turns.payout)
   sources: SourceItem[];
   references: ReferenceItem[];
   latency_ms: number | null;
@@ -171,7 +172,7 @@ export interface ReferenceItem {
   paragraph_num: number | null;
 }
 
-/** 계산 카드(09 2-3) — limit_table.calculate_payout 결과. 7-2절에 이 값을 실어 나를 메시지가 아직 없다(미정) */
+/** 계산 카드(09 2-3) — limit_table.calculate_payout 결과. WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
 export interface CalcResult {
   section_name: string;
   coverage_type: Grade;
@@ -188,9 +189,9 @@ export type ServerMessage =
   | { type: "clarify"; turn_id: string; options: string[] }
   | { type: "references"; turn_id: string; items: ReferenceItem[] }
   | { type: "done"; turn_id: string; latency_ms: number; first_token_ms: number | null }
-  // 백엔드 뼈대가 추가한 타입(7-2에 없음): 잘못된 메시지·남의 pet_id 거절
+  // 잘못된 메시지·남의 pet_id·검색/생성 실패
   | { type: "error"; turn_id: string; code: string; message: string }
-  // 미정: 계산 카드 전달 방법이 7-2에 없다. 백엔드는 아직 보내지 않는다 — 프로토콜 확정 시 이름·모양을 맞출 것
+  // 계산 카드 — 치료비가 들어간 질문이면 sources 다음에 한 번
   | { type: "calc"; turn_id: string; result: CalcResult };
 
 /** WS 종료 코드 — 없는(만료된) 세션 */
