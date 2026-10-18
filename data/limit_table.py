@@ -84,3 +84,87 @@ def calculate_payout(treatment_cost: int, copay: int, rate: float, daily_limit: 
       calculate_payout(4_100_000, 30_000, 0.7, 2_500_000) == 2_500_000  (고급형Ⅲ MRI+수술 동시 → 수술한도)
     """
     return min(int((treatment_cost - copay) * rate), daily_limit)
+
+
+# ===== 민사소송법률비용Ⅱ 특약 — 【별표3】 변호사비용 · 【별표4】 인지액 · 【별표5】 송달료 (강아지·고양이 같은 표) =====
+# 약관만으로 금액이 나오는 표 셋(2026-10-18 조사). 97문항 판정에서 어댑터가 틀린 R043(변호사 보수 280만원을 30만원으로)·
+# R032·R044(송달료)가 여기 속한다 — 의료비 한도처럼 코드가 계산하고 모델은 계산에 손대지 않는다.
+# 표는 원문 그대로 옮겼다. 원문에 계산 예시가 없어 검증은 표에 적힌 구간별 기준액과의 일치로 한다(tests/test_legal_fees.py).
+
+# 【별표3】 소송목적의 값에 따른 변호사비용 — (구간 하한, 구간 상한, 기준액, 초과분 비율 ‰). 상한 None = 끝없음
+# 비율은 천분율 정수 — 부동소수로 곱하면 원 단위가 1원 모자라게 잘린다(예: 0.0045 × 2,500만 = 112,499.99…)
+# "300만원까지 부분 30만원 / 300만원을 초과하여 2,000만원까지 부분 [30만원 + (소송목적의 값 - 300만원) x 10%] / …"
+LAWYER_FEE_BRACKETS = [
+    (0,             3_000_000,   300_000,    0),       # 300만원까지 부분: 30만원
+    (3_000_000,     20_000_000,  300_000,    100),     # 10%
+    (20_000_000,    50_000_000,  2_000_000,  80),      # 8%
+    (50_000_000,    100_000_000, 4_400_000,  60),      # 6%
+    (100_000_000,   150_000_000, 7_400_000,  40),      # 4%
+    (150_000_000,   200_000_000, 9_400_000,  20),      # 2%
+    (200_000_000,   500_000_000, 10_400_000, 10),      # 1%
+    (500_000_000,   None,        13_400_000, 5),       # 0.5%
+]
+
+# 【별표4】 민사소송 등 인지법에 정한 인지액 — (구간 하한 이상, 구간 상한 미만, 정액, 소송목적의 값 전체에 곱하는 비율 ‱)
+# 원문: "1천만원 미만: 소송목적의 값 X 0.5% / 1천만원이상 ~ 1억원 미만: 5,000원 + 소송목적의 값 X 0.45% / …"
+# 인지법 본문의 원 단위 절사·최저액은 약관 별표에 없어 넣지 않는다(원 미만만 버린다)
+STAMP_FEE_BRACKETS = [
+    (0,             10_000_000,    0,       50),     # 0.5%
+    (10_000_000,    100_000_000,   5_000,   45),     # 0.45%
+    (100_000_000,   1_000_000_000, 55_000,  40),     # 0.4%
+    (1_000_000_000, None,          555_000, 35),     # 0.35%
+]
+
+# 【별표5】 송달료 규칙에 정한 송달료(민사소송) — 조회형. 1심은 사건 종류별, 항소심·상고심은 하나
+SERVICE_FEE = {
+    ("1심", "민사소액"): 110_000,
+    ("1심", "민사단독"): 165_000,
+    ("1심", "민사합의"): 165_000,
+    ("항소심", None): 132_000,
+    ("상고심", None): 88_000,
+}
+
+# 민사소송법률비용Ⅱ 특약 제1조 한도표 · 제3조 ②항 — 1소송당, 심급별
+LEGAL_COST = {"lawyer_limit": 20_000_000, "lawyer_copay": 100_000, "stamp_service_limit": 10_000_000}
+
+
+def lawyer_fee_limit(claim_value: int) -> int:
+    """【별표3】 소송목적의 값에 따른 변호사비용(소송비용에 산입되는 한도) = 기준액 + (값 - 구간 하한) × 비율.
+    300만원까지는 30만원(정액)."""
+    if claim_value < 0:
+        raise ValueError(f"소송목적의 값이 음수: {claim_value}")
+    for low, high, base, permille in LAWYER_FEE_BRACKETS:
+        if high is None or claim_value <= high:
+            return base + (claim_value - low) * permille // 1000
+    raise AssertionError("구간표가 끝없이 닫혀 있어야 한다")
+
+
+def stamp_fee(claim_value: int) -> int:
+    """【별표4】 인지액 = 정액 + 소송목적의 값 × 비율(구간 하한 이상 ~ 상한 미만)"""
+    if claim_value < 0:
+        raise ValueError(f"소송목적의 값이 음수: {claim_value}")
+    for low, high, base, basis_points in STAMP_FEE_BRACKETS:
+        if high is None or claim_value < high:
+            return base + claim_value * basis_points // 10000
+    raise AssertionError("구간표가 끝없이 닫혀 있어야 한다")
+
+
+def service_fee(instance: str, case_kind: str | None = None) -> int:
+    """【별표5】 송달료. instance: "1심"/"항소심"/"상고심". 1심이면 case_kind "민사소액"/"민사단독"/"민사합의"가 있어야 한다"""
+    key = (instance, case_kind if instance == "1심" else None)
+    if key not in SERVICE_FEE:
+        raise ValueError(f"별표5에 없는 사건: {instance} {case_kind}")
+    return SERVICE_FEE[key]
+
+
+def legal_cost_payout(claim_value: int, lawyer_paid: int, stamp_paid: int, service_paid: int,
+                      instance: str, case_kind: str | None = None) -> dict:
+    """민사소송법률비용Ⅱ 특약 제3조 ②항 — 한 심급의 보험금.
+    ① 변호사 보수: 실제 부담액 중 자기부담금 10만원을 넘는 금액, 【별표3】 한도와 1소송당 2,000만원 중 작은 쪽까지
+    ② 인지액: 【별표4】 한도 내 실제 부담액   ③ 송달료: 【별표5】 한도 내 실제 부담액   (②+③ 1소송당 1,000만원 한도)"""
+    lawyer = min(max(lawyer_paid - LEGAL_COST["lawyer_copay"], 0), lawyer_fee_limit(claim_value), LEGAL_COST["lawyer_limit"])
+    stamp = min(stamp_paid, stamp_fee(claim_value))
+    service = min(service_paid, service_fee(instance, case_kind))
+    stamp_service = min(stamp + service, LEGAL_COST["stamp_service_limit"])
+    return {"lawyer": lawyer, "stamp": stamp, "service": service, "stamp_service": stamp_service,
+            "total": lawyer + stamp_service}
