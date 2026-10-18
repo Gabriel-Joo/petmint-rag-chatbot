@@ -17,7 +17,7 @@
 ```
 상담원 브라우저
   → Cloudflare 엣지 (Access 정책 검사 — 사내 계정 로그인)
-  → petmint-tunnel (클러스터 내 cloudflared Pod 2개)
+  → ronanlab-tunnel (클러스터 내 cloudflared Pod 2개)
   → nginx-ingress
   → petmint 앱 (FastAPI + React 빌드물)
 ```
@@ -28,7 +28,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 터널 | petmint-tunnel (02ad6a13-ce45-4262-a32a-40241bf034dc) |
+| 터널 | ronanlab-tunnel (02ad6a13-ce45-4262-a32a-40241bf034dc) |
 | 실행 방식 | 클러스터 내 Deployment, `replicas: 2`, livenessProbe |
 | 바라보는 곳 | nginx-ingress 하나만 (`https://`, `noTLSVerify: true`). Service 타입을 LoadBalancer로 바꾼 뒤에도 터널은 ClusterIP를 보므로 영향이 없다(14번 1-7절) |
 | 상위 문서 | 쿠버네티스 설치 / 03. Cloudflare Tunnel 연결 |
