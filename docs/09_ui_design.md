@@ -305,8 +305,8 @@ SearchScope    species, subscriptions, focus_sections
 ```json
 {
   "customer_id": "C001",
-  "name": "김보호",
-  "phone": "010-1234-5678",
+  "name": "홍길동",
+  "phone": "000-0000-0000",
   "pets": [
     {
       "pet_id": "P001",
