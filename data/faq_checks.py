@@ -30,6 +30,7 @@ ACTION = {
     "needs_review": "flag",      # 의료비 제1조 예외·단서 조항(30일·1년·180일·재가입·부활)
     "duplicate": "drop",         # 같은 단위 묶음 안의 같은·거의 같은 질문(먼저 나온 것을 남김)
     "unit_cap": "drop",          # 단위당 상한 초과 — 바꿔 말한 질문이 많은 군집부터 깎음(되살리려면 이 기록만 보면 된다)
+    "clause_grounding": "drop",  # 예외·표 회차(rebuild4) QA의 단서 문장이 원문·참조에 없음 — 단서를 지어낸 것으로 본다
 }
 
 
@@ -210,7 +211,45 @@ def run_checks(faq: dict, source: str, refs: list[dict] | None, paragraphs: list
     out += check_article_refs(body, q, pool, labels, faq.get("article_num"))
     out += check_citation_suffix(a, expected_suffix)
     out += check_needs_review(faq.get("section_name"), faq.get("article_num"), paragraphs, q, body)
+    out += check_clause_grounding(faq, body, pool)
     return out
+
+
+# ---------- 단서 일치(rebuild4 예외·표 회차) ----------
+# 예외 회차는 "원칙 + 다만 단서"를 쓰라고 시킨다 — 원문에 없는 예외를 지어내면 그 버릇을 학습한다(no_answer에서도 단서를 지어낼 위험).
+# 단서 문장(다만·단·제외·한하여·않습니다가 든 문장)마다 내용어의 CLAUSE_MIN_COVER 이상이 원문·참조에 있어야 하고,
+# 그 문장의 숫자는 모두 원문·참조·질문에 있어야 한다(number_grounding은 표시만 하지만 여기서는 버린다). 일반 회차 QA는 보지 않는다.
+CLAUSE_KINDS = ("exc", "table")
+CLAUSE_MARK = re.compile(r"다만|(?<![가-힣])단[,，\s]|제외|한하여|한해|한합니다|않습니다|않으며|안 됩니다|불가")
+CLAUSE_MIN_COVER = 0.6
+_CLAUSE_STOP = set("경우 회사 계약 이 그 및 등 또는 따라 대하여 위하여 있는 없는 하는 합니다 됩니다 이는 해당 이때 그러나 따라서 "
+                   "다만 단 제외 한하여 한해 경우에는 경우에도 않습니다 고객 고객님 반려동물 우리 아이".split())
+
+
+def _stems(text: str) -> list[str]:
+    out = []
+    for w in re.findall(r"[가-힣A-Za-z0-9]{2,}", text):
+        w = re.sub(r"(으로|에서|에게|까지|부터|이며|이고|입니다|합니다|습니다|됩니다|하며|하고|이나|이란|을|를|은|는|이|가|의|에|로|과|와|도|만)$", "", w)
+        if len(w) >= 2 and w not in _CLAUSE_STOP:
+            out.append(w)
+    return out
+
+
+def check_clause_grounding(faq: dict, body: str, pool: str) -> list[dict]:
+    if faq.get("gen_kind") not in CLAUSE_KINDS:
+        return []
+    pool_flat = re.sub(r"\s+", "", pool)
+    pool_nums = numbers(pool + faq.get("question", ""))
+    bad = []
+    for sent in re.split(r"(?<=[.다요])\s+", body):
+        if not CLAUSE_MARK.search(sent):
+            continue
+        words = _stems(sent)
+        cover = sum(w in pool_flat for w in words) / len(words) if words else 1.0
+        miss_nums = numbers(sent) - pool_nums
+        if cover < CLAUSE_MIN_COVER or miss_nums:
+            bad.append(f"{sent[:60]}… 내용어 {cover:.0%}" + (f", 원문에 없는 숫자 {sorted(miss_nums)}" if miss_nums else ""))
+    return [_result("clause_grounding", " / ".join(bad))] if bad else []
 
 
 # ---------- 중복 ----------
@@ -266,6 +305,10 @@ UNIT_CAP_CHARS_PER_QA = 40
 UNIT_CAP_CLUSTER_THRESHOLD = 0.80
 
 
+# rebuild4(2026-10-18): 예외·표 회차 QA는 상한 계산에서 빼고 항상 남긴다(중복 검사는 그대로 받는다)
+CAP_EXEMPT_KINDS = ("exc", "table")
+
+
 def unit_cap(content_len: int) -> int:
     return max(UNIT_CAP_MIN, -(-content_len // UNIT_CAP_CHARS_PER_QA))
 
@@ -282,6 +325,8 @@ def find_over_cap(faqs: list[dict], embeddings, content_len: dict[str, int],
     weights: unit_id → 주제 가중치(없으면 1). 단위마다 상한을 넘는 QA를 반환 {인덱스: 검사 결과}"""
     by_unit = {}
     for i, f in enumerate(faqs):
+        if f.get("gen_kind") in CAP_EXEMPT_KINDS:      # 예외·표 회차 QA는 상한에서 뺀다 — 일부러 더 만든 것을 다시 깎지 않게
+            continue
         by_unit.setdefault(f["unit_id"], []).append(i)
     out = {}
     for uid, idx in by_unit.items():

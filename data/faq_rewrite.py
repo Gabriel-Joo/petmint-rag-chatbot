@@ -68,6 +68,11 @@ REWRITE_META = ("question_original", "rewrite", "rewrite_status")
 GRADE_SHARE = 0.10          # 전체 QA 대비 등급 어구로 쓰는 비율(대상 = coverage_type 없는 단위의 QA)
 GRADE_WORDS = ("고급형", "기본형", "실속형")
 TYPE_WORDS = ("Ⅰ유형", "Ⅱ유형", "Ⅲ유형")
+# rebuild4(2026-10-18): 등급 + 유형을 함께 밝힌 질문("실속형 Ⅱ유형인데 ~") — rebuild3 학습 7건뿐이고 평가 R058이 이 꼴에서 거절했다.
+# 유형 어구로 뽑힌 QA의 절반을 "등급 유형"으로 바꾼다(등급 어구 대상 안에서만, 비율 GRADE_SHARE는 그대로)
+COMBO_SHARE = 0.5
+# 등급 어구 대상 비율은 일반·주제 회차 QA로만 잰다 — 예외·표 회차(rebuild4)를 더해도 기존 QA의 등급 어구 선택이 그대로이게
+RATE_EXCLUDE_KINDS = ("exc", "table")
 GRADE_RULE = ("- 고객이 가입한 상품의 등급·유형 '{p}'을(를) 질문 앞부분에서 밝히세요(예: \"{p} 가입했는데 ~\", \"{p}인데 ~\"). "
               "이 조항은 등급·유형과 관계없이 같은 내용이라 [답변]은 그대로 맞습니다. '{p}' 글자를 그대로 쓰세요.")      # 재작성이 더하는 필드 — 보존 확인에서 빼는 것은 이것과 question뿐
 
@@ -488,6 +493,7 @@ def _rkey(f: dict) -> str:
 
 def grade_rate(records: list[dict]) -> float:
     """대상(coverage_type 없는 단위) 중 등급 어구로 쓸 비율 — 전체의 GRADE_SHARE가 되게"""
+    records = [f for f in records if f.get("gen_kind") not in RATE_EXCLUDE_KINDS]
     elig = sum(f.get("coverage_type") in (None, "None") for f in records)
     return min(1.0, GRADE_SHARE * len(records) / elig) if elig else 0.0
 
@@ -501,7 +507,18 @@ def grade_phrase_for(f: dict, rate: float) -> str | None:
         return None
     sec = f.get("section_name") or ""
     words = GRADE_WORDS if any(t in sec for t in ("Ⅰ", "Ⅱ", "Ⅲ")) else GRADE_WORDS + TYPE_WORDS
-    return words[(h // 10000) % len(words)]
+    word = words[(h // 10000) % len(words)]
+    if word in TYPE_WORDS:
+        h2 = int(hashlib.md5(("combo|" + _rkey(f)).encode()).hexdigest(), 16)
+        if (h2 % 10000) / 10000 < COMBO_SHARE:
+            word = f"{GRADE_WORDS[(h2 // 10000) % len(GRADE_WORDS)]} {word}"
+    return word
+
+
+def progress_key(f: dict, phrase: str | None) -> str:
+    """재작성 중간 저장 키. 등급 + 유형 조합(rebuild4)은 같은 QA의 예전 결과(유형 어구만)와 섞이지 않게 어구를 붙인다 —
+    그 밖에는 예전 키 그대로라 rebuild3 중간 저장을 이어 쓴다"""
+    return _rkey(f) + (f"|{phrase}" if phrase and " " in phrase else "")
 
 
 def run_pre(records: list[dict], idx: "UnitIndex", progress_path: Path, rate: float) -> list[dict]:
@@ -509,11 +526,12 @@ def run_pre(records: list[dict], idx: "UnitIndex", progress_path: Path, rate: fl
     done = _load_json(progress_path, {})
     out, n_new, t0 = [], 0, time.time()
     for f in records:
-        k = _rkey(f)
+        phrase = grade_phrase_for(f, rate)
+        k = progress_key(f, phrase)
         if k not in done:
             u, refs, source = idx.get(f["species"], f["unit_id"])
             assert u is not None, f"현재 데이터에 없는 단위: {f['unit_id']}"
-            r = rewrite_faq(f, u, refs, source, grade_phrase_for(f, rate))
+            r = rewrite_faq(f, u, refs, source, phrase)
             done[k] = {"question": r["question"], "rewrite": r["rewrite"]}
             n_new += 1
             if n_new % SAVE_EVERY == 0:
