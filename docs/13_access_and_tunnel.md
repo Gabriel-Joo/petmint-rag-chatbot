@@ -1,5 +1,5 @@
 > 상태: 구축 완료. 터널과 Access 정책은 설정을 마쳤다(petmint는 시연용으로 로그인한 누구나 통과).
-> cloudflared 매니페스트는 아직 ronanlab-infra에 없다(4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
+> cloudflared 매니페스트는 ronanlab-infra `platform/cloudflared`에 있다(2026-10-18, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
 > 
 
 ---
@@ -82,7 +82,7 @@
 | --- | --- | --- |
 | 장애 복구 | 죽으면 수동 재시작 | livenessProbe로 자동 재시작 |
 | 이중화 | 수동으로 프로세스 여러 개 | `replicas: 2` 한 줄 |
-| 설정 관리 | 호스트 파일 | ConfigMap — `kubectl apply`로 적용 |
+| 설정 관리 | 호스트 파일 | ConfigMap — ronanlab-infra `platform/cloudflared`, ArgoCD Sync |
 
 RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한 흐름**이 되기도 한다.
 
@@ -114,7 +114,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 - **petmint는 시연용으로 열려 있다.** 로그인은 거치지만 상담원 명단으로 거르지 않으므로, `agent_email`은 "그 브라우저로 로그인한 사람"을 뜻할 뿐이다. 상담원만 통과시키는 실무 정책에서만 이 값이 본래 의미를 갖는다.
 - **역할 구분이 없다.** 지금 설계는 "통과한 사람 = 상담원"이다. 관리자·상담원을 나누려면 Access 그룹을 나누고 앱에서도 구분해야 한다
 - **터널 ConfigMap을 쪼갤 수 없다.** 호스트가 늘면 한 파일이 계속 커진다
-- **cloudflared 매니페스트가 아직 저장소에 없다.** `ronanlab-infra`에 자리만 잡아 두었고 실제 파일은 `~/k8s-cluster/backup`에만 있다. 터널이 클러스터의 것이라는 2-3절의 판단대로라면 거기로 옮겨 ArgoCD가 관리하게 해야 한다.
+- ~~cloudflared 매니페스트가 아직 저장소에 없다.~~ 2026-10-18 해결 — 2-3절의 판단대로 `petmint` 네임스페이스에서 `cloudflared` 네임스페이스로 옮겼다. 매니페스트는 ronanlab-infra `platform/cloudflared`, ArgoCD Application `cloudflared`(수동 Sync)가 관리한다. Secret `cloudflared-credentials`는 사람이 넣는다(같은 디렉터리 README.md)
 
 ---
 
