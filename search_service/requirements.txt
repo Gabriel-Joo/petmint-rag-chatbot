@@ -1,0 +1,10 @@
+# search-service(호스트, GPU)용 — data/search_engine.py가 쓰는 것 + HTTP. 호스트 llm_env에서 돌려 본 버전에 맞춘다.
+# torch는 CUDA 빌드를 따로 깐다(llm_env: 2.14.0+cu130).
+fastapi==0.143.1
+uvicorn==0.54.0
+pydantic==2.13.5
+torch==2.14.0
+sentence-transformers==6.1.0   # KURE-v1 임베딩, bge-reranker-v2-m3(CrossEncoder)
+transformers==5.17.0
+pymilvus==3.0.2
+rank-bm25==0.2.2
