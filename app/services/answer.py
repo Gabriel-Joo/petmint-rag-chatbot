@@ -22,7 +22,7 @@ import asyncio
 import logging
 import math
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import AsyncIterator
 
 import httpx
@@ -177,7 +177,9 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     if ctx.scope is None:                      # 일반 — 검색 없이 질문만
         messages = [{"role": "user", "content": ctx.question}]
     else:
-        items = prompts.fit_to_budget(ctx.question, [prompts.ExcerptItem.from_search_result(r) for r in results],
+        # key는 결과 위치 — graph_key는 조번호 없는 청크(안내·별표·별첨)끼리 겹친다. 프롬프트에는 안 나간다
+        items = prompts.fit_to_budget(ctx.question, [replace(prompts.ExcerptItem.from_search_result(r), key=str(i))
+                                                     for i, r in enumerate(results)],
                                       PROMPT_BUDGET, count_tokens)
         hr = mode == "사내규정"
         messages = prompts.build_messages(ctx.question, items,
@@ -207,11 +209,11 @@ def _used(answer: str, results: list[dict], items: list[prompts.ExcerptItem],
     반환: (ReferenceItem 목록, 프롬프트에 들어간 그래프 참조 전부, 그중 쓴 것) — 뒤 둘은 retrieved 그래프 행"""
     if corpus is None:
         return [], [], []
-    by_key = {it.key: it for it in items}
+    by_key = {it.key: it for it in items}           # 위치("0", "1", …) → 프롬프트에 남은 발췌(_generate가 key를 매긴다)
     refs: list[ReferenceItem] = []
     graph_refs, used_graph = [], []
-    for r in results:
-        item = by_key.get(graph_key(r))
+    for i, r in enumerate(results):
+        item = by_key.get(str(i))
         if item is None:
             continue
         label = item.label

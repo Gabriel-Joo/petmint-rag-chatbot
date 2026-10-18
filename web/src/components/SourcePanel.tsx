@@ -63,8 +63,9 @@ function SourceRow({ it, used }: { it: SourceItem; used: boolean }) {
 export function SourcePanel({ items, references, variant }: Props) {
   const list = (
     <ul className={s.list} style={{ listStyle: "none", margin: 0, padding: 0 }}>
-      {items.map((it) => (
-        <SourceRow key={it.graph_key} it={it} used={references.some((r) => sameArticle(it, r))} />
+      {items.map((it, i) => (
+        // graph_key는 조번호 없는 청크(안내·별표·별첨)끼리 겹친다 — 위치를 붙인다
+        <SourceRow key={`${i}:${it.graph_key}`} it={it} used={references.some((r) => sameArticle(it, r))} />
       ))}
     </ul>
   );
