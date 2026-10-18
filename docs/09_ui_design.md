@@ -1,6 +1,6 @@
 ---
 
-> 상태: 설계 확정, 구현 중. 3절 SearchScope는 2026-10-13, 6-2·6-3절 MySQL 연동은 2026-10-15 구현 완료. 답변 생성(answer.py)과 search-service는 아직이라 WS는 더미 답변을 돌려준다.
+> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). △ 답변 파이프라인(answer.py — 검색 경로·되묻기·계산 카드·스트리밍·used_references)과 search-service는 코드 작성(10-18), 실행 확인 전 — 실제 답변이 나온 적은 없다. △ 질문 재작성·재작성 질문 표시·cancel·가정 질문 배너는 코드 없음.
 > 
 
 ---
@@ -141,7 +141,7 @@
 
 **열린 과거 상담은 읽기 전용이다.** 대화와 근거 패널이 **당시 값으로** 보인다(12번 2-2절 스냅샷). 등급이 바뀐 고객의 작년 상담을 열었는데 지금 등급으로 보이면 "그때 이렇게 안내했다"가 거짓이 된다.
 
-계산 카드는 아직 보이지 않는다 — 실시간 상담에서는 백엔드가 `calc` 메시지를 보내지 않고, 과거 턴 응답에도 `payout`이 실리지 않는다. DB와 스키마에는 자리가 있으므로 둘 다 넣기만 하면 된다.
+계산 카드도 당시 값으로 보인다 — 과거 턴 응답(`TurnOut.payout`)에 `turns.payout`을 싣는다. △ 코드 작성(2026-10-18), 실행 확인 전.
 
 **거기서 이어서 질문할 수 없다.** 두 가지 이유다 — 1-3절의 "상담 한 건 = 세션 하나"가 깨지고, 지금 통화에 물어야 할 것을 과거 세션에 붙이면 **이번 통화 로그에 남지 않아** 책임 추적이 갈라진다. 물을 것이 생기면 모달을 닫고 지금 세션에 묻는다.
 
@@ -174,7 +174,7 @@
 
 #### 3. 검색 필터 — 설계 검토에서 발견한 결함
 
-**상태: 구현 완료.** 회귀 세트 93문항 시점에 56/87 → 75/87, MRR 0.569 → 0.677 확인. 지금 세트는 103문항이라 재측정이 필요하다.
+**✓ 2026-10-13 구현.** 회귀 세트 93문항 시점에 56/87 → 75/87, MRR 0.569 → 0.677 확인. 지금 세트는 103문항이라 재측정이 필요하다.
 
 #### 3-1. 지금 구조에 UI 필터를 그대로 넣으면 검색이 망가진다
 
@@ -237,7 +237,7 @@ SearchScope    species, subscriptions, focus_sections
 
 #### 3-4. 참조 조문에도 등급 힌트를 준다
 
-등급 없는 청크(예: 의료비 제4조)가 제1조를 참조하면, 지금은 3등급을 `{고급형: X / 기본형: Y / 실속형: Z}`로 병기한다. 가입자라면 자기 등급 한 벌만 붙인다.
+등급 없는 청크(예: 의료비 제4조)가 제1조를 참조하면, 지금은 3등급을 `{고급형: X / 기본형: Y / 실속형: Z}`로 병기한다. 가입자라면 자기 등급 한 벌만 붙인다. △ `build_full_context`의 `coverage_hint`(`scope.grade_for`)로 코드에 있다 — 서비스 경로(answer.py)는 실행 확인 전.
 
 컨텍스트가 짧아지고, 다른 등급 숫자를 섞어 말할 여지도 없어진다.
 
@@ -258,6 +258,8 @@ SearchScope    species, subscriptions, focus_sections
 
 되묻기가 발동했는지는 `turns.clarified`에 남는다(12번 1-1절).
 
+△ 되묻기 판정·`clarify`·`clarify_answer`로 잇기는 코드 작성(2026-10-18, answer.py `clarify_options`·`resume_clarified`), 실행 확인 전. △ 가정 질문 판정과 배너는 코드 없음.
+
 ---
 
 #### 5. 멀티턴 — 백엔드에서 처리한다
@@ -273,7 +275,7 @@ SearchScope    species, subscriptions, focus_sections
 
 **재작성기는 베이스 모델을 쓴다.** 파인튜닝 모델은 "발췌를 읽고 상담 말투로 답하기"만 배우므로, 재작성을 시키면 질문을 다시 쓰지 않고 답을 해버릴 가능성이 크다.
 
-**재작성된 질문을 화면에 보여준다.** 상담원이 "내 질문이 저렇게 해석됐구나"를 알 수 있고, 틀렸으면 바로 고쳐 물을 수 있다. 아직 구현되지 않았다 — DB에는 rewritten_question으로 남지만 WS 메시지와 과거 턴 응답에 실을 자리가 없다.
+**재작성된 질문을 화면에 보여준다.** 상담원이 "내 질문이 저렇게 해석됐구나"를 알 수 있고, 틀렸으면 바로 고쳐 물을 수 있다. △ 재작성(`rewrite_question`)과 화면 표시 모두 코드 없음 — DB에는 rewritten_question 칸이 있지만 WS 메시지와 과거 턴 응답에 실을 자리가 없다.
 
 ```
 ┌──────────────────────────────┐
@@ -492,6 +494,7 @@ POST   /api/turns/{turn_id}/feedback
   {"type": "sources", "turn_id": "...", "items": [...]}      검색 결과 (생성 전)
   {"type": "token", "turn_id": "...", "text": "..."}         스트리밍
   {"type": "clarify", "turn_id": "...", "options": [...]}    되묻기
+  {"type": "calc", "turn_id": "...", "result": {...}}       계산 카드 (치료비 질문이면 sources 다음에 한 번)
   {"type": "references", "turn_id": "...", "items": [...]}   실제 쓴 근거
   {"type": "done", "turn_id": "...", "latency_ms": 2300, "first_token_ms": 480}
   {"type": "error", "turn_id": "...", "code": "...", "message": "..."}   오류
@@ -499,11 +502,11 @@ POST   /api/turns/{turn_id}/feedback
 
 **`sources`를 먼저 보내는 이유**: 검색 결과는 생성 전에 이미 나와 있다. 먼저 보내면 근거 패널이 0.5초 안에 찬다. 답변이 실제로 쓴 것(`used_references`)은 생성이 끝나야 알 수 있으므로 나중에 `references`로 보낸다.
 
-**`cancel`을 처음부터 넣는다**: 생성 중에 새 질문이 오거나 상담이 끝나면 Ollama 스트림을 취소해야 한다.
+**`cancel`을 처음부터 넣는다**: 생성 중에 새 질문이 오거나 상담이 끝나면 Ollama 스트림을 취소해야 한다. △ 서버 처리는 코드 없음 — 턴이 수신 루프 안에서 돌아 생성 중에는 cancel을 받지 못한다(스트림 쪽 취소 확인은 llm.py에 있다).
 
 **스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다.
 
-계산 카드(`calc`)는 프런트에 수신 처리가 있으나 백엔드 `ServerMessage`에 타입이 없어 보내지 않는다. 2-3절의 계산 카드는 아직 화면에 뜨지 않는다
+△ 위 순서(sources → calc → token → references → done, 되묻기면 clarify에서 멈춤, 실패면 error)는 코드 작성(2026-10-18, answer.py·chat_ws.py), 실행 확인 전. `calc`의 `result`는 `CalcResult`(section_name·coverage_type·claimed·copay·limit·payout·note)다.
 
 #### 7-3. 프로세스 모델
 
@@ -543,7 +546,7 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, search-service 기동 직후와 Ollama 생성 중을 나눠 측정한다.
 
-**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus 의존 순서는 아직 보장되지 않는다.
+**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. △ Milvus 의존 순서는 보장되지 않는다(코드 없음).
 
 K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
 
@@ -575,7 +578,7 @@ data/                 노트북 01~08이 import하는 순수 로직. 웹 의존�
   rag_context.py      컨텍스트 조립
   limit_table.py      한도표
 
-search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — 아직 없음
+search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — △ 코드 작성(10-18), 띄운 적 없음
   main.py             data/search_engine.py를 감싸는 얇은 HTTP 래퍼.
                       검색 로직을 재구현하지 않고 호출만 한다.
                       GPU 직렬화(한 번에 하나씩)는 여기 안에서 처리한다
@@ -583,9 +586,9 @@ search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용)
 app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import만 한다 (GPU 미사용)
   main.py             lifespan: 약관 청크·그래프 로드 + ContextBuilder·OllamaClient 생성
                       + 고객 검증 + 마이그레이션 적용 검사
-                      (search-service 헬스체크는 검색을 붙일 때 넣는다)
-  config.py           경로, DB 접속 정보(환경변수).
-                      모델명 tri-7b · tri-7b-rag-1은 아직 코드 상수다
+                      + Retriever 생성. △ 기동 때 search-service 헬스체크는 하지 않는다(Retriever.health만 있다)
+  config.py           경로, DB 접속 정보, 모델명(환경변수).
+                      PETMINT_MODEL_BASE(기본 tri-7b) · PETMINT_MODEL_RAG(기본 tri-7b-rag-1)
   deps.py             요청 의존성
   db.py               DB 연결
   schemas.py          Customer/Pet/Policy, Session, WS 메시지
@@ -594,10 +597,11 @@ app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import�
   services/
     customers.py      insurance_core 조회 + 검증 + pet → SearchScope 변환
     sessions.py       MySQL 저장소 (12번)
-    retrieval.py      search-service HTTP 호출 — 아직 틀만 있다
-    llm.py            Ollama 스트리밍 + 취소
+    retrieval.py      search-service HTTP 호출 — △ 코드 작성(10-18), 실행 확인 전
+    llm.py            Ollama 스트리밍 + 취소 — △ 스트리밍 코드 작성(10-18), 실행 확인 전
     answer.py         scope → 검색 → 되묻기 판정 → 계산 카드 → 생성 → used_references
-                      아직 틀만 있다
+                      △ 코드 작성(10-18), 실행 확인 전. 질문 재작성은 코드 없음
+    payout.py         계산 카드 — 질문 속 치료비 + 가입 정보 → limit_table. △ 코드 작성(10-18)
     titles.py         첫 질문으로 세션 제목 짓기
     turn_log.py       턴·scope·retrieved를 MySQL에 기록 (done 전)
     policy_data.py    약관 청크·그래프 적재
@@ -636,10 +640,10 @@ web/                  React + TypeScript (Vite)
 
 #### 9. 정하지 못한 것
 
-- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). Milvus 색인과 Pod 쪽 SearchScope가 남았다.
+- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). △ Milvus 색인(hr_regulation)은 적재 전 — `data/hr_index.py`는 있고 실행하지 않았다. △ Pod 쪽 범위(`SearchScope.unrestricted("인사규정")`)는 코드 작성(10-18), 실행 확인 전.
 - **멀티턴 재작성의 실제 품질** — 재작성이 충분한지 측정하지 않았다. 부족하면 재작성기만 따로 학습할 수 있다.
 - **LangChain 사용 여부** — 재작성 → 검색 → 생성을 LCEL로 묶을지, 직접 짤지.
-- **업무특화 모드가 쓸 어댑터** — rag-1_7192건_rebuild2에서 answerable 거절이 12건까지 내려왔고, 검색 조건에서는 베이스보다 낫다(8/69 대 9/69). 등급 어구 문항만 미달이라 rebuild3를 준비 중이다(07번 10절). 모델명은 아직 코드 상수라, 교체하려면 설정값으로 빼는 작업이 먼저다.
+- **업무특화 모드가 쓸 어댑터** — rag-1_7192건_rebuild2에서 answerable 거절이 12건까지 내려왔고, 검색 조건에서는 베이스보다 낫다(8/69 대 9/69). 등급 어구 문항만 미달이라 rebuild3를 준비 중이다(07번 10절). ✓ 모델명은 환경변수로 뺐다(2026-10-18, PETMINT_MODEL_RAG) — 교체는 ConfigMap 값만 바꾼다.
 
 ---
 

@@ -1,3 +1,6 @@
+> 상태: 설계 확정, 구현 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16 완료.
+> search-service와 답변 생성은 코드만 들어갔고(2026-10-18) 아직 배포 전이라, 클러스터의 WS는 더미 답변을 돌려준다.
+
 #### 0. 한 줄 요약
 
 GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약관과 고객 데이터는 이미지에 담지 않는다** — 이미지가 레지스트리를 거쳐 도는 동안 데이터는 클러스터 안에만 있어야 한다.
@@ -11,9 +14,9 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | 프로세스 | 위치 | 이유 |
 | --- | --- | --- |
 | Ollama | GPU 호스트 | 모델 추론에 GPU |
-| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU |
+| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. △ 코드 작성(2026-10-18, `search_service/`), 호스트 기동 전 |
 | Milvus | 호스트 도커 → Pod 가능 | GPU를 쓰지 않는다. search-service와 함께 판단한다  |
-| MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절) |
+| MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 |
 | FastAPI + React 빌드물 | Pod | GPU를 쓰지 않는다 |
 
 **컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다**(09번 7-3절). 둘을 한 이미지에 담는다 — FastAPI가 빌드물을 StaticFiles로 서빙하므로 Pod 하나로 끝난다.
@@ -62,11 +65,13 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | `PETMINT_DB_HOST` / `PORT` / `NAME` / `USER` / `PASSWORD` | MySQL |
 | `PETMINT_MILVUS_URL` | Milvus |
 | `PETMINT_OLLAMA_URL` | GPU 호스트의 Ollama |
-| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service |
+| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service. △ 미배포라 지금 값은 `search-service-not-deployed.invalid` |
 | `PETMINT_WEB_DIST` | React 빌드물 경로 |
 | `PETMINT_CORE_DB_*` | 고객 원장(`insurance_core`). 실무에서는 다른 호스트일 수 있어 따로 둔다 |
 | `PETMINT_DEFAULT_AGENT` | 내부망 직접 접속처럼 Access 헤더가 없을 때 쓸 상담원 ID |
 | `PETMINT_TITLE_LLM` | 세션 제목을 LLM으로 지을지(0/1). 재구축 중이라 지금은 0 |
+| `PETMINT_MODEL_BASE` | 일반·사내규정 모드와 재작성기가 쓸 모델 이름 (기본 tri-7b). △ 이미지 빌드·태그 커밋(9029301e8d8d), Sync 확인 전 |
+| `PETMINT_MODEL_RAG` | 업무특화 모드가 쓸 어댑터 모델 이름 (기본 tri-7b-rag-1). △ 이미지 빌드·태그 커밋(9029301e8d8d), Sync 확인 전 |
 
 DB 환경변수가 없으면 이름을 밝히며 기동이 실패한다. 코드에 접속 정보를 하드코딩하지 않는다(12번 1-2절).
 
@@ -132,16 +137,16 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 #### 1-8. 이주 때 할 일
 
-- MySQL을 StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입
-- 스키마는 초기화 Job으로 — 앱 이미지로 `python -m db.migrate`를 그대로 돌린다
-- 환경변수만 바꾸고 연결 확인
-- `insurance_core`의 마이그레이션과 시드도 초기화 Job에 넣는다
+- ✓ MySQL을 StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입
+- ✓ 스키마는 초기화 Job으로 — 앱 이미지로 `python -m db.migrate`를 그대로 돌린다
+- ✓ 환경변수만 바꾸고 연결 확인
+- ✓ `insurance_core`의 마이그레이션과 시드도 초기화 Job에 넣는다
 
 실제 이주(2026-10-16)에서는 약관 청크와 그래프를 **NFS 읽기 전용 PV**로 붙였다. 호스트의 `/srv/nfs/petmint/`를 모든 Pod가 같은 파일로 읽으므로 replicas를 늘려도 드리프트가 없다. DB는 `mysqldump`를 쓰지 않고 픽스처 시드 Job으로 새로 시작했다.
 
 #### 1-9. 파이프라인 — CI (2026-10-15)
 
-1-5절의 흐름 중 **빌드→push→pull 까지가 이 단계에서 돌아갔다. 배포 자동화는 1-10절이다.**
+✓ 1-5절의 흐름 중 **빌드→push→pull 까지가 이 단계에서 돌아갔다. 배포 자동화는 1-10절이다.**
 
 | 항목 | 값 |
 | --- | --- |
@@ -155,13 +160,13 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 **robot 계정을 둘로 나눈 이유**는 역할이 다르기 때문이다. Jenkins 는 push 하고 노드는 pull 만 한다. 노드 Secret 에 push 권한이 들어가면 Pod 가 레지스트리를 덮어쓸 수 있고, 하나를 바꿀 때 다른 쪽까지 영향받는다.
 
-**앱이 클러스터에서 돈다 (2026-10-16).** MySQL StatefulSet → 약관·시드 적재 → 초기화 Job → 앱 순으로 올렸고, Ingress 경유로 화면·고객 조회·조항 원문·WS 한 턴까지 응답한다. 약관 적재는 API 서버를 거쳐 Pod 안으로 tar를 흘려 넣어, m-k8s 디스크에 파일이 남지 않는다.
+✓ **앱이 클러스터에서 돈다 (2026-10-16).** MySQL StatefulSet → 약관·시드 적재 → 초기화 Job → 앱 순으로 올렸고, Ingress 경유로 화면·고객 조회·조항 원문·WS 한 턴까지 응답한다. ✗ 약관 적재는 API 서버를 거쳐 Pod 안으로 tar를 흘려 넣어, m-k8s 디스크에 파일이 남지 않는다(아래 — 같은 날 NFS로 바꿨다).
 
-약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). WS는 한 턴까지 응답하는 것을 확인했으나 **아직 더미 답변**이다 — `answer.py`와 search-service가 붙어야 진짜 답이 나온다.
+약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). WS는 한 턴까지 응답하는 것을 확인했으나 클러스터에서는 더미 답변이다. △ `answer.py`와 search-service는 코드 작성(2026-10-18), 실행 확인 전 — 배포되어야 진짜 답이 나온다.
 
 #### 1-10. GitOps — ArgoCD (2026-10-16)
 
-1-5절의 흐름이 **끝까지 돌아간다.** push 하나로 빌드·Harbor·매니페스트 커밋까지 가고, 반영은 Sync를 눌러 한다.
+✓ 1-5절의 흐름이 **끝까지 돌아간다.** push 하나로 빌드·Harbor·매니페스트 커밋까지 가고, 반영은 Sync를 눌러 한다.
 
 **매니페스트 저장소는 `ronanlab-infra` 를 쓴다.** 새 저장소를 만들지 않는다.
 
@@ -172,7 +177,7 @@ ronanlab-infra/
     argocd/  harbor/  jenkins/
   apps/
     petmint/       앱 매니페스트
-    runshoes/      나중에
+    runshoes/      △ 나중에
 ```
 
 | 항목 | 값 |
@@ -330,8 +335,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 ### 다음에 할 일
 
-**1. search-service** — 지금 ConfigMap에 자리만 있다. 이것이 붙어야
-검색이 Pod에서 돌고, answer.py와 함께 더미 답변이 진짜 답변이 된다.
+**1. search-service** — △ 코드 작성(2026-10-18, `search_service/`), 호스트 기동과 ConfigMap 주소 교체 전. 이것이 붙어야 검색이 Pod에서 돌고, answer.py와 함께 더미 답변이 진짜 답변이 된다.
 
-**2. 08번 Ragas** — 검색 품질 측정. 오늘 top 3 적중 81/97을 쟀고,
+**2. 08번 Ragas** — △ 검색 품질 측정. 오늘 top 3 적중 81/97을 쟀고,
 Context Recall을 제대로 보려면 이것이 필요하다.

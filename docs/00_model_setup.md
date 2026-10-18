@@ -1,3 +1,5 @@
+> 상태: 완료. Tri-7B 원본을 GGUF 변환·Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 파인튜닝 모델의 GGUF 변환은 10번 8절에서 다룬다.
+
 ### 0. 목표
 
 Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자화해 Ollama에 등록하고 동작을 확인한다.
