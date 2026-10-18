@@ -1,8 +1,8 @@
-> 상태: ✓ 조립 모듈(data/rag_context.py)과 SearchScope 필터 교체·검색 문장 정리(9절)는 2026-10-13까지 구현, 05(FAQ 생성)·08(평가)이 이 경로를 쓴다. △ 09 서비스 경로(answer.py → search-service → build_full_context)는 코드 작성(2026-10-18), 실행 확인 전. △ 이웃 청크 포함(10절)은 검토만 했다.
+> 상태: ✓ 조립 모듈(data/rag_context.py)과 SearchScope 필터 교체·검색 문장 정리(9절)는 2026-10-13까지 구현, 05(FAQ 생성)·08(평가)이 이 경로를 쓴다. △ 09 서비스 경로(answer.py → search-service → build_full_context)는 코드 작성(2026-10-18) — ✗ search-service 기동 전이라 실행 확인 전. △ 이웃 청크 포함(10절)은 검토만 했다.
 
 ### 0. 목표
 
-검색(02번) 결과에 그래프(03번) 참조 조문과 법령 박스를 붙여, LLM이 답변을 쓸 수 있는 **완결된 컨텍스트**를 만든다. 05번(FAQ 생성)이 이 조립을 쓴다. 09번(실제 서비스)도 같은 경로를 탄다 — answer.py가 retrieval.py(search-service)를 엔진 자리에 넣어 build_full_context를 부른다. △ 코드 작성(2026-10-18), 실행 확인 전.
+검색(02번) 결과에 그래프(03번) 참조 조문과 법령 박스를 붙여, LLM이 답변을 쓸 수 있는 **완결된 컨텍스트**를 만든다. 05번(FAQ 생성)이 이 조립을 쓴다. 09번(실제 서비스)도 같은 경로를 탄다 — answer.py가 retrieval.py(search-service)를 엔진 자리에 넣어 build_full_context를 부른다. △ 코드 작성(2026-10-18) — ✗ search-service 기동 전이라 실행 확인 전.
 
 ---
 

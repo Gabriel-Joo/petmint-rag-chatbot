@@ -1,4 +1,4 @@
-> 상태: △ 설계(2026-10-18). 준비 코드 일부 작성 — contexts 저장(answer_eval), Ragas 전용 venv(~/ragas_env, ragas 0.4.3), 파일럿(data/ragas_pilot.py).
+> 상태: △ 설계(2026-10-18). ✓ contexts 저장(answer_eval) 구현. △ 준비 코드 — Ragas 전용 venv(~/ragas_env, ragas 0.4.3), 파일럿(data/ragas_pilot.py), 실행 전.
 > 아무것도 돌려보지 않았다. 본 평가 러너(Ollama 생성 → Ragas 판정)는 아직 없다 — 파일럿 결과를 보고 짠다.
 
 ### 0. 목표
@@ -51,7 +51,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 
 | 일 | 상태 |
 | --- | --- |
-| 평가 결과에 모델이 본 발췌(contexts)를 남긴다 | △ 코드 작성(2026-10-18) — `answer_eval.contexts_of`가 렌더된 user 메시지(fit_to_budget 뒤, 참조 포함)를 블록으로 되돌려 rows의 `contexts`에 넣는다. 학습 프롬프트 8,464개로 바이트 단위 왕복 일치 확인, 실제 평가 실행 전 |
+| 평가 결과에 모델이 본 발췌(contexts)를 남긴다 | ✓ 구현(2026-10-18) — `answer_eval.contexts_of`가 렌더된 user 메시지(fit_to_budget 뒤, 참조 포함)를 블록으로 되돌려 rows의 `contexts`에 넣는다. 학습 프롬프트 8,464개로 바이트 단위 왕복 일치 확인, 실제 평가 실행 전 |
 | Ragas 설치 | △ 전용 venv `~/ragas_env`에 ragas 0.4.3(고정 목록 `data/eval/requirements-ragas.txt`), import·`pip check` 확인. 판정 실행 전 |
 | 파일럿(심판이 한국어를 제대로 판정하나) | △ 코드 작성 — `data/ragas_pilot.py`(6절), 실행 전 |
 | Ollama 생성 러너(네 조합 생성 → rows에 질문·답·contexts) | △ 코드 없음 — 파일럿 통과 뒤 |
