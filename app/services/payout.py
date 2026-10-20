@@ -199,14 +199,18 @@ def legal_card(question: str, pet: Pet | None) -> LegalCalc | None:
 
 
 # ===== 한도 카드 — 금액 없이 한도만 물을 때 =====
-_LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마")
+# "보장 얼마나 돼요?"도 한도를 묻는 것 — 사고 뒤 받을 금액이 아니다(평가 R070 "MRI 찍으면 보장 얼마나 돼요?"가 금액 되묻기에 걸렸다)
+_LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마|보장\s*(?:은|이|금액)?\s*얼마")
 _NOT_MEDICAL = re.compile(r"소송|변호사|인지액|송달료|배상|법률")   # 법률비용·배상책임 질문 — 의료비 한도표가 아니다
+# 치료비·보험금이 아닌 돈 이야기 — 한도 카드와 금액 되묻기에서 뺀다("중도인출 하면 얼마까지 돼요?"에 의료비 한도 카드가 떴다)
+OTHER_MONEY = re.compile(r"보험료|환급|자기\s*부담|가입\s*금액|연체|이자|위약|해지|해약|공제|중도\s*인출|대출|적립")
 
 
 def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> LimitsCalc | None:
     """한도표 카드. 한도 낱말이 있고 치료비 금액·법률 낱말이 없을 때, 가입한 의료비 특약(되묻기로 고른 쪽이 있으면 그것,
     질문에 '통원'/'입원'이 있으면 그쪽, 질문이 등급·유형을 말하면 그에 맞는 쪽)만. 맞는 가입 특약이 없으면 None"""
-    if pet is None or not _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question) or treatment_cost(question) is not None:
+    if (pet is None or not _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question) or OTHER_MONEY.search(question)
+            or treatment_cost(question) is not None):
         return None
     medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
     if chosen:
@@ -242,3 +246,19 @@ def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> Lim
     note = ("1일 한도는 그날 치료비에서 자기부담금을 빼고 보상비율을 곱한 금액에 적용한다. 연간 총 한도는 특약마다 따로다. "
             "실제 지급액은 보험금 심사로 정해진다")
     return LimitsCalc(pet_name=pet.name, rows=rows, highlight=highlight, note=note)
+
+
+# ===== 금액 되묻기 — 보험금이 얼마냐고 묻는데 치료비 금액이 없을 때 =====
+# 다섯 조건(2026-10-21 시험: 되물어야 할 7개 모두, 되물으면 안 될 16개·평가·검증 질문 모두 0):
+# ① 금액을 묻는다 ② 치료비 금액이 없다 ③ 한도·얼마까지·최대가 없다(→ 한도 카드) ④ 소송·변호사·배상이 없다(→ 법률비용)
+# ⑤ 보험료·환급·해지·중도인출 같은 다른 돈 이야기가 아니다. 그리고 의료비 특약에 가입한 반려동물이어야 한다
+_ASK_MONEY = re.compile(r"얼마(?:나|를|가)?\s*(?:나오|나와|받|지급|보상|줘|주나|줍|돼|될)|보험금\s*(?:은|이)?\s*얼마|몇\s*만\s*원")
+ASK_AMOUNT_TEXT = "치료비가 얼마인가요? 동물병원 영수증 금액을 알려 주시면 예상 보험금을 계산해 드립니다."
+
+
+def needs_amount(question: str, pet: Pet | None) -> bool:
+    """보험금 금액을 묻는데 치료비 금액이 없다 — 모델은 계산할 수 없어 거절한다. 되물어 다음 턴(멀티턴)에 금액을 받는다"""
+    if pet is None or not any(p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type for p in pet.policies):
+        return False
+    return bool(_ASK_MONEY.search(question) and treatment_cost(question) is None and not _LIMIT_WORD.search(question)
+                and not _NOT_MEDICAL.search(question) and not OTHER_MONEY.search(question))

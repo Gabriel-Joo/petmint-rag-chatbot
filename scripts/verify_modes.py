@@ -31,12 +31,13 @@ ROOT = Path(__file__).resolve().parent.parent
 DOC = ROOT / "docs" / "모드검증.md"
 AGENT_HEADER = "Cf-Access-Authenticated-User-Email"          # app/config.AGENT_HEADER — 로컬에서 상담원 값을 줄 때
 
-# 메시지 순서 규약 — 타입을 한 글자로 줄인 열에 맞춘다(S sources, C calc, T token, R references, D done, Q clarify, E error)
+# 메시지 순서 규약 — 타입을 한 글자로 줄인 열에 맞춘다(X context, S sources, C calc, T token, R references, D done, Q clarify, E error).
+# 후속 질문이면 맨 앞에 context(멀티턴 — 앞 대화로 어떻게 풀었는지)가 한 번 온다
 ORDER_RULES = {
-    "plain": (re.compile(r"^ST+RD$"), "sources → token… → references → done"),             # 일반·사내규정(calc 없음)
-    "rag": (re.compile(r"^S(?:C?T+RD|Q)$"), "sources → (calc) → token… → references → done, 또는 sources → clarify"),
+    "plain": (re.compile(r"^X?ST+RD$"), "(context) → sources → token… → references → done"),   # 일반·사내규정(calc 없음)
+    "rag": (re.compile(r"^X?S(?:C?T+RD|Q)$"), "(context) → sources → (calc) → token… → references → done, 또는 sources → clarify"),
 }
-CODE = {"sources": "S", "calc": "C", "token": "T", "references": "R", "done": "D", "clarify": "Q", "error": "E"}
+CODE = {"context": "X", "sources": "S", "calc": "C", "token": "T", "references": "R", "done": "D", "clarify": "Q", "error": "E"}
 TERMINAL = {"done", "error", "clarify"}
 AMOUNT = re.compile(r"\d[\d,]*(?:\.\d+)?\s*(?:만\s*)?(?:천\s*)?원|\d+\s*만\s*원")
 
@@ -100,6 +101,9 @@ def judge(spec: ModeSpec, case: Case, r: dict) -> list[dict]:
     if case.corpus_only:
         other = sorted({s.get("species") for s in r["sources"]} - {case.corpus_only})
         auto(f"출처 코퍼스가 {case.corpus_only}뿐", not other, f"다른 코퍼스 {other}" if other else "")
+    if case.expect_context:
+        got = (r.get("context") or {}).get("kind") or "none"
+        auto(f"멀티턴 {case.expect_context}", got == case.expect_context, f"받은 처리 {got} {(r.get('context') or {}).get('text') or ''}")
     if case.expect_calc:
         calc = r.get("calc") or {}
         kind = (calc.get("kind") or "medical") if calc else "none"
@@ -132,7 +136,7 @@ async def ask(ws, case: Case, pet: str | None, first_timeout: float, idle_timeou
     t0 = time.monotonic()
     await ws.send(json.dumps(msg, ensure_ascii=False))
     messages, answer = [], ""
-    rec = {"messages": messages, "answer": "", "sources": [], "references": [], "calc": None, "clarify": None,
+    rec = {"messages": messages, "answer": "", "context": None, "sources": [], "references": [], "calc": None, "clarify": None,
            "error": None, "turn_id": None, "client_first_token_ms": None, "client_total_ms": None,
            "server_latency_ms": None, "server_first_token_ms": None}
     while True:
@@ -154,6 +158,8 @@ async def ask(ws, case: Case, pet: str | None, first_timeout: float, idle_timeou
             answer += m.get("text", "")
             if rec["client_first_token_ms"] is None:
                 rec["client_first_token_ms"] = t
+        elif kind == "context":
+            rec["context"] = {k: m.get(k) for k in ("kind", "reason", "text", "turns")}
         elif kind == "sources":
             rec["sources"] = [{k: s.get(k) for k in ("species", "section", "section_name", "article_num", "article_title",
                                                      "coverage_type", "score", "graph_key")} | {"label": source_label(s)}
@@ -243,6 +249,8 @@ def summary(report: dict) -> str:
         lines.append("출처: " + (" / ".join(f"{s['label']} [{s.get('section_name') or s.get('section')}]" for s in r["sources"])
                                  or "(없음)"))
         lines.append("쓴 근거(references): " + (" / ".join(x.get("citation_label", "") for x in r["references"]) or "(없음)"))
+        if r.get("context"):
+            lines.append(f"멀티턴: {json.dumps(r['context'], ensure_ascii=False)}")
         if r.get("calc"):
             lines.append(f"계산 카드: {json.dumps(r['calc'], ensure_ascii=False)}")
         if r.get("clarify"):
