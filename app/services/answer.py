@@ -185,8 +185,9 @@ def clarify_options(results: list[dict], scope: SearchScope | None) -> dict[str,
 async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
-    # 법률비용 카드가 먼저 — 소송 낱말과 치료비가 같이 있으면 법률비용 쪽이다
-    ctx.calc = payout.legal_card(ctx.question, ctx.pet) or payout.estimate(ctx.question, ctx.pet, results, chosen)
+    # 카드 순서: 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는 나오지 않는다
+    ctx.calc = (payout.legal_card(ctx.question, ctx.pet) or payout.estimate(ctx.question, ctx.pet, results, chosen)
+                or payout.limit_card(ctx.question, ctx.pet, chosen))
     if ctx.calc is not None:
         yield CalcMsg(turn_id=ctx.turn_id, result=ctx.calc)
 

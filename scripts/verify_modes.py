@@ -53,6 +53,19 @@ def source_label(s: dict) -> str:
 
 # ----- 판정 -----
 
+def calc_field(calc: dict, path: str):
+    """계산 카드 값 — 'rows.0.non_surgery'처럼 점으로 내려간다. 없으면 '(없음)'"""
+    cur = calc
+    for part in path.split("."):
+        if isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
+            cur = cur[int(part)]
+        elif isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        else:
+            return "(없음)"
+    return cur
+
+
 def judge(spec: ModeSpec, case: Case, r: dict) -> list[dict]:
     """자동 판정(✓/✗/!)과 사람 판정 항목. result: True 통과 / False 실패 / None 사람 또는 확인 필요"""
     out = []
@@ -89,10 +102,11 @@ def judge(spec: ModeSpec, case: Case, r: dict) -> list[dict]:
         auto(f"출처 코퍼스가 {case.corpus_only}뿐", not other, f"다른 코퍼스 {other}" if other else "")
     if case.expect_calc:
         calc = r.get("calc") or {}
-        kind = (calc.get("kind") or "medical") if calc else None
+        kind = (calc.get("kind") or "medical") if calc else "none"
         auto(f"계산 카드 {case.expect_calc}", kind == case.expect_calc, f"받은 카드 {kind}")
         for k, v in case.calc_values:
-            auto(f"카드 {k}={v}", bool(calc) and calc.get(k) == v, f"카드 값 {calc.get(k) if calc else '(카드 없음)'}")
+            got = calc_field(calc, k)
+            auto(f"카드 {k}={v}", got == v, f"카드 값 {got}")
     if spec.order == "plain":
         tokens = [m for m in r["messages"] if m["type"] == "token"]
         gaps = [b["t_ms"] - a["t_ms"] for a, b in zip(tokens, tokens[1:])]

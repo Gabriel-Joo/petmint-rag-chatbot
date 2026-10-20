@@ -227,6 +227,29 @@ class LegalCalc(_Model):
     note: str
 
 
+class LimitRow(_Model):
+    """한도 카드 한 줄 — 가입한 의료비 특약 하나(limit_table.get_limit)"""
+    section_name: str
+    coverage_type: Grade
+    type: str                                      # Ⅰ/Ⅱ/Ⅲ(section_name에서)
+    copay: int | None                              # 가입 정보의 자기부담금
+    rate_pct: int                                  # 보상비율(%)
+    non_surgery: int                               # 수술하지 않은 날 1일 한도(Ⅲ은 MRI·CT·내시경 없는 날)
+    surgery: int                                   # 수술한 날 1일 한도
+    mri_1st: int | None = None                     # Ⅲ만 — MRI·CT·내시경 연간 첫 번째
+    mri_2nd_plus: int | None = None                # Ⅲ만 — 두 번째 이상
+    annual_total: int                              # 연간 총 보상한도(특약별)
+
+
+class LimitsCalc(_Model):
+    """한도 카드 — 치료비 금액 없이 한도를 물으면 가입한 의료비 특약의 한도표(payout.limit_card)"""
+    kind: Literal["limits"] = "limits"
+    pet_name: str
+    rows: list[LimitRow]
+    highlight: Literal["non_surgery", "surgery", "mri"] | None = None   # 질문이 짚은 줄(수술·MRI 등)
+    note: str
+
+
 def _calc_kind(v) -> str:
     """kind가 없으면 의료비 — 법률비용 카드 전에 저장된 turns.payout에는 kind가 없다"""
     k = v.get("kind") if isinstance(v, dict) else getattr(v, "kind", None)
@@ -234,7 +257,8 @@ def _calc_kind(v) -> str:
 
 
 # 계산 카드 — WS calc 메시지·과거 턴(TurnOut.payout)·turns.payout이 같은 모양. kind로 의료비·법률비용을 가른다
-CalcResult = Annotated[Union[Annotated[MedicalCalc, Tag("medical")], Annotated[LegalCalc, Tag("legal")]],
+CalcResult = Annotated[Union[Annotated[MedicalCalc, Tag("medical")], Annotated[LegalCalc, Tag("legal")],
+                             Annotated[LimitsCalc, Tag("limits")]],
                        Discriminator(_calc_kind)]
 
 
@@ -380,7 +404,7 @@ class DoneMsg(_ServerMsg):
 
 
 class CalcMsg(_ServerMsg):
-    """계산 카드 — 치료비(의료비) 또는 소송 금액·심급(법률비용)이 들어간 질문이면 sources 다음에 한 번"""
+    """계산 카드 — 치료비(의료비)·소송 금액이나 심급(법률비용)·한도(한도표)를 묻는 질문이면 sources 다음에 한 번"""
     type: Literal["calc"] = "calc"
     result: CalcResult
 

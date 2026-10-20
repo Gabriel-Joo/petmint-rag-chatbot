@@ -11,8 +11,9 @@ payout.py
 
 민사소송법률비용 — legal_estimate(question): 질문 속 소송 금액(소송목적의 값)으로 【별표3】 변호사비용 한도·【별표4】 인지액,
 심급·사건 종류가 있으면 【별표5】 송달료까지 낸다(limit_table). 소송 금액 없이 심급만 말하면 송달료만.
-legal_card(question, pet): 민사소송법률비용 특약 가입자에게만 법률비용 카드(LegalCalc). 답변 흐름은 법률비용 카드를 먼저 본다 —
-소송 낱말과 치료비가 같이 있으면 법률비용 쪽이다. 카드만 붙이고 답변 문장은 건드리지 않는다.
+legal_card(question, pet): 민사소송법률비용 특약 가입자에게만 법률비용 카드(LegalCalc).
+limit_card(question, pet, chosen): 치료비 금액 없이 한도를 물으면 가입한 의료비 특약의 한도표(LimitsCalc).
+답변 흐름의 순서는 법률비용 → 의료비(금액 있음) → 한도. 카드만 붙이고 답변 문장은 건드리지 않는다.
 """
 
 import re
@@ -20,9 +21,9 @@ from dataclasses import dataclass
 
 from data.limit_table import LEGAL_COST, calculate_payout, get_limit, lawyer_fee_bracket, lawyer_fee_limit, service_fee, stamp_fee
 from data.rag_context import infer_type_from_section_name
-from data.search_scope import MEDICAL_SECTIONS
+from data.search_scope import MEDICAL_SECTIONS, mentioned_grade, mentioned_type
 
-from app.schemas import LegalCalc, MedicalCalc, Pet
+from app.schemas import LegalCalc, LimitRow, LimitsCalc, MedicalCalc, Pet
 
 _UNIT = {"억": 10 ** 8, "천만": 10 ** 7, "백만": 10 ** 6, "만": 10 ** 4, "천": 10 ** 3, "백": 100}
 _NUM = r"\d[\d,]*(?:\.\d+)?"
@@ -195,3 +196,49 @@ def legal_card(question: str, pet: Pet | None) -> LegalCalc | None:
                      lawyer_limit=e.lawyer_limit, lawyer_max=lawyer_max, lawyer_copay=LEGAL_COST["lawyer_copay"],
                      lawyer_cap=LEGAL_COST["lawyer_limit"], stamp=e.stamp, instance=e.instance, case_kind=e.case_kind,
                      service=e.service, stamp_service_cap=LEGAL_COST["stamp_service_limit"], note=note)
+
+
+# ===== 한도 카드 — 금액 없이 한도만 물을 때 =====
+_LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마")
+_NOT_MEDICAL = re.compile(r"소송|변호사|인지액|송달료|배상|법률")   # 법률비용·배상책임 질문 — 의료비 한도표가 아니다
+
+
+def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> LimitsCalc | None:
+    """한도표 카드. 한도 낱말이 있고 치료비 금액·법률 낱말이 없을 때, 가입한 의료비 특약(되묻기로 고른 쪽이 있으면 그것,
+    질문에 '통원'/'입원'이 있으면 그쪽, 질문이 등급·유형을 말하면 그에 맞는 쪽)만. 맞는 가입 특약이 없으면 None"""
+    if pet is None or not _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question) or treatment_cost(question) is not None:
+        return None
+    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+    if chosen:
+        medical = [p for p in medical if p.section_name == chosen]
+    else:
+        for word in ("통원", "입원"):
+            if word in question:
+                medical = [p for p in medical if word in p.section_name] or medical
+    # 질문이 등급·유형을 말하면 그에 맞는 가입 특약만 — 맞는 것이 없으면(가입과 다른 등급) 이 고객의 한도가 아니라 내지 않는다
+    grade, type_ = mentioned_grade(question), mentioned_type(question)
+    if grade:
+        medical = [p for p in medical if p.coverage_type == grade]
+    if type_:
+        medical = [p for p in medical if infer_type_from_section_name(p.section_name) == type_]
+    if not medical:
+        return None
+    rows = []
+    for p in medical:
+        t = infer_type_from_section_name(p.section_name)
+        base = get_limit(p.coverage_type, t, "non_surgery_no_mri" if t == "Ⅲ" else "non_surgery")
+        rows.append(LimitRow(section_name=p.section_name, coverage_type=p.coverage_type, type=t, copay=p.copay,
+                             rate_pct=round(base["rate"] * 100), non_surgery=base["limit"],
+                             surgery=get_limit(p.coverage_type, t, "surgery")["limit"],
+                             mri_1st=get_limit(p.coverage_type, t, "non_surgery_mri_1st")["limit"] if t == "Ⅲ" else None,
+                             mri_2nd_plus=get_limit(p.coverage_type, t, "non_surgery_mri_2nd_plus")["limit"] if t == "Ⅲ" else None,
+                             annual_total=base["annual_total"]))
+    if _MRI.search(question):
+        highlight = "mri"
+    elif "수술" in question:
+        highlight = "non_surgery" if _NO_SURGERY.search(question) else "surgery"
+    else:
+        highlight = None
+    note = ("1일 한도는 그날 치료비에서 자기부담금을 빼고 보상비율을 곱한 금액에 적용한다. 연간 총 한도는 특약마다 따로다. "
+            "실제 지급액은 보험금 심사로 정해진다")
+    return LimitsCalc(pet_name=pet.name, rows=rows, highlight=highlight, note=note)

@@ -13,7 +13,8 @@ verify_cases.py
 - corpus_only: 출처 패널의 코퍼스가 전부 이것이어야 한다(모드가 섞이지 않는가)
 - session: 같은 값이면 한 세션(WS)에서 차례로 묻는다 — 멀티턴 검증 자리. None이면 질문마다 새 세션
 - human: 사람이 볼 것 — 출력에 표시만 한다
-- expect_calc: 계산 카드 종류("medical"/"legal")가 와야 한다. calc_values: 그 카드의 필드 값(예: lawyer_limit=2800000)
+- expect_calc: 계산 카드 종류("medical"/"legal"/"limits", 카드가 없어야 하면 "none").
+  calc_values: 그 카드의 필드 값(예: lawyer_limit=2800000, 한도표 줄은 rows.0.non_surgery처럼 점으로)
 """
 
 from dataclasses import dataclass, field
@@ -33,7 +34,7 @@ class Case:
     corpus_only: str | None = None
     session: str | None = None
     pet_id: str | None = None                            # 업무특화만 — 세션 고객의 반려동물
-    expect_calc: str | None = None                       # 업무특화만 — "medical" 의료비 / "legal" 법률비용 카드
+    expect_calc: str | None = None                       # 업무특화만 — "medical" 의료비 / "legal" 법률비용 / "limits" 한도표 / "none" 없음
     calc_values: tuple[tuple[str, int | None], ...] = ()
     human: tuple[str, ...] = ()
 
@@ -160,7 +161,9 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
     Case("R1", "고급형 통원 하루 한도가 얼마예요?",
          "1일당 30만원(수술하지 않은 날), 수술한 날 200만원 (통원의료비보장 특약 제1조 제2항, 고급형) — 등급 행이 맞는가",
          must_include=(("30만원", "300000원"),), suspect_include=("15만원", "10만원"), expect_articles=(1,),
-         pet_id="P013", human=(HUMAN_MATCH, "수술한 날 200만원까지 말하는가(안 말해도 실패 아님)")),
+         expect_calc="limits", calc_values=(("rows.0.section_name", "펫퍼민트 반려견 통원의료비보장 특별약관"),
+                                            ("rows.0.non_surgery", 300000), ("rows.0.surgery", 2000000), ("rows.1.section_name", "(없음)")),
+         pet_id="P013", human=(HUMAN_MATCH, "수술한 날 200만원까지 말하는가(안 말해도 실패 아님) — 한도 카드는 통원 한 줄")),
     Case("R2", "통원 치료비가 50만원 나왔는데 보험금 얼마 받을 수 있어요?",
          "계산 카드: 고급형 통원·수술하지 않은 날 — (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 답변이 카드와 어긋나지 않는가",
          must_include=(("30만원", "300000원"),), suspect_include=("32만9천", "329000원", "35만원", "350000원"),
@@ -186,6 +189,19 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
          must_include=(("165000원", "16만5천원", "16만5000원", "165천원"),), suspect_include=("110000원", "11만원"),
          expect_calc="legal", calc_values=(("claim_value", None), ("service", 165000)),
          pet_id="P014", human=(HUMAN_MATCH,)),
+    # ---- 한도 카드(2026-10-21) — 치료비 금액 없이 한도만 물으면 가입한 의료비 특약의 한도표 ----
+    Case("R8", "제 지급 한도가 얼마인데요?",
+         "한도 카드: 통원·입원(Ⅰ 고급형) 각각 수술 안 한 날 1일 30만원 · 수술한 날 200만원 · 70% · 연간 750만원. "
+         "10-20 배포 서버에서 Ⅱ 고급형 고객에게 계산식·예시만 답했던 질문",
+         expect_calc="limits", calc_values=(("rows.0.non_surgery", 300000), ("rows.0.surgery", 2000000), ("rows.0.annual_total", 7500000),
+                                            ("rows.1.non_surgery", 300000), ("highlight", None)),
+         pet_id="P013", human=("답변이 한도 숫자를 말하는가(카드와 별개 — 답변 문장은 고치지 않았다)",)),
+    Case("R9", "기본형 수술 한도가 얼마인가요?",
+         "가입(고급형)과 다른 등급을 물음 → 이 고객의 한도가 아니라 한도 카드 없음",
+         expect_calc="none", pet_id="P013", human=("답변이 기본형 값(수술 200만원)을 고객 한도처럼 말하지 않는가",)),
+    Case("R10", "소송 걸리면 변호사비는 한 건에 얼마까지 나와요?",
+         "법률비용 질문 — 한도 카드는 빠진다. 소송 금액·심급이 없어 법률비용 카드도 없다. 정답: 1소송당 2,000만원(자기부담금 10만원)",
+         must_include=(("2000만원", "20000000원", "2천만원"),), expect_calc="none", pet_id="P014", human=(HUMAN_MATCH,)),
 ))
 
 MODES = {m.key: m for m in (HR, GENERAL, RAG)}

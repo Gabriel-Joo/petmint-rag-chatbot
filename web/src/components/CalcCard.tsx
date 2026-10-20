@@ -1,4 +1,4 @@
-import type { CalcResult, LegalCalc, MedicalCalc } from "../api/types";
+import type { CalcResult, LegalCalc, LimitsCalc, MedicalCalc } from "../api/types";
 import { shortSection, won } from "../format";
 import s from "./CalcCard.module.css";
 
@@ -7,7 +7,9 @@ const BASIS = "금액은 약관 표로 계산한 값";
 
 /** 계산 카드(09 2-3) — 서버 limit_table 결과를 그대로 보여준다. 모델은 계산에 손대지 않는다. kind로 의료비·법률비용을 가른다 */
 export function CalcCard({ calc }: { calc: CalcResult }) {
-  return calc.kind === "legal" ? <LegalCard calc={calc} /> : <MedicalCard calc={calc} />;
+  if (calc.kind === "legal") return <LegalCard calc={calc} />;
+  if (calc.kind === "limits") return <LimitsCard calc={calc} />;
+  return <MedicalCard calc={calc} />;
 }
 
 function MedicalCard({ calc }: { calc: MedicalCalc }) {
@@ -53,6 +55,35 @@ function LegalCard({ calc }: { calc: LegalCalc }) {
       {calc.lawyer_max !== null && (
         <div className={`${s.row} ${s.total}`}><span>변호사 보수 최대</span><span>{won(calc.lawyer_max)}</span></div>
       )}
+      <div className={s.note}>{calc.note}</div>
+    </div>
+  );
+}
+
+/** 한도표 — 가입한 의료비 특약마다 한 묶음. 질문이 짚은 줄(수술한 날·MRI 등)은 강조 */
+function LimitsCard({ calc }: { calc: LimitsCalc }) {
+  const on = (k: LimitsCalc["highlight"]) => (calc.highlight === k ? ` ${s.hl}` : "");
+  return (
+    <div className={`raised ${s.card}`} aria-label="지급 한도">
+      <div className={s.title}>지급 한도 · {calc.pet_name}</div>
+      <div className={s.basis}>{BASIS}</div>
+      {calc.rows.map((r) => (
+        <div key={r.section_name} className={s.group}>
+          <div className={s.groupHead}>{shortSection(r.section_name)} {r.coverage_type}</div>
+          <div className={s.sub}>{r.copay !== null && `자기부담 ${won(r.copay)} · `}보상비율 {r.rate_pct}%</div>
+          <div className={`${s.row}${on("non_surgery")}`}>
+            <span className="dim">{r.mri_1st !== null ? "수술·MRI 없는 날" : "수술 안 한 날"} 1일</span><span>{won(r.non_surgery)}</span>
+          </div>
+          {r.mri_1st !== null && (
+            <div className={`${s.row}${on("mri")}`}><span className="dim">MRI 등 연간 첫 번째</span><span>{won(r.mri_1st)}</span></div>
+          )}
+          {r.mri_2nd_plus !== null && (
+            <div className={`${s.row}${on("mri")}`}><span className="dim">MRI 등 두 번째부터</span><span>{won(r.mri_2nd_plus)}</span></div>
+          )}
+          <div className={`${s.row}${on("surgery")}`}><span className="dim">수술한 날 1일</span><span>{won(r.surgery)}</span></div>
+          <div className={s.row}><span className="dim">연간 총 한도</span><span>{won(r.annual_total)}</span></div>
+        </div>
+      ))}
       <div className={s.note}>{calc.note}</div>
     </div>
   );
