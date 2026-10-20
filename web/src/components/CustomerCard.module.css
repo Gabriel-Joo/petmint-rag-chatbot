@@ -4,9 +4,10 @@
 
 /* 10번 6절 — 크기로 층을 나눈다 */
 .big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.customer { font-size: var(--font-lg); font-weight: var(--font-weight-title); }
-.pet { font-size: var(--font-md); font-weight: var(--font-weight-label); }
-.petMeta { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); }
+/* 첫 줄(고객·반려동물)은 참조용 — 상담 중에는 누구인지 이미 안다. 제목처럼 크지 않게(2026-10-21: 이름 36px → --font-sm) */
+.customer { font-size: var(--font-sm); font-weight: var(--font-weight-title); }
+.pet { font-size: var(--font-sm); font-weight: var(--font-weight-label); }
+.petMeta { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); }
 
 .mid { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .chip { font-size: var(--font-xs); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); white-space: nowrap; }
@@ -16,4 +17,8 @@
 .excl b { color: var(--warn); }
 
 .small { font-weight: var(--font-weight-caption); font-size: var(--font-2xs); color: var(--text-faint); display: flex; gap: 10px; flex-wrap: wrap; }
-.side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--font-xs); }
+/* 같은 줄의 반려동물 토글·과거 상담 버튼도 줄 높이를 따라 작게 — 각자 --font-sm·.btn 여백이라 그대로면 줄이 낮아지지 않는다 */
+.side button { font-size: var(--font-xs); line-height: 1.2; padding-top: 2px; padding-bottom: 2px; }
+.side :global(.btn) { padding: 2px 8px; }
+.big { line-height: 1.2; }
