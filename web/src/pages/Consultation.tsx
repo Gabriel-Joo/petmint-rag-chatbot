@@ -70,7 +70,9 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
         )}
         {chat.turns.map((t) => {
           const turnPet = t.pet_id ? petsById.get(t.pet_id) : undefined;
-          const excl = turnPet ? matchExclusions(t.question, turnPet.policies.flatMap((p) => p.excluded_conditions)) : [];
+          // 후속 턴은 기준 질문(↳ 줄)까지 본다 — 금액 되묻기 직후 "치료비 50만원이요"에는 질병 이름이 앞 질문에만 있다
+          const text = t.context?.text ? `${t.context.text} ${t.question}` : t.question;
+          const excl = turnPet ? matchExclusions(text, turnPet.policies.flatMap((p) => p.excluded_conditions)) : [];
           return (
             <TurnView key={t.key} turn={t} inlineSources="mobile" exclusions={excl}
                       petLabel={turnPet && customer.pets.length > 1 ? `${SPECIES_ICON[turnPet.species]} ${turnPet.name}` : undefined}

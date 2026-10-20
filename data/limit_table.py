@@ -83,7 +83,10 @@ def calculate_payout(treatment_cost: int, copay: int, rate: float, daily_limit: 
       calculate_payout(1_030_000, 30_000, 0.7, 1_000_000) == 700_000  (고급형Ⅲ 비수술·MRI 1회차)
       calculate_payout(4_100_000, 30_000, 0.7, 2_500_000) == 2_500_000  (고급형Ⅲ MRI+수술 동시 → 수술한도)
     """
-    return min(int((treatment_cost - copay) * rate), daily_limit)
+    # 보상비율을 백분율 정수로 곱한다 — 0.7을 실수로 곱하면 원 단위가 1원 모자라게 잘렸다
+    # (치료비 4천원~300만원 1천원 간격 5,922개 중 722개, 예: 41,000원 → 7,699원. 2026-10-21)
+    pct = round(rate * 100)
+    return min((treatment_cost - copay) * pct // 100, daily_limit)
 
 
 # ===== 민사소송법률비용Ⅱ 특약 — 【별표3】 변호사비용 · 【별표4】 인지액 · 【별표5】 송달료 (강아지·고양이 같은 표) =====

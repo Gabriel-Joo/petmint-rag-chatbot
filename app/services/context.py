@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 
 from app import config
 from app.schemas import ContextKind, ContextMsg, Mode, Pet
+from app.services import payout
 from app.services.followup import follow_up_reason
 from app.services.llm import OllamaClient
 from app.services.turn_log import PriorTurn
@@ -52,6 +53,7 @@ class Resolved:
     search_query: str | None = None                # 검색에 쓸 문장(사내규정·업무특화)
     history: list[dict] = field(default_factory=list)   # 일반 — chat 메시지 이력
     chosen: str | None = None                      # 업무특화 — 앞 턴에서 이어 쓰는 특약(되묻기 생략)
+    after_amount_ask: bool = False                 # 업무특화 — 앞 턴이 금액 되묻기였고 이번에 금액을 말했다(모델 대신 카드로 답)
 
     @property
     def retrieval_query(self) -> str:
@@ -109,10 +111,15 @@ async def resolve(mode: Mode, question: str, prior: list[PriorTurn], pet: Pet | 
                   llm: OllamaClient | None) -> Resolved:
     """prior: 같은 세션의 정상 완료 턴(오래된 순). 후속이 아니거나 앞 턴이 없으면 질문 그대로"""
     r = Resolved(question=question)
-    reason = follow_up_reason(question)
-    if reason is None or not prior:
+    if not prior:
         return r
     last = prior[-1]
+    # 금액 되묻기("치료비가 얼마인가요?") 바로 뒤에 금액을 말했으면 후속 규칙에 안 걸려도 후속이다
+    # ("35만원 정도 나왔고 수술은 안 했어요"처럼 길거나 물음표가 있어도)
+    answered_ask = mode == "업무특화" and last.answer == payout.ASK_AMOUNT_TEXT and bool(payout.amounts_in(question))
+    reason = follow_up_reason(question) or ("되묻기 답" if answered_ask else None)
+    if reason is None:
+        return r
     if mode == "일반":
         r.follow_up, r.kind = reason, "history"
         for t in prior[-HISTORY_TURNS:]:
@@ -125,6 +132,7 @@ async def resolve(mode: Mode, question: str, prior: list[PriorTurn], pet: Pet | 
         r.anchor = override(last.anchor, question)
         r.search_query = f"{r.anchor} {question}"
         r.chosen = carry_chosen(last, question, pet)
+        r.after_amount_ask = answered_ask
         return r
     # 사내규정 — 베이스 모델 재작성, 실패하면 이어 붙이기
     r.follow_up = reason

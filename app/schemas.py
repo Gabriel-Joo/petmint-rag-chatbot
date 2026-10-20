@@ -212,6 +212,7 @@ class MedicalCalc(_Model):
     limit: int                                     # 그 상황의 1일 지급 한도
     payout: int
     note: str
+    rate_pct: int | None = None                    # 보상비율(%) — 되묻기 직후 답 문장(payout.amount_answer)이 쓴다. 예전 카드엔 없다
 
 
 class LegalCalc(_Model):
