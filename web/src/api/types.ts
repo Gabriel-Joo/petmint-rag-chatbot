@@ -202,8 +202,31 @@ export interface LegalCalc {
   note: string;
 }
 
+/** 한도 카드 한 줄 — 가입한 의료비 특약 하나 */
+export interface LimitRow {
+  section_name: string;
+  coverage_type: Grade;
+  type: string; // Ⅰ/Ⅱ/Ⅲ
+  copay: number | null;
+  rate_pct: number;
+  non_surgery: number; // 수술하지 않은 날 1일 한도(Ⅲ은 MRI·CT·내시경 없는 날)
+  surgery: number; // 수술한 날 1일 한도
+  mri_1st: number | null; // Ⅲ만
+  mri_2nd_plus: number | null;
+  annual_total: number;
+}
+
+/** 한도 카드 — 치료비 금액 없이 한도를 물으면 가입한 의료비 특약의 한도표 */
+export interface LimitsCalc {
+  kind: "limits";
+  pet_name: string;
+  rows: LimitRow[];
+  highlight: "non_surgery" | "surgery" | "mri" | null; // 질문이 짚은 줄
+  note: string;
+}
+
 /** 계산 카드 — WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
-export type CalcResult = MedicalCalc | LegalCalc;
+export type CalcResult = MedicalCalc | LegalCalc | LimitsCalc;
 
 export type ServerMessage =
   | { type: "sources"; turn_id: string; items: SourceItem[] }
