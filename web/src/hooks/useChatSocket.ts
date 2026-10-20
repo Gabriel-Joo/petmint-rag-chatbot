@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { getSessionTurns, openChatSocket, type ChatSocket } from "../api/client";
-import type { CalcResult, ReferenceItem, ServerMessage, SourceItem, TurnOut } from "../api/types";
+import type { CalcResult, ReferenceItem, ServerMessage, SourceItem, TurnContextInfo, TurnOut } from "../api/types";
 
 export type TurnStatus = "searching" | "clarify" | "streaming" | "done" | "error";
 
@@ -12,6 +12,7 @@ export interface Turn {
   turn_id: string | null;
   question: string;
   pet_id: string | null;
+  context: TurnContextInfo | null; // 후속 질문을 앞 대화로 푼 방법(↳ 줄). 단독 질문이면 null
   sources: SourceItem[];
   answer: string;
   clarify: string[] | null;    // 되묻기 선택지(대기 중)
@@ -72,6 +73,8 @@ function apply(state: ChatState, msg: ServerMessage): ChatState {
   }
   const t = turns[idx];
   switch (msg.type) {
+    case "context":
+      return { ...state, turns: patchTurn(turns, idx, { context: { kind: msg.kind, reason: msg.reason, text: msg.text, turns: msg.turns } }) };
     case "sources":
       return { ...state, turns: patchTurn(turns, idx, { sources: msg.items }) };
     case "token":
@@ -128,6 +131,7 @@ const historyLoaded = new Set<string>();
 export function turnFromOut(t: TurnOut): Turn {
   return {
     key: t.turn_id, turn_id: t.turn_id, question: t.question, pet_id: t.pet_id, sources: t.sources, answer: t.answer,
+    context: t.context_kind ? { kind: t.context_kind, reason: t.follow_up, text: t.rewritten_question, turns: t.context_turns } : null,
     clarify: null, clarifyChoice: null, references: t.references, calc: t.payout, error: null, status: "done",
     latency_ms: t.latency_ms, first_token_ms: t.first_token_ms,
   };
@@ -162,6 +166,7 @@ export function useChatSocket(sessionId: string | null) {
     const turn: Turn = {
       key: crypto.randomUUID(), turn_id: null, question, pet_id, sources: [], answer: "", clarify: null,
       clarifyChoice: null, references: [], calc: null, error: null, status: "searching", latency_ms: null, first_token_ms: null,
+      context: null,
     };
     const socket = connect(sessionId);
     update(sessionId, (s) => ({ ...s, turns: [...s.turns, turn] }));

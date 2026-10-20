@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { postFeedback } from "../api/client";
+import type { TurnContextInfo } from "../api/types";
 import type { Turn } from "../hooks/useChatSocket";
+import { AnswerMarkdown } from "./AnswerMarkdown";
 import { CalcCard } from "./CalcCard";
 import { ExclusionBanner } from "./ExclusionBanner";
 import { SourcePanel } from "./SourcePanel";
@@ -35,6 +37,7 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
     <article className={`${s.turn} ${onSelect ? s.selectable : ""} ${selected ? s.selected : ""}`}
              onClick={onSelect} aria-current={selected || undefined}>
       <div className={s.q}>{turn.question}</div>
+      {turn.context && <ContextLine ctx={turn.context} />}
 
       <ExclusionBanner matched={exclusions} />
 
@@ -49,7 +52,7 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
       {turn.clarifyChoice && <div className={s.status}>↳ {turn.clarifyChoice} 기준</div>}
 
       {turn.answer ? (
-        <div className={s.a}>{turn.answer}{streaming && <span className={s.caret} aria-hidden />}</div>
+        <div className={s.a}><AnswerMarkdown text={turn.answer} streaming={streaming} />{streaming && <span className={s.caret} aria-hidden />}</div>
       ) : (
         turn.status === "searching" && <div className={s.status}>{STATUS_TEXT.searching}</div>
       )}
@@ -78,4 +81,13 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
       )}
     </article>
   );
+}
+
+/** 후속 질문을 어떻게 풀었는지(09 5절) — 상담원이 해석을 확인하고 틀렸으면 고쳐 물을 수 있게. 질문 말풍선 바로 아래 오른쪽 */
+function ContextLine({ ctx }: { ctx: TurnContextInfo }) {
+  const text =
+    ctx.kind === "rewrite" ? ctx.text
+    : ctx.kind === "concat" ? `앞 질문 '${ctx.text}'과 이어서 검색`
+    : `앞 대화 ${ctx.turns ?? 0}턴 참고`;
+  return <div className={s.context} title={ctx.reason ? `후속 질문으로 봄 — ${ctx.reason}` : undefined}>↳ {text}</div>;
 }

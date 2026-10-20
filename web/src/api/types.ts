@@ -105,9 +105,24 @@ export interface ScopeRow {
   excluded_conditions: string[];
 }
 
+/** 멀티턴 처리 종류(09 5절) — rewrite: 사내규정 재작성 / concat: 업무특화 앞 질문과 이어서 검색 / history: 일반 이력 전달 */
+export type ContextKind = "rewrite" | "concat" | "history";
+
+/** 후속 질문을 앞 대화로 어떻게 풀었는지 — 화면의 ↳ 줄 */
+export interface TurnContextInfo {
+  kind: ContextKind;
+  reason: string | null; // 후속으로 본 규칙(지시어·생략 꼬리·금액만·짧음)
+  text: string | null; // rewrite: 재작성된 질문 / concat: 이어 붙인 앞 질문
+  turns: number | null; // history: 전달한 이력 턴 수
+}
+
 export interface TurnOut {
   turn_id: string;
   question: string;
+  rewritten_question: string | null; // 기준 질문(멀티턴). 단독 질문이면 null
+  follow_up: string | null;
+  context_kind: ContextKind | null;
+  context_turns: number | null;
   pet_id: string | null;
   /** 그 턴의 반려동물·가입 내용 스냅샷. 과거 상담 화면은 지금 고객 데이터가 아니라 이 값으로 그린다 */
   pet_name: string | null;
@@ -229,6 +244,8 @@ export interface LimitsCalc {
 export type CalcResult = MedicalCalc | LegalCalc | LimitsCalc;
 
 export type ServerMessage =
+  // 멀티턴 — 후속 질문이면 sources 앞에 한 번
+  | { type: "context"; turn_id: string; kind: ContextKind; reason: string; text: string | null; turns: number | null }
   | { type: "sources"; turn_id: string; items: SourceItem[] }
   | { type: "token"; turn_id: string; text: string }
   | { type: "clarify"; turn_id: string; options: string[] }
