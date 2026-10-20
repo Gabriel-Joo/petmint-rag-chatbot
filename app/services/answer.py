@@ -50,6 +50,21 @@ PROMPT_BUDGET = 2400          # user 메시지 토큰 상한 — answer_eval SEA
 # 학습 user 메시지 300개 최소 1.83. 1.5로 나누면 실제 토큰보다 늘 크게 세어 예산을 넘지 않는다(대신 조금 더 자른다)
 CHARS_PER_TOKEN = 1.5
 LLM_OPTIONS = {"num_predict": 300}   # answer_eval MAX_NEW_TOKENS. 온도·num_ctx는 Modelfile 값(tri-7b: 0.3, 8192)을 따른다
+# 사내규정(베이스 모델 + SYSTEM_PROMPT_HR)만 더 길게 — 300은 업무특화 학습 모델 평가와 맞춘 값이다. 사내규정은 규정에 없는 질문에
+# "왜 없는지"를 설명하다 300에서 잘려 거절 문구 전에 끊겼다(2026-10-21 HR5). 프롬프트로 줄여도 0이 되지 않아 상한을 올린다
+LLM_OPTIONS_HR = {"num_predict": 512}
+# 사내규정만: 리랭커 점수가 1위의 이 배수 미만인 발췌는 뺀다 — 늘 3개를 채우느라 들어온 0.01대 발췌(배우자 출산에 제44조 해고 제한)를
+# 모델이 답에 섞었다(HR2 7→10/10). 절대 하한은 못 쓴다 — 답 있는 HR4(0.008·0.003)와 답 없는 HR5(0.004)가 같은 높이다.
+# 업무특화는 학습 때 발췌 3개 형식이라 적용하지 않는다
+HR_REL_CUT = 0.1
+
+
+def cut_weak_results(results: list[dict], mode: Mode) -> list[dict]:
+    """사내규정 모드면 1위 점수의 HR_REL_CUT배 미만 결과를 뺀다. 다른 모드는 그대로"""
+    if mode != "사내규정" or not results:
+        return results
+    top = results[0]["score"]
+    return [r for r in results if r["score"] >= HR_REL_CUT * top]
 
 
 def count_tokens(text: str) -> int:
@@ -114,6 +129,7 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
             except httpx.HTTPError as e:        # search-service가 없거나 실패 — Milvus(조립) 오류는 아래 internal
                 yield _fail(ctx, e, "search_unavailable")
                 return
+            ctx.results = cut_weak_results(ctx.results, ctx.session.mode)   # 출처 패널도 모델이 본 발췌만
             ctx.sources = [_source_item(r, ctx.scope.species) for r in ctx.results]
         yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
 
@@ -186,7 +202,8 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                                           system=prompts.SYSTEM_PROMPT_HR if hr else prompts.SYSTEM_PROMPT,
                                           excerpt_header=prompts.HR_EXCERPT_HEADER if hr else prompts.EXCERPT_HEADER)
 
-    async for piece in deps.llm.stream(model_of(mode), messages, cancel=ctx.cancel, options=LLM_OPTIONS):
+    options = LLM_OPTIONS_HR if mode == "사내규정" else LLM_OPTIONS
+    async for piece in deps.llm.stream(model_of(mode), messages, cancel=ctx.cancel, options=options):
         if ctx.first_token_ms is None:
             ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
         ctx.answer += piece
