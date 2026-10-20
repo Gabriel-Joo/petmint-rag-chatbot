@@ -1,33 +1,35 @@
 /* 상단바 — 스크롤해도 위에 붙어 있고(sticky), 연보라 바탕으로 흰 본문과 구분한다.
-   두 줄이다. 1줄은 로고 가운데, 2줄은 모드 탭 왼쪽·전화 묶음 오른쪽 끝(가운데는 비운다).
-   모드 탭은 --font-menu, 자동 전화·전화 울리기는 한 단계 작은 --font-menu-sub */
+   한 줄이다(2026-10-21): 왼쪽에 제목·부제 블록, 그 오른쪽에 모드 탭(+잠금 표시), 오른쪽 끝에 전화 묶음.
+   예전 두 줄(로고 가운데 / 탭·전화)은 1920px에서 227px를 먹어 대화 영역이 좁았다.
+   모드 탭과 자동 전화·전화 울리기는 같은 크기 --font-menu-sub */
 .bar {
   position: sticky;
   top: 0;
   z-index: 20; /* 본문 카드(누름 효과로 쌓임 맥락이 생김)보다 위, 전화 알림(50)보다 아래 */
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 32px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 32px;
+  padding: 8px 32px;
   border-bottom: 1px solid var(--line);
   background: var(--primary-soft);
 }
-@media (max-width: 640px) { .bar { padding: 12px 16px; gap: 8px; } }
+@media (max-width: 640px) { .bar { padding: 6px 16px; gap: 6px 12px; } }
 
-/* 가운데 칸에 로고, 오른쪽 칸에 가짜 API 표시 — 양옆 칸 폭이 같아(1fr) 표시가 있어도 로고는 정가운데 */
-.brandRow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 12px; }
-/* 로고 아래 줄에 부제 — 두 줄 모두 가운데 */
-.brand { grid-column: 2; display: flex; flex-direction: column; align-items: center; gap: 0.1em; background: none; border: none; padding: 0; white-space: nowrap; line-height: 1.2; text-align: center; }
+/* 제목 위, 부제 아래 — 왼쪽 정렬 블록. 가짜 API 표시는 블록 옆 */
+.brandRow { display: flex; align-items: center; gap: 12px; flex: none; }
+.brand { display: flex; flex-direction: column; align-items: flex-start; gap: 0; background: none; border: none; padding: 0; white-space: nowrap; line-height: 1.1; text-align: left; }
 /* 모드 선택 화면 제목(ModeSelect .title)과 같은 크기 — 둘 다 --font-brand */
 .brandTitle { font-family: var(--font-logo); font-size: var(--font-brand); font-weight: var(--font-weight-label); } /* 완주대둔산체는 Bold(700) 한 벌뿐 — 그보다 무겁게 부르지 않는다 */
 .brandSub { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
-.fake { grid-column: 3; justify-self: start; font-weight: var(--font-weight-label); font-size: var(--font-2xs); padding: 1px 6px; border-radius: 6px; border: 1px dashed var(--text-dim); color: var(--text-dim); white-space: nowrap; }
+.fake { font-weight: var(--font-weight-label); font-size: var(--font-2xs); padding: 1px 6px; border-radius: 6px; border: 1px dashed var(--text-dim); color: var(--text-dim); white-space: nowrap; }
 
-/* 한 줄에 다 안 들어가면(1024~1290px 근처, 메뉴 3배) 전화 묶음이 다음 줄 오른쪽 끝으로 내려간다 — 겹치지 않는다 */
-.navRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
-.left { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+/* 탭·잠금 묶음과 전화 묶음 — 남은 폭을 다 쓰고, 전화 묶음은 오른쪽 끝(margin-left: auto).
+   한 줄에 다 안 들어가면 이 묶음 통째로 제목 아래 줄로 내려간다 — 겹치지 않는다 */
+.navRow { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+.left { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 
-.tabs { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .tab {
   display: inline-flex;
   align-items: center;
@@ -35,8 +37,9 @@
   border: 1.5px solid transparent;
   background: none;
   border-radius: var(--radius-control);
-  padding: 0.25em 0.6em;
-  font-size: var(--font-menu);
+  padding: 0.15em 0.5em;
+  font-size: var(--font-menu-sub); /* 자동 전화·전화 울리기와 같은 크기. 캐릭터 아이콘(--icon-mode 1.5em)도 이 글씨를 따라 줄어든다 */
+  line-height: 1.2;
   white-space: nowrap;
   transition: box-shadow var(--lift);
 }
@@ -60,14 +63,15 @@
 .call .ringBtn:hover:not(:disabled) { background: var(--card); border-color: var(--primary); color: var(--primary); }
 .lock { font-weight: var(--font-weight-label); font-size: var(--font-xs); color: var(--text-dim); white-space: nowrap; }
 
-/* 햄버거 — 1023px 이하에서만 보인다. 그 폭에서는 전화 묶음이 버튼 아래 떠 있는 작은 메뉴로 접힌다 */
+/* 햄버거 — 1439px 이하에서만 보인다. 그 폭에서는 전화 묶음이 버튼 아래 떠 있는 작은 메뉴로 접힌다.
+   한 줄 헤더(제목+탭+잠금+전화 묶음)는 약 1,420px가 있어야 들어가서, 그보다 좁으면 전화 묶음을 접어 한 줄을 지킨다 */
 .menuBtn { display: none; }
-@media (max-width: 1023px) {
+@media (max-width: 1439px) {
   .menuBtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-menu);
+    font-size: var(--font-menu-sub);
     line-height: 1;
     padding: 0.2em 0.35em;
     border: 1.5px solid transparent;

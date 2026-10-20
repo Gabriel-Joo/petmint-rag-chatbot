@@ -50,8 +50,8 @@
   --font-brand: calc(26px * var(--text-scale)); /* 헤더 로고, 모드 선택 화면 제목 — 둘은 같은 크기 */
   --font-2xl: calc(28px * var(--text-scale));
   --font-icon: calc(36px * var(--text-scale));
-  --font-menu: calc(13px * var(--menu-scale));     /* 모드 탭 */
-  --font-menu-sub: calc(10px * var(--menu-scale)); /* 자동 전화, 전화 울리기 — 주된 조작이 아니라 모드 탭보다 작게 */
+  --font-menu: calc(13px * var(--menu-scale));     /* 지금 쓰는 곳 없음 — 모드 탭은 2026-10-21 한 줄 헤더로 바꾸며 --font-menu-sub로 줄였다 */
+  --font-menu-sub: calc(10px * var(--menu-scale)); /* 상단바 메뉴 — 모드 탭, 자동 전화, 전화 울리기, ☰ */
   --font-call-icon: 28px;  /* 전화 알림의 64px 원 안 아이콘 — 원 크기에 묶여 있어 배율을 받지 않는다 */
 
   /* 글꼴 — 헤더 로고("펫퍼민트 상담")만 완주대둔산체, 나머지는 전부 Wanted Sans(가변).
@@ -70,8 +70,9 @@
   --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
-/* 태블릿 폭에서는 메뉴 배율만 한 단계 낮춘다 — 3배 그대로면 상단바가 두세 줄로 늘어나 화면 1/3을 차지한다 */
-@media (max-width: 1023px) {
+/* 1279px 이하에서는 메뉴 배율만 한 단계 낮춘다 — 3배 그대로면 상단바가 한 줄에 안 들어가 두 줄로 늘어난다
+   (한 줄 헤더 2026-10-21: 1024px에서 3배면 제목+탭+☰가 약 1,110px) */
+@media (max-width: 1279px) {
   :root { --menu-scale: 2; }
 }
 /* 휴대폰 폭에서는 배율을 낮춘다 — 2·3배로는 상단바와 카드가 화면을 넘는다 */
