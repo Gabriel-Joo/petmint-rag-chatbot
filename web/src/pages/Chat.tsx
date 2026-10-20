@@ -137,7 +137,7 @@ export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted
           <span className={s.avatar}><ModeIcon mode={mode} /></span>
           <p className={s.greeting}>{GREETING[mode]}</p>
         </div>
-        <div ref={logRef} className={`raised ${s.log}`}>
+        <div ref={logRef} className={`raised chat-text ${s.log}`}>
           {!session && <div className={s.empty}>세션을 여는 중…</div>}
           {chat.turns.map((t) => (
             <TurnView key={t.key} turn={t} inlineSources={mode === "사내규정" ? "always" : "never"} />

@@ -21,7 +21,7 @@
 .status .end { margin-left: auto; }
 
 .customer { grid-area: customer; }
-.log { grid-area: log; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.log { grid-area: log; font-size: var(--font-md); overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
 .empty { font-weight: var(--font-weight-caption); margin: auto; color: var(--text-dim); font-size: var(--font-sm); text-align: center; }
 .composer { grid-area: composer; padding: 10px; }
 .panel { grid-area: panel; padding: 12px; min-height: 0; display: flex; flex-direction: column; }
