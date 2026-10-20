@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing }: Props) {
-  // 좁은 화면(1023px 이하)에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
+  // 1439px 이하에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -33,7 +33,7 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
 
   return (
     <header className={s.bar}>
-      {/* 1줄: 로고 가운데. 가짜 API 표시는 오른쪽 칸에 둬서 로고가 가운데에서 밀리지 않게 한다 */}
+      {/* 한 줄: 제목·부제 블록 → 모드 탭(+잠금 표시) → 전화 묶음(오른쪽 끝) */}
       <div className={s.brandRow}>
         <button className={s.brand} onClick={onHome} disabled={locked}>
           <span className={s.brandTitle}>펫퍼민트 상담</span>
@@ -42,7 +42,6 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
         {IS_FAKE_API && <span className={s.fake} title="백엔드 대신 고정 응답을 돌려주는 가짜 API 층">가짜 API</span>}
       </div>
 
-      {/* 2줄: 모드 탭 왼쪽, 전화 묶음 오른쪽 끝 */}
       <div className={s.navRow}>
         <div className={s.left}>
           <nav className={s.tabs} aria-label="모드">
