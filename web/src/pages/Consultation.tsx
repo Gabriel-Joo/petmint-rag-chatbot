@@ -62,7 +62,7 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
                       actions={<PastConsultations customer={customer} excludeSessionId={session.session_id} />} />
       </div>
 
-      <div ref={logRef} className={`raised ${s.log}`}>
+      <div ref={logRef} className={`raised chat-text ${s.log}`}>
         {chat.turns.length === 0 && (
           <div className={s.empty}>
             {ended ? "대화 없이 종료된 상담입니다." : `${customer.name} 고객 상담을 시작합니다. ${pet.name}에 대해 물어보세요.`}
