@@ -62,6 +62,8 @@ class LimitCard(unittest.TestCase):
         self.assertIsNone(payout.limit_card("배상책임 한도는요?", CHEESE))
         self.assertIsNone(payout.limit_card("통원 치료비가 50만원 나왔는데 한도 넘어요?", CHEESE))      # 금액 있음 — 의료비 카드 몫
         self.assertIsNone(payout.limit_card("해지하면 환급금 있나요?", CHEESE))
+        self.assertIsNone(payout.limit_card("중도인출 하면 얼마까지 돼요?", CHEESE))                    # 10-21 버그 — 의료비 한도표가 떴다
+        self.assertIsNone(payout.limit_card("보험료 최대 얼마까지 올라요?", CHEESE))
         self.assertIsNone(payout.limit_card("제 한도가 얼마예요?", None))                              # 업무특화가 아님
 
 

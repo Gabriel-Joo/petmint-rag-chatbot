@@ -25,9 +25,10 @@ from pydantic import ValidationError
 from app import config
 from app.deps import agent_of
 from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
-from app.services import answer, titles
+from app.services import answer, context, titles
 from app.services.answer import TurnContext, TurnDeps
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
+from app.services.followup import follow_up_reason
 from app.services.sessions import SessionStore
 from app.services.turn_log import TurnLogStore
 
@@ -127,8 +128,13 @@ async def chat(ws: WebSocket, session_id: str):
                 if session.title is None:
                     title_task = asyncio.create_task(titles.make_title(msg.text, ws.app.state.llm, session.mode))
 
+                # 멀티턴 — 후속 질문이면 앞 턴(정상 완료만)으로 푼다. 판별은 규칙이라 후속이 아니면 DB도 모델도 안 부른다
+                resolved = None
+                if follow_up_reason(msg.text):
+                    prior = await asyncio.to_thread(turn_log.recent_turns, session_id, context.HISTORY_TURNS)
+                    resolved = await context.resolve(session.mode, msg.text, prior, pet, ws.app.state.llm)
                 ctx = TurnContext(turn_id=turn_id, session=session, pet=pet, scope=answer.scope_of(session.mode, pet),
-                                  question=msg.text, agent=agent)
+                                  question=msg.text, agent=agent, resolved=resolved)
                 await _drive(ws, turn_log, ctx, answer.run_turn(ctx, deps))
                 await finish(ctx, title_task)
 

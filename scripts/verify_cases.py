@@ -13,6 +13,7 @@ verify_cases.py
 - corpus_only: 출처 패널의 코퍼스가 전부 이것이어야 한다(모드가 섞이지 않는가)
 - session: 같은 값이면 한 세션(WS)에서 차례로 묻는다 — 멀티턴 검증 자리. None이면 질문마다 새 세션
 - human: 사람이 볼 것 — 출력에 표시만 한다
+- expect_context: 멀티턴 처리 종류(context 메시지). 같은 session 값의 앞 질문 뒤에 묻는다
 - expect_calc: 계산 카드 종류("medical"/"legal"/"limits", 카드가 없어야 하면 "none").
   calc_values: 그 카드의 필드 값(예: lawyer_limit=2800000, 한도표 줄은 rows.0.non_surgery처럼 점으로)
 """
@@ -35,7 +36,8 @@ class Case:
     session: str | None = None
     pet_id: str | None = None                            # 업무특화만 — 세션 고객의 반려동물
     expect_calc: str | None = None                       # 업무특화만 — "medical" 의료비 / "legal" 법률비용 / "limits" 한도표 / "none" 없음
-    calc_values: tuple[tuple[str, int | None], ...] = ()
+    calc_values: tuple[tuple[str, int | str | None], ...] = ()
+    expect_context: str | None = None                    # 멀티턴 — "rewrite"/"concat"/"history"(후속), "none"(단독으로 처리)
     human: tuple[str, ...] = ()
 
 
@@ -136,6 +138,13 @@ HR = ModeSpec(key="hr", mode="사내규정", model="PETMINT_MODEL_BASE(기본 tr
          "처분일부터 2년간 승진 대상에서 제외 (제36조 ② 3호) — 견책 6개월·감급 1년·강등 3년과 안 섞이는가",
          must_include=(("2년",),), suspect_include=("6개월", "3년"), expect_articles=(36,), corpus_only="인사규정",
          human=(HUMAN_MATCH,)),
+    # ---- 멀티턴(2026-10-21) — 같은 세션에서 차례로. 후속은 베이스 모델이 재작성한다 ----
+    Case("HR19", "재택근무는 며칠까지 돼요?", "멀티턴 앞 질문 — 주 2일(임신·만 8세 이하 자녀 양육은 주 3일)",
+         must_include=(("2일", "이틀"),), corpus_only="인사규정", session="hr-mt"),
+    Case("HR20", "그럼 신청은 언제까지 해야 돼요?",
+         "(HR19 뒤) 재택근무 신청 — 근무 예정일 3일 전까지(제14조 ③). ↳ 재작성된 질문에 '재택근무'가 들어가는가",
+         must_include=(("3일전", "3일 전"),), expect_articles=(14,), corpus_only="인사규정", session="hr-mt", expect_context="rewrite",
+         human=("재작성된 질문이 재택근무 신청을 묻는가",)),
 ))
 
 GENERAL = ModeSpec(key="general", mode="일반", model="PETMINT_MODEL_BASE(기본 tri-7b)", corpus=None, order="plain", cases=(
@@ -147,10 +156,11 @@ GENERAL = ModeSpec(key="general", mode="일반", model="PETMINT_MODEL_BASE(기�
          human=("관찰: 숫자를 지어냈는가, 지어냈다면 무엇을(출력의 '답변 속 금액' 참고)",)),
     Case("G3", "쿠버네티스가 뭔지 자세히 설명해줘",
          "스트리밍이 끊기지 않는가", sources_empty=True,
-         human=("끝까지 흘렀는가 — 300토큰(num_predict)에서 끊기는 것은 정상",)),
+         human=("끝까지 흘렀는가 — 512토큰(num_predict)에서 끊기는 것은 정상",)),
     Case("G4", "그럼 언제 튜플을 써?",
-         "(G1 뒤, 같은 세션) 앞 대화를 기억하지 못하는 것이 기대 결과(멀티턴 없음)", sources_empty=True, session="g-tuple",
-         human=("앞 대화를 기억하지 못하는가 — 기억했다면 어디서 이력이 들어갔는지 본다",)),
+         "(G1 뒤, 같은 세션) 멀티턴 — 앞 대화(이력 1턴)를 받아 튜플 이야기를 이어 간다(2026-10-21 전에는 기억하지 못하는 것이 기대 결과)",
+         must_include=(("튜플", "tuple"),), sources_empty=True, session="g-tuple", expect_context="history",
+         human=("앞 대화를 이어 가는가(리스트·튜플 맥락)",)),
 ))
 
 # 업무특화 — 질문마다 pet_id를 둔다. 세션 고객(--customer)이 그 반려동물의 주인이어야 한다 —
@@ -202,6 +212,24 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
     Case("R10", "소송 걸리면 변호사비는 한 건에 얼마까지 나와요?",
          "법률비용 질문 — 한도 카드는 빠진다. 소송 금액·심급이 없어 법률비용 카드도 없다. 정답: 1소송당 2,000만원(자기부담금 10만원)",
          must_include=(("2000만원", "20000000원", "2천만원"),), expect_calc="none", pet_id="P014", human=(HUMAN_MATCH,)),
+    # ---- 멀티턴(2026-10-21) — 같은 세션에서 차례로. LLM 없이 앞 기준 질문과 이어 붙여 검색, 답변 모델에는 후속만 ----
+    Case("R11", "고급형 통원 하루 한도는?", "멀티턴 앞 질문 — 한도 카드 통원", expect_calc="limits", pet_id="P013", session="r-mt",
+         calc_values=(("rows.0.section_name", "펫퍼민트 반려견 통원의료비보장 특별약관"),)),
+    Case("R12", "그럼 입원은요?",
+         "(R11 뒤) 기준 질문 '고급형 입원 하루 한도는?'(통원 → 입원 갈아 끼움). 검색·한도 카드가 입원 — 1일 30만원, 수술한 날 200만원",
+         expect_context="concat", expect_calc="limits", pet_id="P013", session="r-mt",
+         calc_values=(("rows.0.section_name", "펫퍼민트 반려견 입원의료비보장 특별약관"), ("rows.1.section_name", "(없음)")),
+         human=("답변이 입원 한도를 말하는가(거절하면 기록 — 답변 모델은 '그럼 입원은요?'만 받는다)",)),
+    Case("R13", "수술하면요?", "(R12 뒤) 연쇄 — 기준 질문에 '입원'이 남아 입원 수술한 날 200만원",
+         must_include=(("200만원", "2000000원"),), expect_context="concat", pet_id="P013", session="r-mt"),
+    Case("R14", "강아지가 감기로 입원했는데 보험금 얼마나 나올 수 있나요?",
+         "금액 되묻기 — 치료비 금액이 없어 '치료비가 얼마인가요?'로 묻고 턴을 끝낸다(모델 호출 없음)",
+         must_include=(("치료비가 얼마",),), expect_calc="none", pet_id="P013", session="r-amt"),
+    Case("R15", "치료비는 35만원 나왔어요",
+         "(R14 뒤) 금액만 → 앞 질문과 이어 붙임. 의료비 카드: 입원 고급형 (35만 − 3만) × 70% = 22.4만원(1일 한도 30만원 안)",
+         expect_context="concat", expect_calc="medical", pet_id="P013", session="r-amt",
+         calc_values=(("section_name", "펫퍼민트 반려견 입원의료비보장 특별약관"), ("claimed", 350000), ("payout", 224000)),
+         human=("답변 금액이 카드(22.4만원)와 같은가 — 다르면 기록(답변 문장은 고치지 않는다)",)),
 ))
 
 MODES = {m.key: m for m in (HR, GENERAL, RAG)}

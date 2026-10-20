@@ -9,6 +9,7 @@ turn_log.py
 """
 
 import json
+from dataclasses import dataclass
 
 from sqlalchemy import Engine, text
 
@@ -72,6 +73,16 @@ def _json(v):
     return json.loads(v) if isinstance(v, str) else v
 
 
+@dataclass(frozen=True)
+class PriorTurn:
+    """멀티턴이 보는 앞 턴 하나. anchor = 기준 질문(재작성·이어 붙인 질문, 없으면 질문 그대로)"""
+    question: str
+    anchor: str
+    answer: str
+    pet_id: str | None
+    chosen_section: str | None
+
+
 class TurnLogStore:
     def __init__(self, engine: Engine):
         self.engine = engine
@@ -79,11 +90,11 @@ class TurnLogStore:
     def record(self, log: TurnLog) -> None:
         with self.engine.begin() as c:
             c.execute(text(
-                "INSERT INTO turns (turn_id, session_id, question, rewritten_question, answer, payout,"
-                " pet_id, pet_name, species, breed, pet_age, is_hypothetical, clarified,"
+                "INSERT INTO turns (turn_id, session_id, question, rewritten_question, follow_up, context_kind, context_turns,"
+                " answer, payout, pet_id, pet_name, species, breed, pet_age, is_hypothetical, clarified, chosen_section,"
                 " model, prompt_version, index_version, first_token_ms, latency_ms, status, created_at)"
-                " VALUES (:turn_id, :session_id, :question, :rewritten_question, :answer, :payout,"
-                " :pet_id, :pet_name, :species, :breed, :pet_age, :is_hypothetical, :clarified,"
+                " VALUES (:turn_id, :session_id, :question, :rewritten_question, :follow_up, :context_kind, :context_turns,"
+                " :answer, :payout, :pet_id, :pet_name, :species, :breed, :pet_age, :is_hypothetical, :clarified, :chosen_section,"
                 " :model, :prompt_version, :index_version, :first_token_ms, :latency_ms, :status, :created_at)"),
                 log.model_dump(exclude={"scope", "retrieved"}) | {
                     "created_at": log.created_at.replace(tzinfo=None),
@@ -105,7 +116,8 @@ class TurnLogStore:
     def turns_of(self, session_id: str) -> list[TurnOut]:
         """지난 대화 — 화면에 그릴 턴(오래된 순). 근거 패널은 검색 행(rank 순), 인용은 used 행(검색 → 그래프 순)"""
         with self.engine.connect() as c:
-            turns = c.execute(text("SELECT turn_id, question, pet_id, pet_name, species, answer, payout, latency_ms,"
+            turns = c.execute(text("SELECT turn_id, question, rewritten_question, follow_up, context_kind, context_turns,"
+                                   " pet_id, pet_name, species, answer, payout, latency_ms,"
                                    " first_token_ms, created_at FROM turns WHERE session_id = :sid"
                                    " ORDER BY created_at, turn_id"), dict(sid=session_id)).all()
             scopes = c.execute(text("SELECT sc.turn_id, sc.section_name, sc.coverage_type, sc.copay, sc.excluded_conditions"
@@ -132,7 +144,9 @@ class TurnLogStore:
                 refs.setdefault(r.turn_id, []).append(ReferenceItem(
                     citation_label=r.citation_label or "", species=r.corpus, section=r.section,
                     section_name=r.section_name, article_num=r.article_num, paragraph_num=r.paragraph_num))
-        return [TurnOut(turn_id=t.turn_id, question=t.question, pet_id=t.pet_id, pet_name=t.pet_name, species=t.species,
+        return [TurnOut(turn_id=t.turn_id, question=t.question, rewritten_question=t.rewritten_question, follow_up=t.follow_up,
+                        context_kind=t.context_kind, context_turns=t.context_turns,
+                        pet_id=t.pet_id, pet_name=t.pet_name, species=t.species,
                         scope=scope.get(t.turn_id, []), answer=t.answer, payout=_json(t.payout),
                         sources=sources.get(t.turn_id, []), references=refs.get(t.turn_id, []),
                         latency_ms=t.latency_ms, first_token_ms=t.first_token_ms, timestamp=utc(t.created_at))
@@ -166,3 +180,12 @@ class TurnLogStore:
                            " created_at = new.created_at"),
                       dict(tid=turn_id, rating=body.rating, comment=body.comment, at=now()))
         return True
+
+    def recent_turns(self, session_id: str, n: int) -> list[PriorTurn]:
+        """멀티턴의 앞 턴 — 정상으로 끝난(ok) 턴만, 오래된 순으로 최근 n개. 되묻기 대기·취소·실패 턴은 건너뛴다"""
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT question, rewritten_question, answer, pet_id, chosen_section FROM turns"
+                                  " WHERE session_id = :sid AND status = 'ok' ORDER BY created_at DESC, turn_id DESC LIMIT :n"),
+                             dict(sid=session_id, n=n)).all()
+        return [PriorTurn(question=r.question, anchor=r.rewritten_question or r.question, answer=r.answer, pet_id=r.pet_id,
+                          chosen_section=r.chosen_section) for r in reversed(rows)]

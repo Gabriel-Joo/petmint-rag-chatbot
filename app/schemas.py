@@ -17,6 +17,8 @@ from data.rag_context import infer_type_from_section_name
 from data.search_scope import GRADES
 
 Mode = Literal["일반", "사내규정", "업무특화"]
+# 멀티턴 처리 종류(09번 5절) — rewrite: 사내규정, 베이스 모델 재작성 / concat: 업무특화, 앞 질문과 이어 붙여 검색 / history: 일반, 이력 전달
+ContextKind = Literal["rewrite", "concat", "history"]
 Species = Literal["강아지", "고양이"]
 Grade = Literal[GRADES]           # 고급형 / 기본형 / 실속형
 Corpus = Literal["강아지", "고양이", "인사규정"]   # 검색 코퍼스. 사내규정 근거는 인사규정이라 Species로는 못 담는다
@@ -145,7 +147,10 @@ class TurnLog(_Model):
     turn_id: str
     session_id: str
     question: str
-    rewritten_question: str | None = None
+    rewritten_question: str | None = None          # 기준 질문 — 사내규정 재작성 / 업무특화 이어 붙인 앞 질문(09번 5절)
+    follow_up: str | None = None                   # 후속으로 본 규칙(followup.follow_up_reason). None이면 단독
+    context_kind: ContextKind | None = None
+    context_turns: int | None = None               # 일반 — 전달한 이력 턴 수
     answer: str
     payout: dict | None = None                     # 계산 카드(CalcResult.model_dump) 그대로 — 재계산하지 않고 저장한다
     pet_id: str | None = None
@@ -154,7 +159,8 @@ class TurnLog(_Model):
     breed: str | None = None
     pet_age: int | None = None
     is_hypothetical: bool = False                  # 가정 질문(질문에 쓴 등급으로 검색, 09번 4절)
-    clarified: bool = False                        # 되묻기 발동(09번 4절). 기록 경로는 되묻기 구현 때 붙인다
+    clarified: bool = False                        # 되묻기 발동(09번 4절)
+    chosen_section: str | None = None              # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
     scope: list[ScopeRow] = Field(default_factory=list)       # 일반·사내규정은 비어 있다
     retrieved: list[RetrievedRow] = Field(default_factory=list)
     model: str
@@ -271,6 +277,10 @@ class TurnOut(_Model):
     pet_name: str | None = None
     species: Species | None = None
     scope: list[ScopeRow] = Field(default_factory=list)   # 그때 적용된 특약·등급·자기부담금·부담보
+    rewritten_question: str | None = None          # 기준 질문(멀티턴). 단독 질문이면 None
+    follow_up: str | None = None
+    context_kind: ContextKind | None = None
+    context_turns: int | None = None
     answer: str
     payout: CalcResult | None = None               # 그 턴의 계산 카드(turns.payout). 없으면 None
     sources: list["SourceItem"]
@@ -403,6 +413,16 @@ class DoneMsg(_ServerMsg):
     first_token_ms: int | None = None
 
 
+class ContextMsg(_ServerMsg):
+    """멀티턴 — 후속 질문을 앞 대화로 어떻게 풀었는지(09번 5절). 후속 질문이면 sources 앞에 한 번.
+    rewrite: text = 재작성된 질문 / concat: text = 이어 붙인 앞 질문(기준 질문) / history: turns = 전달한 이력 턴 수"""
+    type: Literal["context"] = "context"
+    kind: ContextKind
+    reason: str                                    # 후속으로 본 규칙
+    text: str | None = None
+    turns: int | None = None
+
+
 class CalcMsg(_ServerMsg):
     """계산 카드 — 치료비(의료비)·소송 금액이나 심급(법률비용)·한도(한도표)를 묻는 질문이면 sources 다음에 한 번"""
     type: Literal["calc"] = "calc"
@@ -416,7 +436,7 @@ class ErrorMsg(_ServerMsg):
     message: str
 
 
-ServerMessage = Annotated[Union[SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg],
+ServerMessage = Annotated[Union[ContextMsg, SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg],
                           Field(discriminator="type")]
 
 

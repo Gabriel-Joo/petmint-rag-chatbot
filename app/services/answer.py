@@ -6,7 +6,7 @@ answer.py
 
 고정된 결정(구현 때 바꾸지 말 것):
 - 고객 정보·대화 이력은 프롬프트에 넣지 않는다(5절). prompts.build_messages(customer=, history=)는 NotImplementedError —
-  등급은 SearchScope가, 자기부담금·부담보는 계산 카드·배너(코드)가, 멀티턴은 재작성 + 앞 턴 발췌 이월이 맡는다.
+  등급은 SearchScope가, 자기부담금·부담보는 계산 카드·배너(코드)가, 멀티턴은 context.py가 맡는다(모드별 — 일반만 이력 전달).
 - 재작성기는 베이스 모델(5절). 재작성된 질문은 화면에 보여준다.
 - 되묻기: 상위 결과의 section_name이 서로 다른 (유형, 등급) 조합일 때만. 가정 질문은 안 한다(4절).
 - 금액 계산은 limit_table이 하고 모델은 손대지 않는다.
@@ -15,7 +15,8 @@ answer.py
 build_full_context·used_references가 동기(HTTP·Milvus·SequenceMatcher)라 asyncio.to_thread로 돌린다 — 그냥 부르면
 이벤트 루프가 막혀 다른 세션의 수신이 멈춘다.
 
-아직 없는 것: 질문 재작성(rewrite_question), 앞 턴 발췌 이월, 가정 질문 판정(is_hypothetical), 부담보 배너.
+멀티턴은 context.resolve(chat_ws가 부른다)가 푼 결과(ctx.resolved)를 쓴다 — 검색어·답변 질문·카드 문장·이어 쓰는 특약.
+아직 없는 것: 가정 질문 판정(is_hypothetical), 부담보 배너.
 """
 
 import asyncio
@@ -34,8 +35,9 @@ from data.search_scope import MEDICAL_SECTIONS, SearchScope
 from app import config
 from app.db import now, utc
 from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
-                         Session, SessionTurn, SourceItem, SourcesMsg, TokenMsg, TurnLog)
+                         Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
 from app.services import payout
+from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
 from app.services.retrieval import Retriever
@@ -50,9 +52,10 @@ PROMPT_BUDGET = 2400          # user 메시지 토큰 상한 — answer_eval SEA
 # 학습 user 메시지 300개 최소 1.83. 1.5로 나누면 실제 토큰보다 늘 크게 세어 예산을 넘지 않는다(대신 조금 더 자른다)
 CHARS_PER_TOKEN = 1.5
 LLM_OPTIONS = {"num_predict": 300}   # answer_eval MAX_NEW_TOKENS. 온도·num_ctx는 Modelfile 값(tri-7b: 0.3, 8192)을 따른다
-# 사내규정(베이스 모델 + SYSTEM_PROMPT_HR)만 더 길게 — 300은 업무특화 학습 모델 평가와 맞춘 값이다. 사내규정은 규정에 없는 질문에
-# "왜 없는지"를 설명하다 300에서 잘려 거절 문구 전에 끊겼다(2026-10-21 HR5). 프롬프트로 줄여도 0이 되지 않아 상한을 올린다
-LLM_OPTIONS_HR = {"num_predict": 512}
+# 베이스 모델 모드(사내규정·일반)는 더 길게 — 300은 업무특화 학습 모델 평가와 맞춘 값이라 업무특화만 300으로 둔다.
+# 사내규정은 규정에 없는 질문에 "왜 없는지"를 설명하다 300에서 잘려 거절 문구 전에 끊겼고(2026-10-21 HR5),
+# 일반은 마크다운으로 그리자 300에서 끊긴 표·코드가 더 눈에 띄었다(2026-10-21)
+LLM_OPTIONS_BASE = {"num_predict": 512}
 # 사내규정만: 리랭커 점수가 1위의 이 배수 미만인 발췌는 뺀다 — 늘 3개를 채우느라 들어온 0.01대 발췌(배우자 출산에 제44조 해고 제한)를
 # 모델이 답에 섞었다(HR2 7→10/10). 절대 하한은 못 쓴다 — 답 있는 HR4(0.008·0.003)와 답 없는 HR5(0.004)가 같은 높이다.
 # 업무특화는 학습 때 발췌 3개 형식이라 적용하지 않는다
@@ -95,6 +98,8 @@ class TurnContext:
     clarify: dict[str, str] | None = None                     # 되묻기 선택지 → section_name. 응답을 기다리는 중이면 있다
     clarified: bool = False
     calc: CalcResult | None = None
+    resolved: Resolved | None = None                          # 멀티턴(context.resolve) — None이면 질문 그대로
+    chosen: str | None = None                                 # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
     answer: str = ""
     first_token_ms: int | None = None
     log: TurnLog | None = None                                # 끝나면(ok·error·cancelled) 채운다 — chat_ws가 done 전에 쓴다
@@ -113,19 +118,27 @@ def model_of(mode: Mode) -> str:
     return config.FINETUNED_MODEL if mode == "업무특화" else config.BASE_MODEL
 
 
-async def rewrite_question(history: list[SessionTurn], question: str) -> str:
-    """후속 질문 → 독립 질문(베이스 모델). 이력이 없으면 그대로"""
-    raise NotImplementedError("5절 질문 재작성")
+def _r(ctx: TurnContext) -> Resolved:
+    return ctx.resolved or Resolved(question=ctx.question)
+
+
+def _keep_chosen(results: list[dict], scope: SearchScope, chosen: str) -> list[dict]:
+    """고른 의료비 특약과 의료비가 아닌 결과(공통 조항)만"""
+    medical = MEDICAL_SECTIONS[scope.species]
+    return [r for r in results if r.get("section_name") == chosen or r.get("section_name") not in medical]
 
 
 async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMessage]:
     """한 턴을 실행하며 서버 메시지를 순서대로 낸다. 끝나면 ctx.log(TurnLog)를 채운다 — 되묻기로 멈추면 비워 두고
     ctx.clarify에 선택지를 남긴다(resume_clarified 또는 abandon이 마무리한다)"""
     try:
+        context = _r(ctx).message(ctx.turn_id)
+        if context is not None:                 # 후속 질문 — 앞 대화로 어떻게 풀었는지(화면의 ↳ 줄)
+            yield context
         if ctx.scope is not None:
             try:
-                ctx.results = await asyncio.to_thread(build_full_context, deps.retriever, deps.builder, ctx.question,
-                                                      ctx.scope, SEARCH_TOP_K)
+                ctx.results = await asyncio.to_thread(build_full_context, deps.retriever, deps.builder,
+                                                      _r(ctx).retrieval_query, ctx.scope, SEARCH_TOP_K)
             except httpx.HTTPError as e:        # search-service가 없거나 실패 — Milvus(조립) 오류는 아래 internal
                 yield _fail(ctx, e, "search_unavailable")
                 return
@@ -133,6 +146,12 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
             ctx.sources = [_source_item(r, ctx.scope.species) for r in ctx.results]
         yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
 
+        carried = _r(ctx).chosen
+        if carried is not None and ctx.scope is not None:    # 앞 턴에서 고른 특약을 이어 쓴다 — 다시 묻지 않는다
+            ctx.chosen = carried
+            async for m in _generate(ctx, deps, _keep_chosen(ctx.results, ctx.scope, carried), carried):
+                yield m
+            return
         options = clarify_options(ctx.results, ctx.scope)
         if options:
             ctx.clarify, ctx.clarified = options, True       # 답 없이 버려져도 되묻기는 발동했다(turns.clarified)
@@ -150,9 +169,8 @@ async def resume_clarified(ctx: TurnContext, choice: str, deps: TurnDeps) -> Asy
     if chosen is None:
         yield ErrorMsg(turn_id=ctx.turn_id, code="bad_choice", message=f"선택지에 없는 답: {choice}")
         return
-    ctx.clarify, ctx.started = None, time.monotonic()
-    medical = MEDICAL_SECTIONS[ctx.scope.species]
-    kept = [r for r in ctx.results if r.get("section_name") == chosen or r.get("section_name") not in medical]
+    ctx.clarify, ctx.started, ctx.chosen = None, time.monotonic(), chosen
+    kept = _keep_chosen(ctx.results, ctx.scope, chosen)
     try:
         async for m in _generate(ctx, deps, kept, chosen):
             yield m
@@ -185,26 +203,41 @@ def clarify_options(results: list[dict], scope: SearchScope | None) -> dict[str,
 async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
-    # 카드 순서: 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는 나오지 않는다
-    ctx.calc = (payout.legal_card(ctx.question, ctx.pet) or payout.estimate(ctx.question, ctx.pet, results, chosen)
-                or payout.limit_card(ctx.question, ctx.pet, chosen))
+    r = _r(ctx)
+    if payout.needs_amount(r.card_text, ctx.pet):
+        # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 다음 턴 "35만원이요"는 멀티턴(금액만)으로 이 질문과
+        # 이어 붙고 의료비 카드가 계산한다. 등급 되묻기가 있으면 그 뒤에 온다(이 함수는 되묻기 응답 뒤에 불린다)
+        ctx.clarified = True
+        ctx.answer = payout.ASK_AMOUNT_TEXT
+        ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
+        yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
+        yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
+        ctx.log = _turn_log(ctx, "ok", [], [], [])
+        return
+    # 카드 순서: 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는 나오지 않는다.
+    # 업무특화 후속은 기준 질문까지 읽는다 — "그럼 입원은요?"의 금액·한도 낱말은 앞 질문에 있다
+    q = r.card_text
+    ctx.calc = (payout.legal_card(q, ctx.pet) or payout.estimate(q, ctx.pet, results, chosen)
+                or payout.limit_card(q, ctx.pet, chosen))
     if ctx.calc is not None:
         yield CalcMsg(turn_id=ctx.turn_id, result=ctx.calc)
 
     items: list[prompts.ExcerptItem] = []
-    if ctx.scope is None:                      # 일반 — 검색 없이 질문만
-        messages = [{"role": "user", "content": ctx.question}]
+    if ctx.scope is None:                      # 일반 — 검색 없이 질문만(후속이면 최근 3턴 이력을 앞에)
+        messages = r.history + [{"role": "user", "content": ctx.question}]
     else:
-        # key는 결과 위치 — graph_key는 조번호 없는 청크(안내·별표·별첨)끼리 겹친다. 프롬프트에는 안 나간다
-        items = prompts.fit_to_budget(ctx.question, [replace(prompts.ExcerptItem.from_search_result(r), key=str(i))
-                                                     for i, r in enumerate(results)],
+        # key는 결과 위치 — graph_key는 조번호 없는 청크(안내·별표·별첨)끼리 겹친다. 프롬프트에는 안 나간다.
+        # 답변 모델에 넘기는 질문: 사내규정은 재작성된 질문, 업무특화는 기준 질문 + 후속(금액만 말한 후속은 후속만) — context.Resolved
+        gq = r.generation_question
+        items = prompts.fit_to_budget(gq, [replace(prompts.ExcerptItem.from_search_result(x), key=str(i))
+                                           for i, x in enumerate(results)],
                                       PROMPT_BUDGET, count_tokens)
         hr = mode == "사내규정"
-        messages = prompts.build_messages(ctx.question, items,
+        messages = prompts.build_messages(gq, items,
                                           system=prompts.SYSTEM_PROMPT_HR if hr else prompts.SYSTEM_PROMPT,
                                           excerpt_header=prompts.HR_EXCERPT_HEADER if hr else prompts.EXCERPT_HEADER)
 
-    options = LLM_OPTIONS_HR if mode == "사내규정" else LLM_OPTIONS
+    options = LLM_OPTIONS if mode == "업무특화" else LLM_OPTIONS_BASE
     async for piece in deps.llm.stream(model_of(mode), messages, cancel=ctx.cancel, options=options):
         if ctx.first_token_ms is None:
             ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
@@ -304,7 +337,10 @@ def _fail(ctx: TurnContext, e: Exception, code: str | None = None) -> ErrorMsg:
 def _turn_log(ctx: TurnContext, status: str, references: list[ReferenceItem], graph_refs: list[dict],
               used_graph: list[dict]) -> TurnLog:
     corpus = ctx.scope.species if ctx.scope else None
+    r = _r(ctx)
     return TurnLog(turn_id=ctx.turn_id, session_id=ctx.session.session_id, question=ctx.question, answer=ctx.answer,
+                   rewritten_question=r.anchor, follow_up=r.follow_up, context_kind=r.kind,
+                   context_turns=len(r.history) // 2 if r.kind == "history" else None, chosen_section=ctx.chosen,
                    payout=ctx.calc.model_dump() if ctx.calc else None, **pet_snapshot(ctx.pet),
                    clarified=ctx.clarified, scope=scope_rows(ctx.pet),
                    retrieved=retrieved_rows(ctx.sources, references, corpus=corpus, graph_refs=graph_refs,
