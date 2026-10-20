@@ -525,7 +525,7 @@ def used_references(answer_body: str, refs: list[dict], unit_content: str, minle
                 # 인사규정 라벨은 장 제목이 앞에 붙는다("제4장 휴일 및 휴가 제20조(병가)") — 법령 이름이 아니다.
                 # 법령으로 읽으면 답변에 "제4장 휴일 및 휴가 제20조"가 있어야 해 조문 언급이 늘 안 걸렸다(2026-10-21 HR4)
                 law = ""
-            pat =(rf"{re.escape(law)}\s*" if law else "") + rf"제\s*{num}\s*조{sub}(?!의)"
+            pat = (rf"{re.escape(law)}\s*" if law else "") + rf"제\s*{num}\s*조{sub}(?!의)"
             if hang:
                 # 항까지 지정된 참조는 그 항을 언급해야 한다 — 같은 조의 다른 항을 인용한 답변에 붙지 않게
                 # 같은 조 규칙(아래 or 뒤): 단위와 참조가 같은 조이고, 답변에 '제N조'가 없이 '제k항'만 있으면 언급으로 본다.
