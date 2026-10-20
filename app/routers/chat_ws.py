@@ -125,7 +125,7 @@ async def chat(ws: WebSocket, session_id: str):
 
                 title_task = None
                 if session.title is None:
-                    title_task = asyncio.create_task(titles.make_title(msg.text, ws.app.state.llm))
+                    title_task = asyncio.create_task(titles.make_title(msg.text, ws.app.state.llm, session.mode))
 
                 ctx = TurnContext(turn_id=turn_id, session=session, pet=pet, scope=answer.scope_of(session.mode, pet),
                                   question=msg.text, agent=agent)
