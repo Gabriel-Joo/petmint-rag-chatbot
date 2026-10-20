@@ -4,6 +4,8 @@ titles.py
 
 모델(베이스)이 실패하거나 늦으면 첫 질문 첫 줄을 잘라 쓴다 — 제목이 없으면 목록에 안 나오므로 비워 두지 않는다.
 config.TITLE_USE_LLM이 꺼져 있으면 모델을 부르지 않는다(GPU를 쓰면 안 될 때).
+업무특화는 늘 첫 질문 첫 줄이다 — 답변은 파인튜닝 모델이고 GPU에는 베이스와 둘 중 하나만 올라가서(각 8.7GB + search-service),
+제목을 베이스로 지으면 상담마다 첫 답변이 모델 교체로 약 5초 늦어졌다(2026-10-21: 첫 토큰 0.9 → 5.5초).
 """
 
 import asyncio
@@ -11,6 +13,7 @@ import logging
 import re
 
 from app import config
+from app.schemas import Mode
 from app.services.llm import OllamaClient
 
 log = logging.getLogger(__name__)
@@ -32,8 +35,13 @@ def _clean(raw: str) -> str:
     return line.strip(" \"'“”‘’「」.").strip()
 
 
-async def make_title(question: str, llm: OllamaClient | None) -> str:
-    if not config.TITLE_USE_LLM or llm is None:
+def uses_llm(mode: Mode) -> bool:
+    """이 모드의 제목을 모델로 짓는가 — 일반·사내규정만(베이스 모델이 답변 모델과 같다)"""
+    return config.TITLE_USE_LLM and mode != "업무특화"
+
+
+async def make_title(question: str, llm: OllamaClient | None, mode: Mode) -> str:
+    if not uses_llm(mode) or llm is None:
         return fallback_title(question)
     try:
         raw = await asyncio.wait_for(
