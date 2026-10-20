@@ -11,7 +11,7 @@ schemas.py
 from datetime import date, datetime
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, TypeAdapter, computed_field, model_validator
 
 from data.rag_context import infer_type_from_section_name
 from data.search_scope import GRADES
@@ -196,8 +196,9 @@ class SessionPatch(_Model):
     pinned: bool | None = None
 
 
-class CalcResult(_Model):
-    """계산 카드(09번 2-3절) — limit_table.calculate_payout 결과. WS calc 메시지·과거 턴(TurnOut.payout)·turns.payout이 같은 모양"""
+class MedicalCalc(_Model):
+    """의료비 계산 카드(09번 2-3절) — limit_table.calculate_payout 결과"""
+    kind: Literal["medical"] = "medical"
     section_name: str
     coverage_type: Grade
     claimed: int                                   # 청구 치료비(질문 속 금액)
@@ -205,6 +206,36 @@ class CalcResult(_Model):
     limit: int                                     # 그 상황의 1일 지급 한도
     payout: int
     note: str
+
+
+class LegalCalc(_Model):
+    """법률비용 계산 카드 — 민사소송법률비용 특약 【별표3·4·5】(limit_table, payout.legal_card).
+    소송 금액 없이 심급만 말하면 claim_value 이하 금액 칸은 비고 송달료만 있다"""
+    kind: Literal["legal"] = "legal"
+    section_name: str
+    claim_value: int | None                        # 소송목적의 값(질문 속 소송 금액)
+    bracket: str | None                            # 【별표3】 적용 구간 — "2,000만원 초과 5,000만원까지 · 200만원 + 초과분 × 8%"
+    lawyer_limit: int | None                       # 【별표3】 소송비용에 산입되는 변호사비용
+    lawyer_max: int | None                         # 변호사 보수 보험금 최대 = min(별표3 한도, 1소송당 상한)
+    lawyer_copay: int                              # 실제 보수에서 빼는 자기부담금(1소송당)
+    lawyer_cap: int                                # 변호사비용 1소송당 상한
+    stamp: int | None                              # 【별표4】 인지액
+    instance: str | None                           # 1심/항소심/상고심
+    case_kind: str | None                          # 민사소액/민사단독/민사합의(1심만)
+    service: int | None                            # 【별표5】 송달료 — 심급(1심은 사건 종류까지)을 알 때만
+    stamp_service_cap: int                         # 인지액+송달료 1소송당 상한
+    note: str
+
+
+def _calc_kind(v) -> str:
+    """kind가 없으면 의료비 — 법률비용 카드 전에 저장된 turns.payout에는 kind가 없다"""
+    k = v.get("kind") if isinstance(v, dict) else getattr(v, "kind", None)
+    return k or "medical"
+
+
+# 계산 카드 — WS calc 메시지·과거 턴(TurnOut.payout)·turns.payout이 같은 모양. kind로 의료비·법률비용을 가른다
+CalcResult = Annotated[Union[Annotated[MedicalCalc, Tag("medical")], Annotated[LegalCalc, Tag("legal")]],
+                       Discriminator(_calc_kind)]
 
 
 class TurnOut(_Model):
@@ -349,7 +380,7 @@ class DoneMsg(_ServerMsg):
 
 
 class CalcMsg(_ServerMsg):
-    """계산 카드 — 치료비가 들어간 질문이면 sources 다음에 한 번"""
+    """계산 카드 — 치료비(의료비) 또는 소송 금액·심급(법률비용)이 들어간 질문이면 sources 다음에 한 번"""
     type: Literal["calc"] = "calc"
     result: CalcResult
 

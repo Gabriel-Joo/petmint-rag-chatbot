@@ -139,6 +139,14 @@ def lawyer_fee_limit(claim_value: int) -> int:
     raise AssertionError("구간표가 끝없이 닫혀 있어야 한다")
 
 
+def lawyer_fee_bracket(claim_value: int) -> tuple[int, int | None, int, int]:
+    """【별표3】에서 소송목적의 값이 속한 구간 (하한, 상한, 기준액, 천분율) — 계산 카드의 '적용 구간' 표시용"""
+    for row in LAWYER_FEE_BRACKETS:
+        if row[1] is None or claim_value <= row[1]:
+            return row
+    raise AssertionError("구간표가 끝없이 닫혀 있어야 한다")
+
+
 def stamp_fee(claim_value: int) -> int:
     """【별표4】 인지액 = 정액 + 소송목적의 값 × 비율(구간 하한 이상 ~ 상한 미만)"""
     if claim_value < 0:

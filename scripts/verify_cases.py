@@ -13,6 +13,7 @@ verify_cases.py
 - corpus_only: 출처 패널의 코퍼스가 전부 이것이어야 한다(모드가 섞이지 않는가)
 - session: 같은 값이면 한 세션(WS)에서 차례로 묻는다 — 멀티턴 검증 자리. None이면 질문마다 새 세션
 - human: 사람이 볼 것 — 출력에 표시만 한다
+- expect_calc: 계산 카드 종류("medical"/"legal")가 와야 한다. calc_values: 그 카드의 필드 값(예: lawyer_limit=2800000)
 """
 
 from dataclasses import dataclass, field
@@ -32,6 +33,8 @@ class Case:
     corpus_only: str | None = None
     session: str | None = None
     pet_id: str | None = None                            # 업무특화만 — 세션 고객의 반려동물
+    expect_calc: str | None = None                       # 업무특화만 — "medical" 의료비 / "legal" 법률비용 카드
+    calc_values: tuple[tuple[str, int | None], ...] = ()
     human: tuple[str, ...] = ()
 
 
@@ -161,7 +164,8 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
     Case("R2", "통원 치료비가 50만원 나왔는데 보험금 얼마 받을 수 있어요?",
          "계산 카드: 고급형 통원·수술하지 않은 날 — (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 답변이 카드와 어긋나지 않는가",
          must_include=(("30만원", "300000원"),), suspect_include=("32만9천", "329000원", "35만원", "350000원"),
-         pet_id="P013", human=("계산 카드 금액(30만원)과 답변 금액이 같은가",)),
+         expect_calc="medical", calc_values=(("claimed", 500000), ("limit", 300000), ("payout", 300000)),
+         pet_id="P013", human=("계산 카드 금액(30만원)과 답변 금액이 같은가 — 답변이 거절해도 카드에 '금액은 약관 표로 계산한 값'이 붙는가",)),
     Case("R3", "하루 한도가 얼마예요?",
          "되묻기 — 통원(고급형)·입원(기본형)이 다른 (유형, 등급) 조합이라 sources → clarify에서 멈춰야 한다",
          pet_id="P005", human=("clarify 선택지가 통원·입원 둘인가",)),
@@ -175,10 +179,12 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
     Case("R6", "소송 금액이 3천만원이면 변호사 보수는 얼마까지 보장돼요?",
          "280만원 (민사소송법률비용Ⅱ 특약 【별표3】, limit_table.lawyer_fee_limit) — 별표 표 값을 쓰는가",
          must_include=(("280만원", "2800000원"),), suspect_include=("30만원", "300000원"), pet_id="P014",
-         human=(HUMAN_MATCH, "계산 카드는 오지 않는 것이 지금 코드(legal_estimate가 답변 흐름에 없다)")),
+         expect_calc="legal", calc_values=(("claim_value", 30000000), ("lawyer_limit", 2800000), ("stamp", 140000), ("service", None)),
+         human=(HUMAN_MATCH, "답변이 틀려도 법률비용 카드(280만원)가 맞게 뜨는가 — 답변 문장은 고치지 않았다")),
     Case("R7", "민사단독 사건으로 1심 소송을 하면 송달료는 얼마예요?",
          "165,000원 (【별표5】 1심 민사단독, limit_table.service_fee) — 소액(110,000원)과 섞이지 않는가",
          must_include=(("165000원", "16만5천원", "16만5000원", "165천원"),), suspect_include=("110000원", "11만원"),
+         expect_calc="legal", calc_values=(("claim_value", None), ("service", 165000)),
          pet_id="P014", human=(HUMAN_MATCH,)),
 ))
 

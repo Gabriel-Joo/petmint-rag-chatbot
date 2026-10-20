@@ -1,5 +1,10 @@
-.card { padding: 10px 12px; font-size: var(--font-sm); display: flex; flex-direction: column; gap: 4px; max-width: 320px; }
+.card { padding: 10px 12px; font-size: var(--font-sm); display: flex; flex-direction: column; gap: 4px; max-width: 420px; }
 .title { font-weight: var(--font-weight-label); font-size: var(--font-xs); color: var(--text-dim); }
 .row { display: flex; justify-content: space-between; gap: 12px; }
+.row > :last-child { white-space: nowrap; } /* 금액은 꺾지 않는다("280만 / 원") — 줄이 좁으면 이름 쪽이 꺾인다 */
 .total { font-weight: var(--font-weight-label); font-size: var(--font-lead); color: var(--primary); border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px; }
 .note { font-weight: var(--font-weight-caption); font-size: var(--font-2xs); color: var(--text-faint); }
+/* "금액은 약관 표로 계산한 값" — 제목 바로 아래, 모델 답변과 출처가 다르다는 것을 먼저 보이게 */
+.basis { align-self: flex-start; font-weight: var(--font-weight-label); font-size: var(--font-2xs); color: var(--primary); background: var(--primary-soft); padding: 1px 6px; border-radius: var(--radius-control); }
+/* 법률비용 카드의 보조 줄(적용 구간·1소송당 상한) */
+.sub { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); }

@@ -10,18 +10,19 @@ payout.py
 - 자기부담금은 가입 정보(policies.copay)다. 없으면 카드를 내지 않는다(3만/5만 중 어느 쪽인지 모른다).
 
 민사소송법률비용 — legal_estimate(question): 질문 속 소송 금액(소송목적의 값)으로 【별표3】 변호사비용 한도·【별표4】 인지액,
-심급·사건 종류가 있으면 【별표5】 송달료까지 낸다(limit_table). 계산 카드(CalcResult)는 의료비 모양(등급·자기부담금·1일 한도)이라
-아직 답변 흐름(answer._generate)에 잇지 않았다 — 카드 모양은 화면 설계(09)에서 정한다.
+심급·사건 종류가 있으면 【별표5】 송달료까지 낸다(limit_table). 소송 금액 없이 심급만 말하면 송달료만.
+legal_card(question, pet): 민사소송법률비용 특약 가입자에게만 법률비용 카드(LegalCalc). 답변 흐름은 법률비용 카드를 먼저 본다 —
+소송 낱말과 치료비가 같이 있으면 법률비용 쪽이다. 카드만 붙이고 답변 문장은 건드리지 않는다.
 """
 
 import re
 from dataclasses import dataclass
 
-from data.limit_table import calculate_payout, get_limit, lawyer_fee_limit, service_fee, stamp_fee
+from data.limit_table import LEGAL_COST, calculate_payout, get_limit, lawyer_fee_bracket, lawyer_fee_limit, service_fee, stamp_fee
 from data.rag_context import infer_type_from_section_name
 from data.search_scope import MEDICAL_SECTIONS
 
-from app.schemas import CalcResult, Pet
+from app.schemas import LegalCalc, MedicalCalc, Pet
 
 _UNIT = {"억": 10 ** 8, "천만": 10 ** 7, "백만": 10 ** 6, "만": 10 ** 4, "천": 10 ** 3, "백": 100}
 _NUM = r"\d[\d,]*(?:\.\d+)?"
@@ -82,7 +83,7 @@ def _section(question: str, pet: Pet, results: list[dict], chosen: str | None) -
     return next(iter(medical)) if len(combos) == 1 else None
 
 
-def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None) -> CalcResult | None:
+def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None) -> MedicalCalc | None:
     """계산 카드 하나. 업무특화(가입 정보가 있을 때)만 — 일반·사내규정은 pet이 None"""
     if pet is None:
         return None
@@ -101,7 +102,7 @@ def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | 
     paid = max(calculate_payout(cost, policy.copay, lim["rate"], lim["limit"]), 0)
     note = (f"{_SCENARIO_LABEL[sc]} 1일 한도 기준 · 보상비율 {round(lim['rate'] * 100)}% · "
             f"연간 총 한도 {lim['annual_total']:,}원은 따로 본다. 실제 지급액은 보험금 심사로 정해진다")
-    return CalcResult(section_name=name, coverage_type=policy.coverage_type, claimed=cost, copay=policy.copay,
+    return MedicalCalc(section_name=name, coverage_type=policy.coverage_type, claimed=cost, copay=policy.copay,
                       limit=lim["limit"], payout=paid, note=note)
 
 
@@ -113,9 +114,9 @@ _CASE_KIND = (("민사소액", re.compile(r"소액")), ("민사합의", re.compi
 
 @dataclass
 class LegalEstimate:
-    claim_value: int              # 질문 속 소송 금액(소송목적의 값)
-    lawyer_limit: int             # 【별표3】 소송비용에 산입되는 변호사비용(보험금은 실제 보수 - 자기부담금 10만원, 이 값까지)
-    stamp: int                    # 【별표4】 인지액
+    claim_value: int | None       # 질문 속 소송 금액(소송목적의 값) — 심급만 말했으면 None
+    lawyer_limit: int | None      # 【별표3】 소송비용에 산입되는 변호사비용(보험금은 실제 보수 - 자기부담금 10만원, 이 값까지)
+    stamp: int | None             # 【별표4】 인지액
     instance: str | None          # 1심/항소심/상고심 — 질문에 없으면 None
     case_kind: str | None         # 민사소액/민사단독/민사합의(1심만)
     service: int | None           # 【별표5】 송달료 — 심급(1심이면 사건 종류까지)을 알 때만
@@ -134,15 +135,11 @@ def amounts_in(text: str) -> list[int]:
 
 
 def legal_estimate(question: str) -> LegalEstimate | None:
-    """소송 금액을 말한 질문이면 별표3·4(·5) 값. 소송 금액이라는 말이 없거나 금액이 없으면 None — 변호사 보수 금액만 말한
-    질문("변호사비 300만원 냈는데")을 소송목적의 값으로 오인하지 않게, 금액은 소송 금액 낱말 뒤 첫 금액만 쓴다"""
+    """소송 금액을 말한 질문이면 별표3·4(·5) 값. 소송 금액 없이 심급(1심이면 사건 종류까지)만 말했으면 송달료만.
+    둘 다 아니면 None. 변호사 보수 금액만 말한 질문("변호사비 300만원 냈는데")을 소송목적의 값으로 오인하지 않게,
+    금액은 소송 금액 낱말 뒤 첫 금액만 쓴다"""
     m = _CLAIM_WORD.search(question)
-    if not m:
-        return None
-    amounts = amounts_in(question[m.start():])
-    if not amounts:
-        return None
-    value = amounts[0]
+    amounts = amounts_in(question[m.start():]) if m else []
     instance = next((name for name, pat in _INSTANCE if pat.search(question)), None)
     kind = next((name for name, pat in _CASE_KIND if pat.search(question)), None) if instance in (None, "1심") else None
     service = None
@@ -150,5 +147,51 @@ def legal_estimate(question: str) -> LegalEstimate | None:
         service = service_fee(instance)
     elif instance == "1심" and kind:
         service = service_fee("1심", kind)
-    return LegalEstimate(claim_value=value, lawyer_limit=lawyer_fee_limit(value), stamp=stamp_fee(value),
-                         instance=instance, case_kind=kind, service=service)
+    if amounts:
+        value = amounts[0]
+        return LegalEstimate(claim_value=value, lawyer_limit=lawyer_fee_limit(value), stamp=stamp_fee(value),
+                             instance=instance, case_kind=kind, service=service)
+    if service is not None:
+        return LegalEstimate(claim_value=None, lawyer_limit=None, stamp=None, instance=instance, case_kind=kind, service=service)
+    return None
+
+
+LEGAL_SECTION_WORD = "민사소송법률비용"
+
+
+def _man(n: int) -> str:
+    """구간 표시용 금액 — 1억 이상은 억, 그 아래는 만원(별표3 원문 표기)"""
+    eok, rest = divmod(n, 10 ** 8)
+    man = rest // 10 ** 4
+    if eok and man:
+        return f"{eok}억 {man:,}만원"
+    return f"{eok}억원" if eok else f"{man:,}만원"
+
+
+def bracket_text(claim_value: int) -> str:
+    """【별표3】 적용 구간 — "2,000만원 초과 5,000만원까지 · 200만원 + 초과분 × 8%" """
+    low, high, base, permille = lawyer_fee_bracket(claim_value)
+    if permille == 0:
+        return f"{_man(high)}까지 · 정액 {_man(base)}"
+    rng = f"{_man(low)} 초과 {_man(high)}까지" if high is not None else f"{_man(low)} 초과"
+    return f"{rng} · {_man(base)} + 초과분 × {permille / 10:g}%"
+
+
+def legal_card(question: str, pet: Pet | None) -> LegalCalc | None:
+    """법률비용 계산 카드 — 반려동물이 민사소송법률비용 특약에 가입했고 legal_estimate가 값을 낼 때만"""
+    if pet is None:
+        return None
+    name = next((p.section_name for p in pet.policies if LEGAL_SECTION_WORD in p.section_name), None)
+    if name is None:
+        return None
+    e = legal_estimate(question)
+    if e is None:
+        return None
+    lawyer_max = None if e.lawyer_limit is None else min(e.lawyer_limit, LEGAL_COST["lawyer_limit"])
+    note = ("심급별로 실제 부담한 금액을 한도 안에서 지급한다 · 변호사 보수는 실제 보수에서 자기부담금을 뺀 금액. "
+            "실제 지급액은 보험금 심사로 정해진다")
+    return LegalCalc(section_name=name, claim_value=e.claim_value,
+                     bracket=None if e.claim_value is None else bracket_text(e.claim_value),
+                     lawyer_limit=e.lawyer_limit, lawyer_max=lawyer_max, lawyer_copay=LEGAL_COST["lawyer_copay"],
+                     lawyer_cap=LEGAL_COST["lawyer_limit"], stamp=e.stamp, instance=e.instance, case_kind=e.case_kind,
+                     service=e.service, stamp_service_cap=LEGAL_COST["stamp_service_limit"], note=note)

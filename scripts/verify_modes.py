@@ -87,6 +87,12 @@ def judge(spec: ModeSpec, case: Case, r: dict) -> list[dict]:
     if case.corpus_only:
         other = sorted({s.get("species") for s in r["sources"]} - {case.corpus_only})
         auto(f"출처 코퍼스가 {case.corpus_only}뿐", not other, f"다른 코퍼스 {other}" if other else "")
+    if case.expect_calc:
+        calc = r.get("calc") or {}
+        kind = (calc.get("kind") or "medical") if calc else None
+        auto(f"계산 카드 {case.expect_calc}", kind == case.expect_calc, f"받은 카드 {kind}")
+        for k, v in case.calc_values:
+            auto(f"카드 {k}={v}", bool(calc) and calc.get(k) == v, f"카드 값 {calc.get(k) if calc else '(카드 없음)'}")
     if spec.order == "plain":
         tokens = [m for m in r["messages"] if m["type"] == "token"]
         gaps = [b["t_ms"] - a["t_ms"] for a, b in zip(tokens, tokens[1:])]
