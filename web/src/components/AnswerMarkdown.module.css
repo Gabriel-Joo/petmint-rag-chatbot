@@ -1,0 +1,22 @@
+/* 답변 마크다운 — 대화 글씨(.chat-text) 안에서 쓰이므로 크기는 같은 글자 토큰을 따른다. 제목은 본문보다 조금만 크게 */
+.md { line-height: 1.7; overflow-wrap: anywhere; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 0.6em; }
+.md ul, .md ol { margin: 0 0 0.6em; padding-left: 1.4em; }
+.md li + li { margin-top: 0.15em; }
+.md li > p { margin: 0; }
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { margin: 0.8em 0 0.4em; font-weight: var(--font-weight-title); line-height: 1.4; }
+.md h1 { font-size: var(--font-lead); }
+.md h2 { font-size: var(--font-md); }
+.md h3, .md h4, .md h5, .md h6 { font-size: var(--font-sm); }
+.md strong { font-weight: var(--font-weight-title); }
+.md blockquote { margin: 0 0 0.6em; padding-left: 0.8em; border-left: 3px solid var(--line); color: var(--text-dim); }
+.md code { font-family: var(--mono); font-size: 0.9em; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; }
+.md pre { margin: 0 0 0.6em; padding: 0.6em 0.8em; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-control); overflow-x: auto; line-height: 1.5; }
+.md pre code { background: none; border: none; padding: 0; font-size: 0.85em; }
+.md table { border-collapse: collapse; margin: 0 0 0.6em; display: block; overflow-x: auto; }
+.md th, .md td { border: 1px solid var(--line); padding: 0.25em 0.6em; text-align: left; }
+.md th { background: var(--surface); font-weight: var(--font-weight-label); }
+.md hr { border: none; border-top: 1px solid var(--line); margin: 0.8em 0; }
+.md a { color: var(--primary); }
