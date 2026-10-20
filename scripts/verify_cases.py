@@ -52,6 +52,9 @@ REFUSAL_PHRASES = ("확인되지 않", "확인되지않", "명시되어 있지 �
                    "찾을 수 없", "포함되어 있지 않", "언급되어 있지 않", "인사부서에 확인", "인사부서에 문의")
 
 HUMAN_MATCH = "답변 내용이 조항과 맞는가"
+# 규정에 없는 질문의 금지 값 — 비교 전에 공백·쉼표를 지운다(norm). 시각: 근무시간·휴게시간으로 유추한 답, 금액: 다른 조의 금액을 끌어온 답
+TIMES = ("오전", "오후", "6시", "9시", "12시", "1시", "18시")
+AMOUNTS = ("만원", "000원")
 
 HR = ModeSpec(key="hr", mode="사내규정", model="PETMINT_MODEL_BASE(기본 tri-7b)", corpus="인사규정", order="plain", cases=(
     Case("HR1", "재택근무는 주에 며칠까지 할 수 있나요?",
@@ -60,23 +63,75 @@ HR = ModeSpec(key="hr", mode="사내규정", model="PETMINT_MODEL_BASE(기본 tr
          human=(HUMAN_MATCH, "예외 조건(임신·만 8세 이하 자녀)을 말하는가 — '3일'은 '3일 전까지 신청'에서도 나올 수 있다")),
     Case("HR2", "배우자가 출산하면 휴가 며칠 나오나요?",
          "10일 (제19조 표 '출산 / 배우자 / 10일') — 표 숫자가 살아 있는가, 다른 행과 안 섞이는가",
-         must_include=(("10일", "열흘"),), suspect_include=("5일", "1일", "3일"), expect_articles=(19,), corpus_only="인사규정",
+         must_include=(("10일", "열흘"),), must_not_include=("제44조", "해고"), suspect_include=("5일", "1일", "3일"),
+         expect_articles=(19,), corpus_only="인사규정",
          human=(HUMAN_MATCH, "다른 행(결혼 5일·사망 5일 등)과 섞이지 않았는가")),
     Case("HR3", "손해사정사랑 정보처리기사 둘 다 있으면 자격수당 얼마예요?",
-         "월 20만원 — 금액이 큰 하나만 (제27조 제2항) — 25만원으로 더하면 실패",
-         must_include=(("20만원", "200000원"),), must_not_include=("25만원", "250000원"), expect_articles=(27,),
+         "월 20만원 — 금액이 큰 하나만 (제27조 제2항) — 25만원으로 더하거나 표 전체 최댓값(공인회계사 30만원·변호사 40만원)을 고르면 실패",
+         must_include=(("20만원", "200000원"),),
+         must_not_include=("25만원", "250000원", "30만원", "300000원", "40만원", "400000원"), expect_articles=(27,),
          corpus_only="인사규정", human=(HUMAN_MATCH,)),
     Case("HR4", "병가를 다 쓰고도 더 쉬어야 하면 어떻게 하나요?",
          "질병휴직 1년 이내, 무급 (제20조 병가 · 제22조 휴직 표) — 검색이 둘 다 가져왔는가(잇지 못해도 실패 아님)",
          must_include=(("1년",), ("무급",)), expect_articles=(20, 22), corpus_only="인사규정",
          human=(HUMAN_MATCH, "두 조항을 잇는가 — 참조 간선이 없어 못 이어도 실패 아님")),
     Case("HR5", "회사 주차장은 몇 시까지 쓸 수 있나요?",
-         "규정에 없음 → 거절 — 지어내지 않는가",
-         expect_refusal=True, corpus_only="인사규정", human=("시간·장소를 지어내지 않았는가",)),
+         "규정에 없음 → 거절 — 지어내지 않는가(근무시간 9시~6시로 유추하면 실패)",
+         expect_refusal=True, must_not_include=TIMES, corpus_only="인사규정", human=("시간·장소를 지어내지 않았는가",)),
     Case("HR6", "통원 치료비 한도가 얼마예요?",
          "인사규정에 없음 → 거절 — 모드가 섞이지 않는가",
          expect_refusal=True, must_not_include=("30만원", "300000원", "15만원", "150000원", "10만원", "100000원"),
          corpus_only="인사규정", human=("약관 숫자(통원 한도)를 말하지 않았는가",)),
+    # ---- 2026-10-21 추가 — 표(HR7~10) · 규정에 없음(HR11~13) · 여러 조항(HR14~18). 정답은 data/chunks/hr_인사규정.json ----
+    Case("HR7", "과장이 출장 가서 하루 자면 숙박비 얼마까지 나와요?",
+         "1박 120,000원 (별표1 '차장·과장') — 부장 150,000원·대리 100,000원 행과 안 섞이는가",
+         must_include=(("120000원", "12만원"),), must_not_include=("150000원", "15만원"), suspect_include=("100000원", "10만원"),
+         corpus_only="인사규정", human=(HUMAN_MATCH,)),
+    Case("HR8", "할머니가 돌아가시면 경조휴가 며칠이에요?",
+         "3일 (제19조 표 '사망 / 본인 및 배우자의 조부모, 형제자매 / 3일') — 부모 사망 5일과 안 섞이는가",
+         must_include=(("3일", "사흘"),), must_not_include=("5일",), expect_articles=(19,), corpus_only="인사규정",
+         human=(HUMAN_MATCH,)),
+    Case("HR9", "개인정보보호 교육은 1년에 몇 시간 들어야 해요?",
+         "연 2시간 (제30조 표) — 성희롱 예방 1시간·산업안전 분기별 3시간과 안 섞이는가",
+         must_include=(("2시간", "두시간"),), suspect_include=("1시간", "3시간"), expect_articles=(30,), corpus_only="인사규정",
+         human=(HUMAN_MATCH,)),
+    Case("HR10", "대리에서 과장 되려면 최소 몇 년 있어야 해요?",
+         "4년 (제33조 ② 표 '대리 → 과장') — 현저한 공적이면 특별승진 가능(④)",
+         must_include=(("4년",),), must_not_include=("5년",), expect_articles=(33,), corpus_only="인사규정",
+         human=(HUMAN_MATCH, "특별승진(④)을 말하는가 — 안 말해도 실패 아님")),
+    Case("HR11", "사내 동호회 활동비 지원되나요?",
+         "규정에 없음 → 거절 — 자기계발 지원(제31조) 금액을 끌어오면 실패",
+         expect_refusal=True, must_not_include=AMOUNTS, corpus_only="인사규정",
+         human=("동호회 지원을 지어내지 않았는가",)),
+    Case("HR12", "회사 구내식당은 몇 시에 열어요?",
+         "규정에 없음 → 거절 — 휴게시간(오후 12시~1시)으로 유추하면 실패",
+         expect_refusal=True, must_not_include=TIMES, corpus_only="인사규정",
+         human=("식당 시간을 지어내지 않았는가",)),
+    Case("HR13", "명절 상여금은 얼마나 나와요?",
+         "규정에 없음 → 거절 — 제24조는 상여금이 급여 구성이라고만 한다(금액·명절 없음)",
+         expect_refusal=True, must_not_include=AMOUNTS + ("%", "퍼센트"), corpus_only="인사규정",
+         human=("금액·지급률을 지어내지 않았는가",)),
+    Case("HR14", "육아휴직 다녀오면 그 기간도 근속연수에 들어가요?",
+         "들어간다 — 육아휴직·병역휴직은 근속연수에 산입 (제22조 ④, 제3조 5호가 제22조를 따른다)",
+         must_include=(("산입한다", "산입됩니다", "산입되", "포함됩니다", "포함되", "들어갑니다", "들어가요"),),
+         expect_articles=(22,), corpus_only="인사규정",
+         human=(HUMAN_MATCH, "'그 밖의 휴직은 산입하지 않는다'와 뒤바꾸지 않았는가")),
+    Case("HR15", "해외 출장 가면 대리 숙박비는 얼마까지예요?",
+         "1박 200,000원 한도 — 대리·사원 100,000원의 2배 (별표1 ※ 해외출장) — 표 값과 각주를 같이 써야 한다",
+         must_include=(("200000원", "20만원"),), must_not_include=("300000원", "30만원", "240000원", "24만원"),
+         corpus_only="인사규정", human=(HUMAN_MATCH, "지역별 별도 기준이 있다는 말을 하는가")),
+    Case("HR16", "징계 받은 게 억울하면 며칠 안에 재심 청구해야 해요?",
+         "통지받은 날부터 14일 이내 (제39조 ①) — 인사평가 재심 7일(제32조 ④)과 섞이지 않는가",
+         must_include=(("14일",),), suspect_include=("7일",), expect_articles=(39,), corpus_only="인사규정",
+         human=(HUMAN_MATCH,)),
+    Case("HR17", "임신 중인데 재택근무는 며칠까지 되고 야근은 해야 하나요?",
+         "재택 주 3일까지(제14조 ②) + 연장·야간근로를 시키지 않는다(제12조 ④) — 두 조항을 잇는가",
+         must_include=(("3일", "사흘"), ("시키지", "하지 않", "할 수 없", "금지", "안 해도")),
+         expect_articles=(14, 12), corpus_only="인사규정", human=(HUMAN_MATCH, "두 조항을 다 말하는가")),
+    Case("HR18", "정직 처분을 받으면 언제부터 다시 승진할 수 있어요?",
+         "처분일부터 2년간 승진 대상에서 제외 (제36조 ② 3호) — 견책 6개월·감급 1년·강등 3년과 안 섞이는가",
+         must_include=(("2년",),), suspect_include=("6개월", "3년"), expect_articles=(36,), corpus_only="인사규정",
+         human=(HUMAN_MATCH,)),
 ))
 
 GENERAL = ModeSpec(key="general", mode="일반", model="PETMINT_MODEL_BASE(기본 tri-7b)", corpus=None, order="plain", cases=(
@@ -94,8 +149,37 @@ GENERAL = ModeSpec(key="general", mode="일반", model="PETMINT_MODEL_BASE(기�
          human=("앞 대화를 기억하지 못하는가 — 기억했다면 어디서 이력이 들어갔는지 본다",)),
 ))
 
-# 업무특화 — 저녁에 어댑터를 바꾼 뒤 채운다. 질문마다 pet_id를 두거나 --pet으로 한꺼번에 준다(세션 고객은 --customer)
-RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(기본 tri-7b-rag-1)", corpus="강아지/고양이(pet의 종)",
-               order="rag", needs_customer=True, cases=())
+# 업무특화 — 질문마다 pet_id를 둔다. 세션 고객(--customer)이 그 반려동물의 주인이어야 한다 —
+# R3는 C004(콩이), 나머지는 C010(별이·달이)이라 두 번 돌린다(--only). 정답은 2026-10-21 limit_table·약관 청크와 대조
+NOT_PAID = ("보상하지않", "지급하지않", "보장하지않", "보장되지않", "보상되지않", "지급되지않", "받을수없", "안나옵", "제외")
+RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-tri-7b-rag1-rebuild4-ckpt462)",
+               corpus="강아지/고양이(pet의 종)", order="rag", needs_customer=True, cases=(
+    Case("R1", "고급형 통원 하루 한도가 얼마예요?",
+         "1일당 30만원(수술하지 않은 날), 수술한 날 200만원 (통원의료비보장 특약 제1조 제2항, 고급형) — 등급 행이 맞는가",
+         must_include=(("30만원", "300000원"),), suspect_include=("15만원", "10만원"), expect_articles=(1,),
+         pet_id="P013", human=(HUMAN_MATCH, "수술한 날 200만원까지 말하는가(안 말해도 실패 아님)")),
+    Case("R2", "통원 치료비가 50만원 나왔는데 보험금 얼마 받을 수 있어요?",
+         "계산 카드: 고급형 통원·수술하지 않은 날 — (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 답변이 카드와 어긋나지 않는가",
+         must_include=(("30만원", "300000원"),), suspect_include=("32만9천", "329000원", "35만원", "350000원"),
+         pet_id="P013", human=("계산 카드 금액(30만원)과 답변 금액이 같은가",)),
+    Case("R3", "하루 한도가 얼마예요?",
+         "되묻기 — 통원(고급형)·입원(기본형)이 다른 (유형, 등급) 조합이라 sources → clarify에서 멈춰야 한다",
+         pet_id="P005", human=("clarify 선택지가 통원·입원 둘인가",)),
+    Case("R4", "해외에서 다친 것도 나오나요?",
+         "안 나온다 — 대한민국 이외의 지역에서 발생한 사고 및 손해 (통원·입원의료비보장 특약 제2조 제1항 ⑪)",
+         must_include=(NOT_PAID,), expect_articles=(2,), pet_id="P013",
+         human=(HUMAN_MATCH, "'국내 동물병원'(제1조)만 들어 답했는가, 제2조 ⑪을 들었는가")),
+    Case("R5", "보험 가입하면 사은품도 주나요?",
+         "약관에 없음('사은품' 0건) → 거절 — 지어내지 않는가",
+         expect_refusal=True, pet_id="P013", human=("사은품·혜택을 지어내지 않았는가",)),
+    Case("R6", "소송 금액이 3천만원이면 변호사 보수는 얼마까지 보장돼요?",
+         "280만원 (민사소송법률비용Ⅱ 특약 【별표3】, limit_table.lawyer_fee_limit) — 별표 표 값을 쓰는가",
+         must_include=(("280만원", "2800000원"),), suspect_include=("30만원", "300000원"), pet_id="P014",
+         human=(HUMAN_MATCH, "계산 카드는 오지 않는 것이 지금 코드(legal_estimate가 답변 흐름에 없다)")),
+    Case("R7", "민사단독 사건으로 1심 소송을 하면 송달료는 얼마예요?",
+         "165,000원 (【별표5】 1심 민사단독, limit_table.service_fee) — 소액(110,000원)과 섞이지 않는가",
+         must_include=(("165000원", "16만5천원", "16만5000원", "165천원"),), suspect_include=("110000원", "11만원"),
+         pet_id="P014", human=(HUMAN_MATCH,)),
+))
 
 MODES = {m.key: m for m in (HR, GENERAL, RAG)}
