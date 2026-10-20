@@ -5,6 +5,7 @@ search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 7
 
   POST /search  {query, scope, top_k, candidate_k} → SearchEngine.search의 list[dict] 그대로
                 scope는 SearchScope.describe() 결과 — from_describe로 되살린다
+  POST /embed   {texts} → {vectors} — KURE 문장 임베딩(정규화). 앱의 금액 되묻기 판별(app/services/intent.py)이 쓴다
   GET  /health  모델이 올라왔는지(장치), Milvus에 닿는지, 코퍼스별 컬렉션이 있는지
 
 기동할 때 KURE·리랭커를 올려 상주시킨다(요청마다 올리면 느리다). 16GB 하나를 Ollama와 나눠 쓰므로
@@ -63,6 +64,19 @@ def search(req: SearchRequest) -> list[dict]:
             return engine.search(req.query, scope, top_k=req.top_k, candidate_k=req.candidate_k)
     except MilvusException as e:                     # Milvus가 내려갔거나 컬렉션이 없다(색인 전 코퍼스)
         raise HTTPException(503, f"Milvus: {e}")
+
+
+class EmbedRequest(BaseModel):
+    texts: list[str] = Field(..., min_length=1, max_length=64)
+
+
+@app.post("/embed")
+def embed(req: EmbedRequest) -> dict:
+    """문장 임베딩(KURE, 정규화) — 검색과 같은 모델. 질문끼리 비교할 때 쓴다(청크 머리말을 붙이지 않은 원문)"""
+    engine: SearchEngine = app.state.engine
+    with _gpu_lock:
+        vectors = engine.embedding_model.encode(req.texts, normalize_embeddings=True)
+    return {"vectors": [v.tolist() for v in vectors]}
 
 
 @app.get("/health")

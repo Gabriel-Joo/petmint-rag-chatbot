@@ -24,6 +24,7 @@ from data.rag_context import infer_type_from_section_name
 from data.search_scope import MEDICAL_SECTIONS, mentioned_grade, mentioned_type
 
 from app.schemas import LegalCalc, LimitRow, LimitsCalc, MedicalCalc, Pet
+from app.services import intent
 
 _UNIT = {"억": 10 ** 8, "천만": 10 ** 7, "백만": 10 ** 6, "만": 10 ** 4, "천": 10 ** 3, "백": 100}
 _NUM = r"\d[\d,]*(?:\.\d+)?"
@@ -249,16 +250,21 @@ def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> Lim
 
 
 # ===== 금액 되묻기 — 보험금이 얼마냐고 묻는데 치료비 금액이 없을 때 =====
-# 다섯 조건(2026-10-21 시험: 되물어야 할 7개 모두, 되물으면 안 될 16개·평가·검증 질문 모두 0):
+# 다섯 조건(2026-10-21). ①은 금액 낱말 + 임베딩(intent.py) — 아래 _ASK_MONEY는 임베딩을 못 쓸 때의 규칙:
 # ① 금액을 묻는다 ② 치료비 금액이 없다 ③ 한도·얼마까지·최대가 없다(→ 한도 카드) ④ 소송·변호사·배상이 없다(→ 법률비용)
 # ⑤ 보험료·환급·해지·중도인출 같은 다른 돈 이야기가 아니다. 그리고 의료비 특약에 가입한 반려동물이어야 한다
 _ASK_MONEY = re.compile(r"얼마(?:나|를|가)?\s*(?:나오|나와|받|지급|보상|줘|주나|줍|돼|될)|보험금\s*(?:은|이)?\s*얼마|몇\s*만\s*원")
 ASK_AMOUNT_TEXT = "치료비가 얼마인가요? 동물병원 영수증 금액을 알려 주시면 예상 보험금을 계산해 드립니다."
 
 
-def needs_amount(question: str, pet: Pet | None) -> bool:
-    """보험금 금액을 묻는데 치료비 금액이 없다 — 모델은 계산할 수 없어 거절한다. 되물어 다음 턴(멀티턴)에 금액을 받는다"""
+def needs_amount(question: str, pet: Pet | None, embed: "intent.Embed | None" = None) -> bool:
+    """보험금 금액을 묻는데 치료비 금액이 없다 — 모델은 계산할 수 없어 거절한다. 되물어 다음 턴(멀티턴)에 금액을 받는다.
+    ① '받을 금액을 묻는가'는 금액 낱말 + 임베딩(intent.asks_amount, embed = Retriever.embed). embed가 없거나 실패하면 규칙.
+    ②~⑤(치료비 금액·한도·법률·다른 돈)는 다른 카드로 보내는 갈림길이라 규칙 그대로"""
     if pet is None or not any(p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type for p in pet.policies):
         return False
-    return bool(_ASK_MONEY.search(question) and treatment_cost(question) is None and not _LIMIT_WORD.search(question)
-                and not _NOT_MEDICAL.search(question) and not OTHER_MONEY.search(question))
+    if (treatment_cost(question) is not None or _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question)
+            or OTHER_MONEY.search(question)):
+        return False
+    asks = intent.asks_amount(question, embed)
+    return bool(_ASK_MONEY.search(question)) if asks is None else asks

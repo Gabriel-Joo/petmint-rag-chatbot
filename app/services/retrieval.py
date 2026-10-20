@@ -43,3 +43,9 @@ class Retriever:
                        json={"query": query, "scope": scope.describe(), "top_k": top_k, "candidate_k": candidate_k})
         r.raise_for_status()
         return r.json()
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        """search-service POST /embed — KURE 문장 임베딩(정규화). 금액 되묻기 판별(intent.py)이 쓴다"""
+        r = httpx.post(f"{self.base_url}/embed", timeout=SEARCH_TIMEOUT, json={"texts": texts})
+        r.raise_for_status()
+        return r.json()["vectors"]
