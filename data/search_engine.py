@@ -64,19 +64,6 @@ def build_embedding_text(c: dict) -> str:
     return "\n".join(lines)
 
 
-def build_rerank_text(c: dict) -> str:
-    """리랭커 입력 = 라벨 한 줄 + build_embedding_text. build_embedding_text 헤더에는 section·조번호가 없다(보통약관은
-    section_name도 None) — 리랭커만 라벨을 더 본다(색인·BM25 텍스트는 그대로라 재색인 불필요).
-    2026-10-18 검색 실험(data/search_experiments.py "라벨+중복제거", 회귀 세트 97문항): 조항 중복 제거와 함께
-    hit@5 88 → 90, MRR 0.762 → 0.798, 잃은 문항 없음. 라벨만으로는 87(R001·R074를 잃음)이라 중복 제거와 짝이다."""
-    parts = [c.get("section"), c.get("section_name")]
-    if c.get("article_num") is not None:
-        parts.append(f"제{c['article_num']}조" + (f"({c['article_title']})" if c.get("article_title") else ""))
-    if c.get("coverage_type"):
-        parts.append(c["coverage_type"])
-    return "[" + " | ".join(p for p in parts if p) + "]\n" + build_embedding_text(c)
-
-
 class SearchEngine:
     """한 번만 초기화해서(모델 로드), 여러 번 검색에 재사용하는 엔진 객체"""
 
@@ -172,7 +159,7 @@ class SearchEngine:
             return []
 
         # --- Reranker ---
-        pairs = [(query, build_rerank_text(c)) for c in candidate_list]
+        pairs = [(query, self._build_embedding_text(c)) for c in candidate_list]
         rerank_scores = self.reranker.predict(pairs)
         ranked = sorted(zip(candidate_list, rerank_scores), key=lambda x: x[1], reverse=True)[:top_k]
 

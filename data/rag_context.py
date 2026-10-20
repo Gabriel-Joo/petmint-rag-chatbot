@@ -553,11 +553,6 @@ def cross_article_refs(unit: dict, refs: list[dict]) -> tuple[list[dict], list[d
     return cross, other
 
 
-def article_key(c: dict) -> tuple:
-    """조항 단위 키 — 같은 조의 다른 항·조각은 하나. 조번호 없는 문서(안내·별표)는 문서 하나. 등급별로 나뉜 조는 등급마다 따로"""
-    return (c.get("section"), c.get("section_name"), c.get("article_num"), c.get("coverage_type"))
-
-
 def search_with_graph(engine, builder: ContextBuilder, query: str, scope: SearchScope,
                       top_k: int = 5, candidate_k: int = 20) -> list[dict]:
     """Hybrid Search(BM25+Dense) + Reranker 상위 candidate_k개를 섹션 가중으로 재정렬해 top_k개.
@@ -568,18 +563,12 @@ def search_with_graph(engine, builder: ContextBuilder, query: str, scope: Search
         r["adjusted_score"] = r["score"] * SECTION_PRIORITY.get(r.get("section"), 0.8)
     raw_results.sort(key=lambda r: r["adjusted_score"], reverse=True)
 
-    # 조항 중복 제거: 같은 조(다른 항·조각)가 top_k 두 자리를 차지하지 않게 — 점수가 가장 높은 청크 하나만 남긴다.
-    # 조번호 없는 문서(안내·별표)는 문서 하나로 본다. search_engine.build_rerank_text의 라벨과 짝(2026-10-18 실험)
-    picked, seen = [], set()
-    for r in raw_results:
-        k = article_key(r)
-        if k in seen:
-            continue
-        seen.add(k)
-        picked.append(r)
-
+    # 조항 중복 제거(같은 조는 최고점 청크 하나)는 2026-10-19 뺐다 — 답이 든 형제 청크(뒷조각·본문)를 지워
+    # 검색 모드 답변 거절이 rebuild3 7/69 → 14/70으로 늘었다. 조 단위 hit@5(88→90)는 이걸 못 봤다
+    # (data/review/rebuild4_eval_compare_20261019.md). 검색 변경은 hit@5와 답변 거절률을 함께 잰다.
+    # 리랭커 라벨(조 제목 앞붙임)도 2026-10-20 뺐다 — 본문 없는 짧은 조각을 끌어올려 거절 7 → 12/69
     enriched = []
-    for r in picked[:top_k]:
+    for r in raw_results[:top_k]:
         enriched.append({
             "score": r["score"], "adjusted_score": r["adjusted_score"],
             "section": r["section"], "section_name": r.get("section_name"),
