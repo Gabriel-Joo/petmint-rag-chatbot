@@ -50,8 +50,8 @@
   --font-brand: calc(26px * var(--text-scale)); /* 헤더 로고, 모드 선택 화면 제목 — 둘은 같은 크기 */
   --font-2xl: calc(28px * var(--text-scale));
   --font-icon: calc(36px * var(--text-scale));
-  --font-menu: calc(13px * var(--menu-scale));     /* 지금 쓰는 곳 없음 — 모드 탭은 2026-10-21 한 줄 헤더로 바꾸며 --font-menu-sub로 줄였다 */
-  --font-menu-sub: calc(10px * var(--menu-scale)); /* 상단바 메뉴 — 모드 탭, 자동 전화, 전화 울리기, ☰ */
+  --font-menu: calc(13px * var(--menu-scale));     /* 지금 쓰는 곳 없음(2026-10-21 헤더 메뉴를 --font-xs로 통일) */
+  --font-menu-sub: calc(10px * var(--menu-scale)); /* 지금 쓰는 곳 없음(2026-10-21 헤더 메뉴를 --font-xs로 통일) */
   --font-call-icon: 28px;  /* 전화 알림의 64px 원 안 아이콘 — 원 크기에 묶여 있어 배율을 받지 않는다 */
 
   /* 글꼴 — 헤더 로고("펫퍼민트 상담")만 완주대둔산체, 나머지는 전부 Wanted Sans(가변).

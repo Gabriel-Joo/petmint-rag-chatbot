@@ -14,13 +14,6 @@
   gap: 10px;
   font-size: var(--font-md);
 }
-@media (max-width: 899px) {
-  .page {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "status" "customer" "log" "composer";
-  }
-  .panel { display: none; }
-}
 
 .status { grid-area: status; display: flex; align-items: center; gap: 10px; font-size: var(--font-sm); }
 .mode { font-weight: var(--font-weight-label); color: var(--text-dim); display: inline-flex; align-items: center; gap: 0.3em; }
@@ -32,3 +25,13 @@
 .empty { font-weight: var(--font-weight-caption); margin: auto; color: var(--text-dim); font-size: var(--font-sm); text-align: center; }
 .composer { grid-area: composer; padding: 10px; }
 .panel { grid-area: panel; padding: 12px; min-height: 0; display: flex; flex-direction: column; }
+
+/* 좁은 화면 — 1열, 근거 패널 숨김. 파일 끝에 둔다: 위의 .panel(display: flex)보다 앞에 있으면 display: none이 덮여
+   패널이 없는 그리드 영역 'panel'에 들어가 열이 셋으로 늘고 대화 로그·계산 카드가 26px 폭으로 찌그러졌다(2026-10-21) */
+@media (max-width: 899px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "status" "customer" "log" "composer";
+  }
+  .panel { display: none; }
+}

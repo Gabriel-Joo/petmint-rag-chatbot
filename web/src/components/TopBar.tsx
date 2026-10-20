@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing }: Props) {
-  // 1439px 이하에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
+  // 1023px 이하에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
