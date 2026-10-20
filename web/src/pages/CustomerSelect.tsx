@@ -84,8 +84,10 @@ export function CustomerSelect({ onStart, starting }: Props) {
                 <span className={s.phone}>{c.phone}</span>
                 <div className={s.pets}>
                   {c.pets.map((p) => (
-                    <span key={p.pet_id}>
-                      {SPECIES_ICON[p.species]} {p.name} <span className={s.petMeta}>{p.breed} · {p.age}세</span>
+                    // 이름과 "품종 · 나이"를 각각 끊기지 않는 덩어리로 — 자리가 없으면 "품종 · 나이"가 통째로 다음 줄로
+                    <span key={p.pet_id} className={s.pet}>
+                      <span className={s.petName}>{SPECIES_ICON[p.species]} {p.name}</span>
+                      <span className={s.petMeta}>{p.breed} · {p.age}세</span>
                     </span>
                   ))}
                 </div>

@@ -21,7 +21,14 @@
 .emptyIcon { font-size: var(--font-icon); line-height: 1; }
 .emptyTitle { font-size: var(--font-lg); font-weight: var(--font-weight-label); }
 .phone { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); font-family: var(--mono); }
-.pets { display: flex; flex-direction: column; gap: 0; font-size: var(--font-sm); }
-.petMeta { font-weight: var(--font-weight-caption); color: var(--text-dim); font-size: var(--font-xs); }
+.pets { display: flex; flex-direction: column; gap: 2px; font-size: var(--font-sm); }
+/* 반려동물 한 마리 — 이름 한 줄, 그 아래 "품종 · 나이" 한 줄(들여쓰면 품종이 잘려 들여 쓰지 않는다). 폭과 관계없이 늘 두 줄이라
+   한 카드 안에서 반려동물마다 줄 수가 섞이지 않는다. 품종이 카드 폭보다 길면 말줄임 */
+.pet { display: flex; flex-direction: column; min-width: 0; }
+/* 휴대폰 폭은 카드가 한 열로 넓어 한 줄에 다 들어간다 — 이름 옆에 "품종 · 나이"(모자라면 통째로 다음 줄) */
+@media (max-width: 640px) { .pet { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 0.4em; } }
+.petName { white-space: nowrap; }
+.petMeta { font-weight: var(--font-weight-caption); color: var(--text-dim); font-size: var(--font-xs); white-space: nowrap;
+           max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .excl { font-size: var(--font-2xs); color: var(--warn); }
 .err { color: var(--warn); }
