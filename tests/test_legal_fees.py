@@ -197,8 +197,51 @@ class LegalEstimateParsing(unittest.TestCase):
 
     def test_not_claim_value(self):
         self.assertIsNone(self.f("변호사비 300만원 냈는데 다 나와요?"))    # 소송 금액이 아니라 보수 금액
-        self.assertIsNone(self.f("1심 송달료가 얼마예요?"))                 # 소송 금액 없음
+        self.assertIsNone(self.f("1심 송달료가 얼마예요?"))                 # 소송 금액도 사건 종류도 없음
         self.assertIsNone(self.f("치료비 33만원 나왔는데 얼마 받아요?"))
+
+    def test_service_only(self):
+        """소송 금액 없이 심급(1심은 사건 종류까지)만 — 송달료만 낸다(verify R7)"""
+        e = self.f("민사단독 사건으로 1심 소송을 하면 송달료는 얼마예요?")
+        self.assertEqual((e.claim_value, e.lawyer_limit, e.stamp, e.instance, e.case_kind, e.service),
+                         (None, None, None, "1심", "민사단독", 165_000))
+        self.assertEqual(self.f("상고심 가면 송달료는?").service, 88_000)
+        # 알려진 한계: 금액이 '소송' 낱말 앞에 오면 소송 금액으로 잡지 않는다(보수 금액 오인을 막는 규칙) — 송달료만
+        self.assertIsNone(self.f("1억 5천만원 소송 항소심이면 송달료랑 인지액은?").claim_value)
+
+
+class LegalCard(unittest.TestCase):
+    """payout.legal_card — 특약 가입자에게만, 적용 구간 표시"""
+    def setUp(self):
+        from app.schemas import Pet, Policy
+        from app.services import payout
+        self.payout = payout
+        def pet(*sections):
+            return Pet.model_construct(pet_id="P", name="달이", species="고양이", breed=None, age=None,
+                                       policies=[Policy.model_construct(section_name=s, coverage_type=None, copay=None,
+                                                                        excluded_conditions=[]) for s in sections])
+        self.legal = pet("펫퍼민트 반려묘 통원의료비보장 특별약관", "민사소송법률비용Ⅱ보장 특별약관")
+        self.plain = pet("펫퍼민트 반려묘 통원의료비보장 특별약관")
+
+    def test_r6(self):
+        c = self.payout.legal_card("소송 금액이 3천만원이면 변호사 보수는 얼마까지 보장돼요?", self.legal)
+        self.assertEqual((c.kind, c.claim_value, c.lawyer_limit, c.lawyer_max, c.stamp, c.lawyer_copay, c.lawyer_cap,
+                          c.stamp_service_cap), ("legal", 30_000_000, 2_800_000, 2_800_000, 140_000, 100_000, 20_000_000, 10_000_000))
+        self.assertEqual(c.bracket, "2,000만원 초과 5,000만원까지 · 200만원 + 초과분 × 8%")
+
+    def test_r7_service_only(self):
+        c = self.payout.legal_card("민사단독 사건으로 1심 소송을 하면 송달료는 얼마예요?", self.legal)
+        self.assertEqual((c.claim_value, c.bracket, c.lawyer_limit, c.stamp, c.service), (None, None, None, None, 165_000))
+
+    def test_not_subscribed(self):
+        self.assertIsNone(self.payout.legal_card("소송 금액이 3천만원이면?", self.plain))
+        self.assertIsNone(self.payout.legal_card("소송 금액이 3천만원이면?", None))
+
+    def test_brackets(self):
+        b = self.payout.bracket_text
+        self.assertEqual(b(2_000_000), "300만원까지 · 정액 30만원")
+        self.assertEqual(b(150_000_000), "1억원 초과 1억 5,000만원까지 · 740만원 + 초과분 × 4%")
+        self.assertEqual(b(600_000_000), "5억원 초과 · 1,340만원 + 초과분 × 0.5%")
 
 
 if __name__ == "__main__":

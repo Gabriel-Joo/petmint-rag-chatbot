@@ -172,8 +172,9 @@ export interface ReferenceItem {
   paragraph_num: number | null;
 }
 
-/** 계산 카드(09 2-3) — limit_table.calculate_payout 결과. WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
-export interface CalcResult {
+/** 의료비 계산 카드(09 2-3) — limit_table.calculate_payout 결과. kind가 없으면(법률비용 카드 전에 저장된 턴) 의료비다 */
+export interface MedicalCalc {
+  kind?: "medical";
   section_name: string;
   coverage_type: Grade;
   claimed: number; // 청구 치료비
@@ -182,6 +183,27 @@ export interface CalcResult {
   payout: number;
   note: string;
 }
+
+/** 법률비용 계산 카드 — 민사소송법률비용 특약 【별표3·4·5】. 소송 금액 없이 심급만 말하면 송달료만 있다 */
+export interface LegalCalc {
+  kind: "legal";
+  section_name: string;
+  claim_value: number | null; // 소송목적의 값
+  bracket: string | null; // 【별표3】 적용 구간
+  lawyer_limit: number | null; // 【별표3】 변호사비용 한도
+  lawyer_max: number | null; // 변호사 보수 보험금 최대 = min(별표3 한도, 1소송당 상한)
+  lawyer_copay: number;
+  lawyer_cap: number;
+  stamp: number | null; // 【별표4】 인지액
+  instance: string | null;
+  case_kind: string | null;
+  service: number | null; // 【별표5】 송달료
+  stamp_service_cap: number;
+  note: string;
+}
+
+/** 계산 카드 — WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
+export type CalcResult = MedicalCalc | LegalCalc;
 
 export type ServerMessage =
   | { type: "sources"; turn_id: string; items: SourceItem[] }
