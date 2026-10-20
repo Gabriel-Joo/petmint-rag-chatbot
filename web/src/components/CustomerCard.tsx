@@ -36,11 +36,8 @@ export function CustomerCard({ customer, pet, toggle, actions }: Props) {
             {p.copay !== null && <> · 자기부담 {won(p.copay)}</>}
           </span>
         ))}
+        {exclusions.length > 0 && <span className={s.excl}><b>부담보</b> {exclusions.join(", ")}</span>}
       </div>
-
-      {exclusions.length > 0 && (
-        <div className={s.excl}><b>부담보</b> {exclusions.join(", ")}</div>
-      )}
 
       <div className={s.small}>
         {docs.map((d) => <span key={d.doc_id}>{d.product_name} · 약관 {d.policy_version}</span>)}

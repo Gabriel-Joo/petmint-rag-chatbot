@@ -1,27 +1,27 @@
-/* 10-4: 고객 조회는 여백을 넉넉하게 */
-.page { max-width: 1040px; margin: 0 auto; padding: 56px 24px; }
-@media (max-width: 640px) { .page { padding: 32px 16px; } }
-.title { font-size: var(--font-2xl); font-weight: var(--font-weight-title); margin: 0 0 8px; }
-.sub { font-weight: var(--font-weight-caption); color: var(--text-dim); margin: 0 0 28px; }
-.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+/* 고객 조회 — 한 화면에 카드를 많이 보이게 촘촘하게(2026-10-21: 1920px에서 3열·3장이던 것을 줄였다).
+   글씨는 본문보다 한두 단계 낮은 토큰, 넓은 화면에서는 폭을 넓혀 열을 늘린다 */
+.page { max-width: 1600px; margin: 0 auto; padding: 20px 24px; }
+@media (max-width: 640px) { .page { padding: 12px 16px; } }
+.title { font-size: var(--font-xl); font-weight: var(--font-weight-title); margin: 0 0 4px; }
+.sub { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); margin: 0 0 12px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: var(--font-sm); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card { display: flex; flex-direction: column; }
 /* 카드 본문이 상담 시작 버튼이다 — 카드 모양은 바깥 .card가 갖고 버튼은 면을 채우기만 한다 */
 .start {
-  font-weight: var(--font-weight-body); text-align: left; padding: 22px 20px 12px; display: flex; flex-direction: column; gap: 10px;
+  font-weight: var(--font-weight-body); text-align: left; padding: 12px 14px 6px; display: flex; flex-direction: column; gap: 4px;
   flex: 1; background: none; border: none; border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
-.cardFoot { display: flex; justify-content: flex-end; padding: 0 20px 16px; }
+.cardFoot { display: flex; justify-content: flex-end; padding: 0 14px 10px; font-size: var(--font-xs); }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.name { font-size: var(--font-lg); font-weight: var(--font-weight-title); }
-.row { min-height: 27px; }
-.when { font-size: var(--font-xs); color: var(--primary); white-space: nowrap; }
+.name { font-size: var(--font-md); font-weight: var(--font-weight-title); }
+.when { font-size: var(--font-2xs); color: var(--primary); white-space: nowrap; }
 .count { margin-left: 6px; font-size: var(--font-2xs); padding: 0 6px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 48px 24px; font-size: var(--font-md); }
 .emptyIcon { font-size: var(--font-icon); line-height: 1; }
 .emptyTitle { font-size: var(--font-lg); font-weight: var(--font-weight-label); }
-.phone { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); font-family: var(--mono); }
-.pets { display: flex; flex-direction: column; gap: 2px; font-size: var(--font-md); }
-.petMeta { font-weight: var(--font-weight-caption); color: var(--text-dim); font-size: var(--font-sm); }
-.excl { font-size: var(--font-xs); color: var(--warn); }
+.phone { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); font-family: var(--mono); }
+.pets { display: flex; flex-direction: column; gap: 0; font-size: var(--font-sm); }
+.petMeta { font-weight: var(--font-weight-caption); color: var(--text-dim); font-size: var(--font-xs); }
+.excl { font-size: var(--font-2xs); color: var(--warn); }
 .err { color: var(--warn); }
