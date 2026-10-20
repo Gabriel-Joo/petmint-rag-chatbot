@@ -85,11 +85,13 @@ def _section(question: str, pet: Pet, results: list[dict], chosen: str | None) -
     return next(iter(medical)) if len(combos) == 1 else None
 
 
-def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None) -> MedicalCalc | None:
-    """계산 카드 하나. 업무특화(가입 정보가 있을 때)만 — 일반·사내규정은 pet이 None"""
+def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None,
+             cost: int | None = None) -> MedicalCalc | None:
+    """계산 카드 하나. 업무특화(가입 정보가 있을 때)만 — 일반·사내규정은 pet이 None.
+    cost: 치료비를 이미 안다(금액 되묻기 직후 턴 — 상담원이 말한 금액은 치료비다). 없으면 질문에서 찾는다"""
     if pet is None:
         return None
-    cost = treatment_cost(question)
+    cost = cost if cost is not None else treatment_cost(question)
     if cost is None:
         return None
     name = _section(question, pet, results, chosen)
@@ -104,7 +106,7 @@ def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | 
     paid = max(calculate_payout(cost, policy.copay, lim["rate"], lim["limit"]), 0)
     note = (f"{_SCENARIO_LABEL[sc]} 1일 한도 기준 · 보상비율 {round(lim['rate'] * 100)}% · "
             f"연간 총 한도 {lim['annual_total']:,}원은 따로 본다. 실제 지급액은 보험금 심사로 정해진다")
-    return MedicalCalc(section_name=name, coverage_type=policy.coverage_type, claimed=cost, copay=policy.copay,
+    return MedicalCalc(rate_pct=round(lim["rate"] * 100), section_name=name, coverage_type=policy.coverage_type, claimed=cost, copay=policy.copay,
                       limit=lim["limit"], payout=paid, note=note)
 
 
@@ -268,3 +270,59 @@ def needs_amount(question: str, pet: Pet | None, embed: "intent.Embed | None" = 
         return False
     asks = intent.asks_amount(question, embed)
     return bool(_ASK_MONEY.search(question)) if asks is None else asks
+
+
+
+# ===== 금액 되묻기 직후 턴 — 모델 대신 카드 값으로 답 문장 =====
+# 업무특화 모델은 치료비를 받아 보험금을 계산하는 답을 못 한다 — 질문을 어떻게 넘기든, 계산 결과를 발췌·질문에 넣든
+# 약관 예시(33만원 → 21만원)를 옮기거나 거절했다(2026-10-21, 다섯 사례 × 일곱 안 × 10회 — data/review/amount_turn_20261021.md).
+# 그래서 이 턴은 카드와 같은 계산 결과로 코드가 답한다 — 화면의 카드와 답 숫자가 어긋날 수 없다.
+COVERAGE_NOTE = "보장 여부는 약관 조건에 따라 달라집니다."   # 면책(선천성·미용 등)은 판단하지 않으니 늘 붙인다
+
+
+def _won(n: int) -> str:
+    """금액을 말로 — 35만원 · 22만 4,000원 · 4,900원"""
+    man, rest = divmod(n, 10_000)
+    if man and rest:
+        return f"{man:,}만 {rest:,}원"
+    return f"{man:,}만원" if man else f"{rest:,}원"
+
+
+def matched_exclusions(text: str, pet: Pet | None) -> list[str]:
+    """질문(기준 질문 포함)에 걸리는 부담보 질병 — 화면 배너(ExclusionBanner.matchExclusions)와 같은 글자 대조:
+    공백을 무시한 전체 일치, 또는 3글자 이상 낱말 일치. 동의어("무릎" ↔ "슬개골")는 못 잡는다"""
+    if pet is None:
+        return []
+    flat = re.sub(r"\s+", "", text)
+    conds = [c for p in pet.policies for c in p.excluded_conditions]
+    return [c for c in dict.fromkeys(conds)
+            if re.sub(r"\s+", "", c) in flat or any(len(w) >= 3 and w in flat for w in c.split())]
+
+
+def amount_answer(card: MedicalCalc, pet: Pet, text: str) -> str:
+    """금액 되묻기 직후 턴의 답 — 카드 값으로 계산 과정과 예상 보험금, 부담보, 보장 여부 단서"""
+    setting = "입원" if "입원" in card.section_name else "통원"
+    rate = card.rate_pct if card.rate_pct is not None else 70
+    after_copay = max(card.claimed - card.copay, 0)
+    base = after_copay * rate // 100
+    if card.claimed <= card.copay:
+        body = (f"{setting} 치료비 {_won(card.claimed)}이 자기부담금 {_won(card.copay)} 이하라 "
+                f"예상 보험금은 **{_won(card.payout)}**입니다.")
+    else:
+        body = f"{setting} 치료비 {_won(card.claimed)}에서 자기부담금 {_won(card.copay)}을 뺀 {_won(after_copay)}의 {rate}%는 {_won(base)}입니다."
+        if card.payout < base:
+            body += f" 1일 지급 한도가 {_won(card.limit)}이라 예상 보험금은 **{_won(card.payout)}**입니다."
+        else:
+            body += f" 1일 지급 한도({_won(card.limit)}) 안이라 예상 보험금은 **{_won(card.payout)}**입니다."
+    lines = [body]
+    excl = matched_exclusions(text, pet)
+    if excl:
+        lines.append(f"다만 {pet.name}{'은' if _has_batchim(pet.name) else '는'} {', '.join(excl)}{'이' if _has_batchim(excl[-1]) else '가'} 부담보 대상이라 "
+                     f"해당 치료는 보험금이 지급되지 않습니다.")
+    lines.append(COVERAGE_NOTE)
+    return "\n".join(lines)
+
+
+def _has_batchim(word: str) -> bool:
+    ch = word.strip()[-1]
+    return "가" <= ch <= "힣" and (ord(ch) - 0xAC00) % 28 != 0

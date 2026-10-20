@@ -157,7 +157,7 @@ function PastDetail({ sessionId }: { sessionId: string }) {
           <div key={t.turn_id} className={s.turn}>
             {(i === 0 || snapshotKey(t) !== snapshotKey(detail.turns[i - 1])) && t.pet_id && <Snapshot t={t} />}
             <TurnView turn={turnFromOut(t)} inlineSources="always" readOnly
-                      exclusions={matchExclusions(t.question, t.scope.flatMap((p) => p.excluded_conditions))} />
+                      exclusions={matchExclusions(`${t.rewritten_question ?? ""} ${t.question}`, t.scope.flatMap((p) => p.excluded_conditions))} />
           </div>
         ))}
       </div>

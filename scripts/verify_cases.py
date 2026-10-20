@@ -227,9 +227,19 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
          must_include=(("치료비가 얼마",),), expect_calc="none", pet_id="P013", session="r-amt"),
     Case("R15", "치료비는 35만원 나왔어요",
          "(R14 뒤) 금액만 → 앞 질문과 이어 붙임. 의료비 카드: 입원 고급형 (35만 − 3만) × 70% = 22.4만원(1일 한도 30만원 안)",
+         must_include=(("22만4,000원", "224000원"), ("보장 여부는 약관 조건에 따라",)), must_not_include=("21만원", "24.9만원"),
          expect_context="concat", expect_calc="medical", pet_id="P013", session="r-amt",
          calc_values=(("section_name", "펫퍼민트 반려견 입원의료비보장 특별약관"), ("claimed", 350000), ("payout", 224000)),
-         human=("답변 금액이 카드(22.4만원)와 같은가 — 다르면 기록(답변 문장은 고치지 않는다)",)),
+         human=("되묻기 직후 턴은 모델 대신 카드 값으로 답한다 — 숫자가 카드와 같은가",)),
+    # ---- 금액 되묻기 + 부담보(초코 = 슬개골 탈구 부담보, 통원·입원Ⅱ 고급형). --customer=C001 로 따로 돌린다 ----
+    Case("R16", "슬개골 탈구로 입원했는데 보험금 얼마나 나와요?", "금액 되묻기 — '치료비가 얼마인가요?'",
+         must_include=(("치료비가 얼마",),), expect_calc="none", pet_id="P001", session="r-excl"),
+    Case("R17", "치료비는 50만원이에요",
+         "(R16 뒤) 카드: 입원Ⅱ 고급형 (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 답에 부담보(슬개골 탈구) 안내와 보장 여부 단서",
+         must_include=(("30만원",), ("부담보 대상",), ("보장 여부는 약관 조건에 따라",)), expect_calc="medical", pet_id="P001",
+         expect_context="concat",
+         session="r-excl", calc_values=(("claimed", 500000), ("payout", 300000)),
+         human=("부담보 안내 문장이 자연스러운가",)),
 ))
 
 MODES = {m.key: m for m in (HR, GENERAL, RAG)}

@@ -197,6 +197,7 @@ export interface MedicalCalc {
   limit: number;
   payout: number;
   note: string;
+  rate_pct?: number | null; // 보상비율(%) — 예전 카드엔 없다
 }
 
 /** 법률비용 계산 카드 — 민사소송법률비용 특약 【별표3·4·5】. 소송 금액 없이 심급만 말하면 송달료만 있다 */

@@ -204,6 +204,20 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
     r = _r(ctx)
+    if r.after_amount_ask:
+        # 금액 되묻기 직후 턴 — 상담원이 말한 금액은 치료비다. 모델을 부르지 않고 카드 값으로 답한다(payout.amount_answer):
+        # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md)
+        amounts = payout.amounts_in(ctx.question)
+        card = payout.estimate(r.card_text, ctx.pet, results, chosen, cost=amounts[0] if amounts else None)
+        if card is not None:
+            ctx.calc = card
+            yield CalcMsg(turn_id=ctx.turn_id, result=card)
+            ctx.answer = payout.amount_answer(card, ctx.pet, r.card_text)
+            ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
+            yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
+            yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
+            ctx.log = _turn_log(ctx, "ok", [], [], [])
+            return
     if await asyncio.to_thread(payout.needs_amount, r.card_text, ctx.pet, deps.retriever.embed):
         # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 다음 턴 "35만원이요"는 멀티턴(금액만)으로 이 질문과
         # 이어 붙고 의료비 카드가 계산한다. 등급 되묻기가 있으면 그 뒤에 온다(이 함수는 되묻기 응답 뒤에 불린다)
