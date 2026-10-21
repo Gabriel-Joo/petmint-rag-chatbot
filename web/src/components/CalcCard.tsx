@@ -200,8 +200,8 @@ function LimitsCard({ calc }: { calc: LimitsCalc }) {
   const on = (k: LimitsCalc["highlight"]) => (calc.highlight === k ? ` ${s.hl}` : "");
   return (
     <div className={`raised ${s.card}`} aria-label="지급 한도">
-      <div className={s.title}>지급 한도 · {calc.pet_name}</div>
-      <div className={s.basis}>{BASIS}</div>
+      <div className={s.title}>{calc.hypothetical ? "가정한 등급의 한도" : "지급 한도"} · {calc.pet_name}</div>
+      <div className={s.basis}>{calc.hypothetical ? `실제 가입: ${calc.enrolled}` : BASIS}</div>
       {calc.rows.map((r) => (
         <div key={r.section_name} className={s.group}>
           <div className={s.groupHead}>{shortSection(r.section_name)} {r.coverage_type}</div>
@@ -217,6 +217,9 @@ function LimitsCard({ calc }: { calc: LimitsCalc }) {
           )}
           <div className={`${s.row}${on("surgery")}`}><span className="dim">수술한 날 1일</span><span>{won(r.surgery)}</span></div>
           <div className={s.row}><span className="dim">연간 총 한도</span><span>{won(r.annual_total)}</span></div>
+          {r.annual_remaining != null && (
+            <div className={s.row}><span className="dim">올해 남은 한도</span><span>{won(r.annual_remaining)}</span></div>
+          )}
         </div>
       ))}
       <div className={s.note}>{calc.note}</div>

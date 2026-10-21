@@ -233,7 +233,8 @@ def build_search_inputs(n_no_answer: int, top_k: int = SEARCH_TOP_K, legacy: boo
     from data import rag_context
     chunks, graphs = policy_data.load()
     builder = rag_context.ContextBuilder(client=MilvusClient(uri=app_config.MILVUS_URL), chunks=chunks, graphs=graphs)
-    retriever = Retriever(app_config.SEARCH_SERVICE_URL, expand=app_config.SEARCH_EXPAND, variant=app_config.SEARCH_VARIANT, pool_k=app_config.SEARCH_POOL)
+    retriever = Retriever(app_config.SEARCH_SERVICE_URL, expand=app_config.SEARCH_EXPAND, variant=app_config.SEARCH_VARIANT, pool_k=app_config.SEARCH_POOL,
+                      expand_dict=app_config.SEARCH_EXPAND_DICT)
     gold = {it["id"]: it for it in build_inputs(builder, 0)}
     items = []
     for case in R.load_cases():

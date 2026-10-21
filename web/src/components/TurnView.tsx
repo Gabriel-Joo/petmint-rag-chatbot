@@ -3,6 +3,7 @@ import { postFeedback } from "../api/client";
 import type { TurnContextInfo } from "../api/types";
 import type { Turn } from "../hooks/useChatSocket";
 import { AnswerMarkdown } from "./AnswerMarkdown";
+import { AnswerTable } from "./AnswerTable";
 import { CalcCard } from "./CalcCard";
 import { ExclusionBanner } from "./ExclusionBanner";
 import { SourcePanel } from "./SourcePanel";
@@ -59,6 +60,8 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
         turn.status === "searching" && <div className={s.status}>{STATUS_TEXT.searching}</div>
       )}
       {turn.error && <div className={s.err}>{turn.error}</div>}
+
+      {turn.tables?.map((t, i) => <AnswerTable key={i} item={t} />)}
 
       {turn.calc && (
         <div onClick={(e) => e.stopPropagation()}>

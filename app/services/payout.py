@@ -287,7 +287,8 @@ def question_turn(question: str, pet: Pet | None, results: list[dict], chosen: s
 
 
 # ===== 민사소송법률비용 — 별표3·4·5 =====
-_CLAIM_WORD = re.compile(r"소송\s*(?:금액|가액|목적의?\s*값)|소가|청구\s*(?:금액|액)|소송\s*걸|소송을?\s*(?:하|제기|낸|내)")
+_CLAIM_WORD = re.compile(r"소송\s*(?:금액|가액|목적의?\s*값)|소가|청구\s*(?:금액|액)|소송\s*걸|소송을?\s*(?:하|제기|낸|내)|"
+                         r"짜리\s*소송|소송\s*(?:이면|일\s*때|이라면)")
 _INSTANCE = (("상고심", re.compile(r"상고|대법원|3심")), ("항소심", re.compile(r"항소|2심")), ("1심", re.compile(r"1심|일심|첫\s*재판")))
 _CASE_KIND = (("민사소액", re.compile(r"소액")), ("민사합의", re.compile(r"합의부|민사\s*합의")), ("민사단독", re.compile(r"단독")))
 
@@ -320,6 +321,8 @@ def legal_estimate(question: str) -> LegalEstimate | None:
     금액은 소송 금액 낱말 뒤 첫 금액만 쓴다"""
     m = _CLAIM_WORD.search(question)
     amounts = amounts_in(question[m.start():]) if m else []
+    if m and not amounts:                      # "1억짜리 소송이면" — 금액이 소송 낱말 앞에, '원' 없이
+        amounts = [a.value for a in dayparse.amounts(question)]
     instance = next((name for name, pat in _INSTANCE if pat.search(question)), None)
     kind = next((name for name, pat in _CASE_KIND if pat.search(question)), None) if instance in (None, "1심") else None
     service = None
@@ -379,7 +382,8 @@ def legal_card(question: str, pet: Pet | None) -> LegalCalc | None:
 
 # ===== 한도 카드 — 금액 없이 한도만 물을 때 =====
 # "보장 얼마나 돼요?"도 한도를 묻는 것 — 사고 뒤 받을 금액이 아니다(평가 R070 "MRI 찍으면 보장 얼마나 돼요?"가 금액 되묻기에 걸렸다)
-_LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마|보장\s*(?:은|이|금액)?\s*얼마")
+_LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마|보장\s*(?:은|이|금액)?\s*얼마|보상\s*비율|몇\s*퍼센트|"
+                         r"자기\s*부담금?\s*(?:이|은|는)?\s*얼마")
 _NOT_MEDICAL = re.compile(r"소송|변호사|인지액|송달료|배상|법률|피해자|합의|약정")   # 법률비용·배상책임 질문 — 의료비 한도표가 아니다
 # 치료비·보험금이 아닌 돈 이야기 — 한도 카드와 금액 되묻기에서 뺀다("중도인출 하면 얼마까지 돼요?"에 의료비 한도 카드가 떴다)
 # 올해 받은·남은 보험금을 묻는다 — 치료비를 되물을 질문이 아니다(4f: "올해 얼마 더 받을 수 있어요?"에 되묻기가 걸렸다)
@@ -387,11 +391,43 @@ ANNUAL_ASK = re.compile(r"(?:올해|이번\s*해|올\s*한\s*해|금년).*(?:받
 OTHER_MONEY = re.compile(r"보험료|환급|자기\s*부담|가입\s*금액|연체|이자|위약|해지|해약|공제|중도\s*인출|대출|적립")
 
 
-def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> LimitsCalc | None:
+# 한도 카드에서는 자기부담금을 '다른 돈'으로 보지 않는다 — "자기부담금이 얼마예요?"는 가입 정보(카드의 자기부담 줄)로 답한다
+_OTHER_MONEY_LIMIT = re.compile(r"보험료|환급|가입\s*금액|연체|이자|위약|해지|해약|공제|중도\s*인출|대출|적립")
+
+
+def _limit_row(section_name: str, grade: str, copay: int | None, pet: Pet | None, on: date | None, policy=None) -> LimitRow:
+    t = infer_type_from_section_name(section_name)
+    base = get_limit(grade, t, "non_surgery_no_mri" if t == "Ⅲ" else "non_surgery")
+    used = remaining = mri_before = None
+    if policy is not None and pet is not None:                # 가입 특약이면 청구 이력으로 올해 사용·잔여(가정 카드는 없다)
+        a = annual_usage(pet, policy, base["annual_total"], on or today())
+        used, remaining = a.used, a.remaining
+        mri_before = a.mri_before if t == "Ⅲ" else None
+    return LimitRow(section_name=section_name, coverage_type=grade, type=t, copay=copay, rate_pct=round(base["rate"] * 100),
+                    non_surgery=base["limit"], surgery=get_limit(grade, t, "surgery")["limit"],
+                    mri_1st=get_limit(grade, t, "non_surgery_mri_1st")["limit"] if t == "Ⅲ" else None,
+                    mri_2nd_plus=get_limit(grade, t, "non_surgery_mri_2nd_plus")["limit"] if t == "Ⅲ" else None,
+                    annual_total=base["annual_total"], annual_used=used, annual_remaining=remaining, mri_before=mri_before)
+
+
+def _highlight(question: str):
+    if _MRI.search(question):
+        return "mri"
+    if "수술" in question:
+        return "non_surgery" if _NO_SURGERY.search(question) else "surgery"
+    return None
+
+
+_LIMIT_NOTE = ("1일 한도는 그날 치료비에서 자기부담금을 빼고 보상비율을 곱한 금액에 적용한다. 연간 총 한도는 특약마다 따로다. "
+               "실제 지급액은 보험금 심사로 정해진다")
+
+
+def limit_card(question: str, pet: Pet | None, chosen: str | None = None, on: date | None = None) -> LimitsCalc | None:
     """한도표 카드. 한도 낱말이 있고 치료비 금액·법률 낱말이 없을 때, 가입한 의료비 특약(되묻기로 고른 쪽이 있으면 그것,
-    질문에 '통원'/'입원'이 있으면 그쪽, 질문이 등급·유형을 말하면 그에 맞는 쪽)만. 맞는 가입 특약이 없으면 None"""
-    if (pet is None or not _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question) or OTHER_MONEY.search(question)
-            or treatment_cost(question) is not None):
+    질문에 '통원'/'입원'이 있으면 그쪽, 질문이 등급·유형을 말하면 그에 맞는 쪽)만. 맞는 가입 특약이 없으면 None
+    (가입과 다른 등급·유형을 물으면 hypothetical_card가 맡는다). 줄마다 올해 사용·잔여(청구 이력)"""
+    if (pet is None or not _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question)
+            or _OTHER_MONEY_LIMIT.search(question) or treatment_cost(question) is not None):
         return None
     medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
     if chosen:
@@ -400,7 +436,6 @@ def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> Lim
         for word in ("통원", "입원"):
             if word in question:
                 medical = [p for p in medical if word in p.section_name]   # 가입하지 않은 쪽이면 카드 없음(4f: 두부 입원)
-    # 질문이 등급·유형을 말하면 그에 맞는 가입 특약만 — 맞는 것이 없으면(가입과 다른 등급) 이 고객의 한도가 아니라 내지 않는다
     grade, type_ = mentioned_grade(question), mentioned_type(question)
     if grade:
         medical = [p for p in medical if p.coverage_type == grade]
@@ -408,25 +443,136 @@ def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> Lim
         medical = [p for p in medical if infer_type_from_section_name(p.section_name) == type_]
     if not medical:
         return None
-    rows = []
-    for p in medical:
-        t = infer_type_from_section_name(p.section_name)
-        base = get_limit(p.coverage_type, t, "non_surgery_no_mri" if t == "Ⅲ" else "non_surgery")
-        rows.append(LimitRow(section_name=p.section_name, coverage_type=p.coverage_type, type=t, copay=p.copay,
-                             rate_pct=round(base["rate"] * 100), non_surgery=base["limit"],
-                             surgery=get_limit(p.coverage_type, t, "surgery")["limit"],
-                             mri_1st=get_limit(p.coverage_type, t, "non_surgery_mri_1st")["limit"] if t == "Ⅲ" else None,
-                             mri_2nd_plus=get_limit(p.coverage_type, t, "non_surgery_mri_2nd_plus")["limit"] if t == "Ⅲ" else None,
-                             annual_total=base["annual_total"]))
-    if _MRI.search(question):
-        highlight = "mri"
-    elif "수술" in question:
-        highlight = "non_surgery" if _NO_SURGERY.search(question) else "surgery"
-    else:
-        highlight = None
-    note = ("1일 한도는 그날 치료비에서 자기부담금을 빼고 보상비율을 곱한 금액에 적용한다. 연간 총 한도는 특약마다 따로다. "
-            "실제 지급액은 보험금 심사로 정해진다")
-    return LimitsCalc(pet_name=pet.name, rows=rows, highlight=highlight, note=note)
+    rows = [_limit_row(p.section_name, p.coverage_type, p.copay, pet, on, policy=p) for p in medical]
+    return LimitsCalc(pet_name=pet.name, rows=rows, highlight=_highlight(question), note=_LIMIT_NOTE)
+
+
+def _enrolled_text(pet: Pet) -> str:
+    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+    return ", ".join(f"{_short(p.section_name)} {p.coverage_type}" for p in medical) or "의료비 특약 없음"
+
+
+def _short(section_name: str) -> str:
+    m = re.search(r"(통원|입원)의료비(Ⅱ|Ⅲ)?", section_name)
+    return m.group(0) if m else section_name
+
+
+def hypothetical_card(question: str, pet: Pet | None) -> LimitsCalc | None:
+    """가정 질문(2026-10-21) — 가입과 다른 등급·유형을 물으면 그 등급·유형의 한도표. 이 고객의 한도가 아니라는 것을 카드와 답이
+    밝힌다(enrolled). 한도·금액 낱말이 없거나 등급·유형을 말하지 않았으면 None. 법률·다른 돈 질문은 건드리지 않는다"""
+    if pet is None or _NOT_MEDICAL.search(question) or _OTHER_MONEY_LIMIT.search(question) or treatment_cost(question) is not None:
+        return None
+    if not (_LIMIT_WORD.search(question) or re.search(r"얼마|한도|보상|보장|MRI|수술", question)):
+        return None
+    grade, type_ = mentioned_grade(question), mentioned_type(question)
+    if grade is None and type_ is None:
+        return None
+    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+    if not medical:
+        return None
+    said = [w for w in ("통원", "입원") if w in question]
+    settings = said if len(said) == 1 else sorted({("입원" if "입원" in p.section_name else "통원") for p in medical}) or ["통원", "입원"]
+    rows, differs = [], False
+    for st in settings:
+        mine = next((p for p in medical if st in p.section_name), medical[0])
+        t = type_ or infer_type_from_section_name(mine.section_name)
+        g = grade or mine.coverage_type
+        name = f"{'펫퍼민트 반려견 ' if pet.species == '강아지' else '펫퍼민트 반려묘 '}{st}의료비{'' if t == 'Ⅰ' else t}보장 특별약관"
+        if name in MEDICAL_SECTIONS[pet.species] and not (name == mine.section_name and g == mine.coverage_type):
+            differs = True
+        rows.append(_limit_row(name, g, mine.copay, None, None))
+    if not differs:
+        return None
+    return LimitsCalc(pet_name=pet.name, rows=rows, highlight=_highlight(question), note=_LIMIT_NOTE + " · 가정한 등급·유형의 표",
+                      hypothetical=True, enrolled=_enrolled_text(pet))
+
+
+def limit_answer(card: LimitsCalc, pet: Pet, text: str) -> str:
+    """한도 카드 턴의 답 — 카드 값 그대로(코드 답, 2026-10-21). 질문이 짚은 줄(수술·MRI)을 먼저 굵게"""
+    lines = []
+    if card.hypothetical:
+        lines.append(f"가정한 등급·유형 기준입니다. {pet.name}{'은' if _has_batchim(pet.name) else '는'} 지금 {card.enrolled}에 "
+                     f"가입되어 있어 실제 한도와 다릅니다.")
+    first = card.rows[0]
+    if card.hypothetical:
+        mine = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+        now = [_limit_row(p.section_name, p.coverage_type, p.copay, None, None) for p in mine
+               if any(("입원" in p.section_name) == ("입원" in r.section_name) for r in card.rows)]
+        if now:
+            lines.append("지금 가입: " + "; ".join(f"{_short(r.section_name)} {r.coverage_type} 수술하지 않은 날 1일 {_won(r.non_surgery)}, "
+                                                 f"보상비율 {r.rate_pct}%" for r in now) + ".")
+    if re.search(r"보상\s*비율|몇\s*퍼센트|%", text):
+        lines.append("보상비율은 " + ", ".join(f"{_short(r.section_name)} {r.coverage_type} **{r.rate_pct}%**" for r in card.rows) + "입니다.")
+    elif re.search(r"자기\s*부담", text):
+        lines.append("자기부담금은 " + ", ".join(f"{_short(r.section_name)} {r.coverage_type} 1일 **{_won(r.copay or 0)}**"
+                                           for r in card.rows) + "입니다.")
+    if card.highlight == "surgery":
+        lines.append(f"수술한 날은 1일 **{_won(first.surgery)}**까지입니다.")
+    elif card.highlight == "mri" and first.mri_1st is not None:
+        nth = (first.mri_before or 0) + 1
+        now = first.mri_1st if nth == 1 else first.mri_2nd_plus
+        lines.append(f"MRI·CT·내시경을 받은 날은 연간 첫 번째 {_won(first.mri_1st)}, 두 번째부터 {_won(first.mri_2nd_plus)}입니다."
+                     + ("" if card.hypothetical else f" 청구 이력상 이번은 {nth}번째라 1일 **{_won(now)}**까지입니다."))
+    elif card.highlight == "mri":
+        lines.append(f"{_short(first.section_name)} {first.coverage_type}은 MRI·CT·내시경 날 한도가 따로 없습니다"
+                     f"(수술하지 않은 날 1일 {_won(first.non_surgery)}). MRI 날 한도는 Ⅲ 유형에만 있습니다.")
+    for r in card.rows:
+        ns = "수술·MRI 없는 날" if r.type == "Ⅲ" else "수술하지 않은 날"
+        bold = card.highlight is None and r is first and not re.search(r"보상\s*비율|몇\s*퍼센트|%|자기\s*부담", text)
+        parts = [f"{ns} 1일 {'**' + _won(r.non_surgery) + '**' if bold else _won(r.non_surgery)}",
+                 f"수술한 날 1일 {_won(r.surgery)}"]
+        if r.mri_1st is not None:
+            parts.append(f"MRI·CT·내시경 날 연간 첫 번째 {_won(r.mri_1st)}·두 번째부터 {_won(r.mri_2nd_plus)}")
+        tail = [f"보상비율 {r.rate_pct}%"]
+        if r.copay:
+            tail.append(f"자기부담금 1일 {_won(r.copay)}")
+        tail.append(f"연간 총 한도 {_won(r.annual_total)}"
+                    + (f"(올해 {_won(r.annual_used)} 사용, 남은 {_won(r.annual_remaining)})" if r.annual_remaining is not None else ""))
+        lines.append(f"- {_short(r.section_name)} {r.coverage_type}: " + ", ".join(parts) + ". " + ", ".join(tail) + ".")
+    lines.append("1일 한도는 그날 치료비에서 자기부담금을 빼고 보상비율을 곱한 금액에 적용합니다.")
+    lines.append(COVERAGE_NOTE)
+    return "\n".join(lines)
+
+
+def legal_answer(card: LegalCalc) -> str:
+    """법률비용 카드 턴의 답 — 별표3·4·5 값 그대로(코드 답, 2026-10-21). 모델은 3천만원 소송의 변호사비를 30만원이라 답했다(R6·M10)"""
+    lines = []
+    if card.claim_value is not None:
+        lines.append(f"소송목적의 값이 {_won(card.claim_value)}이면 【별표3】 변호사비용 한도는 **{_won(card.lawyer_limit)}**입니다"
+                     f"({card.bracket}).")
+        lines.append(f"변호사 보수는 실제 부담한 금액에서 자기부담금 {_won(card.lawyer_copay)}을 뺀 금액을 이 한도와 1소송당 "
+                     f"{_won(card.lawyer_cap)} 중 작은 금액까지 지급합니다.")
+        if card.stamp is not None:
+            lines.append(f"인지액(【별표4】)은 {_won(card.stamp)}입니다.")
+    if card.service is not None:
+        where = " ".join(x for x in (card.instance, card.case_kind) if x)
+        val = _won(card.service)
+        lines.append(f"{where} 송달료(【별표5】)는 {'**' + val + '**' if card.claim_value is None else val}입니다.")
+    lines.append(f"인지액과 송달료는 합쳐 1소송당 {_won(card.stamp_service_cap)}까지, 심급별로 실제 부담한 금액을 지급합니다.")
+    lines.append(COVERAGE_NOTE)
+    return "\n".join(lines)
+
+
+def card_references(card, pet: Pet | None) -> list[ReferenceItem]:
+    """한도·법률비용 코드 답의 근거 조항 — 한도는 줄마다 그 특약 제1조, 법률비용은 특약 제3조와 별표3·4·5"""
+    if pet is None or card is None:
+        return []
+    if getattr(card, "kind", None) == "limits":
+        if card.hypothetical:
+            return []
+        return [ReferenceItem(citation_label="제1조(보험금의 지급사유)", species=pet.species, section="특별약관",
+                              section_name=r.section_name, article_num=1) for r in card.rows]
+    if getattr(card, "kind", None) == "legal":
+        refs = [ReferenceItem(citation_label="제3조(보험금 지급에 관한 세부규정)", species=pet.species, section="특별약관",
+                              section_name=card.section_name, article_num=3)]
+        if card.claim_value is not None:
+            refs.append(ReferenceItem(citation_label="【별표3】 소송목적의 값에 따른 변호사비용", species=pet.species, section="별표",
+                                      section_name="【별표3】 소송목적의 값에 따른 변호사비용", article_num=None))
+        if card.stamp is not None or card.service is not None:
+            refs.append(ReferenceItem(citation_label="【별표4】 민사소송 인지액 /【별표5】 송달료", species=pet.species, section="별표",
+                                      section_name="【별표4】 민사소송 인지액 /【별표5】 송달료", article_num=None))
+        return refs
+    return []
 
 
 # ===== 금액 되묻기 — 보험금이 얼마냐고 묻는데 치료비 금액이 없을 때 =====
@@ -486,7 +632,10 @@ COVERAGE_NOTE = "보장 여부는 약관 조건에 따라 달라집니다."   # 
 
 
 def _won(n: int) -> str:
-    """금액을 말로 — 35만원 · 22만 4,000원 · 4,900원"""
+    """금액을 말로 — 35만원 · 22만 4,000원 · 4,900원 · 1억원 · 1억 5,000만원"""
+    eok, under = divmod(n, 100_000_000)
+    if eok:
+        return f"{eok:,}억원" if not under else f"{eok:,}억 {_won(under)}"
     man, rest = divmod(n, 10_000)
     if man and rest:
         return f"{man:,}만 {rest:,}원"
@@ -521,7 +670,9 @@ def matched_exclusions(text: str, pet: Pet | None) -> list[str]:
 
 
 # 같은 부위의 다른 이름 — 분류표에 없는 일상어. 잘못 걸려도 배너(확인 안내)라 비용이 작다
-SYNONYMS = {"슬개골": ("무릎뼈", "무릎", "슬관절"), "비뇨기": ("방광", "요로", "소변", "오줌")}
+# 2026-10-21부터 data/synonyms.py의 질병 항목에서 만든다(4d의 두 줄 — 슬개골·비뇨기 — 을 합쳤다)
+from data.synonyms import exclusion_aliases as _exclusion_aliases  # noqa: E402
+SYNONYMS = _exclusion_aliases()
 _TABLE_STOP = ("신생물", "기타", "원인불명", "불확실")
 _TABLES: dict[str, dict[str, set[str]]] = {}
 
@@ -698,6 +849,8 @@ def reply_turn(question: str, card_text: str, stage: str, prior_payout: dict | N
 def code_references(card, pet: Pet | None, text: str) -> list[ReferenceItem]:
     """코드가 쓴 답의 근거 조항(2026-10-21, 4c단계) — 계산의 근거인 그 특약 제1조(보험금의 지급사유: 1일 한도·자기부담금·보상비율 표).
     부담보에 걸리면 부담보 특약 제2조(특별면책조건의 내용). 모델 답처럼 글자 대조(used_references)로 찾을 수 없다 — 계산이 표에서 나왔다"""
+    if getattr(card, "kind", None) in ("limits", "legal"):
+        return card_references(card, pet)
     if pet is None or card is None or getattr(card, "kind", "medical") not in ("medical", "days_ask"):
         return []
     refs = [ReferenceItem(citation_label="제1조(보험금의 지급사유)", species=pet.species, section="특별약관",
