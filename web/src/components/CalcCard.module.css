@@ -14,3 +14,19 @@
 /* 바탕을 칸 밖으로 넓힐 때 음수 여백 대신 같은 색 테두리 그림자 — 음수 여백은 카드 폭을 넘었다 */
 .hl { color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px var(--primary-soft); border-radius: 2px; font-weight: var(--font-weight-label); }
 .hl .dim { color: var(--primary); }
+/* 의료비 카드 — 정확한 값/범위/하루로 계산 표시. 범위·가정이면 경고색 */
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-weight: var(--font-weight-label); font-size: var(--font-2xs); padding: 1px 6px; border-radius: var(--radius-control); }
+.chipOk { color: var(--text-dim); background: var(--surface); }
+.chipWarn { color: var(--warn); background: var(--warn-fill); }
+.days { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); }
+.assume { font-weight: var(--font-weight-caption); font-size: var(--font-xs); color: var(--text-dim); }
+/* 날짜별 입력 — 칸마다 한 줄(이름 · 금액 · 수술 · MRI). 좁으면 금액 칸이 줄어든다 */
+.form { display: flex; flex-direction: column; gap: 4px; }
+.field { display: grid; grid-template-columns: 3.5em minmax(0, 1fr) auto auto; align-items: center; gap: 6px; }
+.input { min-width: 0; font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--bg); color: inherit; }
+.input[aria-invalid="true"] { border-color: var(--warn); }
+.check { display: inline-flex; align-items: center; gap: 2px; font-size: var(--font-xs); white-space: nowrap; }
+.warn { color: var(--warn); font-size: var(--font-xs); }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.primary { color: var(--primary); border-color: var(--primary); font-weight: var(--font-weight-label); }

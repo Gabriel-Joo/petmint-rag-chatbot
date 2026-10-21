@@ -37,7 +37,8 @@ class AskAmount(unittest.TestCase):
     def test_eval_and_verify_questions(self):
         """약관 질문(회귀 103 + 업무특화 검증) — 금액 되묻기는 반려동물이 있는 업무특화에서만 돈다"""
         from scripts.verify_cases import RAG
-        meant = {c.question for c in RAG.cases if ("치료비가 얼마",) in c.must_include}     # R14 — 일부러 되묻게 만든 질문
+        # 일부러 되묻게 만든 질문(R14·R16·R18·R21·R24·R27) — 되묻기 문장의 "입원 일수"를 정답으로 둔 것
+        meant = {c.question for c in RAG.cases if any("입원 일수" in w for group in c.must_include for w in group)}
         qs = [q for q in standalone_questions(names=("search_regression.json",), modes=("rag",)) if q not in meant]
         self.assertEqual([q for q in qs if payout.needs_amount(q, CHEESE)], [])
         self.assertEqual([q for q in meant if not payout.needs_amount(q, CHEESE)], [])

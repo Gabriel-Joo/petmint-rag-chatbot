@@ -19,11 +19,13 @@ interface Props {
   onSelect?: () => void;
   /** 과거 상담 — 평가 버튼을 두지 않는다(남의 상담일 수 있고, 읽기만 하는 화면이다) */
   readOnly?: boolean;
+  /** 날짜별 치료비 입력 카드를 채워 다음 질문으로 보낸다 — 진행 중 상담의 마지막 턴에만. 없으면 입력칸은 읽기 전용 */
+  onAnswer?: (text: string) => void;
 }
 
 const STATUS_TEXT: Partial<Record<Turn["status"], string>> = { searching: "검색 중…", clarify: "어느 쪽을 물으시나요?" };
 
-export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect, readOnly }: Props) {
+export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect, readOnly, onAnswer }: Props) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const streaming = turn.status === "streaming";
 
@@ -58,7 +60,11 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
       )}
       {turn.error && <div className={s.err}>{turn.error}</div>}
 
-      {turn.calc && <CalcCard calc={turn.calc} />}
+      {turn.calc && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <CalcCard calc={turn.calc} onAnswer={turn.status === "done" ? onAnswer : undefined} />
+        </div>
+      )}
 
       {inlineSources !== "never" && (
         <div className={inlineSources === "mobile" ? s.mobileOnly : undefined} onClick={(e) => e.stopPropagation()}>

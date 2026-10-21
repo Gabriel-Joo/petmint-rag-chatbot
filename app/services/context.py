@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 from app import config
 from app.schemas import ContextKind, ContextMsg, Mode, Pet
-from app.services import payout
+from app.services import dayparse, payout
 from app.services.followup import follow_up_reason
 from app.services.llm import OllamaClient
 from app.services.turn_log import PriorTurn
@@ -53,7 +53,9 @@ class Resolved:
     search_query: str | None = None                # 검색에 쓸 문장(사내규정·업무특화)
     history: list[dict] = field(default_factory=list)   # 일반 — chat 메시지 이력
     chosen: str | None = None                      # 업무특화 — 앞 턴에서 이어 쓰는 특약(되묻기 생략)
-    after_amount_ask: bool = False                 # 업무특화 — 앞 턴이 금액 되묻기였고 이번에 금액을 말했다(모델 대신 카드로 답)
+    after_amount_ask: bool = False                 # 업무특화 — 앞 턴이 코드의 되묻기였고 이번에 답했다(모델 대신 카드로 답)
+    reply_stage: str | None = None                 # payout.reply_stage — ask(금액) / days(날짜별 금액 칸) / again(일수 더)
+    prior_calc: dict | None = None                 # 앞 턴 카드(turns.payout) — 날짜별 되묻기의 총액·일수가 여기 있다
 
     @property
     def retrieval_query(self) -> str:
@@ -114,9 +116,10 @@ async def resolve(mode: Mode, question: str, prior: list[PriorTurn], pet: Pet | 
     if not prior:
         return r
     last = prior[-1]
-    # 금액 되묻기("치료비가 얼마인가요?") 바로 뒤에 금액을 말했으면 후속 규칙에 안 걸려도 후속이다
-    # ("35만원 정도 나왔고 수술은 안 했어요"처럼 길거나 물음표가 있어도)
-    answered_ask = mode == "업무특화" and last.answer == payout.ASK_AMOUNT_TEXT and bool(payout.amounts_in(question))
+    # 코드가 되물은 턴(금액 되묻기·날짜별 금액 칸·일수를 모른 계산) 바로 뒤에 금액·일수·'모르겠어요'를 말했으면
+    # 후속 규칙에 안 걸려도 후속이다("35만원 정도 나왔고 수술은 안 했어요"처럼 길거나 물음표가 있어도)
+    stage = payout.reply_stage(last.answer, last.payout) if mode == "업무특화" else None
+    answered_ask = stage is not None and dayparse.is_reply(question)
     reason = follow_up_reason(question) or ("되묻기 답" if answered_ask else None)
     if reason is None:
         return r
@@ -133,6 +136,8 @@ async def resolve(mode: Mode, question: str, prior: list[PriorTurn], pet: Pet | 
         r.search_query = f"{r.anchor} {question}"
         r.chosen = carry_chosen(last, question, pet)
         r.after_amount_ask = answered_ask
+        if answered_ask:
+            r.reply_stage, r.prior_calc = stage, last.payout
         return r
     # 사내규정 — 베이스 모델 재작성, 실패하면 이어 붙이기
     r.follow_up = reason

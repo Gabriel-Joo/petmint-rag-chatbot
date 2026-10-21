@@ -81,6 +81,7 @@ class PriorTurn:
     answer: str
     pet_id: str | None
     chosen_section: str | None
+    payout: dict | None = None                     # 그 턴의 계산 카드 — 코드가 되물은 턴의 총액·일수(payout.reply_stage)
 
 
 class TurnLogStore:
@@ -184,8 +185,9 @@ class TurnLogStore:
     def recent_turns(self, session_id: str, n: int) -> list[PriorTurn]:
         """멀티턴의 앞 턴 — 정상으로 끝난(ok) 턴만, 오래된 순으로 최근 n개. 되묻기 대기·취소·실패 턴은 건너뛴다"""
         with self.engine.connect() as c:
-            rows = c.execute(text("SELECT question, rewritten_question, answer, pet_id, chosen_section FROM turns"
+            rows = c.execute(text("SELECT question, rewritten_question, answer, pet_id, chosen_section, payout FROM turns"
                                   " WHERE session_id = :sid AND status = 'ok' ORDER BY created_at DESC, turn_id DESC LIMIT :n"),
                              dict(sid=session_id, n=n)).all()
         return [PriorTurn(question=r.question, anchor=r.rewritten_question or r.question, answer=r.answer, pet_id=r.pet_id,
-                          chosen_section=r.chosen_section) for r in reversed(rows)]
+                          chosen_section=r.chosen_section,
+                          payout=json.loads(r.payout) if isinstance(r.payout, str) else r.payout) for r in reversed(rows)]

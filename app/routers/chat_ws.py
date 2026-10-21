@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from app import config
 from app.deps import agent_of
 from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
-from app.services import answer, context, payout, titles
+from app.services import answer, context, dayparse, titles
 from app.services.answer import TurnContext, TurnDeps
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.followup import follow_up_reason
@@ -130,8 +130,9 @@ async def chat(ws: WebSocket, session_id: str):
 
                 # 멀티턴 — 후속 질문이면 앞 턴(정상 완료만)으로 푼다. 판별은 규칙이라 후속이 아니면 DB도 모델도 안 부른다
                 resolved = None
-                # 업무특화에서 금액을 말하면 앞 턴이 금액 되묻기였는지 봐야 한다(context.resolve) — 후속 규칙에 안 걸려도
-                if follow_up_reason(msg.text) or (session.mode == "업무특화" and payout.amounts_in(msg.text)):
+                # 업무특화에서 금액·일수·'모르겠어요'를 말하면 앞 턴이 코드의 되묻기였는지 봐야 한다(context.resolve) —
+                # 후속 규칙에 안 걸려도("30만, 30만, 10만"처럼 원 없이 쓴 날짜별 금액도)
+                if follow_up_reason(msg.text) or (session.mode == "업무특화" and dayparse.is_reply(msg.text)):
                     prior = await asyncio.to_thread(turn_log.recent_turns, session_id, context.HISTORY_TURNS)
                     resolved = await context.resolve(session.mode, msg.text, prior, pet, ws.app.state.llm)
                 ctx = TurnContext(turn_id=turn_id, session=session, pet=pet, scope=answer.scope_of(session.mode, pet),

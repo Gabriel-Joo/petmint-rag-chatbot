@@ -51,6 +51,20 @@ class Policy(_Model):
         return infer_type_from_section_name(self.section_name)
 
 
+class Claim(_Model):
+    """청구 이력 한 건(insurance_core.claims) — 연간 총 한도에서 이미 받은 금액, Ⅲ MRI가 올해 몇 번째인지를 여기서 센다"""
+    claim_id: str
+    section_name: str                              # 청구한 의료비 특약(가입 특약 중 하나 — 로더가 검증)
+    claim_date: date                               # 청구일
+    treatment_date: date                           # 치료(첫날) — 보험연도는 이 날짜로 가른다
+    treatment_type: Literal["통원", "입원"]
+    days: int                                      # 치료 일수(통원 횟수)
+    treatment_cost: int                            # 치료비 합계
+    paid: int                                      # 지급액
+    surgery: bool = False                          # 수술한 날이 있었다
+    mri: bool = False                              # MRI·CT·내시경을 받은 날이 있었다(수술하지 않은 날, 1일로 센다)
+
+
 class Pet(_Model):
     pet_id: str
     name: str
@@ -58,6 +72,7 @@ class Pet(_Model):
     breed: str | None = None
     age: int | None = None
     policies: list[Policy]
+    claims: list[Claim] = Field(default_factory=list)   # 청구 이력(오래된 순). 계산 카드의 연간 한도·MRI 회차
 
 
 class Customer(_Model):
@@ -202,17 +217,67 @@ class SessionPatch(_Model):
     pinned: bool | None = None
 
 
+class DayRow(_Model):
+    """날짜별 계산 한 줄(daycalc.DayOut)"""
+    cost: int
+    surgery: bool = False
+    mri: bool = False
+    limit: int                                     # 그날 한도
+    label: str                                     # 한도 이름 — 수술한 날 / 수술 안 한 날 / MRI 등 연간 첫 번째…
+    payout: int
+
+
 class MedicalCalc(_Model):
-    """의료비 계산 카드(09번 2-3절) — limit_table.calculate_payout 결과"""
+    """의료비 계산 카드(09번 2-3절) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도(daycalc).
+    exact=False면 날짜별 금액을 몰라 범위(range_min~range_max)이고 payout은 고르게 나뉘었다고 본 추정이다.
+    days 이하 필드는 2026-10-21 여러 날 계산 전에 저장된 카드에는 없다(기본값 = 하루·정확)"""
     kind: Literal["medical"] = "medical"
     section_name: str
     coverage_type: Grade
-    claimed: int                                   # 청구 치료비(질문 속 금액)
-    copay: int                                     # 가입 정보의 자기부담금
-    limit: int                                     # 그 상황의 1일 지급 한도
-    payout: int
+    claimed: int                                   # 청구 치료비(합계)
+    copay: int                                     # 가입 정보의 자기부담금(1일당)
+    limit: int                                     # 수술하지 않은 날 1일 한도(하루면 그날 상황의 한도)
+    payout: int                                    # 연간 한도까지 적용한 예상 지급액(범위면 고르게 나뉜 추정)
     note: str
-    rate_pct: int | None = None                    # 보상비율(%) — 되묻기 직후 답 문장(payout.amount_answer)이 쓴다. 예전 카드엔 없다
+    rate_pct: int | None = None                    # 보상비율(%). 예전 카드엔 없다
+    setting: Literal["통원", "입원"] | None = None
+    days: int = 1                                  # 일수(통원 횟수)
+    days_known: bool = True                        # 일수를 들었다 — False면 일수를 몰라 하루로 계산했다
+    exact: bool = True
+    day_rows: list[DayRow] = Field(default_factory=list)   # 날짜별 계산(정확하고 2일 이상, 또는 범위에서 금액을 아는 날)
+    range_min: int | None = None                   # 범위 — 연간 한도까지 적용
+    range_max: int | None = None
+    even: int | None = None                        # 고르게 나뉘었다면 — 연간 한도까지 적용
+    annual_total: int | None = None                # 연간 총 보상한도
+    annual_used: int | None = None                 # 올해(보험연도) 이미 받은 보험금(청구 이력)
+    annual_remaining: int | None = None
+    year_start: date | None = None                 # 이번 보험연도 시작일
+    capped: bool = False                           # 남은 연간 한도에 걸려 줄었다
+    mri_before: int | None = None                  # Ⅲ — 올해 이미 받은 MRI·CT·내시경 날 수
+    assumptions: list[str] = Field(default_factory=list)   # 계산에 둔 가정(일수를 하루로 봄, 3번 = 서로 다른 3일 …)
+    flow: Literal["question", "ask"] = "question"  # ask: 금액 되묻기 흐름에서 코드가 답한 턴(다음 턴에 일수·날짜별 금액을 이어 받는다)
+
+
+class DayInput(_Model):
+    """날짜별 금액 입력칸 하나의 미리 채운 값"""
+    cost: int | None = None
+    surgery: bool = False
+    mri: bool = False
+
+
+class DaysAskCalc(_Model):
+    """날짜별 치료비 되묻기 카드 — 일수 2~5일이고 총액만 받았을 때. 화면이 일수만큼 입력칸(수술한 날·MRI 표시)을 띄우고
+    상담원이 채우면 "300,000원(수술), 300,000원, 100,000원" 같은 질문으로 보낸다(멀티턴 — payout.reply_turn이 읽는다)"""
+    kind: Literal["days_ask"] = "days_ask"
+    section_name: str
+    coverage_type: Grade
+    setting: Literal["통원", "입원"]
+    days: int
+    total: int                                     # 앞서 말한 총액
+    type: str                                      # Ⅰ/Ⅱ/Ⅲ — Ⅲ이면 MRI 표시도 둔다
+    prefill: list[DayInput]                        # 칸마다 미리 채운 값(수술한 날 금액을 들었으면 그 칸)
+    surgery_mentioned: bool = False                # 수술했다고 했는데 그날 금액은 모른다
+    note: str
 
 
 class LegalCalc(_Model):
@@ -265,7 +330,7 @@ def _calc_kind(v) -> str:
 
 # 계산 카드 — WS calc 메시지·과거 턴(TurnOut.payout)·turns.payout이 같은 모양. kind로 의료비·법률비용을 가른다
 CalcResult = Annotated[Union[Annotated[MedicalCalc, Tag("medical")], Annotated[LegalCalc, Tag("legal")],
-                             Annotated[LimitsCalc, Tag("limits")]],
+                             Annotated[LimitsCalc, Tag("limits")], Annotated[DaysAskCalc, Tag("days_ask")]],
                        Discriminator(_calc_kind)]
 
 

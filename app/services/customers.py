@@ -99,6 +99,13 @@ def _validate(customers: list[Customer], docs: dict[str, dict[str, PolicyDoc]]) 
                     errors.append(f"{where}: 의료비 특약이 아닌데 등급이 있다: {p.section_name}")
                 if p.excluded_conditions and p.section_name != EXCLUSION_SECTION:
                     errors.append(f"{where}: 부담보는 {EXCLUSION_SECTION}에만 둔다: {p.section_name}")
+            policies = {p.section_name: p for p in pet.policies}
+            for cl in pet.claims:                   # 청구 이력 — 가입한 의료비 특약, 가입일 이후 치료
+                p = policies.get(cl.section_name)
+                if p is None or p.coverage_type is None:
+                    errors.append(f"{where}: 청구 {cl.claim_id}의 특약이 가입한 의료비 특약이 아니다: {cl.section_name!r}")
+                elif cl.treatment_date < p.contract_date:
+                    errors.append(f"{where}: 청구 {cl.claim_id}의 치료일 {cl.treatment_date}이 가입일 {p.contract_date}보다 앞선다")
             try:
                 scope_for(pet)
             except ValueError as e:
@@ -107,7 +114,8 @@ def _validate(customers: list[Customer], docs: dict[str, dict[str, PolicyDoc]]) 
 
 
 def _fetch(engine: Engine, customer_id: str | None = None) -> list[Customer]:
-    """원장 세 테이블 → Customer(09 6-1 JSON 모양). customer_id를 주면 그 고객만. 순서는 seq(픽스처 순서)"""
+    """원장 네 테이블(고객·반려동물·특약·청구 이력) → Customer(09 6-1 JSON 모양). customer_id를 주면 그 고객만.
+    순서는 seq(픽스처 순서), 청구 이력은 치료일 순"""
     where, params = ("WHERE customer_id = :cid", dict(cid=customer_id)) if customer_id else ("", {})
     with engine.connect() as c:
         cs = c.execute(text(f"SELECT customer_id, name, phone FROM customers {where} ORDER BY customer_id"), params).all()
@@ -116,6 +124,8 @@ def _fetch(engine: Engine, customer_id: str | None = None) -> list[Customer]:
         pol_where = "WHERE p.customer_id = :cid" if customer_id else ""
         pols = c.execute(text("SELECT pol.* FROM policies pol JOIN pets p USING (pet_id) "
                               f"{pol_where} ORDER BY pol.pet_id, pol.seq"), params).all()
+        claims = c.execute(text("SELECT cl.* FROM claims cl JOIN pets p USING (pet_id) "
+                                f"{pol_where} ORDER BY cl.pet_id, cl.treatment_date, cl.claim_id"), params).all()
     by_pet: dict[str, list[dict]] = {}
     for r in pols:
         excl = r.excluded_conditions
@@ -123,10 +133,17 @@ def _fetch(engine: Engine, customer_id: str | None = None) -> list[Customer]:
             doc_id=r.doc_id, product_name=r.product_name, policy_version=r.policy_version, section_name=r.section_name,
             coverage_type=r.coverage_type, copay=r.copay, contract_date=r.contract_date, renewal=r.renewal,
             excluded_conditions=json.loads(excl) if isinstance(excl, str) else (excl or [])))
+    claims_by_pet: dict[str, list[dict]] = {}
+    for r in claims:
+        claims_by_pet.setdefault(r.pet_id, []).append(dict(
+            claim_id=r.claim_id, section_name=r.section_name, claim_date=r.claim_date, treatment_date=r.treatment_date,
+            treatment_type=r.treatment_type, days=r.days, treatment_cost=r.treatment_cost, paid=r.paid,
+            surgery=bool(r.surgery), mri=bool(r.mri)))
     by_customer: dict[str, list[dict]] = {}
     for r in ps:
         by_customer.setdefault(r.customer_id, []).append(dict(
-            pet_id=r.pet_id, name=r.name, species=r.species, breed=r.breed, age=r.age, policies=by_pet.get(r.pet_id, [])))
+            pet_id=r.pet_id, name=r.name, species=r.species, breed=r.breed, age=r.age, policies=by_pet.get(r.pet_id, []),
+            claims=claims_by_pet.get(r.pet_id, [])))
     out, errors = [], []
     for r in cs:
         try:
