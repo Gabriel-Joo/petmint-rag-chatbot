@@ -20,9 +20,11 @@ SEARCH_TIMEOUT = httpx.Timeout(30, connect=3)
 
 
 class Retriever:
-    def __init__(self, base_url: str, expand: bool = False, variant: str | None = None, pool_k: int | None = None):
+    def __init__(self, base_url: str, expand: bool = False, variant: str | None = None, pool_k: int | None = None,
+                 expand_dict: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.expand, self.variant, self.pool_k = expand, variant, pool_k    # 질의 확장·실험 청크 묶음·1차 후보 깊이 — 기본 끔
+        self.expand_dict = expand_dict             # 질의 확장 사전 판(v1·v2, data/query_expansion.py) — 기본 search-service 기본(v1)
 
     async def health(self) -> bool:
         """search-service GET /health가 ok(모델이 GPU에 있고 Milvus에 닿는다)인가. 닿지 않으면 False"""
@@ -43,7 +45,8 @@ class Retriever:
         r = httpx.post(f"{self.base_url}/search", timeout=SEARCH_TIMEOUT,
                        json={"query": query, "scope": scope.describe(), "top_k": top_k, "candidate_k": candidate_k}
                        | ({"expand": True} if self.expand else {}) | ({"variant": self.variant} if self.variant else {})
-                       | ({"pool_k": self.pool_k} if self.pool_k else {}))
+                       | ({"pool_k": self.pool_k} if self.pool_k else {})
+                       | ({"expand_dict": self.expand_dict} if self.expand and self.expand_dict else {}))
         r.raise_for_status()
         return r.json()
 

@@ -68,9 +68,9 @@ async def exchange(ws, payload: dict, first_timeout: float, idle_timeout: float)
     t0 = time.monotonic()
     await ws.send(json.dumps(payload, ensure_ascii=False))
     rec = dict(turn_id=None, answer="", context=None, sources=[], references=[], calc=None, clarify=None, error=None, exclusions=None,
-               order="", server_latency_ms=None, server_first_token_ms=None)
+               tables=[], order="", server_latency_ms=None, server_first_token_ms=None)
     code = {"context": "X", "sources": "S", "calc": "C", "token": "T", "references": "R", "done": "D", "clarify": "Q", "error": "E",
-            "exclusions": "B"}
+            "exclusions": "B", "tables": "L"}
     first = True
     while True:
         try:
@@ -103,6 +103,8 @@ async def exchange(ws, payload: dict, first_timeout: float, idle_timeout: float)
             rec["clarify"] = m.get("options")
         elif kind == "exclusions":
             rec["exclusions"] = m.get("items")
+        elif kind == "tables":
+            rec["tables"] = m.get("items") or []
         elif kind == "error":
             rec["error"] = {"code": m.get("code"), "message": m.get("message")}
         elif kind == "done":
@@ -200,6 +202,7 @@ def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
         checks["stored_sources"] = rec.get("stored_sources_same", False)
     gold = t.get("gold") or []
     info = dict(refused=refused(ans), code_answer=prompt is None and not rec.get("error") and bool(ans),
+                n_tables=len(rec.get("tables") or []), table_hl=sum(t.get("highlight") is not None for t in rec.get("tables") or []),
                 clarify_only=bool(rec.get("clarify")) and not ans, guard_flag="※ 답변의" in ans,
                 n_references=len(rec.get("references") or []))
     if gold:

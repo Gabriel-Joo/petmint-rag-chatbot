@@ -278,6 +278,9 @@ export interface LimitRow {
   mri_1st: number | null; // Ⅲ만
   mri_2nd_plus: number | null;
   annual_total: number;
+  annual_used?: number | null; // 올해(보험연도) 받은 보험금 — 가정 카드엔 없다
+  annual_remaining?: number | null;
+  mri_before?: number | null; // Ⅲ — 올해 받은 MRI·CT·내시경 날 수
 }
 
 /** 한도 카드 — 치료비 금액 없이 한도를 물으면 가입한 의료비 특약의 한도표 */
@@ -287,6 +290,8 @@ export interface LimitsCalc {
   rows: LimitRow[];
   highlight: "non_surgery" | "surgery" | "mri" | null; // 질문이 짚은 줄
   note: string;
+  hypothetical?: boolean; // 가입과 다른 등급·유형을 물었다 — 그 등급의 표(이 고객의 한도가 아니다)
+  enrolled?: string | null; // 가정 카드일 때 실제 가입
 }
 
 /** 계산 카드 — WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
@@ -305,7 +310,20 @@ export type ServerMessage =
   // 계산 카드 — 치료비가 들어간 질문이면 sources 다음에 한 번
   | { type: "calc"; turn_id: string; result: CalcResult }
   // 질문에 걸리는 부담보(서버 대조 — 분류표·같은 부위 이름까지). 걸린 것이 있을 때만
-  | { type: "exclusions"; turn_id: string; items: string[] };
+  | { type: "exclusions"; turn_id: string; items: string[] }
+  // 답이 쓴 발췌의 표(서버가 원문 그대로, 질문에 맞는 행 강조). 모델이 답한 턴에서 표가 있을 때만
+  | { type: "tables"; turn_id: string; items: TableItem[] };
+
+/** 답 아래 표 한 개 — row_index는 보낸 행의 원래 번호, highlight도 원래 번호 */
+export interface TableItem {
+  source: string;
+  header: string[];
+  rows: string[][];
+  row_index: number[];
+  highlight: number | null;
+  total_rows: number;
+  collapsed: boolean;
+}
 
 /** WS 종료 코드 — 없는(만료된) 세션 */
 export const WS_CLOSE_SESSION_NOT_FOUND = 4404;

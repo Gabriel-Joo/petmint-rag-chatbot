@@ -37,8 +37,9 @@ from data.search_scope import MEDICAL_SECTIONS, SearchScope
 from app import config
 from app.db import now, utc
 from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, ExclusionsMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
+                         TablesMsg,
                          Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
-from app.services import customer_facts, guardrail, payout
+from app.services import customer_facts, guardrail, payout, tables
 from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
@@ -120,6 +121,7 @@ class TurnContext:
     clarify: dict[str, str] | None = None                     # 되묻기 선택지 → section_name. 응답을 기다리는 중이면 있다
     clarified: bool = False
     calc: CalcResult | None = None
+    tables: list = field(default_factory=list)                 # 답 아래 표(TablesMsg) — 평가·로그용
     resolved: Resolved | None = None                          # 멀티턴(context.resolve) — None이면 질문 그대로
     chosen: str | None = None                                 # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
     answer: str = ""
@@ -290,20 +292,31 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
         yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
         ctx.log = _turn_log(ctx, "ok", [], [], [])
         return
-    # 카드 순서: 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는 나오지 않는다.
+    # 카드 순서: 가정 등급·유형 → 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는
+    # 나오지 않는다. 카드가 뜨면 답도 카드 값으로 코드가 만든다(2026-10-21 — 모델은 3천만원 소송의 변호사비를 30만원이라 했다).
     # 업무특화 후속은 기준 질문까지 읽는다 — "그럼 입원은요?"의 금액·한도 낱말은 앞 질문에 있다
     q = r.card_text
-    ctx.calc = payout.legal_card(q, ctx.pet)
-    if ctx.calc is None:
-        # 의료비 카드가 뜨면 답도 카드 값으로 — 처음부터 금액을 다 말한 질문도 되묻기 뒤 턴과 같다(모델은 거절했다, R2·R26·R29)
-        out = payout.question_turn(q, ctx.pet, results, chosen)
-        if out is not None:
-            for m in _code_answer(ctx, *out):
-                yield m
-            return
-        ctx.calc = payout.limit_card(q, ctx.pet, chosen)
-    if ctx.calc is not None:
-        yield CalcMsg(turn_id=ctx.turn_id, result=ctx.calc)
+    card = payout.hypothetical_card(q, ctx.pet) if config.CUSTOMER_FACTS else None
+    if card is not None:
+        for m in _code_answer(ctx, card, payout.limit_answer(card, ctx.pet, q), ask=False):
+            yield m
+        return
+    card = payout.legal_card(q, ctx.pet)
+    if card is not None:
+        for m in _code_answer(ctx, card, payout.legal_answer(card), ask=False):
+            yield m
+        return
+    # 의료비 카드가 뜨면 답도 카드 값으로 — 처음부터 금액을 다 말한 질문도 되묻기 뒤 턴과 같다(모델은 거절했다, R2·R26·R29)
+    out = payout.question_turn(q, ctx.pet, results, chosen)
+    if out is not None:
+        for m in _code_answer(ctx, *out):
+            yield m
+        return
+    card = payout.limit_card(q, ctx.pet, chosen)
+    if card is not None:
+        for m in _code_answer(ctx, card, payout.limit_answer(card, ctx.pet, q), ask=False):
+            yield m
+        return
 
     items: list[prompts.ExcerptItem] = []
     if ctx.scope is None:                      # 일반 — 검색 없이 질문만(후속이면 최근 3턴 이력을 앞에)
@@ -348,6 +361,13 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
 
     corpus = ctx.scope.species if ctx.scope else None
     references, graph_refs, used_graph = await asyncio.to_thread(_used, ctx.answer, results, items, corpus)
+    if config.ANSWER_TABLES and items:
+        # 답이 쓴 발췌의 표 — 숫자는 발췌 원문 그대로, 질문에 맞는 행 강조(tables.py). 카드 턴은 위에서 이미 끝났다
+        chosen = pick_excerpts(ctx.answer, [(it.label, _block_text(it)) for it in items])
+        tbls = tables.answer_tables([(items[i].label, items[i].content) for i in sorted(chosen)], r.card_text, ctx.pet)
+        if tbls:
+            ctx.tables = tbls
+            yield TablesMsg(turn_id=ctx.turn_id, items=tbls)
     yield ReferencesMsg(turn_id=ctx.turn_id, items=references)
     ctx.log = _turn_log(ctx, "ok", references, graph_refs, used_graph)
 

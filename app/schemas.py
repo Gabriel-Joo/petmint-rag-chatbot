@@ -311,6 +311,9 @@ class LimitRow(_Model):
     mri_1st: int | None = None                     # Ⅲ만 — MRI·CT·내시경 연간 첫 번째
     mri_2nd_plus: int | None = None                # Ⅲ만 — 두 번째 이상
     annual_total: int                              # 연간 총 보상한도(특약별)
+    annual_used: int | None = None                 # 올해(보험연도) 받은 보험금 — 청구 이력. 가정 카드엔 없다
+    annual_remaining: int | None = None
+    mri_before: int | None = None                  # Ⅲ — 올해 받은 MRI·CT·내시경 날 수
 
 
 class LimitsCalc(_Model):
@@ -320,6 +323,8 @@ class LimitsCalc(_Model):
     rows: list[LimitRow]
     highlight: Literal["non_surgery", "surgery", "mri"] | None = None   # 질문이 짚은 줄(수술·MRI 등)
     note: str
+    hypothetical: bool = False                     # 가입과 다른 등급·유형을 물었다 — 그 등급의 표(이 고객의 한도가 아니다)
+    enrolled: str | None = None                    # 가정 카드일 때 실제 가입(예: "통원의료비 고급형, 입원의료비 고급형")
 
 
 def _calc_kind(v) -> str:
@@ -501,6 +506,23 @@ class ExclusionsMsg(_ServerMsg):
     items: list[str]
 
 
+class TableItem(BaseModel):
+    """답이 쓴 발췌의 표 한 개(tables.answer_tables) — 숫자는 발췌 원문 그대로. highlight는 원래 행 번호(row_index 기준)"""
+    source: str                       # 발췌 라벨(조항)
+    header: list[str]
+    rows: list[list[str]]
+    row_index: list[int]              # 보낸 행의 원래 번호(접혔으면 일부)
+    highlight: int | None = None      # 강조할 행의 원래 번호
+    total_rows: int
+    collapsed: bool = False           # 표가 커서 일부만 보냈다
+
+
+class TablesMsg(_ServerMsg):
+    """모델이 답한 턴에서 답이 쓴 발췌의 표(2026-10-22). 카드 턴에는 없다. 표가 있을 때만"""
+    type: Literal["tables"] = "tables"
+    items: list[TableItem]
+
+
 class ErrorMsg(_ServerMsg):
     """잘못된 메시지·남의 pet_id·검색/생성 실패. 질문 전 오류면 turn_id는 빈 문자열"""
     type: Literal["error"] = "error"
@@ -509,7 +531,7 @@ class ErrorMsg(_ServerMsg):
 
 
 ServerMessage = Annotated[Union[ContextMsg, SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg,
-                                ExclusionsMsg],
+                                ExclusionsMsg, TablesMsg],
                           Field(discriminator="type")]
 
 

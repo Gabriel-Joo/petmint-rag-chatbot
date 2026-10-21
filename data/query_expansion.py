@@ -11,7 +11,11 @@ query_expansion.py
 - 사전은 평가 정답을 보고 만들면 누설이다. 아래 낱말은 약관 조항 이름·면책 사유 표현에서 골랐고, 평가 세트 220의 숨긴 세트는 보지 않았다
 """
 
+import os
 import re
+
+# 사전 판(2026-10-21): v1 = 아래 15개(4a), v2 = data/synonyms.py(질병·약관·일상 + 오타, 4a 15개 포함). 회귀로 v2를 확인하기 전까지 v1
+DICT = os.environ.get("PETMINT_EXPAND_DICT", "v1")
 
 # (트리거 — 일상어 정규식, 붙일 약관 용어)
 TERMS: list[tuple[str, str]] = [
@@ -31,10 +35,18 @@ TERMS: list[tuple[str, str]] = [
     (r"장례|화장\s*비", "장례비 사후에 필요한 비용"),
     (r"(?:동물등록\s*)?칩\s*(?:심|이식)", "마이크로 칩 이식 비용"),
 ]
-_COMPILED = [(re.compile(p), t) for p, t in TERMS]
+_COMPILED = {"v1": [(re.compile(p), t) for p, t in TERMS]}
 
 
-def expand(query: str) -> str | None:
-    """걸리는 용어를 질문 뒤에 붙인 문장. 걸리는 것이 없으면 None(원문 그대로 쓴다)"""
-    terms = [t for p, t in _COMPILED if p.search(query) and t not in query]
+def _compiled(version: str) -> list:
+    if version not in _COMPILED:
+        assert version == "v2", f"사전 판은 v1·v2: {version}"
+        from data.synonyms import ENTRIES
+        _COMPILED["v2"] = [(e.trigger, e.expand) for e in ENTRIES]
+    return _COMPILED[version]
+
+
+def expand(query: str, version: str | None = None) -> str | None:
+    """걸리는 용어를 질문 뒤에 붙인 문장. 걸리는 것이 없으면 None(원문 그대로 쓴다). version None이면 DICT(기본 v1)"""
+    terms = [t for p, t in _compiled(version or DICT) if p.search(query) and t not in query]
     return f"{query} {' '.join(dict.fromkeys(terms))}" if terms else None

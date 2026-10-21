@@ -50,7 +50,8 @@ async def lifespan(app: FastAPI):
     app.state.turn_log = TurnLogStore(engine)
     app.state.llm = OllamaClient(config.OLLAMA_URL)
     # 검색(GPU)은 호스트 search-service. 기동 때 닿는지 보지 않는다 — 아직 배포 전이고, 없으면 턴이 search_unavailable로 끝난다
-    app.state.retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL)
+    app.state.retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL,
+                      expand_dict=config.SEARCH_EXPAND_DICT)
     try:
         yield
     finally:

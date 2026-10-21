@@ -18,6 +18,7 @@ search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 7
 
 import os
 import threading
+from typing import Literal
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -52,6 +53,7 @@ class SearchRequest(BaseModel):
     expand: bool = False                       # 질의 확장(data/query_expansion.py) — 기본 끔. 실험·앱 설정이 켤 때만
     variant: str | None = Field(None, pattern=r"^[a-z0-9_]{1,16}$")   # 실험용 청크 묶음(data/chunks/<variant>/) — 기본 지금 청크
     pool_k: int | None = Field(None, ge=1, le=200)      # 1차 후보 깊이(Dense·BM25 각각) — 기본 candidate_k
+    expand_dict: Literal["v1", "v2"] | None = None     # 질의 확장 사전 판(data/query_expansion.py) — 기본 v1
 
 
 @app.post("/search")
@@ -66,7 +68,7 @@ def search(req: SearchRequest) -> list[dict]:
     try:
         with _gpu_lock:
             return engine.search(req.query, scope, top_k=req.top_k, candidate_k=req.candidate_k, expand=req.expand,
-                                 variant=req.variant, pool_k=req.pool_k)
+                                 variant=req.variant, pool_k=req.pool_k, expand_dict=req.expand_dict)
     except MilvusException as e:                     # Milvus가 내려갔거나 컬렉션이 없다(색인 전 코퍼스)
         raise HTTPException(503, f"Milvus: {e}")
     except FileNotFoundError as e:                   # 없는 variant

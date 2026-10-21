@@ -30,6 +30,8 @@ WS_CLOSE_SESSION_NOT_FOUND = 4404              # 없는·종료된·남의 세�
 # 7-3: GPU 쓰는 것은 호스트에 두고 네트워크로 호출한다. Pod에서는 호스트 주소로 바꿔 준다(기본값은 호스트에서 직접 띄울 때)
 SEARCH_SERVICE_URL = os.environ.get("PETMINT_SEARCH_URL", "http://localhost:8100")
 SEARCH_EXPAND = os.environ.get("PETMINT_SEARCH_EXPAND", "0") == "1"      # 질의 확장(data/query_expansion.py) — 기본 끔
+SEARCH_EXPAND_DICT = os.environ.get("PETMINT_EXPAND_DICT") or None     # 질의 확장 사전 판(v1·v2) — 기본 search-service 기본(v1)
+ANSWER_TABLES = os.environ.get("PETMINT_ANSWER_TABLES", "0") == "1"   # 답이 쓴 발췌의 표를 답 아래에(app/services/tables.py) — 기본 끔
 SEARCH_POOL = int(os.environ.get("PETMINT_SEARCH_POOL", "0")) or None      # 1차 후보 깊이(search-service pool_k) — 기본 candidate_k
 SEARCH_VARIANT = os.environ.get("PETMINT_SEARCH_VARIANT") or None       # 실험 청크 묶음(data/chunks/<variant>/) — 기본 지금 청크
 NUMBER_GUARD = os.environ.get("PETMINT_NUMBER_GUARD", "1") == "1"       # 숫자 가드레일(guardrail.py) — 업무특화 모델 답

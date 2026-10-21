@@ -131,7 +131,7 @@ class SearchEngine:
 
     def search(self, query: str, scope: SearchScope, top_k: int = 5,
                candidate_k: int = 20, min_content_len: int = 15, expand: bool = False,
-               variant: str | None = None, pool_k: int | None = None) -> list[dict]:
+               variant: str | None = None, pool_k: int | None = None, expand_dict: str | None = None) -> list[dict]:
         """Hybrid Search(BM25+Dense) → 메타데이터 필터 → Reranker 최종 정렬.
         필터는 scope가 정한다(가입 정보 / 질문 속 등급·유형 — SearchScope.from_query). 질문 문자열에서 직접 뽑지 않는다.
         검색 문장은 scope.retrieval_query — 필터가 맡은 등급·유형 단어를 뺀다(남겨 두면 그 등급 한도표 행을 끌어온다)."""
@@ -140,7 +140,7 @@ class SearchEngine:
         chunks, bm25, collection_name = self._variant(species, variant)
         filter_expr = scope.milvus_expr()
         # 질의 확장(data/query_expansion.py, 기본 끔) — 일상어에 약관 용어를 붙인 질의는 BM25·리랭커에만. Dense는 원문
-        sparse_query = (query_expansion.expand(query) or query) if expand else query
+        sparse_query = (query_expansion.expand(query, expand_dict) or query) if expand else query
         # 1차 후보 깊이(pool_k, 기본 candidate_k) — 리랭커에 넘길 Dense·BM25 후보 수. 돌려주는 개수(top_k)와 따로 둔다.
         # 청크를 잘게 나누면(v2) 짧은 조각이 BM25 상위를 채워 긴 정답 청크가 1차 후보 밖으로 밀렸다(R026·R097 — 들어오면 리랭커 1위)
         first_k = pool_k or candidate_k

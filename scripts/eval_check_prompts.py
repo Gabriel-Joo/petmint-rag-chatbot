@@ -54,7 +54,8 @@ def main():
     pets = {p["pet_id"]: Pet.model_validate(p) for c in cs for p in c["pets"]}
     chunks, graphs = policy_data.load()
     builder = ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
-    retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL)
+    retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL,
+                      expand_dict=config.SEARCH_EXPAND_DICT)
     picked = [r for r in report["turns"] if r["turn_id"] in logged and not r["context"] and not r.get("clarify")][: args.n]
     same, diff = 0, []
     for r in picked:

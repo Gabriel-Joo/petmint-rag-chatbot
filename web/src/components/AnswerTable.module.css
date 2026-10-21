@@ -1,0 +1,8 @@
+.card { padding: 10px 12px; font-size: var(--font-sm); display: flex; flex-direction: column; gap: 6px; }
+.title { font-weight: var(--font-weight-label); font-size: var(--font-xs); color: var(--text-dim); }
+.wrap { overflow-x: auto; }
+.table { border-collapse: collapse; width: 100%; font-size: var(--font-xs); }
+.table th, .table td { text-align: left; vertical-align: top; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.table th { color: var(--text-dim); font-weight: var(--font-weight-label); }
+.hl td { color: var(--primary); background: var(--primary-soft); font-weight: var(--font-weight-label); }
+.note { font-weight: var(--font-weight-caption); font-size: var(--font-2xs); color: var(--text-faint); }

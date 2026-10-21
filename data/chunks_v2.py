@@ -22,6 +22,7 @@ Milvus 컬렉션 <이름>_v2를 만든다. 지금 청크·컬렉션은 건드리
 """
 
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict
@@ -34,15 +35,12 @@ from data.search_engine import CHUNK_FILES, CHUNKS_DIR, COLLECTION_NAMES, build_
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH_DIR = ROOT / "data" / "graph"
-VARIANT = "v2"
+VARIANT = os.environ.get("PETMINT_CHUNK_VARIANT", "v3")   # v2(2026-10-21, 정규식 새로 짬 — 측정 재현용으로 남김) / v3(2026-10-22, 01 도구)
 OUT_CHUNKS = CHUNKS_DIR / VARIANT
 OUT_GRAPH = GRAPH_DIR / VARIANT
 MIN_SPLIT, PACK = 500, 300
 SPECIES = ("강아지", "고양이")
 
-_TOP = {"circle": re.compile(r"^[ \t]*[①-⑳]", re.M),
-        "num": re.compile(r"^[ \t]*(?:\d{1,2}\.|\(\d{1,2}\)|\d{1,2}\))[ \t]", re.M),
-        "mok": re.compile(r"^[ \t]*[가-하]\.[ \t]", re.M)}
 _HEADER_ONLY = re.compile(r"^제\d+조\(.*$", re.S)
 _INTRO_ONLY = re.compile(r"(다음과\s*같습니다|아래와\s*같습니다|다음\s*각\s*호)[.:]?\s*$")
 _JOSA_START = re.compile(r"^(을|를|이|가|은|는|의|에|로|으로|과|와|도|만|에게|께)")
@@ -53,34 +51,132 @@ def flat(t: str | None) -> str:
 
 
 # ----- 1. 긴 열거 → 호 묶음 -----
-def top_level(content: str):
-    best = None
-    for kind, pat in _TOP.items():
-        ms = list(pat.finditer(content))
-        if len(ms) >= 3 and (best is None or ms[0].start() < best[1][0].start()):
-            best = (kind, ms)
-    return best
+# v2(2026-10-21)는 정규식을 새로 짜 154개 중 19개를 잘못 쪼갰다 — 1. / 1) / (1)을 한 단계로 봤고(하위가 상위와 다른 조각으로),
+# 인용 법조문 박스의 ①(그 법의 항)을 약관 열거와 같은 단계로 이었고, 주요내용 요약서처럼 01이 일부러 하위를 쪼개지 않은 섹션도 쪼갰다.
+# v3(2026-10-22)는 새로 짜지 않고 01 전처리 노트북의 도구를 그대로 실행해 가져온다(_nb01):
+#   - 섹션마다 표기 해석: SECTION_MAP의 파서 — 약관 조-항(parse_articles·의료비 2·3단계)은 항이 \uf000이라 본문 ①은 열거(호),
+#     법규(parse_bupgyu)는 ①이 항(청크가 이미 항 단위)이라 그 안의 '1.'만 호. 나머지 섹션은 01 파서가 정한 단위를 바꾸지 않는다
+#     (parse_summary_notice docstring: "하위 구조(①②, 1), (1))는 쪼개지 않고 본문에 포함한다")
+#   - 인용 법조문 박스: 셀 8 SPLIT_BOUNDARIES의 '법령박스' 경계 — 따로 떼어 별도 조각(piece="lawbox")
+#   - ① 열거: 셀 8 HANG_LINE + 순서 거르기(split_by_korean_sub와 같은 규칙 — 번호가 앞보다 커야 라벨)
+#   - 호: 셀 3 split_by_numbered_title(NUMBERED_TITLE — 'N.'만. 1)·(1)은 하위라 그 호 안에 남는다)
+#   - 목: 셀 3 split_by_korean_sub(순서 역행 라벨과 줄바꿈으로 끊긴 '다.'(_is_wrapped_word_end)를 거른다)
+NB01 = ROOT / "notebooks" / "01_데이터_전처리.ipynb"
+ARTICLE_PARSERS = {"parse_articles", "parse_medical_teukyak_2stage", "parse_medical_teukyak_3stage"}
+LAW_PARSERS = {"parse_bupgyu"}
+_LAW_BOX_TITLE = re.compile(r"[ \t]*【[^】]*(?:법|령|규칙|규정)[^】]*】")      # 법령 인용 박스(용어 풀이 박스 【계약 전 알릴 의무】는 아님)
+_GRADE_LABEL = re.compile(r"[ \t]*[①②③]\s*(?:고급형|기본형|실속형)")          # 의료비 특약의 등급 표지(셀 3 TYPE_PATTERN) — 열거 아님
+_TOOLS: dict = {}
 
 
-def split_items(c: dict) -> tuple[str, list[str]] | None:
-    """(도입문, 호 묶음들) — 나눌 대상이 아니면 None. 도입문은 비어 있을 수 있다(조각의 뒷부분)"""
+def _nb01() -> dict:
+    """01 노트북 셀 2(SECTION_MAP)·3(텍스트 파싱 도구)·8(분할 경계)을 그대로 실행한 이름공간. 셀 끝의 실행부(PDF 읽기·레코드 조립)는 뺀다"""
+    if not _TOOLS:
+        cells = ["".join(c["source"]) for c in json.loads(NB01.read_text(encoding="utf-8"))["cells"]]
+        g = {"re": re, "Counter": Counter}
+        exec(cells[1][:cells[1].index("\nfor species, path in PDF_FILES")], g)
+        exec(cells[2], g)
+        exec(cells[7][:cells[7].index("\nfor species, src in")], g)
+        _TOOLS.update(g)
+    return _TOOLS
+
+
+def parser_of(sp: str, c: dict) -> str | None:
+    """청크의 01 파서 — SECTION_MAP에서 section_name으로(보통약관은 section_name None → parse_articles)"""
+    if c.get("section_name") is None:
+        return "parse_articles" if c["section"] == "보통약관" else None
+    return next((e["parser"] for e in _nb01()["SECTION_MAP"][sp] if e["section_name"] == c["section_name"]), None)
+
+
+def _starts(text: str, segments: list[dict]) -> list[int]:
+    """01 분리 함수가 돌려준 조각(text)의 원문 위치 — 라벨이 있는 조각만. 조각을 이어 원문이 되게 위치로만 쓴다"""
+    out, cur = [], 0
+    for seg in segments:
+        i = text.find(seg["text"], cur)
+        if i < 0:
+            continue
+        cur = i + len(seg["text"])
+        if seg.get("num") is not None or seg.get("label") is not None:
+            out.append(i)
+    return out
+
+
+def _circle_starts(text: str) -> list[int]:
+    g = _nb01()
+    circles = g["CIRCLE_NUMS"] + "⑯⑰⑱⑲⑳"
+    out, last = [], 0
+    for m in g["HANG_LINE"].finditer(text):
+        if _GRADE_LABEL.match(text, m.start()):
+            continue
+        k = circles.index(text[m.end() - 1]) + 1
+        if k > last:                                   # 순서 거르기 — split_by_korean_sub와 같은 규칙
+            out.append(m.start())
+            last = k
+    return out
+
+
+def item_starts(body: str, parser: str) -> tuple[str, list[int]] | None:
+    """(표기, 열거 시작 위치들) — 섹션의 표기 해석대로 가장 바깥 단계 하나. 3개 미만이면 None"""
+    g = _nb01()
+    tries = []
+    if parser in ARTICLE_PARSERS:
+        tries.append(("원문자", _circle_starts(body)))
+    tries.append(("호(N.)", _starts(body + "\n", g["split_by_numbered_title"](body + "\n"))))
+    tries.append(("목(가.)", _starts(body + "\n", g["split_by_korean_sub"](body + "\n"))))
+    for kind, st in tries:
+        st = [x for x in st if x < len(body)]
+        if len(st) >= 3:
+            return kind, st
+    return None
+
+
+def law_box_spans(t: str) -> list[tuple[int, int]]:
+    """인용 법조문 박스 구간 — 셀 8 '법령박스' 경계(줄 시작의 【)로 나눈 구간 중 제목이 법령인 것"""
+    cuts = [0] + [m.start() + 1 for m in _nb01()["SPLIT_BOUNDARIES"][0][1].finditer(t)]   # 0: 01이 법령박스 경계에서 잘라 박스로 시작하는 청크
+    bounds = sorted(set(cuts + [len(t)]))
+    return [(a, b) for a, b in zip(bounds, bounds[1:]) if _LAW_BOX_TITLE.match(t, a)]
+
+
+def split_items(c: dict, sp: str) -> tuple[list[tuple[str, str]], dict] | None:
+    """[(piece 종류, 글)] — 이어 붙이면 원문. 나눌 대상이 아니면 None.
+    종류: lead(도입문) · item(호 묶음, 300자 이하) · body(열거로 못 나눈 본문) · lawbox(인용 법조문)"""
     t = c["content"]
-    if len(t) <= MIN_SPLIT or "[표]" in t:
+    parser = parser_of(sp, c)
+    if len(t) <= MIN_SPLIT or "[표]" in t or parser not in ARTICLE_PARSERS | LAW_PARSERS:
         return None
-    tl = top_level(t)
-    if tl is None:
+    boxes = law_box_spans(t) if parser in ARTICLE_PARSERS else []
+    spans, pos = [], 0
+    for a, b in boxes:
+        if a > pos:
+            spans.append(("text", pos, a))
+        spans.append(("lawbox", a, b))
+        pos = b
+    if pos < len(t):
+        spans.append(("text", pos, len(t)))
+    pieces, info = [], {"kind": None, "lawbox": len(boxes)}
+    for typ, a, b in spans:
+        seg = t[a:b]
+        if typ == "lawbox":
+            pieces.append(("lawbox", seg))
+            continue
+        found = item_starts(seg, parser) if len(seg) > MIN_SPLIT else None
+        if found is None:
+            pieces.append(("body", seg))
+            continue
+        info["kind"], st = found
+        if st[0] > 0:
+            pieces.append(("lead", seg[:st[0]]))
+        cur = ""
+        for x, y in zip(st, st[1:] + [len(seg)]):
+            if cur and len(cur) + (y - x) > PACK:
+                pieces.append(("item", cur))
+                cur = ""
+            cur += seg[x:y]
+        pieces.append(("item", cur))
+    if len(pieces) == 1:
         return None
-    starts = [m.start() for m in tl[1]]
-    lead = t[:starts[0]]
-    items = [t[s:e] for s, e in zip(starts, starts[1:] + [len(t)])]
-    packs, cur = [], ""
-    for it in items:
-        if cur and len(cur) + len(it) > PACK:
-            packs.append(cur)
-            cur = ""
-        cur += it
-    packs.append(cur)
-    return lead, packs
+    assert "".join(p for _, p in pieces) == t
+    return pieces, info
 
 
 # ----- 3. 표 정리 -----
@@ -112,6 +208,27 @@ def clean_table(md: str) -> str:
                 cells[i] = re.sub(r"x\s*\]$", f"x {nxt}]", cell)
         rows.append("|" + "|".join(cells) + "|")
     return "\n".join(rows)
+
+
+# 공백 정렬 배치표(2026-10-22) — 01의 rebuild_level2/3_table이 의료비 특약 제1조 ②의 깨진 한도표를 칸을 공백으로 맞춘 글 표로
+# 다시 만들었다(종마다 18개). 칸 구분은 공백 2칸 이상. Markdown 표로 바꿔야 답 아래 표 붙이기(app/services/tables.py)가 읽는다
+_LAYOUT_HEAD = re.compile(r"^[ \t]*항목[ \t]{2,}자기부담금[ \t]{2,}지급 한도[ \t]*$", re.M)
+
+
+def layout_table_to_md(content: str) -> tuple[str, bool]:
+    m = _LAYOUT_HEAD.search(content)
+    if m is None:
+        return content, False
+    end = content.find("\n\n", m.end())
+    end = len(content) if end < 0 else end
+    lines = [l for l in content[m.start():end].split("\n") if l.strip()]
+    rows = [re.split(r"[ \t]{2,}", l.strip()) for l in lines]
+    if any(len(r) != 3 for r in rows):
+        return content, False
+    md = "[표]\n" + "\n".join("|" + "|".join(r) + "|" for r in rows[:1]) + "\n|---|---|---|\n" \
+        + "\n".join("|" + "|".join(r) + "|" for r in rows[1:])
+    start = content.rfind("\n", 0, m.start()) + 1
+    return content[:start] + md + content[end:], True
 
 
 def clean_table_chunk(content: str) -> tuple[str, bool]:
@@ -152,24 +269,37 @@ def build_species(sp: str) -> tuple[list[dict], dict, Counter]:
         if carry_prefix:
             base["context_prefix"] = " / ".join(x for x in (c.get("context_prefix"), carry_prefix) if x)
             carry_prefix = None
+        t, laid = layout_table_to_md(t)
+        if laid:
+            stats["배치표_변환"] += 1
+            base["content"] = t
+            out.append(base)
+            continue
         cleaned, changed = clean_table_chunk(t)
         if changed:
             stats["표_정리"] += 1
             base["content"] = cleaned
             out.append(base)
             continue
-        sp_items = split_items(parent)
+        sp_items = split_items(parent, sp)
         if sp_items is None:
             out.append(base)
             continue
-        lead, packs = sp_items
-        stats["호_분할"] += 1
-        lead_txt = re.sub(r"\s+", " ", lead).strip()
-        if flat(lead):
-            out.append({**base, "content": lead, "piece": "lead"})
-        for p in packs:
-            prefix = " / ".join(x for x in (c.get("context_prefix"), lead_txt) if x) or None
-            out.append({**base, "content": p, "context_prefix": prefix, "piece": "item"})
+        pieces, info = sp_items
+        stats["호_분할" if info["kind"] else "법령박스만_분리"] += 1
+        stats["법령박스_조각"] += info["lawbox"]
+        lead_txt = next((re.sub(r"\s+", " ", p).strip() for k, p in pieces if k == "lead"), "")
+        for kind, p in pieces:
+            if not flat(p):
+                continue
+            if kind == "item":
+                prefix = " / ".join(x for x in (c.get("context_prefix"), lead_txt) if x) or None
+            elif kind == "lawbox":
+                head = f"제{c['article_num']}조({c.get('article_title') or ''})" if c.get("article_num") else ""
+                prefix = " / ".join(x for x in (c.get("context_prefix"), f"{head} 인용 법조문".strip()) if x)
+            else:
+                prefix = c.get("context_prefix")
+            out.append({**base, "content": p, "context_prefix": prefix, "piece": kind})
     # chunk_index·chunk_total — 같은 (섹션, 조, 항, 등급) 안에서 다시 매긴다
     groups = defaultdict(list)
     for c in out:
