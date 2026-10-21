@@ -25,6 +25,7 @@ class LimitAnswer(unittest.TestCase):
             self.assertIsNotNone(payout.limit_card(q, CHOCO, on=ON), q)
         self.assertIn("**70%**", payout.limit_answer(payout.limit_card("보상비율이 몇 퍼센트예요?", CHOCO, on=ON), CHOCO, "보상비율이 몇 퍼센트예요?"))
         self.assertIsNone(payout.limit_card("보험료가 얼마예요?", CHOCO, on=ON))
+        self.assertIsNone(payout.limit_card("이 계약의 평균공시이율이 몇 퍼센트예요?", CHOCO, on=ON))
 
     def test_surgery_lead(self):
         q = "수술하면 하루 얼마까지 나와요?"
