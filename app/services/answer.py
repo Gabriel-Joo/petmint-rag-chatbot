@@ -20,6 +20,7 @@ build_full_context·used_references가 동기(HTTP·Milvus·SequenceMatcher)라 
 """
 
 import asyncio
+import json
 import logging
 import math
 import time
@@ -255,6 +256,8 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                                           excerpt_header=prompts.HR_EXCERPT_HEADER if hr else prompts.EXCERPT_HEADER)
 
     options = LLM_OPTIONS if mode == "업무특화" else LLM_OPTIONS_BASE
+    if config.PROMPT_LOG:
+        _log_prompt(ctx, messages, options, results, items)
     async for piece in deps.llm.stream(model_of(mode), messages, cancel=ctx.cancel, options=options):
         if ctx.first_token_ms is None:
             ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
@@ -268,6 +271,20 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     references, graph_refs, used_graph = await asyncio.to_thread(_used, ctx.answer, results, items, corpus)
     yield ReferencesMsg(turn_id=ctx.turn_id, items=references)
     ctx.log = _turn_log(ctx, "ok", references, graph_refs, used_graph)
+
+
+def _log_prompt(ctx: TurnContext, messages: list[dict], options: dict, results: list[dict],
+                items: list[prompts.ExcerptItem]) -> None:
+    """평가가 모델이 실제로 본 것을 대조하게 — 프롬프트 전문, 검색 결과 순서, 예산 맞추기 뒤 남은 발췌(key = 결과 위치)"""
+    row = dict(turn_id=ctx.turn_id, session_id=ctx.session.session_id, model=model_of(ctx.session.mode), options=options,
+               messages=messages, kept=[it.key for it in items],
+               results=[{k: r.get(k) for k in ("section", "section_name", "article_num", "paragraph_num", "coverage_type", "score")}
+                        for r in results])
+    try:
+        with open(config.PROMPT_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        log.exception("프롬프트 기록 실패: %s", config.PROMPT_LOG)
 
 
 def _code_answer(ctx: TurnContext, card: CalcResult | None, text: str) -> list[ServerMessage]:

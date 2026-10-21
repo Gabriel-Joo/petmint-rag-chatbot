@@ -1,0 +1,7579 @@
+{
+ "created": "2026-10-21",
+ "base_date": "2026-10-21",
+ "source": "data/eval220.py",
+ "cases": [
+  {
+   "id": "S01",
+   "pet_id": "P013",
+   "query": "태풍 때문에 집이 무너져서 강아지가 다쳤어요. 치료비 나오나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "지진, 분화, 해일, 홍수 또는 이와 유사한 자연재해",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 나온다 — 지진·홍수 등 자연재해로 생긴 손해는 보상하지 않는다(통원 제2조 ① ②)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S02",
+   "pet_id": "P013",
+   "query": "제가 밥이랑 물을 며칠 제대로 못 챙겨서 강아지가 탈진했는데 병원비 청구돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "사료제공 또는 급수 등 기본적인 관리에 대한 태만",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 사료·급수 등 기본 관리 태만으로 생긴 것은 보상하지 않는다(제2조 ① ⑦)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S04",
+   "pet_id": "P001",
+   "query": "병원에서 수술을 잘못해서 다른 데가 탈 났어요. 그 치료비도 보험으로 되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "수의사의 치료상의 과오로 생긴 상해 또는 질병",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 수의사의 치료상 과오로 생긴 상해·질병은 보상하지 않는다(제2조 ① ⑨)",
+   "tags": [
+    "면책",
+    "열거끝"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S05",
+   "pet_id": "P008",
+   "query": "전염병 때문에 나라에서 살처분 명령이 나면 그건 보상돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 2,
+     "evidence": "법률에 의한 살처분",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 국가·지자체 명령이나 법률에 의한 살처분은 보상하지 않는다(제2조 ① ⑩)",
+   "tags": [
+    "면책",
+    "열거끝"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S06",
+   "pet_id": "P014",
+   "query": "달이 데리고 일본 갔다가 거기서 다쳤어요. 병원비 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "대한민국 이외의 지역에서 발생한 사고",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 나온다 — 대한민국 이외의 지역에서 발생한 사고는 보상하지 않는다(제2조 ① ⑪)",
+   "tags": [
+    "면책",
+    "열거끝",
+    "일상어"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S07",
+   "pet_id": "P014",
+   "query": "가입하기 전부터 신장이 안 좋았는데 그것도 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 입원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "보험계약일 이전에 이미 감염 또는 발병",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 최초 계약의 보험계약일 이전에 이미 발병한 질병은 보상하지 않는다(제2조 ① ⑥)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S09",
+   "pet_id": "P013",
+   "query": "태어날 때부터 있던 유전병인데 올해 처음 발견됐어요. 보상받을 수 있어요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "보험기간 중 최초로 발견된 경우에는",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "해당보험기간",
+      "그보험기간"
+     ],
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보험기간 중 최초로 발견됐으면 해당 보험기간에 한해 보상한다(제2조 ② ① 단서)",
+   "tags": [
+    "면책단서",
+    "열거처음"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S10",
+   "pet_id": "P013",
+   "query": "파보 장염 걸렸는데 예방접종은 8개월 전에 했어요. 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "과거 1년 이내의 예방접종 기록이 있는",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보장된다 — 발생일로부터 과거 1년 이내 예방접종 기록이 있으면 보상한다(제2조 ② ② 단서)",
+   "tags": [
+    "면책단서",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S11",
+   "pet_id": "P001",
+   "query": "병원에서 무슨 병인지 모르겠다는데 치료비는 청구돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "상병명을 알 수 없는 상해 또는 질병",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 상병명을 알 수 없는 상해·질병의 치료는 보상하지 않는다(제2조 ② ③)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S12",
+   "pet_id": "P001",
+   "query": "건강검진 받은 비용도 청구할 수 있나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "정기검진, 예방적 검사",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 정기검진·예방적 검사 비용은 보상하지 않는다(제2조 ② ④)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S14",
+   "pet_id": "P013",
+   "query": "미용하러 갔다가 받은 피부 처치 비용은요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "미용으로 인한 비용",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "미용으로 인한 비용은 보상하지 않는다(제2조 ② ⑦)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S15",
+   "pet_id": "P013",
+   "query": "짖는 소리 때문에 성대 수술을 했는데 수술비 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "성대제거",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 성대제거 등 미용·성형 목적 수술은 보상하지 않는다(제2조 ② ⑧)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S16",
+   "pet_id": "P001",
+   "query": "잠복고환이라 수술하라는데 이것도 보험 처리돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "잠복고환",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 잠복고환 등 건강동물에 실시하는 외과수술은 보상하지 않는다(제2조 ② ⑨)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S17",
+   "pet_id": "P013",
+   "query": "서혜부 탈장 수술 받았어요. 보장되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "서혜부허니아(서혜부탈장)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "Ⅰ 유형은 서혜부허니아(서혜부탈장) 비용을 보상하지 않는다(제2조 ② ⑩)",
+   "tags": [
+    "면책",
+    "열거중간",
+    "유형차이"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S19",
+   "pet_id": "P008",
+   "query": "병원에서 처방해 준 영양제 말고 그냥 산 영양제 값도 받을 수 있나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 2,
+     "evidence": "건강보조 식품",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 수의사 처방 의약품 외의 건강보조식품 등은 보상하지 않는다(제2조 ② ⑪)",
+   "tags": [
+    "면책",
+    "열거끝"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S20",
+   "pet_id": "P013",
+   "query": "침 치료 받았는데 이건 보장되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "한의학(단, 침술을 제외합니다.)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [
+     "침술은보상하지않",
+     "침치료는보상하지않"
+    ],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "침술은 면책에서 빠져 있어 보장 대상이다(한의학은 면책, 단 침술 제외 — 제2조 ② ⑫)",
+   "tags": [
+    "면책단서",
+    "열거끝"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S21",
+   "pet_id": "P013",
+   "query": "벼룩 때문에 생긴 피부병 치료비는 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "예방 가능한 기생충(벼룩, 진드기",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 예방 가능한 기생충 제거비용과 그로 인한 질병 치료비는 보상하지 않는다(제2조 ② ⑬)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S22",
+   "pet_id": "P001",
+   "query": "여행 가면서 동물병원 호텔에 맡긴 비용도 청구돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "반려동물호텔 또는 보관 비용",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 반려동물호텔·보관 비용은 보상하지 않는다(제2조 ② ⑭)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S24",
+   "pet_id": "P013",
+   "query": "강아지가 떠나서 장례 치렀는데 장례비도 보험에서 나오나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "장례비",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 안락사·장례비 등 사후 비용은 보상하지 않는다(제2조 ② ⑯)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S25",
+   "pet_id": "P001",
+   "query": "동물등록 칩 심은 비용도 청구할 수 있어요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "마이크로 칩 이식 비용",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 마이크로칩 이식 비용은 보상하지 않는다(제2조 ② ⑰)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "S26",
+   "pet_id": "P008",
+   "query": "스케일링하고 이 하나 뽑았는데 치과 치료비 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 2,
+     "evidence": "과잉진료행위로 인한 비용",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [],
+    "must_not": [
+     "치아의치과치료비용"
+    ],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "Ⅲ 유형 면책 목록(제2조 ②)은 ⑱에서 끝나 치과치료가 없다 — Ⅰ과 달리 면책 사유가 아니다(일반 지급사유로 판단)",
+   "tags": [
+    "유형차이",
+    "판단"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S27",
+   "pet_id": "P013",
+   "query": "잇몸에 염증이 생겨서 치료받았어요. 이것도 치과라 안 되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 2,
+     "evidence": "치아를 제외한 구강질환 보장",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "치아를 제외한 구강질환은 보장한다(제2조 ② ⑲ 단서)",
+   "tags": [
+    "면책단서",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S29",
+   "pet_id": "P004",
+   "query": "고양이 중성화 수술비도 받을 수 있어요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "중성화, 불임 및 피임을 목적으로 한 수술",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 중성화·불임·피임 목적 수술은 보상하지 않는다(제2조 ② ⑥)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "S30",
+   "pet_id": "P006",
+   "query": "목욕시키면서 약욕한 비용은 청구돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅲ보장 특별약관",
+     "article_num": 2,
+     "evidence": "목욕비용(약욕 및 처방샴푸 값 포함)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 약욕·처방샴푸를 포함한 목욕비용은 보상하지 않는다(제2조 ② ⑬)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "S31",
+   "pet_id": "P007",
+   "query": "강아지 산책 알바생이 데리고 나갔다가 알바생이 물렸어요. 배상책임으로 처리돼요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "피보험자의 피고용인이 피보험자의 업무에 종사중에",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 피보험자의 피고용인이 업무 중 입은 신체 장해 배상책임은 보상하지 않는다(배상책임 제2조 ⑥)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S32",
+   "pet_id": "P003",
+   "query": "피해자랑 미리 돈을 더 주기로 약속했는데 그 약속한 금액도 보험에서 나와요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "약정에 따라 가중된 배상책임",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약정으로 가중된 부분은 보상하지 않는다(배상책임 제2조 ⑦)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "S34",
+   "pet_id": "P007",
+   "query": "우리 개가 같이 사는 친정엄마를 물었어요. 배상책임 되나요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "세대를 같이하는 친족에 대한 배상책임",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 세대를 같이하는 친족에 대한 배상책임은 보상하지 않는다(배상책임 제2조 ⑫)",
+   "tags": [
+    "면책",
+    "열거끝"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S35",
+   "pet_id": "P003",
+   "query": "벌금이 나왔는데 그 벌금도 보험에서 내주나요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "벌과금 및 징벌적 손해에 대한 배상책임",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 벌과금·징벌적 손해에 대한 배상책임은 보상하지 않는다(배상책임 제2조 ⑪)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "S36",
+   "pet_id": "P014",
+   "query": "소송 걸었다가 중간에 취하하면 그동안 든 변호사비는 나와요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "소의 취하",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 소의 취하·포기·인낙·각하로 생긴 손해는 보상하지 않는다(법률비용 제4조 ⑥)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S37",
+   "pet_id": "P004",
+   "query": "회사 이사로서 한 일 때문에 소송당했어요. 법률비용 나와요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "대표자, 이사, 임원 등의 자격으로 행한",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 단체의 대표자·이사·임원 자격으로 한 업무 관련 소송은 보상하지 않는다(제4조 ⑧)",
+   "tags": [
+    "면책",
+    "열거중간"
+   ],
+   "axis": "S",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "S39",
+   "pet_id": "P014",
+   "query": "윗집이랑 층간소음으로 소송하게 됐어요. 법률비용 되나요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "소음, 진동 관련 분쟁",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 소음·진동 관련 분쟁 소송은 보상하지 않는다(제4조 ⑮)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S40",
+   "pet_id": "P004",
+   "query": "소송에서 져서 상대방 소송비용까지 물어줘야 하는데 그것도 나와요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "민사소송 상대측에게 부담하여야",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 소송 결과로 상대측에 부담할 소송비용은 보상하지 않는다(제4조 ⑯)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "S41",
+   "pet_id": "P007",
+   "query": "형제랑 상속 문제로 소송하는데 법률비용 나와요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "피보험자와 피보험자의 가족 간의 민사소송",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 피보험자와 가족 간 민사소송은 보상하지 않는다(제4조 ⑲)",
+   "tags": [
+    "면책",
+    "다음청크"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S42",
+   "pet_id": "P013",
+   "query": "경찰견으로 일하는 개도 가입할 수 있어요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "경찰견, 구조견, 군견, 사냥개",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "가입대상이아닙",
+      "가입할수없",
+      "가입이안",
+      "가입대상에서제외",
+      "가입되지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "안 된다 — 경찰견·구조견·군견 등 특수 목적견은 가입 대상이 아니다(장애인 안내견은 예외)",
+   "tags": [
+    "표행",
+    "1699자"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S44",
+   "pet_id": "P014",
+   "query": "보험금 3영업일 안에 준다는데 토요일도 영업일이에요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "토요일",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "제외"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "아니다 — 영업일에서 토요일·공휴일·근로자의 날은 제외한다",
+   "tags": [
+    "표행"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S45",
+   "pet_id": "P004",
+   "query": "이 계약의 평균공시이율이 몇 퍼센트예요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "공시이율은 2.75%",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "2.75"
+     ]
+    ],
+    "must_not": [
+     "2.50%"
+    ],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "2.75%(반려묘 약관 — 반려견은 2.50%)",
+   "tags": [
+    "표행",
+    "종차이"
+   ],
+   "axis": "S",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "S46",
+   "pet_id": "P008",
+   "query": "보험금이 지급기일보다 40일 늦게 나오면 이자 얼마나 붙어요?",
+   "gold": [
+    {
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율(4.0%)",
+     "section": "별표"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "4.0%",
+      "4%"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "31~60일 구간 — 보험계약대출이율 + 가산이율 4.0%(별표1)",
+   "tags": [
+    "표행",
+    "별표"
+   ],
+   "axis": "S",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "S47",
+   "pet_id": "P013",
+   "query": "보험금이 석 달 넘게 늦어지면 가산이율이 얼마예요?",
+   "gold": [
+    {
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율(8.0%)",
+     "section": "별표"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "8.0%",
+      "8%"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "91일 이후 — 보험계약대출이율 + 가산이율 8.0%(별표1)",
+   "tags": [
+    "표행",
+    "별표"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "S49",
+   "pet_id": "P014",
+   "query": "항소심 가면 송달료는 얼마로 잡혀요?",
+   "gold": [
+    {
+     "section_name": "【별표4】 민사소송 인지액 /【별표5】 송달료",
+     "article_num": null,
+     "evidence": "132,000원",
+     "section": "별표"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "132000원",
+      "13만2000원",
+      "13만2천원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "legal",
+    "calc_values": {
+     "service": 132000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "132,000원(별표5)",
+   "tags": [
+    "표행",
+    "별표"
+   ],
+   "axis": "S",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "S50",
+   "pet_id": "P004",
+   "query": "소송 금액이 2억원이면 인지액은 얼마예요?",
+   "gold": [
+    {
+     "section_name": "【별표4】 민사소송 인지액 /【별표5】 송달료",
+     "article_num": null,
+     "evidence": "55,000원 + 소송목적의 값 X 0.4%",
+     "section": "별표"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "85만5000원",
+      "855000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "legal",
+    "calc_values": {
+     "stamp": 855000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "55,000원 + 2억 × 0.4% = 855,000원(별표4)",
+   "tags": [
+    "표행",
+    "별표",
+    "계산"
+   ],
+   "axis": "S",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "P01",
+   "pet_id": "P013",
+   "query": "해지 신청했는데 돌려받는 돈은 언제 통장에 들어와요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 35,
+     "evidence": "해약환급금을 청구하여야",
+     "section": "보통약관"
+    },
+    {
+     "section_name": null,
+     "article_num": 32,
+     "evidence": "언제든지 계약을 해지",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 20,
+     "evidence": "언제든지 계약을 해지",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "해약환급금은 청구해야 지급된다(보통약관 제35조)",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R001",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "P02",
+   "pet_id": "P014",
+   "query": "증권 받은 지 열흘 됐는데 그냥 없던 일로 해도 돼요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "보험증권을 받은 날부터 15",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "청약을 철회할 수 있습니다",
+     "section": "안내_요약"
+    },
+    {
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "청약을 철회할 수 있다",
+     "section": "법규"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "15일"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보험증권을 받은 날부터 15일 이내면 청약 철회 가능",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R002",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "P04",
+   "pet_id": "P007",
+   "query": "보험료를 깜빡하고 두 달 안 냈어요. 보험이 바로 없어지나요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 17,
+     "evidence": "납입최고(독촉)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "납입최고",
+      "독촉"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "바로 해지되지 않고 납입최고(독촉) 기간을 거친다",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R004",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P05",
+   "pet_id": "P005",
+   "query": "보험료 못 내서 끊긴 보험 다시 살릴 방법 있어요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 30,
+     "evidence": "3년 이내에",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 18,
+     "evidence": "부활",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "3년"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "해지된 날부터 3년 이내 부활(효력회복) 청약 가능",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R005",
+   "axis": "P",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "P06",
+   "pet_id": "P015",
+   "query": "가입한 날부터 바로 보장되는 거예요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 26,
+     "evidence": "제1회 보험료를 받은 때",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 16,
+     "evidence": "제1회 보험료를 받은 때",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "제1회보험료",
+      "첫회보험료",
+      "1회보험료"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "제1회 보험료를 받은 때부터 보장 개시",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R007",
+   "axis": "P",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "P07",
+   "pet_id": "P004",
+   "query": "보험사랑 의견이 안 맞으면 어디에 도움을 요청할 수 있어요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 39,
+     "evidence": "금융감독원장에게 조정을 신청",
+     "section": "보통약관"
+    },
+    {
+     "section_name": "보험품질보증제 및 민원상담 안내",
+     "article_num": null,
+     "evidence": "분쟁조정",
+     "section": "안내_절차"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "금융감독원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "금융감독원장에게 분쟁조정 신청",
+   "tags": [
+    "일상어",
+    "보통약관"
+   ],
+   "source": "R008",
+   "axis": "P",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "P09",
+   "pet_id": "P013",
+   "query": "열 살 넘은 강아지도 새로 가입돼요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "생후 60일 이하",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "8세",
+      "10세"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "만 8세(실속형 만 10세) 초과면 가입 대상 아님",
+   "tags": [
+    "일상어",
+    "일반조항"
+   ],
+   "source": "R010",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "P10",
+   "pet_id": "P007",
+   "query": "같이 사는 부모님도 보험 대상자에 들어가요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 3,
+     "evidence": "동거 친족",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 1,
+     "evidence": "동거 친족",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "동거",
+      "친족"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "피보험자와 동거하는 친족 등 범위",
+   "tags": [
+    "일상어",
+    "일반조항"
+   ],
+   "source": "R011",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P11",
+   "pet_id": "P008",
+   "query": "병원비 청구할 때 영수증 말고 또 뭐 내야 돼요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 4,
+     "evidence": "진료비 영수증",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "보험금 청구서류",
+     "section": "안내_절차"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "진료비세부내역서",
+      "진료기록",
+      "진단서"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "진료비 영수증·진료비 세부내역서 등",
+   "tags": [
+    "일상어",
+    "일반조항"
+   ],
+   "source": "R012",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P12",
+   "pet_id": "P003",
+   "query": "서류 다 냈는데 돈은 언제쯤 들어와요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 5,
+     "evidence": "3영업일 이내에 보험금을 지급",
+     "section": "특별약관"
+    },
+    {
+     "section_name": null,
+     "article_num": 8,
+     "evidence": "3영업일",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "3영업일"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "서류 접수 후 3영업일 이내 지급",
+   "tags": [
+    "일상어",
+    "일반조항"
+   ],
+   "source": "R013",
+   "axis": "P",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "P14",
+   "pet_id": "P002",
+   "query": "1년 만기 끝나면 계속 이어서 들 수 있어요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 15,
+     "evidence": "재가입",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "가입자 유의사항",
+     "article_num": null,
+     "evidence": "재가입",
+     "section": "안내_요약"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "재가입"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "재가입 조건 충족 시 재가입",
+   "tags": [
+    "일상어",
+    "일반조항"
+   ],
+   "source": "R015",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "고양이"
+  },
+  {
+   "id": "P15",
+   "pet_id": "P007",
+   "query": "산책하다 우리 개가 지나가던 아이를 물었어요. 처리돼요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 1,
+     "evidence": "신체의 장해에 대한 법률상의 배상책임",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "배상책임 특약으로 법률상 배상책임 보상",
+   "tags": [
+    "일상어",
+    "배상책임"
+   ],
+   "source": "R017",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P16",
+   "pet_id": "P003",
+   "query": "개 물림 사고인데 보험에서 안 해주는 경우는 어떤 거예요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "보상하지 않습니다",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "고의"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고의·친족·소음·전염 등 면책",
+   "tags": [
+    "일상어",
+    "배상책임"
+   ],
+   "source": "R018",
+   "axis": "P",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "P17",
+   "pet_id": "P012",
+   "query": "피해자가 돈 달라는데 그냥 제가 바로 줘도 되나요?",
+   "gold": [
+    {
+     "section_name": "배상책임 관련 특별약관 일반조항",
+     "article_num": 8,
+     "evidence": "미리 회사의 동의를 받는 일",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "동의"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "미리 회사 동의를 받아야 한다",
+   "tags": [
+    "일상어",
+    "배상책임"
+   ],
+   "source": "R019",
+   "axis": "P",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "P19",
+   "pet_id": "P001",
+   "query": "하룻밤만 병원에 맡겨도 입원으로 쳐 줘요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "치료에 전념",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "치료에전념",
+      "입원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "치료에 전념하기 위해 병원에 머무는 경우가 입원",
+   "tags": [
+    "일상어",
+    "의료비_한도외"
+   ],
+   "source": "R021",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P20",
+   "pet_id": "P015",
+   "query": "기왕증 있던 건 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "이미 감염 또는 발병",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "이미 감염 또는 발병",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보험계약일 이전에 이미 발병한 질병은 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "의료비_한도외"
+   ],
+   "source": "R022",
+   "axis": "P",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "P21",
+   "pet_id": "P008",
+   "query": "위 말고 대장 내시경도 내시경 처치로 인정돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 4,
+     "evidence": "식도, 위 또는 장",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+     "article_num": 5,
+     "evidence": "식도, 위 또는 장",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "장"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "식도·위·장 내시경 처치",
+   "tags": [
+    "일상어",
+    "의료비_한도외"
+   ],
+   "source": "R023",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P22",
+   "pet_id": "P001",
+   "query": "괌 여행 가서 다친 것도 병원비 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "대한민국 이외의 지역",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "대한민국 이외의 지역",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "대한민국 이외 지역 사고는 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "의료비_한도외"
+   ],
+   "source": "R024",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P24",
+   "pet_id": "P013",
+   "query": "수술하면 하루 최대 얼마 받아요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "수술",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "200만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형 수술한 날 1일 200만원",
+   "tags": [
+    "일상어",
+    "한도"
+   ],
+   "source": "R026",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "P25",
+   "pet_id": "P009",
+   "query": "통원하면 하루 얼마까지 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "10만원",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "10만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "실속형Ⅱ 통원 1일 10만원",
+   "tags": [
+    "일상어",
+    "한도"
+   ],
+   "source": "R027",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "P26",
+   "pet_id": "P008",
+   "query": "MRI 처음 찍으면 얼마까지 돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "MRI",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅲ보장 특별약관",
+     "article_num": 1,
+     "evidence": "MRI",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "100만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형Ⅲ MRI 연간 첫 번째 1일 100만원",
+   "tags": [
+    "일상어",
+    "한도"
+   ],
+   "source": "R028",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P27",
+   "pet_id": "P001",
+   "query": "통원비는 하루에 최대 얼마예요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "30만원",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형Ⅱ 통원 1일 30만원",
+   "tags": [
+    "일상어",
+    "한도"
+   ],
+   "source": "R029",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P29",
+   "pet_id": "P004",
+   "query": "상표권 분쟁 소송도 법률비용 나와요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "특허법",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "특허·상표권 등 지적재산권 소송은 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "선택특약_별첨"
+   ],
+   "source": "R031",
+   "axis": "P",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "P30",
+   "pet_id": "P007",
+   "query": "변호사 비용은 한 소송에 최대 얼마까지예요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "2,000만원",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "2000만원",
+      "2천만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "1소송당 2,000만원",
+   "tags": [
+    "일상어",
+    "선택특약_별첨"
+   ],
+   "source": "R032",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P31",
+   "pet_id": "P001",
+   "query": "부담보 걸린 병은 얼마 동안 보장이 안 돼요?",
+   "gold": [
+    {
+     "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+     "article_num": 2,
+     "evidence": "1개월부터5년",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "5년",
+      "1개월"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "부담보 기간 1개월~5년(또는 전 기간)",
+   "tags": [
+    "일상어",
+    "선택특약_별첨"
+   ],
+   "source": "R033",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P32",
+   "pet_id": "P012",
+   "query": "무릎 슬개골 빠지는 것도 부담보 목록에 있어요?",
+   "gold": [
+    {
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "슬개골",
+     "section": "별첨"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "슬개골"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "특정질병 분류표에 슬개골 탈구 포함",
+   "tags": [
+    "일상어",
+    "선택특약_별첨"
+   ],
+   "source": "R034",
+   "axis": "P",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "P34",
+   "pet_id": "P004",
+   "query": "제가 입원하면 가족이 대신 보험금 청구할 수 있어요?",
+   "gold": [
+    {
+     "section_name": "지정대리청구서비스 특별약관",
+     "article_num": 4,
+     "evidence": "지정대리청구인",
+     "section": "기타_제도성_특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "지정대리청구"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "지정대리청구인 지정 가능",
+   "tags": [
+    "일상어",
+    "기타_제도성"
+   ],
+   "source": "R037",
+   "axis": "P",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "P35",
+   "pet_id": "P013",
+   "query": "장애인 보험으로 바꾸면 연말정산 혜택 있어요?",
+   "gold": [
+    {
+     "section_name": "장애인전용보험전환 특별약관",
+     "article_num": 3,
+     "evidence": "특별세액공제",
+     "section": "기타_제도성_특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "세액공제"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "장애인전용보험 전환 시 특별세액공제",
+   "tags": [
+    "일상어",
+    "기타_제도성"
+   ],
+   "source": "R039",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "P36",
+   "pet_id": "P014",
+   "query": "동물등록 할인 대신 기부할 수 있다면서요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 Cat 기부 특별약관",
+     "article_num": 2,
+     "evidence": "기부금",
+     "section": "기타_제도성_특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "기부"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "기부 특약으로 기부 가능",
+   "tags": [
+    "일상어",
+    "기타_제도성"
+   ],
+   "source": "R040",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "P37",
+   "pet_id": "P008",
+   "query": "보험금이 늦게 나오면 지연 이자도 받아요?",
+   "gold": [
+    {
+     "section_name": "【별표1】 보험금을 지급할 때의 적립이율 계산",
+     "article_num": null,
+     "evidence": "가산이율",
+     "section": "별표"
+    },
+    {
+     "section_name": null,
+     "article_num": 8,
+     "evidence": "적립이율 계산)】에서 정한 이율로 계산한 금액을 보험금에 더하여",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "가산이율",
+      "이자"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "지급 지연 시 가산이율 적용",
+   "tags": [
+    "일상어",
+    "별표"
+   ],
+   "source": "R041",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P39",
+   "pet_id": "P007",
+   "query": "청약서에 제가 아니라 아내가 대신 서명했는데 괜찮아요?",
+   "gold": [
+    {
+     "section_name": "주요내용 요약서",
+     "article_num": null,
+     "evidence": "자필서명",
+     "section": "안내_요약"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "자필서명"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "자필서명이 없으면 계약 취소 사유",
+   "tags": [
+    "일상어",
+    "안내"
+   ],
+   "source": "R045",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P40",
+   "pet_id": "P009",
+   "query": "보험금을 남편 통장으로 받아도 돼요?",
+   "gold": [
+    {
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "본인 명의의 통장",
+     "section": "안내_절차"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "본인명의"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "원칙적으로 본인 명의 통장",
+   "tags": [
+    "일상어",
+    "안내"
+   ],
+   "source": "R046",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "P41",
+   "pet_id": "P002",
+   "query": "보험수익자가 정확히 누구예요?",
+   "gold": [
+    {
+     "section_name": "보험용어 해설",
+     "article_num": null,
+     "evidence": "보험수익자",
+     "section": "안내_용어"
+    },
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "보험수익자",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "청구"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보험금을 청구해 받을 수 있는 사람",
+   "tags": [
+    "일상어",
+    "안내"
+   ],
+   "source": "R047",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "고양이"
+  },
+  {
+   "id": "P42",
+   "pet_id": "P003",
+   "query": "고객센터 번호 좀 알려 주세요",
+   "gold": [
+    {
+     "section_name": "기타문의처 안내",
+     "article_num": null,
+     "evidence": "1566-7711",
+     "section": "약관_이용"
+    },
+    {
+     "section_name": "보험금 지급 절차",
+     "article_num": null,
+     "evidence": "1566-7711",
+     "section": "안내_절차"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "1566-7711",
+      "15667711"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "1566-7711",
+   "tags": [
+    "일상어",
+    "안내"
+   ],
+   "source": "R049",
+   "axis": "P",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "P44",
+   "pet_id": "P011",
+   "query": "청약 철회 기간이 법으로는 며칠이에요?",
+   "gold": [
+    {
+     "section_name": "【법규2】 금융소비자 보호에 관한 법률",
+     "article_num": 46,
+     "evidence": "15일과",
+     "section": "법규"
+    },
+    {
+     "section_name": null,
+     "article_num": 20,
+     "evidence": "15",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "15일"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "금융소비자보호법 — 15일",
+   "tags": [
+    "일상어",
+    "법규"
+   ],
+   "source": "R051",
+   "axis": "P",
+   "customer_id": "C008",
+   "species": "고양이"
+  },
+  {
+   "id": "P45",
+   "pet_id": "P001",
+   "query": "재활 운동 치료 받은 것도 병원비 나와요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "재활치료",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "재활치료",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "재활치료는 대체의료로 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "꼬리_512창밖"
+   ],
+   "source": "R094",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P46",
+   "pet_id": "P014",
+   "query": "상대가 맞소송 걸어오면 소송 하나 더로 쳐 줘요?",
+   "gold": [
+    {
+     "section_name": "민사소송법률비용Ⅱ보장 특별약관",
+     "article_num": 4,
+     "evidence": "하나의 소송에 포함된 것으로 보며",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "하나의소송"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "반소는 하나의 소송에 포함",
+   "tags": [
+    "일상어",
+    "꼬리_512창밖"
+   ],
+   "source": "R096",
+   "axis": "P",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "P47",
+   "pet_id": "P007",
+   "query": "개 짖는 소리 때문에 이웃이 배상하라고 하면 보험 돼요?",
+   "gold": [
+    {
+     "section_name": "갱신형 펫퍼민트 반려견 배상책임보장 특별약관",
+     "article_num": 2,
+     "evidence": "소음, 냄새, 털날림",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "소음·냄새·털날림 배상책임은 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "꼬리_512창밖"
+   ],
+   "source": "R097",
+   "axis": "P",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "P49",
+   "pet_id": "P001",
+   "query": "무릎뼈 빠지는 것도 특정질병이에요?",
+   "gold": [
+    {
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "무릎뼈 탈구",
+     "section": "별첨"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "무릎뼈"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "분류표에 무릎뼈 탈구 포함",
+   "tags": [
+    "일상어",
+    "꼬리_512창밖"
+   ],
+   "source": "R099",
+   "axis": "P",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "P50",
+   "pet_id": "P004",
+   "query": "영양제 값도 청구할 수 있어요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "건강보조",
+     "section": "특별약관"
+    },
+    {
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 2,
+     "evidence": "건강보조",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "건강보조식품은 보상하지 않는다",
+   "tags": [
+    "일상어",
+    "꼬리_512창밖"
+   ],
+   "source": "R102",
+   "axis": "P",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "C01",
+   "pet_id": "P013",
+   "query": "통원 치료비 12만원 나왔는데 보험금 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "6만3000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 63000,
+     "days_known": false
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "6만 3,000원 — 횟수를 몰라 하루로 계산",
+   "tags": [
+    "금액",
+    "통원",
+    "일수모름"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C02",
+   "pet_id": "P013",
+   "query": "입원 하루 했고 치료비 50만원 나왔어요. 얼마 받아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 300000,
+     "days": 1,
+     "days_known": true
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "1일 한도 30만원",
+   "tags": [
+    "금액",
+    "입원",
+    "한도"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C04",
+   "pet_id": "P013",
+   "query": "통원 2번 다녔고 날짜별로 8만원, 15만원 나왔어요. 보험금 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "11만9000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 119000,
+     "exact": true,
+     "days": 2
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "3만 5,000원 + 8만 4,000원 = 11만 9,000원",
+   "tags": [
+    "금액",
+    "여러날",
+    "통원"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C05",
+   "pet_id": "P013",
+   "query": "입원 4일 했고 치료비 총 100만원이에요. 보험금 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "진료비세부내역서"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "days_ask",
+    "calc_values": {
+     "days": 4,
+     "total": 1000000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "날짜별 금액 입력칸 4개로 되묻는다",
+   "tags": [
+    "금액",
+    "여러날",
+    "입원"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C06",
+   "pet_id": "P013",
+   "query": "일주일 입원했는데 치료비가 총 150만원 들었어요. 보험금 얼마나 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "날짜별치료비"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "exact": false,
+     "days": 7,
+     "range_min": 300000,
+     "range_max": 945000,
+     "even": 903000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {
+     "range_min": 1000,
+     "range_max": 1000,
+     "even": 1000
+    }
+   },
+   "answer": "범위 300,000~945,000원, 고르게면 903,000원 — 날짜별 금액이 있어야 정확",
+   "tags": [
+    "금액",
+    "여러날",
+    "범위"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C07",
+   "pet_id": "P001",
+   "query": "입원 하루 했고 치료비 80만원 나왔어요. 얼마 받아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 300000,
+     "annual_used": 3500000,
+     "annual_remaining": 11500000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "30만원, 올해 사용 350만원·남은 1,150만원",
+   "tags": [
+    "금액",
+    "청구이력"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "C09",
+   "pet_id": "P003",
+   "query": "MRI 찍었고 통원 한 번에 치료비 60만원 나왔어요. 얼마 받아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "27만5000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 275000,
+     "mri_before": 0
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "(60만 − 5만) × 50% = 27만 5,000원(실속형Ⅲ MRI 첫 번째 한도 30만원 안)",
+   "tags": [
+    "금액",
+    "MRI",
+    "자기부담5만",
+    "실속형"
+   ],
+   "axis": "C",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "C10",
+   "pet_id": "P008",
+   "query": "CT 찍고 통원 한 번 했는데 치료비 50만원이에요. 얼마 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 300000,
+     "mri_before": 1
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "올해 두 번째라 한도 30만원",
+   "tags": [
+    "금액",
+    "MRI",
+    "청구이력"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "C11",
+   "pet_id": "P012",
+   "query": "통원 한 번 했고 치료비 20만원이요. 얼마 받나요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "10만5000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 105000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "(20만 − 5만) × 70% = 10만 5,000원",
+   "tags": [
+    "금액",
+    "자기부담5만"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C12",
+   "pet_id": "P009",
+   "query": "입원 3일 했고 날짜별로 20만, 15만, 10만원 나왔어요. 보험금은요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "15만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 150000,
+     "exact": true
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "실속형 50%·1일 10만원 — 7만 5,000 + 5만 + 2만 5,000 = 15만원",
+   "tags": [
+    "금액",
+    "여러날",
+    "실속형",
+    "자기부담5만"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "C14",
+   "pet_id": "P006",
+   "query": "방광염으로 통원 한 번 했고 치료비 18만원이에요. 얼마 받아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "부담보"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {},
+    "banner": [
+     "비뇨기과질환"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "방광염은 비뇨기과질환 — 부담보라 지급되지 않는다",
+   "tags": [
+    "금액",
+    "부담보",
+    "동의어"
+   ],
+   "axis": "C",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "C15",
+   "pet_id": "P011",
+   "query": "통원 치료비 10만원 나왔는데 얼마 받아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "모모는 통원 특약에 가입하지 않았다(입원만)",
+   "tags": [
+    "금액",
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C008",
+   "species": "고양이"
+  },
+  {
+   "id": "C16",
+   "pet_id": "P010",
+   "query": "입원비가 30만원 나왔어요. 보험금은요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "두부는 입원 특약에 가입하지 않았다(통원Ⅱ만)",
+   "tags": [
+    "금액",
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C007",
+   "species": "강아지"
+  },
+  {
+   "id": "C17",
+   "pet_id": "P005",
+   "query": "입원 하루 했고 치료비 40만원 나왔어요. 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "15만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {
+     "payout": 150000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "콩이 입원은 기본형 — 1일 한도 15만원",
+   "tags": [
+    "금액",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "C19",
+   "pet_id": "P012",
+   "query": "뒷다리 근골격계 질환 치료도 보장돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안",
+      "부담보"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": [
+     "뒷다리근골격계질환"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "망고의 부담보 — 지급되지 않는다",
+   "tags": [
+    "부담보"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C20",
+   "pet_id": "P012",
+   "query": "망고가 무릎이 자꾸 빠져서 병원 다니는데 보장돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안",
+      "부담보"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": [
+     "슬개골 탈구"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "무릎뼈(슬개골) 탈구는 부담보 — 지급되지 않는다",
+   "tags": [
+    "부담보",
+    "동의어"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C21",
+   "pet_id": "P012",
+   "query": "고관절 이형성증 진단받았는데 치료비 나와요?",
+   "gold": [
+    {
+     "section_name": "특정질병 분류표(반려견)",
+     "article_num": null,
+     "evidence": "고관절 이형성증",
+     "section": "별첨"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안",
+      "부담보"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": [
+     "뒷다리근골격계질환"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고관절 이형성증은 뒷다리근골격계질환 분류 — 망고의 부담보라 지급되지 않는다",
+   "tags": [
+    "부담보",
+    "분류표"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C22",
+   "pet_id": "P006",
+   "query": "비뇨기과질환은 언제까지 보장이 안 돼요?",
+   "gold": [
+    {
+     "section_name": "반려동물 특정 질병 보장제한부 인수 특별약관",
+     "article_num": 2,
+     "evidence": "1개월부터",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "부담보",
+      "기간"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": [
+     "비뇨기과질환"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "부담보 기간(1개월~5년 또는 보험기간 전체 — 증권에 기재)",
+   "tags": [
+    "부담보"
+   ],
+   "axis": "C",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "C24",
+   "pet_id": "P013",
+   "query": "별이가 어제 장염으로 통원했는데 보장되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "30일 이내에 발생한 질병은 보상하지 않습니다",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "30일"
+     ],
+     [
+      "보상하지않",
+      "지급하지않",
+      "보장하지않",
+      "보장되지않",
+      "보상되지않",
+      "지급되지않",
+      "받을수없",
+      "안나옵",
+      "제외",
+      "해당하지않",
+      "보장이안",
+      "보상이안",
+      "지급이안"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "가입(10-01) 후 30일 이내 발생한 질병은 보상하지 않는다",
+   "tags": [
+    "대기기간"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C25",
+   "pet_id": "P015",
+   "query": "솜이가 감기로 입원하면 보상되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "30일 이내에 발생한 질병은 보상하지 않습니다",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "30일"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "가입(10-05) 후 30일 이내 질병은 보상하지 않는다 — 11월 3일 이후 발병부터",
+   "tags": [
+    "대기기간"
+   ],
+   "axis": "C",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "C26",
+   "pet_id": "P013",
+   "query": "별이가 산책하다 다쳤는데 이건 바로 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "30일 이내에 발생한 질병은 보상하지 않습니다",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "30일 대기는 질병에만 — 상해는 보장",
+   "tags": [
+    "대기기간",
+    "판단"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C27",
+   "pet_id": "P001",
+   "query": "초코 슬관절 탈구는 언제부터 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "1년 이내에 발생한 슬관절탈구",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "1년"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": [
+     "슬개골 탈구"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보장개시 후 1년 이내 슬관절탈구는 미지급 + 초코는 슬개골 탈구 부담보",
+   "tags": [
+    "대기기간",
+    "부담보",
+    "동의어"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "C29",
+   "pet_id": "P014",
+   "query": "달이가 방광염에 걸렸는데 바로 보장돼요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 통원의료비보장 특별약관",
+     "article_num": 1,
+     "evidence": "30일 이내에 발생한 질병은 보상하지 않습니다",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "30일"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "가입(10-01) 후 30일 이내 질병은 보상하지 않는다",
+   "tags": [
+    "대기기간"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "C30",
+   "pet_id": "P001",
+   "query": "산책하다 초코가 남의 개를 물었어요. 배상돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "초코는 배상책임 특약에 가입하지 않았다",
+   "tags": [
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "C31",
+   "pet_id": "P013",
+   "query": "별이 일로 소송하게 되면 변호사비도 보장돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "별이는 법률비용 특약에 가입하지 않았다",
+   "tags": [
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C32",
+   "pet_id": "P010",
+   "query": "입원하면 하루에 얼마까지 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "두부는 입원 특약 미가입 — 통원Ⅱ 기본형만",
+   "tags": [
+    "미가입",
+    "한도"
+   ],
+   "axis": "C",
+   "customer_id": "C007",
+   "species": "강아지"
+  },
+  {
+   "id": "C34",
+   "pet_id": "P002",
+   "query": "나비는 법률비용 특약도 들어 있죠?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "가입하지 않았다",
+   "tags": [
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "고양이"
+  },
+  {
+   "id": "C35",
+   "pet_id": "P003",
+   "query": "민사소송 걸리면 변호사비 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "가입하지않",
+      "가입되어있지않",
+      "가입되지않",
+      "미가입",
+      "가입하신특약에없",
+      "가입한특약에없",
+      "가입되어있지않"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보리는 법률비용 특약 미가입",
+   "tags": [
+    "미가입"
+   ],
+   "axis": "C",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "C36",
+   "pet_id": "P005",
+   "query": "통원 하루 한도는 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+     "rows.0.non_surgery": 300000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "통원은 고급형 — 1일 30만원",
+   "tags": [
+    "한도",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "C37",
+   "pet_id": "P005",
+   "query": "입원해서 수술한 날 한도는요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "200만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.section_name": "펫퍼민트 반려견 입원의료비보장 특별약관",
+     "rows.0.surgery": 2000000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "입원은 기본형 — 수술한 날 1일 200만원",
+   "tags": [
+    "한도",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "C39",
+   "pet_id": "P008",
+   "query": "MRI 또 찍으면 한도가 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.mri_2nd_plus": 300000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "올해 이미 1번 — 두 번째부터 1일 30만원",
+   "tags": [
+    "한도",
+    "MRI",
+    "청구이력"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "C40",
+   "pet_id": "P009",
+   "query": "보상비율이 몇 퍼센트예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "50%"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "실속형 50%",
+   "tags": [
+    "등급",
+    "실속형"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "C41",
+   "pet_id": "P006",
+   "query": "입원은 하루 얼마까지 돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "10만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.non_surgery": 100000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "레오 입원은 Ⅲ 실속형 — 1일 10만원",
+   "tags": [
+    "한도",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "C42",
+   "pet_id": "P006",
+   "query": "통원 하루 한도는요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "15만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.non_surgery": 150000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "레오 통원은 Ⅲ 기본형 — 1일 15만원",
+   "tags": [
+    "한도",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "C44",
+   "pet_id": "P002",
+   "query": "1년에 최대 얼마까지 받을 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "500만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.annual_total": 5000000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "기본형Ⅰ 연간 총 한도 500만원(통원·입원 각각)",
+   "tags": [
+    "한도",
+    "연간한도"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "고양이"
+  },
+  {
+   "id": "C45",
+   "pet_id": "P004",
+   "query": "수술하면 하루 얼마까지 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "250만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.surgery": 2500000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형Ⅱ 수술한 날 1일 250만원",
+   "tags": [
+    "한도",
+    "수술"
+   ],
+   "axis": "C",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "C46",
+   "pet_id": "P007",
+   "query": "올해 입원 보험금 얼마나 더 받을 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "25만5000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "연간 500만원 중 474만 5,000원 사용 — 25만 5,000원 남음",
+   "tags": [
+    "청구이력",
+    "연간한도"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "C47",
+   "pet_id": "P001",
+   "query": "올해 남은 입원 한도가 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "1150만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "1,500만원 중 350만원 사용 — 1,150만원 남음",
+   "tags": [
+    "청구이력",
+    "연간한도"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "C49",
+   "pet_id": "P012",
+   "query": "올해 통원으로 보험금 얼마 받았어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "9만1000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "9만 1,000원(2건)",
+   "tags": [
+    "청구이력"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C50",
+   "pet_id": "P012",
+   "query": "망고가 10살인데 내년에도 재가입 되나요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 15,
+     "evidence": "재가입 나이의 범위 내일 것",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "재가입나이"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "재가입일에 회사가 정한 재가입 나이 범위 안이어야 한다(제15조 ②①) — 구체 나이는 약관에 없다",
+   "tags": [
+    "나이"
+   ],
+   "axis": "C",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "C51",
+   "pet_id": "P009",
+   "query": "까미가 9살인데 고급형으로 새로 가입할 수 있어요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "만 8세(단, 실속형의 경우 만 10세)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "8세"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형은 만 8세 초과면 가입 대상 아님 — 9살은 안 된다(실속형은 만 10세까지)",
+   "tags": [
+    "나이"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "C52",
+   "pet_id": "P003",
+   "query": "보리가 8살인데 새로 가입하는 거면 고급형도 돼요?",
+   "gold": [
+    {
+     "section_name": "반려동물 비용손해 관련 특별약관 일반조항",
+     "article_num": 2,
+     "evidence": "만 8세(단, 실속형의 경우 만 10세)",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "8세"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "만 8세를 '초과'해야 제외 — 8살은 가입 가능",
+   "tags": [
+    "나이",
+    "판단"
+   ],
+   "axis": "C",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "C54",
+   "pet_id": "P013",
+   "query": "기본형이었으면 통원 하루 한도가 얼마였어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "15만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "기본형 통원 1일 15만원",
+   "tags": [
+    "가정"
+   ],
+   "axis": "C",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "C55",
+   "pet_id": "P009",
+   "query": "고급형으로 바꾸면 보상비율이 올라가요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "70%"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형·기본형 70%, 실속형 50%",
+   "tags": [
+    "가정"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "C56",
+   "pet_id": "P001",
+   "query": "Ⅲ유형이었으면 MRI는 따로 한도가 있었어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "MRI"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "Ⅲ 유형만 MRI·CT·내시경 날 한도가 따로 있다",
+   "tags": [
+    "가정",
+    "유형차이"
+   ],
+   "axis": "C",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "C57",
+   "pet_id": "P005",
+   "query": "입원도 고급형이었으면 하루 한도가 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "30만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "고급형 입원 1일 30만원",
+   "tags": [
+    "가정"
+   ],
+   "axis": "C",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "C59",
+   "pet_id": "P007",
+   "query": "1억짜리 소송이면 인지액이 얼마예요?",
+   "gold": [
+    {
+     "section_name": "【별표4】 민사소송 인지액 /【별표5】 송달료",
+     "article_num": null,
+     "evidence": "55,000원 + 소송목적의 값 X 0.4%",
+     "section": "별표"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "45만5000원",
+      "455000원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "legal",
+    "calc_values": {
+     "stamp": 455000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "55,000원 + 1억 × 0.4% = 455,000원",
+   "tags": [
+    "법률",
+    "계산"
+   ],
+   "axis": "C",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "C60",
+   "pet_id": "P006",
+   "query": "통원으로 MRI 처음 찍으면 하루 얼마까지 나와요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "50만원"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "limits",
+    "calc_values": {
+     "rows.0.mri_1st": 500000
+    },
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "레오 통원은 Ⅲ 기본형 — MRI 첫 번째 1일 50만원",
+   "tags": [
+    "한도",
+    "MRI",
+    "등급혼합"
+   ],
+   "axis": "C",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "M01",
+   "title": "여러 날 → 날짜별 칸 → 정확",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M01-1",
+     "pet_id": "P013",
+     "query": "입원하면 보험금 얼마 나와요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M01-2",
+     "pet_id": "P013",
+     "query": "3일 입원했고 총 70만원이요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 700000
+      },
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M01-3",
+     "pet_id": "P013",
+     "query": "30만, 30만, 10만",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "42만7000원"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 427000,
+       "exact": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M02",
+   "title": "6일 이상 → 바로 범위",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M02-1",
+     "pet_id": "P013",
+     "query": "입원하면 보험금 얼마 나와요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M02-2",
+     "pet_id": "P013",
+     "query": "일주일 입원했고 총 200만원이요",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "쉼표"
+       ],
+       [
+        "날짜별치료비"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "exact": false,
+       "days": 7,
+       "range_min": 300000,
+       "range_max": 1281000,
+       "even": 1253000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {
+       "range_min": 1000,
+       "range_max": 1000,
+       "even": 1000
+      }
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M04",
+   "title": "통원 → 입원 → 수술 연쇄",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M04-1",
+     "pet_id": "P013",
+     "query": "고급형 통원 하루 한도는?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {
+       "rows.0.section_name": "펫퍼민트 반려견 통원의료비보장 특별약관"
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "고급형 통원 1일 30만원(수술한 날 200만원)",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M04-2",
+     "pet_id": "P013",
+     "query": "그럼 입원은요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {
+       "rows.0.section_name": "펫퍼민트 반려견 입원의료비보장 특별약관"
+      },
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "고급형 입원 1일 30만원(수술한 날 200만원)",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M04-3",
+     "pet_id": "P013",
+     "query": "수술하면요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "200만원"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "입원 수술한 날 1일 200만원",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M05",
+   "title": "반려동물을 바꾸면 앞 질문을 잇지 않는다",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M05-1",
+     "pet_id": "P013",
+     "query": "통원 하루 한도는 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "별이 통원 고급형 1일 30만원",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M05-2",
+     "pet_id": "P014",
+     "query": "그럼 입원은요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": "none",
+      "calc_tol": {}
+     },
+     "answer": "앞 질문(별이)과 잇지 않고 달이 기준으로 답하거나 무엇을 묻는지 확인",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M06",
+   "title": "부담보 + 금액 → 일수 이어 받기",
+   "pet_id": "P001",
+   "turns": [
+    {
+     "id": "M06-1",
+     "pet_id": "P001",
+     "query": "슬개골 탈구로 입원했는데 보험금 얼마나 나와요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": [
+       "슬개골 탈구"
+      ],
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C001",
+     "species": "강아지"
+    },
+    {
+     "id": "M06-2",
+     "pet_id": "P001",
+     "query": "치료비는 50만원이에요",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "부담보"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 300000,
+       "days_known": false
+      },
+      "banner": [
+       "슬개골 탈구"
+      ],
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C001",
+     "species": "강아지"
+    },
+    {
+     "id": "M06-3",
+     "pet_id": "P001",
+     "query": "3일이요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 500000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C001",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M07",
+   "title": "청구 이력 — 연간 잔여로 잘림",
+   "pet_id": "P007",
+   "turns": [
+    {
+     "id": "M07-1",
+     "pet_id": "P007",
+     "query": "입원 보험금 얼마나 나와요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C006",
+     "species": "강아지"
+    },
+    {
+     "id": "M07-2",
+     "pet_id": "P007",
+     "query": "2박 3일 입원했고 날짜별로 20만원, 20만원, 20만원",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "25만5000원"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 255000,
+       "capped": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C006",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M09",
+   "title": "일수 모름 → '3번' → 모르겠어요 → 범위",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M09-1",
+     "pet_id": "P013",
+     "query": "통원 치료비 12만원 나왔는데 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 63000,
+       "days_known": false
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M09-2",
+     "pet_id": "P013",
+     "query": "3번 다닌 거예요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 120000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M09-3",
+     "pet_id": "P013",
+     "query": "잘 모르겠어요",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "날짜별치료비가있어야"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "exact": false,
+       "range_min": 21000,
+       "range_max": 49000,
+       "even": 21000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {
+       "range_min": 1000,
+       "range_max": 1000,
+       "even": 1000
+      }
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M10",
+   "title": "법률비용 — 변호사비 → 송달료",
+   "pet_id": "P014",
+   "turns": [
+    {
+     "id": "M10-1",
+     "pet_id": "P014",
+     "query": "소송 금액이 3천만원이면 변호사비는 얼마까지예요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "280만원"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "legal",
+      "calc_values": {
+       "lawyer_limit": 2800000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "【별표3】 200만원 + (3,000만 − 2,000만) × 8% = 280만원",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "고양이"
+    },
+    {
+     "id": "M10-2",
+     "pet_id": "P014",
+     "query": "항소하면 송달료는요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "13만2000원",
+        "132000원"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "legal",
+      "calc_values": {
+       "service": 132000
+      },
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "항소심 송달료 132,000원(별표5)",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M11",
+   "title": "고양이 Ⅱ — 통원 → 입원",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "M11-1",
+     "pet_id": "P004",
+     "query": "통원 하루 한도가 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {
+       "rows.0.section_name": "펫퍼민트 반려묘 통원의료비Ⅱ보장 특별약관"
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "고급형Ⅱ 통원 1일 30만원",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "M11-2",
+     "pet_id": "P004",
+     "query": "입원은요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {
+       "rows.0.section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관"
+      },
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "고급형Ⅱ 입원 1일 30만원",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M12",
+   "title": "Ⅲ 두 번째 MRI — 되묻기 뒤",
+   "pet_id": "P008",
+   "turns": [
+    {
+     "id": "M12-1",
+     "pet_id": "P008",
+     "query": "MRI 찍으면 보험금 얼마 나와요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수",
+        "통원횟수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C006",
+     "species": "강아지"
+    },
+    {
+     "id": "M12-2",
+     "pet_id": "P008",
+     "query": "통원 1번, 120만원",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "2번째"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 300000,
+       "mri_before": 1
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C006",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M14",
+   "title": "면책 → 단서(치아 제외 구강질환)",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M14-1",
+     "pet_id": "P013",
+     "query": "치아 스케일링도 보험 되나요?",
+     "gold": [
+      {
+       "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+       "article_num": 2,
+       "evidence": "스케일링, 발치",
+       "section": "특별약관"
+      }
+     ],
+     "expect": {
+      "must": [
+       [
+        "보상하지않",
+        "지급하지않",
+        "보장하지않",
+        "보장되지않",
+        "보상되지않",
+        "지급되지않",
+        "받을수없",
+        "안나옵",
+        "제외",
+        "해당하지않",
+        "보장이안",
+        "보상이안",
+        "지급이안"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "스케일링 등 치아 치과치료는 보상하지 않는다",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M14-2",
+     "pet_id": "P013",
+     "query": "그럼 잇몸 염증 치료는요?",
+     "gold": [
+      {
+       "section_name": "펫퍼민트 반려견 통원의료비보장 특별약관",
+       "article_num": 2,
+       "evidence": "치아를 제외한 구강질환 보장",
+       "section": "특별약관"
+      }
+     ],
+     "expect": {
+      "must": [
+       [
+        "보장됩니다",
+        "보상합니다",
+        "지급합니다",
+        "지급됩니다",
+        "받을수있",
+        "보장돼",
+        "나옵니다",
+        "보상됩니다",
+        "보장받을수",
+        "보상받을수",
+        "보장합니다",
+        "해당됩니다"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "치아를 제외한 구강질환(잇몸 염증 등)은 보장한다",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M15",
+   "title": "금액 뒤 부담보 질병을 말함",
+   "pet_id": "P012",
+   "turns": [
+    {
+     "id": "M15-1",
+     "pet_id": "P012",
+     "query": "통원 한 번 했고 치료비 20만원이요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 105000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C009",
+     "species": "강아지"
+    },
+    {
+     "id": "M15-2",
+     "pet_id": "P012",
+     "query": "슬개골 탈구 때문이에요",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "부담보"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": [
+       "슬개골 탈구"
+      ],
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "슬개골 탈구는 망고의 부담보 — 그 치료는 지급되지 않는다",
+     "tags": [],
+     "customer_id": "C009",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M16",
+   "title": "일수 모름 → 2박 3일 → 날짜별",
+   "pet_id": "P013",
+   "turns": [
+    {
+     "id": "M16-1",
+     "pet_id": "P013",
+     "query": "입원 치료비 80만원 나왔어요. 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 300000,
+       "days_known": false
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M16-2",
+     "pet_id": "P013",
+     "query": "2박 3일이었어요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 800000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    },
+    {
+     "id": "M16-3",
+     "pet_id": "P013",
+     "query": "40만, 30만, 10만",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 497000,
+       "exact": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M17",
+   "title": "등급 혼합 — 통원 금액 → 입원 같은 금액",
+   "pet_id": "P006",
+   "turns": [
+    {
+     "id": "M17-1",
+     "pet_id": "P006",
+     "query": "통원 치료비 18만원인데 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 91000
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C005",
+     "species": "고양이"
+    },
+    {
+     "id": "M17-2",
+     "pet_id": "P006",
+     "query": "입원은 같은 금액이면요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 65000
+      },
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C005",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M19",
+   "title": "대기기간 → 다음 달",
+   "pet_id": "P015",
+   "turns": [
+    {
+     "id": "M19-1",
+     "pet_id": "P015",
+     "query": "솜이 감기 치료도 보장돼요?",
+     "gold": [
+      {
+       "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+       "article_num": 1,
+       "evidence": "30일 이내에 발생한 질병",
+       "section": "특별약관"
+      }
+     ],
+     "expect": {
+      "must": [
+       [
+        "30일"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "가입(10-05) 후 30일 이내 발생한 질병이라 보상하지 않는다",
+     "tags": [],
+     "customer_id": "C002",
+     "species": "강아지"
+    },
+    {
+     "id": "M19-2",
+     "pet_id": "P015",
+     "query": "그럼 다음 달에 걸리면요?",
+     "gold": [
+      {
+       "section_name": "펫퍼민트 반려견 통원의료비Ⅱ보장 특별약관",
+       "article_num": 1,
+       "evidence": "30일 이내에 발생한 질병",
+       "section": "특별약관"
+      }
+     ],
+     "expect": {
+      "must": [
+       [
+        "보장됩니다",
+        "보상합니다",
+        "지급합니다",
+        "지급됩니다",
+        "받을수있",
+        "보장돼",
+        "나옵니다",
+        "보상됩니다",
+        "보장받을수",
+        "보상받을수",
+        "보장합니다",
+        "해당됩니다"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": null,
+      "calc_values": {},
+      "banner": null,
+      "context": "concat",
+      "calc_tol": {}
+     },
+     "answer": "보장개시 후 30일이 지나 발생한 질병은 보장(11월 4일 이후)",
+     "tags": [],
+     "customer_id": "C002",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "M20",
+   "title": "반려동물을 오가며",
+   "pet_id": "P014",
+   "turns": [
+    {
+     "id": "M20-1",
+     "pet_id": "P014",
+     "query": "달이 통원 하루 한도는 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "limits",
+      "calc_values": {
+       "rows.0.section_name": "펫퍼민트 반려묘 통원의료비보장 특별약관"
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "달이 통원 고급형 1일 30만원",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "고양이"
+    },
+    {
+     "id": "M20-2",
+     "pet_id": "P013",
+     "query": "별이 입원 치료비가 50만원 나왔는데 얼마예요?",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "section_name": "펫퍼민트 반려견 입원의료비보장 특별약관",
+       "payout": 300000
+      },
+      "banner": null,
+      "context": "none",
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C010",
+     "species": "강아지"
+    }
+   ],
+   "tags": [
+    "멀티턴"
+   ],
+   "axis": "M"
+  },
+  {
+   "id": "N01",
+   "pet_id": "P013",
+   "query": "강아지 사료 어떤 게 좋은지 추천해 주세요",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "사료 추천",
+    "브랜드"
+   ],
+   "axis": "N",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "N02",
+   "pet_id": "P001",
+   "query": "근처 24시간 동물병원 좀 알려 주세요",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "24시간"
+   ],
+   "axis": "N",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "N04",
+   "pet_id": "P004",
+   "query": "자동차 보험이랑 같이 들면 할인돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "결합할인",
+    "결합 할인"
+   ],
+   "axis": "N",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "N05",
+   "pet_id": "P007",
+   "query": "사람 실손보험도 여기서 같이 가입할 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "실손"
+   ],
+   "axis": "N",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "N06",
+   "pet_id": "P008",
+   "query": "다른 회사 펫보험이랑 비교하면 어디가 더 싸요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "가격비교",
+    "더 저렴"
+   ],
+   "axis": "N",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "N07",
+   "pet_id": "P002",
+   "query": "강아지 미용 예약도 해 주나요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "예약"
+   ],
+   "axis": "N",
+   "customer_id": "C001",
+   "species": "고양이"
+  },
+  {
+   "id": "N09",
+   "pet_id": "P005",
+   "query": "보험 가입하면 산책 용품 같은 선물 주나요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "산책 용품",
+    "사은품",
+    "가입 선물"
+   ],
+   "axis": "N",
+   "customer_id": "C004",
+   "species": "강아지"
+  },
+  {
+   "id": "N10",
+   "pet_id": "P006",
+   "query": "펫퍼민트 회사 주식 사도 될까요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "주식"
+   ],
+   "axis": "N",
+   "customer_id": "C005",
+   "species": "고양이"
+  },
+  {
+   "id": "N11",
+   "pet_id": "P009",
+   "query": "강아지 분양받을 곳 추천해 주세요",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "분양"
+   ],
+   "axis": "N",
+   "customer_id": "C006",
+   "species": "고양이"
+  },
+  {
+   "id": "N12",
+   "pet_id": "P010",
+   "query": "반려동물 장례식장 추천해 주세요",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "장례식장"
+   ],
+   "axis": "N",
+   "customer_id": "C007",
+   "species": "강아지"
+  },
+  {
+   "id": "N14",
+   "pet_id": "P012",
+   "query": "보험 가입하면 포인트 적립돼요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "포인트"
+   ],
+   "axis": "N",
+   "customer_id": "C009",
+   "species": "강아지"
+  },
+  {
+   "id": "N15",
+   "pet_id": "P013",
+   "query": "보험금을 상품권으로 받을 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "상품권"
+   ],
+   "axis": "N",
+   "customer_id": "C010",
+   "species": "강아지"
+  },
+  {
+   "id": "N16",
+   "pet_id": "P014",
+   "query": "사진 보내면 품종을 알려 줄 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "품종 판별",
+    "품종을 알려"
+   ],
+   "axis": "N",
+   "customer_id": "C010",
+   "species": "고양이"
+  },
+  {
+   "id": "N17",
+   "pet_id": "P015",
+   "query": "고양이 모래는 어떤 게 좋아요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "모래"
+   ],
+   "axis": "N",
+   "customer_id": "C002",
+   "species": "강아지"
+  },
+  {
+   "id": "N19",
+   "pet_id": "P007",
+   "query": "해지했다가 다시 가입하면 할인받나요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "재가입 할인"
+   ],
+   "axis": "N",
+   "customer_id": "C006",
+   "species": "강아지"
+  },
+  {
+   "id": "N20",
+   "pet_id": "P004",
+   "query": "보험료를 비트코인으로 낼 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "약관에 없는 내용 — 확인되지 않는다고 안내",
+   "tags": [
+    "거절"
+   ],
+   "absent": [
+    "비트코인",
+    "가상자산"
+   ],
+   "axis": "N",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L01",
+   "pet_id": "P004",
+   "query": "치즈가 입원했어요. 보험금이 나올까요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "입원일수"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "",
+   "tags": [
+    "기록",
+    "되묻기"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L02",
+   "pet_id": "P004",
+   "query": "치즈가 입원했는데 보험 되나요 ?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려묘 입원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "입원",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "입원 치료비는 입원의료비Ⅱ 특약으로 보상(자기부담금·한도·면책 조건)",
+   "tags": [
+    "기록",
+    "판단"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L09",
+   "pet_id": "P004",
+   "query": "지금 치즈 보험료가 얼마예요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "확인되지않",
+      "명시되어있지않",
+      "나와있지않",
+      "약관에없",
+      "찾을수없",
+      "포함되어있지않",
+      "언급되어있지않",
+      "안내드리기어렵",
+      "답변드리기어렵",
+      "확인이어렵"
+     ]
+    ],
+    "must_not": [],
+    "refuse": true,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "보험료는 약관·원장에 없다 — 확인되지 않는다고 안내",
+   "tags": [
+    "기록",
+    "거절"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L10",
+   "pet_id": "P004",
+   "query": "보험료 좀 나중에 내도 되나요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "납입최고",
+      "유예",
+      "독촉"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "납입기일이 지나도 납입최고(독촉) 기간 안에 내면 된다",
+   "tags": [
+    "기록"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L11",
+   "pet_id": "P004",
+   "query": "납입 유예기간이 뭐고 언젠대요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 29,
+     "evidence": "납입최고(독촉)",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "납입최고",
+      "유예"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "납입기일이 지나면 납입최고(독촉) 기간을 둔다 — 그 안에 내면 계약 유지",
+   "tags": [
+    "기록",
+    "오타"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L12",
+   "pet_id": "P001",
+   "query": "아 그리고 초코가 슬개골 수술했는데 50만원 나왔어요. 얼마 받을 수 있어요?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "부담보"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "medical",
+    "calc_values": {},
+    "banner": [
+     "슬개골 탈구"
+    ],
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "계산은 되지만 슬개골은 초코의 부담보 — 지급되지 않는다",
+   "tags": [
+    "기록",
+    "부담보",
+    "금액"
+   ],
+   "axis": "L",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "L14",
+   "pet_id": "P001",
+   "query": "초코가 입원했어요. 보험이 되나요?",
+   "gold": [
+    {
+     "section_name": "펫퍼민트 반려견 입원의료비Ⅱ보장 특별약관",
+     "article_num": 1,
+     "evidence": "입원",
+     "section": "특별약관"
+    }
+   ],
+   "expect": {
+    "must": [
+     [
+      "보장됩니다",
+      "보상합니다",
+      "지급합니다",
+      "지급됩니다",
+      "받을수있",
+      "보장돼",
+      "나옵니다",
+      "보상됩니다",
+      "보장받을수",
+      "보상받을수",
+      "보장합니다",
+      "해당됩니다"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": null,
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "입원 치료비는 입원의료비Ⅱ 특약으로 보상(조건·한도·면책 따름)",
+   "tags": [
+    "기록",
+    "판단"
+   ],
+   "axis": "L",
+   "customer_id": "C001",
+   "species": "강아지"
+  },
+  {
+   "id": "L15",
+   "pet_id": "P004",
+   "query": "중도인출 하면 얼마까지 돼요?",
+   "gold": [
+    {
+     "section_name": null,
+     "article_num": 38,
+     "evidence": "중도인출",
+     "section": "보통약관"
+    }
+   ],
+   "expect": {
+    "must": [],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "중도인출 조건(보통약관 제38조) — 보험연도 기준 연 4회, 해약환급금 범위 안 일정 비율까지",
+   "tags": [
+    "기록",
+    "다른돈"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L17",
+   "pet_id": "P004",
+   "query": "치즈가 감기 입원. 보상받을 수 있는 금액은?",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "입원일수"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "",
+   "tags": [
+    "기록",
+    "되묻기",
+    "짧은말"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L20",
+   "pet_id": "P004",
+   "query": "아뇨 저희 고양이 감기 걸려서 입원했는데 보험금 얼마나오냐고요",
+   "gold": [],
+   "expect": {
+    "must": [
+     [
+      "입원일수"
+     ]
+    ],
+    "must_not": [],
+    "refuse": false,
+    "calc": "none",
+    "calc_values": {},
+    "banner": null,
+    "context": null,
+    "calc_tol": {}
+   },
+   "answer": "",
+   "tags": [
+    "기록",
+    "되묻기",
+    "재질문"
+   ],
+   "axis": "L",
+   "customer_id": "C003",
+   "species": "고양이"
+  },
+  {
+   "id": "L04",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L04-1",
+     "pet_id": "P004",
+     "query": "치즈가 감기로 입원했는데 보험금이 얼마나 나올까요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L04-2",
+     "pet_id": "P004",
+     "query": "3일 입원했고 60만원 나왔어요. 수술은 첫날 했고요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 600000,
+       "surgery_mentioned": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  },
+  {
+   "id": "L05",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L05-1",
+     "pet_id": "P004",
+     "query": "치즈가 감기로 입원했는데 보험금이 얼마나 나올까요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L05-2",
+     "pet_id": "P004",
+     "query": "치료비 총액은 60만원, 입원 일수는 3일, 수술한 날은 첫째날이고 그 날 20만원",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 600000,
+       "prefill.0.cost": 200000,
+       "prefill.0.surgery": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  },
+  {
+   "id": "L06",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L06-1",
+     "pet_id": "P004",
+     "query": "치즈가 감기로 입원했는데 보험금이 얼마나 나올까요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L06-2",
+     "pet_id": "P004",
+     "query": "치료비 총액은 50만원, 입원 일수는 3일, 수술은 첫날 했고 30만원 이에요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {
+       "days": 3,
+       "total": 500000,
+       "prefill.0.cost": 300000,
+       "prefill.0.surgery": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  },
+  {
+   "id": "L07",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L07-1",
+     "pet_id": "P004",
+     "query": "치즈가 감기로 입원했는데 보험금이 얼마나 나올까요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L07-2",
+     "pet_id": "P004",
+     "query": "3일 입원했고 50만원 나왔어요. 수술은 첫날 했고요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "days_ask",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L07-3",
+     "pet_id": "P004",
+     "query": "300,000원(수술), 100,000원, 100,000원",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 287000,
+       "exact": true
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  },
+  {
+   "id": "L16",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L16-1",
+     "pet_id": "P004",
+     "query": "저희 고양이가 감기로 입원했는데 보험금 얼마나올 수 있나요?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L16-2",
+     "pet_id": "P004",
+     "query": "치료비는 하루에 입원비 포함 10만원 나왔엉ㅅ",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 49000,
+       "days": 1
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  },
+  {
+   "id": "L19",
+   "title": "배포 기록",
+   "pet_id": "P004",
+   "turns": [
+    {
+     "id": "L19-1",
+     "pet_id": "P004",
+     "query": "골절로 입원했는데 보상받을 수 있는 금액은?",
+     "gold": [],
+     "expect": {
+      "must": [
+       [
+        "입원일수"
+       ]
+      ],
+      "must_not": [],
+      "refuse": false,
+      "calc": "none",
+      "calc_values": {},
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    },
+    {
+     "id": "L19-2",
+     "pet_id": "P004",
+     "query": "치료비는 80만원이에요",
+     "gold": [],
+     "expect": {
+      "must": [],
+      "must_not": [],
+      "refuse": false,
+      "calc": "medical",
+      "calc_values": {
+       "payout": 300000,
+       "days_known": false
+      },
+      "banner": null,
+      "context": null,
+      "calc_tol": {}
+     },
+     "answer": "",
+     "tags": [],
+     "customer_id": "C003",
+     "species": "고양이"
+    }
+   ],
+   "tags": [
+    "기록",
+    "멀티턴"
+   ],
+   "axis": "L"
+  }
+ ]
+}
