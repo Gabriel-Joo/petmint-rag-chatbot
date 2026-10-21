@@ -43,9 +43,11 @@ GEN_MODEL = "qwen3:14b"
 SEED = 20261022
 OLLAMA = "http://localhost:11434"
 
-GEN_RULE = ("\n[학습 데이터 작성 규칙] 첫 문장은 질문에 대한 결론(된다·안 된다·금액·기간)입니다. 발췌에 그 결론을 제한하거나 바꾸는 "
-            "조건·예외가 있으면 '다만'으로 시작하는 문장으로 덧붙이세요. 질문과 관계없는 조건은 넣지 마세요. 발췌로 질문에 답할 수 "
-            f"없으면 다른 말 없이 다음 문장만 쓰세요: {prompts.NO_ANSWER_TEXT}")
+# 2026-10-22 파일럿 1차: "단서가 있으면 '다만'으로 덧붙여라"는 규칙에 새 답 93%가 '다만'을 쓰고 drop 64 중 62가 그 문장에서 틀렸다
+# (단서를 지어내거나 넓힘). 사용자 결정: 강제하지 않는다 — 발췌에 단서가 적혀 있으면 옮기고, 없으면 쓰지 않는다
+GEN_RULE = ("\n[학습 데이터 작성 규칙] 첫 문장은 질문에 대한 결론(된다·안 된다·금액·기간)입니다. 발췌에 이 질문의 결론을 제한하는 "
+            "단서·예외가 문장으로 적혀 있으면 그 내용을 그대로 옮겨 덧붙이고, 적혀 있지 않으면 덧붙이지 마세요. 발췌에 없는 조건·예외를 "
+            "만들거나 넓히지 마세요. 발췌로 질문에 답할 수 없으면 다른 말 없이 다음 문장만 쓰세요: " + prompts.NO_ANSWER_TEXT)
 
 EXCERPT_JUDGE = """당신은 반려동물 보험 상담 답변의 검수자입니다. [약관 발췌]만 근거로, [질문]에 대한 [답변]에 상담에 쓰면 안 되는 문제가 있는지 판정하세요.
 발췌 밖의 지식은 쓰지 않습니다. 발췌가 여러 개이면 질문과 관련된 발췌를 기준으로 봅니다.
@@ -79,6 +81,25 @@ def pool() -> list[dict]:
     rewrite5.repair_calc(final)                       # 별표3 계산 오류 → 코드 값(final 2건 고침, 버려진 3건 되살림)
     out = [f | {"origin": f.get("origin") or ("repaired" if f.get("repair") else "final")} for sp in SPECIES for f in final[sp]]
     return out + [f for sp in SPECIES for f in revived(sp)]
+
+
+# ---------- 검색 범위 ----------
+def scope_for_qa(f: dict):
+    """등급이 있는 단위(의료비 특약 한도 조항)의 QA는 그 특약·등급에 가입한 고객처럼 범위를 좁힌다 — 서빙은 고객 가입 등급 하나로
+    좁힌다. 파일럿 2차: 등급 없는 질문에 발췌 셋이 등급별 한도를 줘 모델이 한 등급 숫자를 일반 답처럼 썼다(drop 48 중 23이 등급 단위).
+    나머지는 고객 없는 일반 질문(unrestricted)"""
+    from data.search_scope import MEDICAL_SECTIONS, SearchScope, Subscription
+    sp = f["species"]
+    if f.get("coverage_type") and f.get("section_name") in MEDICAL_SECTIONS[sp]:
+        return SearchScope(sp, (Subscription(f["section_name"], f["coverage_type"]),), frozenset())
+    return SearchScope.unrestricted(sp)
+
+
+def fix_format(a: str) -> str:
+    """답을 쓰고 끝에 거절 문장을 붙인 형식 오류(파일럿 2차 잘못된 거절 2/2) — 답이 있으면 거절 문장을 뗀다"""
+    if prompts.NO_ANSWER_TEXT in a and len(a.replace(prompts.NO_ANSWER_TEXT, "").strip()) > 20:
+        return a.replace(prompts.NO_ANSWER_TEXT, "").strip()
+    return a
 
 
 # ---------- 생성 ----------
@@ -119,33 +140,108 @@ def number_problems(answer: str, user_content: str) -> list[str]:
 
 
 def decide(r: dict) -> tuple[str, list[str]]:
+    """판정 정책(2026-10-22 사용자 확정, drop 20건 판독 — 오탐 25%):
+    unsupported·reversal·wrong_value(① 또는 ②)·잘못된 거절·발췌에 없는 숫자·계산 오류 → drop
+    ①의 clause_mix·missing_condition만 걸림(② 문제 없음) → answer_warn(오탐 2/5·3/6 — 경고만, final만 학습에 넣는다)"""
     why = []
+    j1, j2 = r.get("judge_excerpt") or {}, r.get("judge_unit") or {}
     if r["refusal"]:
-        j = r.get("judge_excerpt") or {}
-        if j.get("problem") is None:
+        if j1.get("problem") is None:
             why.append("판정① 파싱 실패")
-        elif "wrong_refusal" in j.get("types", []):
+        elif "wrong_refusal" in j1.get("types", []):
             why.append("잘못된 거절")
         return ("no_answer", []) if not why else ("drop", why)
-    j1, j2 = r.get("judge_excerpt") or {}, r.get("judge_unit") or {}
+    t1 = set(j1.get("types") or []) if j1.get("problem") else set()
+    t2 = set(j2.get("types") or []) & UNIT_TYPES if j2.get("problem") else set()
     if j1.get("problem") is None:
         why.append("판정① 파싱 실패")
-    elif j1["problem"]:
-        why.append("판정① " + ",".join(j1.get("types") or ["?"]))
-    if set(j2.get("types") or []) & UNIT_TYPES and j2.get("problem"):
-        why.append("판정② " + ",".join(sorted(set(j2["types"]) & UNIT_TYPES)))
+    if t1 & {"unsupported", "reversal", "wrong_value", "wrong_refusal"}:
+        why.append("판정① " + ",".join(sorted(t1)))
+    if t2:
+        why.append("판정② " + ",".join(sorted(t2)))
     if r.get("number_miss"):
         why.append(f"발췌에 없는 숫자 {r['number_miss']}")
     if r.get("calc") and not r["calc"][0]:
         why.append("계산 " + "; ".join(r["calc"][1])[:80])
-    return ("answer", []) if not why else ("drop", why)
+    if why:
+        return "drop", why
+    if t1 & {"clause_mix", "missing_condition"}:
+        return "answer_warn", ["경고 " + ",".join(sorted(t1))]
+    return "answer", []
 
 
 # ---------- 파일럿 ----------
-def pilot(n: int, n_revived: int):
-    from app import config
+class Ctx:
+    """검색·단위 복원 도구(서빙 B 경로). 스레드 여럿이 같이 쓴다 — 단위 복원(idx)만 잠근다"""
+    def __init__(self):
+        import threading
+        from pymilvus import MilvusClient
+        from app import config
+        from app.services import policy_data
+        from app.services.retrieval import Retriever
+        from data import rag_context
+        assert config.SEARCH_VARIANT and config.DISPLAY_PARENT and config.SEARCH_EXPAND, "B 조건 env(모듈 docstring)"
+        chunks, graphs = policy_data.load()
+        self.rag_context = rag_context
+        self.builder = rag_context.ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
+        self.retriever = Retriever(config.SEARCH_SERVICE_URL, expand=True, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL,
+                                   expand_dict=config.SEARCH_EXPAND_DICT)
+        self.idx = RW.UnitIndex(list(SPECIES))
+        self.lock = threading.Lock()
+        RW.set_model(GEN_MODEL)
+
+    def unit(self, sp: str, uid: str):
+        with self.lock:
+            return self.idx.get(sp, uid)
+
+
+def gen_one(f: dict, ctx: Ctx, t: dict | None = None) -> dict:
+    """1·2·3 — 질문 확정 → 서빙 B 검색 → 답 생성(qwen3)"""
+    from app.services.answer import SEARCH_TOP_K, display_parent
     from data import finetune5 as F5
-    assert config.SEARCH_VARIANT and config.DISPLAY_PARENT and config.SEARCH_EXPAND, "B 조건 env(모듈 docstring)"
+    t = t if t is not None else {"rewrite": 0.0, "search": 0.0, "gen": 0.0}
+    unit, refs, source = ctx.unit(f["species"], f["unit_id"])
+    r = {"key": RW.record_key(f), "origin": f["origin"], "species": f["species"], "unit_id": f["unit_id"],
+         "section_name": f.get("section_name"), "article_num": f.get("article_num"), "coverage_type": f.get("coverage_type"),
+         "question_05": f["question"], "answer_05": f["answer"], "flags": f.get("flags", []), "repair": f.get("repair")}
+    q = f["question"]
+    t0 = time.time()
+    if synonyms.rewrite_hints(q) and unit is not None:
+        rq = rewrite5.rewrite_question(f, unit, refs, source)
+        r["rewrite"] = {"status": rq["status"], "hints": rq["hints"], "why": [a["why"] for a in rq["attempts"]]}
+        q = rq["question"] or q
+    t["rewrite"] += time.time() - t0
+    t0 = time.time()
+    res = display_parent(ctx.rag_context.build_full_context(ctx.retriever, ctx.builder, q, scope_for_qa(f), SEARCH_TOP_K),
+                         ctx.builder, f["species"])
+    items = F5.serving_items(q, res)
+    messages = prompts.build_messages(q, items)
+    t["search"] += time.time() - t0
+    t0 = time.time()
+    ans = fix_format(generate_answer(messages))
+    t["gen"] += time.time() - t0
+    r.update(question=q, excerpts=[it.label for it in items], n_items=len(items),
+             gold_rank=F5.gold_rank(res, unit) if unit else None, user_content=messages[1]["content"], answer=ans,
+             refusal=is_refusal(ans))
+    return r
+
+
+def judge_one(r: dict, ctx: Ctx) -> dict:
+    """4·5 — 판정 ①(발췌) ②(원문 단위, 06 그대로) · 숫자 · 계산 → 라벨"""
+    _, refs, source = ctx.unit(r["species"], r["unit_id"])
+    r["judge_excerpt"] = judge_excerpt(r["user_content"], r["answer"])
+    if not r["refusal"]:
+        qa = {"species": r["species"], "section_name": r["section_name"], "article_title": None, "question": r["question"],
+              "answer": r["answer"], "section": None}
+        r["judge_unit"] = faq_judge.judge(faq_judge.build_judge_prompt(qa, source or "", refs or [], r["answer"]))
+        r["number_miss"] = number_problems(r["answer"], r["user_content"] + " " + r["question"])
+        cv = V.verify_all({"question": r["question"], "answer": r["answer"]}, r["coverage_type"], r["section_name"])
+        r["calc"] = list(cv) if cv is not None else None
+    r["label"], r["why"] = decide(r)
+    return r
+
+
+def pilot(n: int, n_revived: int):
     rng = random.Random(SEED)
     allq = pool()
     fin = [f for f in allq if f["origin"] != "revived_incomplete"]
@@ -153,70 +249,127 @@ def pilot(n: int, n_revived: int):
     sample = rng.sample(fin, n - n_revived) + rng.sample(rev, n_revived)
     rng.shuffle(sample)
     print(f"풀: final {len(fin)} · 되살림 {len(rev)} → 표본 {len(sample)}", flush=True)
-
-    from pymilvus import MilvusClient
-    from app.services import policy_data
-    from app.services.answer import SEARCH_TOP_K, display_parent
-    from app.services.retrieval import Retriever
-    from data import rag_context
-    from data.search_scope import SearchScope
-    chunks, graphs = policy_data.load()
-    builder = rag_context.ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
-    retriever = Retriever(config.SEARCH_SERVICE_URL, expand=True, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL,
-                          expand_dict=config.SEARCH_EXPAND_DICT)
-    idx = RW.UnitIndex(list(SPECIES))
-    RW.set_model(GEN_MODEL)
+    ctx = Ctx()
     OUT.mkdir(parents=True, exist_ok=True)
-    recs, t = [], {"rewrite": 0.0, "search": 0.0, "gen": 0.0, "judge": 0.0}
-
-    # 1·2·3 — qwen3 + search-service
+    t = {"rewrite": 0.0, "search": 0.0, "gen": 0.0, "judge": 0.0}
+    recs = []
     for k, f in enumerate(sample, 1):
-        unit, refs, source = idx.get(f["species"], f["unit_id"])
-        r = {"key": RW.record_key(f), "origin": f["origin"], "species": f["species"], "unit_id": f["unit_id"],
-             "section_name": f.get("section_name"), "article_num": f.get("article_num"), "coverage_type": f.get("coverage_type"),
-             "question_05": f["question"],
-             "answer_05": f["answer"], "flags": f.get("flags", [])}
-        q = f["question"]
-        t0 = time.time()
-        if synonyms.rewrite_hints(q) and unit is not None:
-            rq = rewrite5.rewrite_question(f, unit, refs, source)
-            r["rewrite"] = {"status": rq["status"], "hints": rq["hints"], "why": [a["why"] for a in rq["attempts"]]}
-            q = rq["question"] or q
-        t["rewrite"] += time.time() - t0
-        t0 = time.time()
-        res = display_parent(rag_context.build_full_context(retriever, builder, q, SearchScope.unrestricted(f["species"]),
-                                                            SEARCH_TOP_K), builder, f["species"])
-        items = F5.serving_items(q, res)
-        messages = prompts.build_messages(q, items)
-        t["search"] += time.time() - t0
-        t0 = time.time()
-        ans = generate_answer(messages)
-        t["gen"] += time.time() - t0
-        r.update(question=q, excerpts=[it.label for it in items], gold_rank=F5.gold_rank(res, unit) if unit else None,
-                 user_content=messages[1]["content"], answer=ans, refusal=is_refusal(ans), unit_source=source,
-                 unit_refs=refs)
-        recs.append(r)
-        print(f"[{k}/{len(sample)}] gold={r['gold_rank']} 거절={r['refusal']} {q[:40]}", flush=True)
-
-    # 4·5 — gemma4 판정, 코드 검사
+        recs.append(gen_one(f, ctx, t))
+        print(f"[{k}/{len(sample)}] gold={recs[-1]['gold_rank']} 거절={recs[-1]['refusal']} {recs[-1]['question'][:40]}", flush=True)
     for r in recs:
         t0 = time.time()
-        r["judge_excerpt"] = judge_excerpt(r["user_content"], r["answer"])
-        if not r["refusal"]:
-            qa = {"species": r["species"], "section_name": r["section_name"], "article_title": None, "question": r["question"],
-                  "answer": r["answer"], "section": None}
-            r["judge_unit"] = faq_judge.judge(faq_judge.build_judge_prompt(qa, r["unit_source"] or "", r["unit_refs"] or [], r["answer"]))
-            r["number_miss"] = number_problems(r["answer"], r["user_content"] + " " + r["question"])
-            cv = V.verify_all({"question": r["question"], "answer": r["answer"]}, r["coverage_type"], r["section_name"])
-            r["calc"] = list(cv) if cv is not None else None
+        judge_one(r, ctx)
         t["judge"] += time.time() - t0
-        r["label"], r["why"] = decide(r)
-    for r in recs:
-        r.pop("unit_source", None)
-        r.pop("unit_refs", None)
     ts = datetime.now().strftime("%Y%m%d_%H%M")
     (OUT / f"pilot_{ts}.json").write_text(json.dumps(recs, ensure_ascii=False, indent=1), encoding="utf-8")
     report(recs, t, ts)
+
+
+# ---------- 전량 ----------
+FULL_GEN = OUT / "full_gen.jsonl"
+FULL_JUDGED = OUT / "full_judged.jsonl"
+
+
+def _done_keys(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    return {json.loads(l)["key"] + "|" + json.loads(l)["question_05"] for l in path.read_text(encoding="utf-8").splitlines() if l.strip()}
+
+
+def _run_parallel(fn, items: list, out: Path, workers: int, label: str):
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    lock, t0, n = threading.Lock(), time.time(), 0
+    with ThreadPoolExecutor(workers) as ex, open(out, "a", encoding="utf-8") as fh:
+        futs = [ex.submit(fn, x) for x in items]
+        for fut in as_completed(futs):
+            try:
+                r = fut.result()
+            except Exception as e:                       # 한 건 실패로 전체를 멈추지 않는다 — 실패는 다시 돌리면 이어서 한다
+                print(f"{label} 실패: {e!r}", flush=True)
+                continue
+            with lock:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+                fh.flush()
+                n += 1
+                if n % 100 == 0:
+                    el = time.time() - t0
+                    print(f"{label} {n}/{len(items)} {el / 60:.0f}분 · 남은 {el / n * (len(items) - n) / 60:.0f}분", flush=True)
+
+
+def full(workers: int):
+    """final 전량(되살린 incomplete는 뺀다 — 2026-10-22 사용자 결정). 재개 가능: 끝난 건은 건너뛴다.
+    1단계 qwen3 생성 전부 → 2단계 gemma4 판정 전부(모델을 번갈아 올리지 않게)"""
+    OUT.mkdir(parents=True, exist_ok=True)
+    qs = [f for f in pool() if f["origin"] != "revived_incomplete"]
+    ctx = Ctx()
+    done = _done_keys(FULL_GEN)
+    todo = [f for f in qs if RW.record_key(f) + "|" + f["question"] not in done]
+    print(f"생성: 전체 {len(qs)} · 남은 {len(todo)} · 동시 {workers}", flush=True)
+    _run_parallel(lambda f: gen_one(f, ctx), todo, FULL_GEN, workers, "생성")
+    unload(GEN_MODEL)
+    gen = [json.loads(l) for l in FULL_GEN.read_text(encoding="utf-8").splitlines() if l.strip()]
+    jd = _done_keys(FULL_JUDGED)
+    todo = [r for r in gen if r["key"] + "|" + r["question_05"] not in jd]
+    print(f"판정: 전체 {len(gen)} · 남은 {len(todo)}", flush=True)
+    _run_parallel(lambda r: judge_one(r, ctx), todo, FULL_JUDGED, workers, "판정")
+    unload(faq_judge.JUDGE_MODEL)
+    recs = [json.loads(l) for l in FULL_JUDGED.read_text(encoding="utf-8").splitlines() if l.strip()]
+    c = Counter(r["label"] for r in recs)
+    print("라벨:", dict(c), flush=True)
+
+
+def unload(model: str):
+    try:
+        requests.post(f"{OLLAMA}/api/generate", json={"model": model, "keep_alive": 0}, timeout=60)
+    except requests.RequestException:
+        pass
+
+
+# ---------- 학습 샘플 ----------
+NO_ANSWER_CAP = 0.10       # 거절 샘플 비율 상한(사용자 결정 2: 상한을 둔다 — 파일럿 거절 2~3%라 걸리지 않을 것)
+
+
+def build(out_dir: Path):
+    """C 판정 결과 → train/val.jsonl(07 형식). 프롬프트는 서빙과 같은 system + C가 본 user 메시지 그대로, 목표는 C의 답.
+    answer · answer_warn(final만 — 되살린 것은 이미 뺐다) · no_answer(상한 NO_ANSWER_CAP). 정답 끼워넣기 없음(사용자 결정 3)"""
+    from data.finetune_data import MAX_LENGTH, TokenCounter, is_val, write_jsonl
+    recs = [json.loads(l) for l in FULL_JUDGED.read_text(encoding="utf-8").splitlines() if l.strip()]
+    keep = [r for r in recs if r["label"] in ("answer", "answer_warn")]
+    na = [r for r in recs if r["label"] == "no_answer"]
+    cap = int(NO_ANSWER_CAP * (len(keep) + len(na)))
+    if len(na) > cap:
+        na = random.Random(SEED).sample(na, cap)
+    count = TokenCounter()
+    st, train, val = Counter(), [], []
+    for r in keep + na:
+        target = prompts.NO_ANSWER_TEXT if r["label"] == "no_answer" else prompts.strip_citation(r["answer"])
+        messages = [{"role": "system", "content": prompts.SYSTEM_PROMPT}, {"role": "user", "content": r["user_content"]},
+                    {"role": "assistant", "content": target}]
+        n_tok = count.chat_len(messages)
+        if n_tok > MAX_LENGTH:
+            st["too_long"] += 1
+            continue
+        meta = {"species": r["species"], "unit_id": r["unit_id"], "kind": r["label"], "n_items": r.get("n_items"),
+                "gold_pos": (r["gold_rank"] - 1) if r.get("gold_rank") else None, "gold_rank": r.get("gold_rank"),
+                "why": r.get("why"), "flags": r.get("flags"), "origin": r["origin"], "question_05": r["question_05"],
+                "n_tokens": n_tok, "prompt_version": prompts.PROMPT_VERSION}
+        (val if is_val(r["unit_id"]) else train).append({"messages": messages, "meta": meta})
+    random.Random(SEED).shuffle(train)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    write_jsonl(out_dir / "train.jsonl", train)
+    write_jsonl(out_dir / "val.jsonl", val)
+    allr = train + val
+    stats = {**st, "train": len(train), "val": len(val), "labels_all": dict(Counter(r["label"] for r in recs)),
+             "kinds": dict(Counter(s["meta"]["kind"] for s in allr)),
+             "no_answer_pct": round(100 * sum(s["meta"]["kind"] == "no_answer" for s in allr) / max(1, len(allr)), 1),
+             "gold_in_excerpts_pct": round(100 * sum(bool(s["meta"]["gold_rank"]) for s in allr) / max(1, len(allr)), 1),
+             "train_units": len({s["meta"]["unit_id"] for s in train}), "val_units": len({s["meta"]["unit_id"] for s in val}),
+             "unit_overlap": len({s["meta"]["unit_id"] for s in train} & {s["meta"]["unit_id"] for s in val}),
+             "max_length": MAX_LENGTH, "prompt_version": prompts.PROMPT_VERSION, "source": str(FULL_JUDGED),
+             "no_answer_cap": NO_ANSWER_CAP}
+    (out_dir / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(json.dumps(stats, ensure_ascii=False))
 
 
 def report(recs: list[dict], t: dict, ts: str):
@@ -225,10 +378,10 @@ def report(recs: list[dict], t: dict, ts: str):
     L = [f"# C 파일럿 — 답을 서빙 발췌로 다시 만들기 ({ts})", "",
          f"표본 {n}건: final {sum(r['origin'] != 'revived_incomplete' for r in recs)} · 되살린 incomplete "
          f"{sum(r['origin'] == 'revived_incomplete' for r in recs)}. 생성 {GEN_MODEL}, 판정 {faq_judge.JUDGE_MODEL}.", "",
-         "## 요약", "", "| 출처 | answer | no_answer | drop |", "|---|---|---|---|"]
+         "## 요약", "", "| 출처 | answer | answer_warn | no_answer | drop |", "|---|---|---|---|---|"]
     for o in ("final", "repaired", "revived_incomplete"):
         if any(r["origin"] == o for r in recs):
-            L.append(f"| {o} | {by[(o, 'answer')]} | {by[(o, 'no_answer')]} | {by[(o, 'drop')]} |")
+            L.append(f"| {o} | {by[(o, 'answer')]} | {by[(o, 'answer_warn')]} | {by[(o, 'no_answer')]} | {by[(o, 'drop')]} |")
     gold = Counter("있음" if r["gold_rank"] else "없음" for r in recs)
     L += ["", f"- 정답 단위가 서빙 발췌에 있음 {gold['있음']} / 없음 {gold['없음']}",
           f"- 정답이 없는데 답함(answer) {sum(1 for r in recs if not r['gold_rank'] and r['label'] == 'answer')}, "
@@ -255,7 +408,9 @@ def report(recs: list[dict], t: dict, ts: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["pilot", "count"])
+    ap.add_argument("cmd", choices=["pilot", "count", "full", "build"])
+    ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--out-dir", default="data/finetune/rebuild5")
     ap.add_argument("--n", type=int, default=100)
     ap.add_argument("--revived", type=int, default=30)
     a = ap.parse_args()
@@ -263,7 +418,12 @@ def main():
         p = pool()
         print(Counter(f["origin"] for f in p), "힌트 대상", sum(bool(synonyms.rewrite_hints(f["question"])) for f in p))
         return
-    pilot(a.n, a.revived)
+    if a.cmd == "full":
+        full(a.workers)
+    elif a.cmd == "build":
+        build(Path(a.out_dir))
+    else:
+        pilot(a.n, a.revived)
 
 
 if __name__ == "__main__":
