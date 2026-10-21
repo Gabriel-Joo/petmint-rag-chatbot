@@ -13,6 +13,7 @@ from pymilvus import MilvusClient
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
 
+from data import query_expansion
 from data.search_scope import SearchScope
 
 BASE_DIR = Path(__file__).parent  # data/ 폴더 기준
@@ -37,6 +38,11 @@ CHUNK_FILES = {
     "고양이": CHUNKS_DIR / "petmint_고양이.json",
     "인사규정": CHUNKS_DIR / "hr_인사규정.json",
 }
+
+
+def chunk_file(species: str, variant: str | None = None) -> Path:
+    """청크 파일 — variant(실험용 청크 묶음)면 data/chunks/<variant>/ 아래 같은 이름"""
+    return CHUNK_FILES[species] if variant is None else CHUNKS_DIR / variant / CHUNK_FILES[species].name
 
 
 def build_embedding_text(c: dict) -> str:
@@ -77,6 +83,7 @@ class SearchEngine:
 
         self.chunks = {}
         self.bm25_index = {}
+        self._variants = {}                # (종, variant) → (청크, BM25) — 실험용 청크 묶음, 요청이 올 때 올린다
         for species, path in CHUNK_FILES.items():
             if not path.exists():          # 전처리 전인 코퍼스는 건너뛴다
                 continue
@@ -85,9 +92,20 @@ class SearchEngine:
             self.bm25_index[species] = self._build_bm25(chunks)
         print("검색 엔진 초기화 완료")
 
-    def _load_chunks(self, species: str) -> list[dict]:
-        with open(CHUNK_FILES[species], "r", encoding="utf-8") as f:
+    def _load_chunks(self, species: str, variant: str | None = None) -> list[dict]:
+        with open(chunk_file(species, variant), "r", encoding="utf-8") as f:
             return json.load(f)
+
+    def _variant(self, species: str, variant: str | None) -> tuple[list[dict], "BM25Okapi", str]:
+        """(청크, BM25, Milvus 컬렉션) — variant(실험용 청크 묶음, 예: 'v2')는 처음 부를 때 올린다. None이면 지금 청크"""
+        if variant is None:
+            return self.chunks[species], self.bm25_index[species], COLLECTION_NAMES[species]
+        key = (species, variant)
+        if key not in self._variants:
+            chunks = self._load_chunks(species, variant)
+            self._variants[key] = (chunks, self._build_bm25(chunks))
+        chunks, bm25 = self._variants[key]
+        return chunks, bm25, f"{COLLECTION_NAMES[species]}_{variant}"
 
     def _simple_tokenize(self, text: str) -> list[str]:
         text = re.sub(r"[^\w\s가-힣]", " ", text)
@@ -112,34 +130,38 @@ class SearchEngine:
                 c.get("paragraph_num"), c.get("coverage_type"), c.get("chunk_index"), c.get("content"))
 
     def search(self, query: str, scope: SearchScope, top_k: int = 5,
-               candidate_k: int = 20, min_content_len: int = 15) -> list[dict]:
+               candidate_k: int = 20, min_content_len: int = 15, expand: bool = False,
+               variant: str | None = None, pool_k: int | None = None) -> list[dict]:
         """Hybrid Search(BM25+Dense) → 메타데이터 필터 → Reranker 최종 정렬.
         필터는 scope가 정한다(가입 정보 / 질문 속 등급·유형 — SearchScope.from_query). 질문 문자열에서 직접 뽑지 않는다.
         검색 문장은 scope.retrieval_query — 필터가 맡은 등급·유형 단어를 뺀다(남겨 두면 그 등급 한도표 행을 끌어온다)."""
         query = scope.retrieval_query(query)
         species = scope.species
-        collection_name = COLLECTION_NAMES[species]
-        chunks = self.chunks[species]
-        bm25 = self.bm25_index[species]
+        chunks, bm25, collection_name = self._variant(species, variant)
         filter_expr = scope.milvus_expr()
+        # 질의 확장(data/query_expansion.py, 기본 끔) — 일상어에 약관 용어를 붙인 질의는 BM25·리랭커에만. Dense는 원문
+        sparse_query = (query_expansion.expand(query) or query) if expand else query
+        # 1차 후보 깊이(pool_k, 기본 candidate_k) — 리랭커에 넘길 Dense·BM25 후보 수. 돌려주는 개수(top_k)와 따로 둔다.
+        # 청크를 잘게 나누면(v2) 짧은 조각이 BM25 상위를 채워 긴 정답 청크가 1차 후보 밖으로 밀렸다(R026·R097 — 들어오면 리랭커 1위)
+        first_k = pool_k or candidate_k
 
         # --- Dense 검색 ---
         query_vec = self.embedding_model.encode([query], normalize_embeddings=True)[0].tolist()
         dense_results = self.client.search(
             collection_name=collection_name,
             data=[query_vec],
-            limit=candidate_k,
+            limit=first_k,
             filter=filter_expr,
             output_fields=["content", "section", "section_name", "type", "coverage_type", "article_num", "article_title",
                            "paragraph_num", "chunk_index", "context_prefix"],
         )[0]
 
         # --- BM25 검색 ---
-        tokenized_query = self._simple_tokenize(query)
+        tokenized_query = self._simple_tokenize(sparse_query)
         bm25_scores = bm25.get_scores(tokenized_query)
         # 범위 밖 청크를 먼저 거르고 상위 candidate_k — 예전엔 상위 k를 자른 뒤 걸러 범위 안 후보가 k보다 적게 남았다
         bm25_ranked_idx = sorted((i for i in range(len(bm25_scores)) if scope.allows(chunks[i])),
-                                 key=lambda i: bm25_scores[i], reverse=True)[:candidate_k]
+                                 key=lambda i: bm25_scores[i], reverse=True)[:first_k]
 
         # --- 후보 합치기 (최소 길이 필터. 메타데이터 필터는 dense=Milvus 식, BM25=scope.allows로 이미 적용) ---
         candidates = {}
@@ -159,7 +181,7 @@ class SearchEngine:
             return []
 
         # --- Reranker ---
-        pairs = [(query, self._build_embedding_text(c)) for c in candidate_list]
+        pairs = [(sparse_query, self._build_embedding_text(c)) for c in candidate_list]
         rerank_scores = self.reranker.predict(pairs)
         ranked = sorted(zip(candidate_list, rerank_scores), key=lambda x: x[1], reverse=True)[:top_k]
 

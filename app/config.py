@@ -29,6 +29,13 @@ WS_CLOSE_SESSION_NOT_FOUND = 4404              # 없는·종료된·남의 세�
 
 # 7-3: GPU 쓰는 것은 호스트에 두고 네트워크로 호출한다. Pod에서는 호스트 주소로 바꿔 준다(기본값은 호스트에서 직접 띄울 때)
 SEARCH_SERVICE_URL = os.environ.get("PETMINT_SEARCH_URL", "http://localhost:8100")
+SEARCH_EXPAND = os.environ.get("PETMINT_SEARCH_EXPAND", "0") == "1"      # 질의 확장(data/query_expansion.py) — 기본 끔
+SEARCH_POOL = int(os.environ.get("PETMINT_SEARCH_POOL", "0")) or None      # 1차 후보 깊이(search-service pool_k) — 기본 candidate_k
+SEARCH_VARIANT = os.environ.get("PETMINT_SEARCH_VARIANT") or None       # 실험 청크 묶음(data/chunks/<variant>/) — 기본 지금 청크
+NUMBER_GUARD = os.environ.get("PETMINT_NUMBER_GUARD", "1") == "1"       # 숫자 가드레일(guardrail.py) — 업무특화 모델 답
+# 6단계 B 조건: 작은 조각(청크 v2)으로 찾고 모델에게는 부모 청크를 보여준다 — 실험용, 기본 끔
+DISPLAY_PARENT = os.environ.get("PETMINT_DISPLAY_PARENT", "0") == "1"
+CUSTOMER_FACTS = os.environ.get("PETMINT_CUSTOMER_FACTS", "1") == "1"   # 고객 사실(customer_facts.py)·서버 부담보 대조 — 측정용 스위치
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
 MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다
 

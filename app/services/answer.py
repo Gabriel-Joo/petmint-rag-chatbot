@@ -23,6 +23,7 @@ import asyncio
 import json
 import logging
 import math
+import re
 import time
 from dataclasses import dataclass, field, replace
 from typing import AsyncIterator
@@ -35,9 +36,9 @@ from data.search_scope import MEDICAL_SECTIONS, SearchScope
 
 from app import config
 from app.db import now, utc
-from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
+from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, ExclusionsMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
                          Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
-from app.services import payout
+from app.services import customer_facts, guardrail, payout
 from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
@@ -61,6 +62,26 @@ LLM_OPTIONS_BASE = {"num_predict": 512}
 # 모델이 답에 섞었다(HR2 7→10/10). 절대 하한은 못 쓴다 — 답 있는 HR4(0.008·0.003)와 답 없는 HR5(0.004)가 같은 높이다.
 # 업무특화는 학습 때 발췌 3개 형식이라 적용하지 않는다
 HR_REL_CUT = 0.1
+
+
+def display_parent(results: list[dict], builder, species: str) -> list[dict]:
+    """6단계 B 조건 — 청크 v2의 조각으로 찾은 결과를 부모(원래 청크) 글로 바꿔 보여준다. 같은 부모가 겹치면 처음 것만 남긴다
+    (다음 순위로 채우지 않는다 — 형제 청크를 지우고 채운 10-19 실험이 거절을 늘렸다. 발췌 수가 줄어든 턴은 평가가 따로 센다).
+    조각이 아닌 청크(부모 = 자기)는 그대로"""
+    out, seen = [], set()
+    for r in results:
+        src = next((c for c in builder.chunks.get(species, []) if c.get("section") == r.get("section")
+                    and c.get("section_name") == r.get("section_name") and c.get("article_num") == r.get("article_num")
+                    and c.get("coverage_type") == r.get("coverage_type") and c["content"].strip() == r["content"].strip()), None)
+        if src is None or "parent_index" not in src:
+            out.append(r)
+            continue
+        if src["parent_index"] in seen:
+            continue
+        seen.add(src["parent_index"])
+        out.append({**r, "content": src["parent_content"], "context_prefix": src.get("parent_context_prefix")}
+                   if src.get("piece") else r)
+    return out
 
 
 def cut_weak_results(results: list[dict], mode: Mode) -> list[dict]:
@@ -144,8 +165,13 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
                 yield _fail(ctx, e, "search_unavailable")
                 return
             ctx.results = cut_weak_results(ctx.results, ctx.session.mode)   # 출처 패널도 모델이 본 발췌만
+            if config.DISPLAY_PARENT:
+                ctx.results = display_parent(ctx.results, deps.builder, ctx.scope.species)
             ctx.sources = [_source_item(r, ctx.scope.species) for r in ctx.results]
         yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
+        excl = payout.matched_exclusions(_r(ctx).card_text, ctx.pet) if config.CUSTOMER_FACTS else []   # 부담보 배너(4d)
+        if excl:
+            yield ExclusionsMsg(turn_id=ctx.turn_id, items=excl)
 
         carried = _r(ctx).chosen
         if carried is not None and ctx.scope is not None:    # 앞 턴에서 고른 특약을 이어 쓴다 — 다시 묻지 않는다
@@ -154,6 +180,17 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
                 yield m
             return
         options = clarify_options(ctx.results, ctx.scope)
+        if options:
+            # 되묻기가 걸리는 경우만 줄인다(4e) — 질문이 통원/입원을 말했으면 그 가입 특약으로, 등급과 상관없는 질문이면 묻지 않는다.
+            # 되묻기가 안 걸리던 반려동물의 발췌는 그대로다
+            named = named_section(_r(ctx).card_text, ctx.pet)
+            if named is not None:
+                ctx.chosen = named
+                async for m in _generate(ctx, deps, _keep_chosen(ctx.results, ctx.scope, named), named):
+                    yield m
+                return
+            if not needs_grade(_r(ctx).card_text):
+                options = None
         if options:
             ctx.clarify, ctx.clarified = options, True       # 답 없이 버려져도 되묻기는 발동했다(turns.clarified)
             yield ClarifyMsg(turn_id=ctx.turn_id, options=list(options))
@@ -185,6 +222,27 @@ def abandon(ctx: TurnContext) -> None:
         ctx.log = _turn_log(ctx, "cancelled", [], [], [])
 
 
+# 등급 되묻기는 등급에 따라 숫자가 달라지는 질문에만(4e, 2026-10-21) — 기준선에서 통원/입원 등급이 다른 반려동물(콩이·레오)에게
+# "주식 사도 될까요?"·"약욕 비용 청구돼요?"까지 되물어 답이 멈췄다(실행마다 9턴). 면책·절차 질문은 등급과 상관없이 같다
+_GRADE_MATTERS = re.compile(r"한도|얼마|금액|보험금|최대|하루|1일|보상비율|몇\s*퍼센트|자기\s*부담")
+
+
+def needs_grade(question: str) -> bool:
+    return bool(_GRADE_MATTERS.search(question))
+
+
+def named_section(question: str, pet: Pet | None) -> str | None:
+    """질문이 '통원'이나 '입원' 하나만 말하고 그쪽 의료비 특약에 가입했으면 그 특약. 둘 다 말했거나 가입하지 않았으면 None"""
+    if pet is None:
+        return None
+    said = [w for w in ("통원", "입원") if w in question]
+    if len(said) != 1:
+        return None
+    hits = [p.section_name for p in pet.policies
+            if p.coverage_type and said[0] in p.section_name and p.section_name in MEDICAL_SECTIONS[pet.species]]
+    return hits[0] if len(hits) == 1 else None
+
+
 def clarify_options(results: list[dict], scope: SearchScope | None) -> dict[str, str] | None:
     """상위 결과의 의료비 특약들이 서로 다른 (유형, 등급) 조합이면 선택지(표시 문구 → section_name). 아니면 None.
     같은 유형·등급이면 통원/입원 한도가 같아 묻지 않는다(4절). 범위에 등급이 없으면(인사규정·일반) 늘 None"""
@@ -214,6 +272,13 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
             for m in _code_answer(ctx, *out):
                 yield m
             return
+    # 고객 고유 사실(4d) — 가입하지 않은 특약, 올해 받은·남은 보험금은 코드가 답한다(모델은 고객 정보를 받지 않는다)
+    fact = (customer_facts.not_enrolled(r.card_text, ctx.pet) or customer_facts.annual_answer(r.card_text, ctx.pet)
+            if config.CUSTOMER_FACTS else None)
+    if fact is not None:
+        for m in _code_answer(ctx, None, fact, ask=False):
+            yield m
+        return
     if await asyncio.to_thread(payout.needs_amount, r.card_text, ctx.pet, deps.retriever.embed):
         # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 입원/통원에 따라 총액과 일수(횟수)를 함께 묻는다.
         # 다음 턴 "3일 입원 총 70만원"은 멀티턴으로 이 질문과 이어 붙고 코드가 계산한다(reply_turn).
@@ -266,6 +331,20 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     if ctx.cancel.is_set():
         ctx.log = _turn_log(ctx, "cancelled", [], [], [])
         return
+    if mode == "업무특화" and config.NUMBER_GUARD:
+        # 숫자 가드레일 — 모델이 본 글·카드에 없는 금액이면 한 줄 덧붙인다(guardrail.py)
+        unknown = guardrail.unknown_amounts(ctx.answer, [m["content"] for m in messages], ctx.calc)
+        if unknown:
+            extra = "\n\n" + guardrail.note(unknown)
+            ctx.answer += extra
+            yield TokenMsg(turn_id=ctx.turn_id, text=extra)
+            log.info("숫자 가드레일: turn=%s 금액 %s", ctx.turn_id, unknown)
+    if mode == "업무특화" and config.CUSTOMER_FACTS:
+        facts = customer_facts.notes(r.card_text, ctx.pet)                 # 가입일 대기기간·나이(4d)
+        if facts:
+            extra = "\n\n" + "\n".join(facts)
+            ctx.answer += extra
+            yield TokenMsg(turn_id=ctx.turn_id, text=extra)
 
     corpus = ctx.scope.species if ctx.scope else None
     references, graph_refs, used_graph = await asyncio.to_thread(_used, ctx.answer, results, items, corpus)
@@ -287,19 +366,24 @@ def _log_prompt(ctx: TurnContext, messages: list[dict], options: dict, results: 
         log.exception("프롬프트 기록 실패: %s", config.PROMPT_LOG)
 
 
-def _code_answer(ctx: TurnContext, card: CalcResult | None, text: str) -> list[ServerMessage]:
+def _code_answer(ctx: TurnContext, card: CalcResult | None, text: str, ask: bool = True) -> list[ServerMessage]:
     """코드가 답하는 턴 — 카드(있으면)와 같은 계산 결과로 만든 답을 한 번에 보낸다. 모델·근거 판정 없음.
-    카드 없이 답만이면(총액 없이 일수만 — NEED_COST_TEXT) 되묻기다"""
+    카드 없이 답만이면 되묻기다(총액 없이 일수만 — NEED_COST_TEXT). ask=False면 고객 사실 답(미가입·연간 잔여)이다.
+    계산 카드가 있는 답에는 고객 사실(대기기간·나이)을 덧붙인다 — 되묻기 문장은 다음 턴이 글자로 알아보므로 건드리지 않는다"""
     out: list[ServerMessage] = []
     if card is not None:
         ctx.calc = card
         out.append(CalcMsg(turn_id=ctx.turn_id, result=card))
-    else:
+        facts = customer_facts.notes(_r(ctx).card_text, ctx.pet) if config.CUSTOMER_FACTS else []
+        if facts:
+            text = text + "\n" + "\n".join(facts)
+    elif ask:
         ctx.clarified = True
     ctx.answer = text
     ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
-    out += [TokenMsg(turn_id=ctx.turn_id, text=text), ReferencesMsg(turn_id=ctx.turn_id, items=[])]
-    ctx.log = _turn_log(ctx, "ok", [], [], [])
+    refs = payout.code_references(card, ctx.pet, _r(ctx).card_text)    # 계산의 근거 조항(4c) — 되묻기만 한 턴은 없다
+    out += [TokenMsg(turn_id=ctx.turn_id, text=text), ReferencesMsg(turn_id=ctx.turn_id, items=refs)]
+    ctx.log = _turn_log(ctx, "ok", refs, [], [])
     return out
 
 

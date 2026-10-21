@@ -67,9 +67,10 @@ async def exchange(ws, payload: dict, first_timeout: float, idle_timeout: float)
     """메시지 하나를 보내고 끝(done·error·clarify)까지 받는다"""
     t0 = time.monotonic()
     await ws.send(json.dumps(payload, ensure_ascii=False))
-    rec = dict(turn_id=None, answer="", context=None, sources=[], references=[], calc=None, clarify=None, error=None,
+    rec = dict(turn_id=None, answer="", context=None, sources=[], references=[], calc=None, clarify=None, error=None, exclusions=None,
                order="", server_latency_ms=None, server_first_token_ms=None)
-    code = {"context": "X", "sources": "S", "calc": "C", "token": "T", "references": "R", "done": "D", "clarify": "Q", "error": "E"}
+    code = {"context": "X", "sources": "S", "calc": "C", "token": "T", "references": "R", "done": "D", "clarify": "Q", "error": "E",
+            "exclusions": "B"}
     first = True
     while True:
         try:
@@ -100,6 +101,8 @@ async def exchange(ws, payload: dict, first_timeout: float, idle_timeout: float)
             rec["calc"] = m.get("result")
         elif kind == "clarify":
             rec["clarify"] = m.get("options")
+        elif kind == "exclusions":
+            rec["exclusions"] = m.get("items")
         elif kind == "error":
             rec["error"] = {"code": m.get("code"), "message": m.get("message")}
         elif kind == "done":
@@ -143,6 +146,14 @@ def refused(answer: str) -> bool:
     return any(norm(p) in a for p in REFUSAL_PHRASES) or norm(prompts.NO_ANSWER_TEXT)[:12] in a
 
 
+def screen_match(text: str, pet: Pet) -> list[str]:
+    """서버가 부담보를 보내지 않을 때 화면이 하는 대조(ExclusionBanner.matchExclusions) — 공백 무시 전체 일치 또는 3글자 이상 낱말"""
+    flat_text = re.sub(r"\s+", "", text)
+    conds = [c for p in pet.policies for c in p.excluded_conditions]
+    return [c for c in dict.fromkeys(conds)
+            if re.sub(r"\s+", "", c) in flat_text or any(len(w) >= 3 and w in flat_text for w in c.split())]
+
+
 def gold_hit(item: dict, g: dict) -> bool:
     if item.get("section") != g.get("section") or item.get("section_name") != g.get("section_name"):
         return False
@@ -176,7 +187,8 @@ def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
             checks[f"calc.{path}"] = ok
     if exp.get("banner") is not None:
         text = f"{rec['context']['text']} {t['query']}" if rec.get("context") and rec["context"].get("text") else t["query"]
-        got = set(payout.matched_exclusions(text, pet))
+        # 화면 배너 = 서버가 보낸 부담보(4d 이후). 서버가 보내지 않았으면(걸린 것 없음·예전 서버) 같은 대조 함수로
+        got = set(rec["exclusions"]) if rec.get("exclusions") is not None else set(screen_match(text, pet))
         checks["banner"] = set(exp["banner"]) <= got
     if exp.get("context") is not None:
         got = (rec.get("context") or {}).get("kind") or "none"
@@ -188,7 +200,8 @@ def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
         checks["stored_sources"] = rec.get("stored_sources_same", False)
     gold = t.get("gold") or []
     info = dict(refused=refused(ans), code_answer=prompt is None and not rec.get("error") and bool(ans),
-                clarify_only=bool(rec.get("clarify")) and not ans)
+                clarify_only=bool(rec.get("clarify")) and not ans, guard_flag="※ 답변의" in ans,
+                n_references=len(rec.get("references") or []))
     if gold:
         info["gold_in_sources"] = any(gold_hit(s, g) for s in rec["sources"] for g in gold)
         if prompt is not None:
@@ -229,7 +242,7 @@ async def main_async(args) -> dict:
                                                                 for s in rec["sources"]],
                                order=rec["order"], turn_id=rec["turn_id"], session_id=rec["session_id"],
                                prompt_logged=p is not None, latency_ms=rec["server_latency_ms"], error=rec["error"],
-                               clarify=rec.get("clarify")))
+                               clarify=rec.get("clarify"), n_excerpts=len(p["kept"]) if p else None))
     return dict(tag=args.tag, base=args.base, runs=args.runs, open_hidden=args.open_hidden, created=datetime.now().isoformat(),
                 n_cases=len(cases), turns=judged)
 
@@ -283,6 +296,13 @@ def summarize(report: dict) -> str:
         det[r["id"]].add(json.dumps([r["sources"], r["calc"]], ensure_ascii=False, sort_keys=True))
     unstable = sorted(i for i, v in det.items() if len(v) > 1)
     lines += [f"실행마다 검색 결과·카드가 달라진 턴(0이어야 함): {len(unstable)} {', '.join(unstable[:20])}"]
+    r0 = [r for r in rows if r["run"] == 0]
+    few = [r["id"] for r in rows if r["run"] == 0 and r.get("n_excerpts") is not None and r["n_excerpts"] < 3]
+    lines += [f"발췌가 3개보다 적은 모델 턴(실행 1 — B 조건의 부모 겹침 등): {len(few)} {', '.join(few[:20])}"]
+    lines += [f"숫자 가드레일 표시(실행 1): {sum(r.get('guard_flag', False) for r in r0)} — "
+              f"{', '.join(r['id'] for r in r0 if r.get('guard_flag'))}",
+              f"근거 조항이 붙은 코드 답(실행 1): {sum(1 for r in r0 if r['code_answer'] and r.get('n_references'))}"
+              f"/{sum(1 for r in r0 if r['code_answer'])}"]
     lines += [f"모델이 답했는데 프롬프트 기록이 없는 턴: {missing_prompt}", f"기록 저장 불일치(stored=False): "
               f"{sum(1 for r in rows if not r['checks'].get('stored', True))}",
               f"등급 되묻기에서 멈춘 턴(실행 1): {', '.join(r['id'] for r in rows if r['run'] == 0 and r['clarify_only'])}"]

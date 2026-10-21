@@ -167,7 +167,9 @@ EXC_MARK = re.compile(r"다만[, ]|(?<![가-힣])단[,，]|\(단[, ]")    # 본�
 
 # 표 회차(rebuild4) — 별표 + 그 표를 쓰는 조항 본문(rag_context.ANNEX_CITED_BY). 학습 발췌와 같은 모양으로 보여 준다.
 # 소규모 시험 1차(2026-10-18, data/faq/exp_r4smoke/table_v1): "규칙 먼저"만 지시했더니 80건 중 70건이 표 한 칸만 묻는 세부 이율
-# 질문이었고 조항 규칙을 말한 답은 10건(12.5%) — rebuild3 학습 데이터와 같은 꼴이라 R041을 못 고친다. 질문 꼴·첫 문장을 못박았다
+# 질문이었고 조항 규칙을 말한 답은 10건(12.5%) — rebuild3 학습 데이터와 같은 꼴이라 R041을 못 고친다. 질문 꼴·첫 문장을 못박았다.
+# 2026-10-21: 그때 넣은 나쁜 예("31일~60일이면 이율이 얼마인지")를 표 회차 질문 90건 중 7건이 그대로 따라 썼다 — 예 문장을 빼고
+# 무엇을 물으라는 지시로 바꿨다
 TABLE_SECTION = "[이 표를 쓰는 조항]"
 TABLE_PROMPT_TEMPLATE = """출처: {section_name}
 {content}
@@ -180,7 +182,7 @@ SYSTEM_PROMPT_TABLE = (
     f"- 주어진 표와 {TABLE_SECTION}에 적힌 사실만 근거로 질문과 답변을 만드세요. 원문에 없는 숫자, 금액, 날짜, 비율은 절대로 만들어내지 마세요.\n"
     f"- {TABLE_SECTION}의 규칙과 표의 값을 둘 다 써야 답할 수 있는, 고객이 실제로 묻는 질문-답변 2개를 만드세요.\n"
     f"- 질문은 {TABLE_SECTION}이 정한 상황을 고객 입장에서 묻게 하세요(예: 보험금이 늦게 나오면 이자를 더 주는지, "
-    "소송하면 변호사 비용·인지액·송달료를 얼마까지 받는지). 표의 한 칸만 묻는 질문(예: 31일~60일이면 이율이 얼마인지)은 만들지 마세요.\n"
+    "소송하면 변호사 비용·인지액·송달료를 얼마까지 받는지). 질문은 표의 값 하나가 아니라 그 규칙이 고객의 상황에 어떻게 적용되는지를 물으세요.\n"
     f"- 답변 첫 문장은 {TABLE_SECTION}의 규칙으로 질문에 바로 답하세요(무엇을 언제 지급하는지, 지급하지 않는 경우). "
     "둘째 문장부터 표에서 해당하는 구간·값·식을 원문 그대로 옮기세요.\n"
     "- 표에 없는 새 금액으로 직접 계산하지 마세요.\n"
@@ -443,8 +445,7 @@ def generate_for_unit(builder, unit: dict, species: str, temperature: float, kin
         if has_chinese_sentence(qa["answer"]) or has_chinese_sentence(qa["question"]):
             result["rejected"].append({"qa": qa, "why": ["중국어 문장 섞임"]})
             continue
-        check = faq_verify.verify(qa, unit.get("coverage_type"), unit.get("section_name")) \
-            or faq_verify.verify_byeopyo(qa, unit.get("section_name"))
+        check = faq_verify.verify_all(qa, unit.get("coverage_type"), unit.get("section_name"))
         if check is not None and not check[0]:
             result["rejected"].append({"qa": qa, "why": check[1]})
             continue

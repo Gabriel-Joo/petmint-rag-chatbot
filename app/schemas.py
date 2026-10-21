@@ -495,6 +495,12 @@ class CalcMsg(_ServerMsg):
     result: CalcResult
 
 
+class ExclusionsMsg(_ServerMsg):
+    """질문에 걸리는 부담보(payout.matched_exclusions — 분류표·같은 부위 이름까지). 화면 배너가 이것을 쓴다. 걸린 것이 있을 때만"""
+    type: Literal["exclusions"] = "exclusions"
+    items: list[str]
+
+
 class ErrorMsg(_ServerMsg):
     """잘못된 메시지·남의 pet_id·검색/생성 실패. 질문 전 오류면 turn_id는 빈 문자열"""
     type: Literal["error"] = "error"
@@ -502,7 +508,8 @@ class ErrorMsg(_ServerMsg):
     message: str
 
 
-ServerMessage = Annotated[Union[ContextMsg, SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg],
+ServerMessage = Annotated[Union[ContextMsg, SourcesMsg, TokenMsg, ClarifyMsg, ReferencesMsg, CalcMsg, DoneMsg, ErrorMsg,
+                                ExclusionsMsg],
                           Field(discriminator="type")]
 
 

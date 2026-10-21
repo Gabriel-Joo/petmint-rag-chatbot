@@ -31,6 +31,7 @@ ACTION = {
     "duplicate": "drop",         # 같은 단위 묶음 안의 같은·거의 같은 질문(먼저 나온 것을 남김)
     "unit_cap": "drop",          # 단위당 상한 초과 — 바꿔 말한 질문이 많은 군집부터 깎음(되살리려면 이 기록만 보면 된다)
     "clause_grounding": "drop",  # 예외·표 회차(rebuild4) QA의 단서 문장이 원문·참조에 없음 — 단서를 지어낸 것으로 본다
+    "pet_subject": "flag",       # 사람에 관한 질문의 주어가 반려동물(재작성 틀 복사, 2026-10-21) — 오탐을 재고 drop 승격 여부 결정
 }
 
 
@@ -51,6 +52,19 @@ def numbers(text: str) -> set[str]:
     """'1,000만원', '8만 4천원'(→8.4만원), '70 %' 등을 '1000만원'·'8.4만원'·'70%' 꼴로"""
     text = faq_verify.normalize_amounts(text or "")
     return {n.replace(",", "") + re.sub(r"\s", "", u) for n, u in _NUM.findall(text)}
+
+
+# 반려동물이 사람에 관한 일의 주어가 된 질문(2026-10-21) — 재작성 예시를 따라 쓴 "우리 강아지가 소송…", "우리 강아지의 주소…"
+_PET_SUBJECT = re.compile(r"(?:우리|저희)\s*(?:집\s*)?(?:강아지|고양이|아이|개|애|반려견|반려묘)(?:가|는|의|도)")
+_HUMAN_TOPIC = re.compile(r"소송|변호사|주소|연락처|배당|계약자|피보험자|청약|보험료\s*(?:납입|를|가|는)|대출|중도인출|"
+                          r"세액공제|장애인|지정대리|위법계약|자필|서명")
+
+
+def check_pet_subject(question: str) -> list[dict]:
+    """사람(계약자·피보험자)에 관한 질문에서 반려동물이 주어면 실패"""
+    if _PET_SUBJECT.search(question) and _HUMAN_TOPIC.search(question):
+        return [_result("pet_subject", "반려동물이 사람에 관한 일의 주어 — 재작성 틀 복사")]
+    return []
 
 
 def check_number_grounding(body: str, question: str, pool: str, calc_verified: bool) -> list[dict]:
@@ -199,13 +213,13 @@ def run_checks(faq: dict, source: str, refs: list[dict] | None, paragraphs: list
     pool = source + "\n" + "\n".join(r.get("content") or "" for r in (refs or []))
     labels = [r["citation_label"] for r in refs] if refs is not None else faq.get("references_given", [])
     out = []
-    check = faq_verify.verify({"question": q, "answer": body}, faq.get("coverage_type"), faq.get("section_name")) \
-        or faq_verify.verify_byeopyo({"question": q, "answer": body}, faq.get("section_name"))
+    check = faq_verify.verify_all({"question": q, "answer": body}, faq.get("coverage_type"), faq.get("section_name"))
     if check is not None and not check[0]:
         out.append(_result("calc", "; ".join(check[1])))
     calc_ok = check is not None and check[0]
     out += check_limits(body, q, pool, faq.get("section_name"), faq.get("coverage_type"))
     out += check_species(faq["species"], q, body, pool)
+    out += check_pet_subject(q)
     out += check_care_type(faq.get("section_name"), q, body, pool)
     out += check_number_grounding(body, q, pool, calc_ok)
     out += check_article_refs(body, q, pool, labels, faq.get("article_num"))
