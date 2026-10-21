@@ -205,24 +205,29 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     mode = ctx.session.mode
     r = _r(ctx)
     if r.after_amount_ask:
-        # 금액 되묻기 직후 턴 — 상담원이 말한 금액은 치료비다. 모델을 부르지 않고 카드 값으로 답한다(payout.amount_answer):
-        # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md)
-        amounts = payout.amounts_in(ctx.question)
-        card = payout.estimate(r.card_text, ctx.pet, results, chosen, cost=amounts[0] if amounts else None)
-        if card is not None:
-            ctx.calc = card
-            yield CalcMsg(turn_id=ctx.turn_id, result=card)
-            ctx.answer = payout.amount_answer(card, ctx.pet, r.card_text)
+        # 코드가 되물은 턴(금액·날짜별 금액·일수) 바로 뒤 — 모델을 부르지 않고 카드와 같은 계산 결과로 답한다(payout.reply_turn):
+        # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md). 날짜별 금액이 필요하면
+        # 입력칸 카드(days_ask)로 한 번 더 묻는다
+        out = payout.reply_turn(ctx.question, r.card_text, r.reply_stage, r.prior_calc, ctx.pet, results, chosen)
+        if out is not None:
+            card, text = out
+            if card is not None:
+                ctx.calc = card
+                yield CalcMsg(turn_id=ctx.turn_id, result=card)
+            else:                               # 총액 없이 일수·'모르겠어요'만 — 다시 묻는다(NEED_COST_TEXT도 되묻기다)
+                ctx.clarified = True
+            ctx.answer = text
             ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
             yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
             yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
             ctx.log = _turn_log(ctx, "ok", [], [], [])
             return
     if await asyncio.to_thread(payout.needs_amount, r.card_text, ctx.pet, deps.retriever.embed):
-        # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 다음 턴 "35만원이요"는 멀티턴(금액만)으로 이 질문과
-        # 이어 붙고 의료비 카드가 계산한다. 등급 되묻기가 있으면 그 뒤에 온다(이 함수는 되묻기 응답 뒤에 불린다)
+        # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 입원/통원에 따라 총액과 일수(횟수)를 함께 묻는다.
+        # 다음 턴 "3일 입원 총 70만원"은 멀티턴으로 이 질문과 이어 붙고 코드가 계산한다(reply_turn).
+        # 등급 되묻기가 있으면 그 뒤에 온다(이 함수는 되묻기 응답 뒤에 불린다)
         ctx.clarified = True
-        ctx.answer = payout.ASK_AMOUNT_TEXT
+        ctx.answer = payout.ask_text(r.card_text, ctx.pet, chosen)
         ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
         yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
         yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
@@ -355,7 +360,7 @@ def _turn_log(ctx: TurnContext, status: str, references: list[ReferenceItem], gr
     return TurnLog(turn_id=ctx.turn_id, session_id=ctx.session.session_id, question=ctx.question, answer=ctx.answer,
                    rewritten_question=r.anchor, follow_up=r.follow_up, context_kind=r.kind,
                    context_turns=len(r.history) // 2 if r.kind == "history" else None, chosen_section=ctx.chosen,
-                   payout=ctx.calc.model_dump() if ctx.calc else None, **pet_snapshot(ctx.pet),
+                   payout=ctx.calc.model_dump(mode="json") if ctx.calc else None, **pet_snapshot(ctx.pet),
                    clarified=ctx.clarified, scope=scope_rows(ctx.pet),
                    retrieved=retrieved_rows(ctx.sources, references, corpus=corpus, graph_refs=graph_refs,
                                             used_graph=used_graph),

@@ -187,17 +187,65 @@ export interface ReferenceItem {
   paragraph_num: number | null;
 }
 
-/** 의료비 계산 카드(09 2-3) — limit_table.calculate_payout 결과. kind가 없으면(법률비용 카드 전에 저장된 턴) 의료비다 */
+/** 날짜별 계산 한 줄 */
+export interface DayRow {
+  cost: number;
+  surgery: boolean;
+  mri: boolean;
+  limit: number; // 그날 한도
+  label: string; // 수술한 날 / 수술 안 한 날 / MRI 등 연간 첫 번째…
+  payout: number;
+}
+
+/** 의료비 계산 카드(09 2-3) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도.
+ *  kind가 없으면(법률비용 카드 전에 저장된 턴) 의료비다. days 이하가 없으면(10-21 여러 날 계산 전 카드) 하루·정확 */
 export interface MedicalCalc {
   kind?: "medical";
   section_name: string;
   coverage_type: Grade;
-  claimed: number; // 청구 치료비
-  copay: number;
-  limit: number;
-  payout: number;
+  claimed: number; // 청구 치료비(합계)
+  copay: number; // 1일당
+  limit: number; // 수술하지 않은 날 1일 한도(하루면 그날 상황의 한도)
+  payout: number; // 예상 지급액(범위면 고르게 나뉜 추정)
   note: string;
   rate_pct?: number | null; // 보상비율(%) — 예전 카드엔 없다
+  setting?: "통원" | "입원" | null;
+  days?: number;
+  days_known?: boolean;
+  exact?: boolean;
+  day_rows?: DayRow[];
+  range_min?: number | null;
+  range_max?: number | null;
+  even?: number | null;
+  annual_total?: number | null;
+  annual_used?: number | null;
+  annual_remaining?: number | null;
+  year_start?: string | null;
+  capped?: boolean;
+  mri_before?: number | null;
+  assumptions?: string[];
+  flow?: "question" | "ask";
+}
+
+/** 날짜별 금액 입력칸 하나의 미리 채운 값 */
+export interface DayInput {
+  cost: number | null;
+  surgery: boolean;
+  mri: boolean;
+}
+
+/** 날짜별 치료비 되묻기 — 일수(2~5)만큼 입력칸. 채우면 "300,000원(수술), 300,000원, …" 질문으로 보낸다 */
+export interface DaysAskCalc {
+  kind: "days_ask";
+  section_name: string;
+  coverage_type: Grade;
+  setting: "통원" | "입원";
+  days: number;
+  total: number; // 앞서 말한 총액
+  type: string; // Ⅰ/Ⅱ/Ⅲ — Ⅲ이면 MRI 표시도
+  prefill: DayInput[];
+  surgery_mentioned: boolean;
+  note: string;
 }
 
 /** 법률비용 계산 카드 — 민사소송법률비용 특약 【별표3·4·5】. 소송 금액 없이 심급만 말하면 송달료만 있다 */
@@ -242,7 +290,7 @@ export interface LimitsCalc {
 }
 
 /** 계산 카드 — WS calc 메시지와 과거 턴(TurnOut.payout)이 같은 모양 */
-export type CalcResult = MedicalCalc | LegalCalc | LimitsCalc;
+export type CalcResult = MedicalCalc | LegalCalc | LimitsCalc | DaysAskCalc;
 
 export type ServerMessage =
   // 멀티턴 — 후속 질문이면 sources 앞에 한 번

@@ -68,7 +68,7 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
             {ended ? "대화 없이 종료된 상담입니다." : `${customer.name} 고객 상담을 시작합니다. ${pet.name}에 대해 물어보세요.`}
           </div>
         )}
-        {chat.turns.map((t) => {
+        {chat.turns.map((t, i) => {
           const turnPet = t.pet_id ? petsById.get(t.pet_id) : undefined;
           // 후속 턴은 기준 질문(↳ 줄)까지 본다 — 금액 되묻기 직후 "치료비 50만원이요"에는 질병 이름이 앞 질문에만 있다
           const text = t.context?.text ? `${t.context.text} ${t.question}` : t.question;
@@ -78,7 +78,9 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
                       petLabel={turnPet && customer.pets.length > 1 ? `${SPECIES_ICON[turnPet.species]} ${turnPet.name}` : undefined}
                       onClarify={ended ? undefined : chat.answerClarify}
                       selected={panelTurn?.key === t.key && chat.turns.length > 1}
-                      onSelect={() => setSelectedKey(t.key)} />
+                      onSelect={() => setSelectedKey(t.key)}
+                      onAnswer={!ended && !chat.busy && i === chat.turns.length - 1
+                        ? (text) => chat.ask(text, t.pet_id ?? pet.pet_id) : undefined} />
           );
         })}
       </div>
