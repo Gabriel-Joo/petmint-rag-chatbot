@@ -392,7 +392,8 @@ OTHER_MONEY = re.compile(r"보험료|환급|자기\s*부담|가입\s*금액|연�
 
 
 # 한도 카드에서는 자기부담금을 '다른 돈'으로 보지 않는다 — "자기부담금이 얼마예요?"는 가입 정보(카드의 자기부담 줄)로 답한다
-_OTHER_MONEY_LIMIT = re.compile(r"보험료|환급|가입\s*금액|연체|이자|위약|해지|해약|공제|중도\s*인출|대출|적립")
+_OTHER_MONEY_LIMIT = re.compile(r"보험료|환급|가입\s*금액|연체|이자|이율|금리|위약|해지|해약|공제|중도\s*인출|대출|적립")
+# "이율" — 7pre 측정에서 S45 "평균공시이율이 몇 퍼센트예요?"가 '몇 퍼센트'로 한도 카드에 걸렸다(3/3 → 0/3)
 
 
 def _limit_row(section_name: str, grade: str, copay: int | None, pet: Pet | None, on: date | None, policy=None) -> LimitRow:
