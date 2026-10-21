@@ -303,7 +303,9 @@ export type ServerMessage =
   // 잘못된 메시지·남의 pet_id·검색/생성 실패
   | { type: "error"; turn_id: string; code: string; message: string }
   // 계산 카드 — 치료비가 들어간 질문이면 sources 다음에 한 번
-  | { type: "calc"; turn_id: string; result: CalcResult };
+  | { type: "calc"; turn_id: string; result: CalcResult }
+  // 질문에 걸리는 부담보(서버 대조 — 분류표·같은 부위 이름까지). 걸린 것이 있을 때만
+  | { type: "exclusions"; turn_id: string; items: string[] };
 
 /** WS 종료 코드 — 없는(만료된) 세션 */
 export const WS_CLOSE_SESSION_NOT_FOUND = 4404;

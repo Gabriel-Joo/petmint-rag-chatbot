@@ -223,3 +223,14 @@ def verify_byeopyo(qa, section_name):
     if service is not None and not service[0]:
         problems += service[1]
     return (not problems, problems)
+
+
+def verify_all(qa, coverage, section_name):
+    """의료비 계산(verify)과 별표 계산(verify_byeopyo)을 둘 다 돌린다 — 하나라도 실패하면 실패. 둘 다 해당 없으면 None.
+    예전 호출부는 `verify(...) or verify_byeopyo(...)`였다. 별표 계산 답에서 verify가 등급 정보 없이 (True, [])를 돌려주면
+    그 튜플이 참이라 verify_byeopyo가 돌지 않았다 — 별표 QA 118건 중 29건이 검산 없이 통과했고 27건이 틀린 계산이었다
+    (2026-10-21 FAQ 감사, 학습 데이터에 2건: 3,000만원 → 570만원, 정답 280만원)"""
+    results = [r for r in (verify(qa, coverage, section_name), verify_byeopyo(qa, section_name)) if r is not None]
+    if not results:
+        return None
+    return all(ok for ok, _ in results), [p for _, probs in results for p in probs]

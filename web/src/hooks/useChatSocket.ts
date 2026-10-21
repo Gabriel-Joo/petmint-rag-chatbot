@@ -19,6 +19,7 @@ export interface Turn {
   clarifyChoice: string | null;
   references: ReferenceItem[];
   calc: CalcResult | null;
+  exclusions: string[] | null; // 서버가 대조한 부담보(없으면 화면이 직접 대조 — 지난 턴)
   error: string | null;
   status: TurnStatus;
   latency_ms: number | null;
@@ -85,6 +86,8 @@ function apply(state: ChatState, msg: ServerMessage): ChatState {
       return { ...state, turns: patchTurn(turns, idx, { references: msg.items }) };
     case "calc":
       return { ...state, turns: patchTurn(turns, idx, { calc: msg.result }) };
+    case "exclusions":
+      return { ...state, turns: patchTurn(turns, idx, { exclusions: msg.items }) };
     case "done":
       return { ...state, turns: patchTurn(turns, idx, {
         status: t.status === "error" ? "error" : "done", latency_ms: msg.latency_ms, first_token_ms: msg.first_token_ms }) };
@@ -132,7 +135,7 @@ export function turnFromOut(t: TurnOut): Turn {
   return {
     key: t.turn_id, turn_id: t.turn_id, question: t.question, pet_id: t.pet_id, sources: t.sources, answer: t.answer,
     context: t.context_kind ? { kind: t.context_kind, reason: t.follow_up, text: t.rewritten_question, turns: t.context_turns } : null,
-    clarify: null, clarifyChoice: null, references: t.references, calc: t.payout, error: null, status: "done",
+    clarify: null, clarifyChoice: null, references: t.references, calc: t.payout, exclusions: null, error: null, status: "done",
     latency_ms: t.latency_ms, first_token_ms: t.first_token_ms,
   };
 }
@@ -165,7 +168,8 @@ export function useChatSocket(sessionId: string | null) {
     if (!sessionId || entry(sessionId).state.readOnly) return;
     const turn: Turn = {
       key: crypto.randomUUID(), turn_id: null, question, pet_id, sources: [], answer: "", clarify: null,
-      clarifyChoice: null, references: [], calc: null, error: null, status: "searching", latency_ms: null, first_token_ms: null,
+      clarifyChoice: null, references: [], calc: null, exclusions: null, error: null, status: "searching", latency_ms: null,
+      first_token_ms: null,
       context: null,
     };
     const socket = connect(sessionId);

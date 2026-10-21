@@ -28,7 +28,7 @@ from data.limit_table import LEGAL_COST, get_limit, lawyer_fee_bracket, lawyer_f
 from data.rag_context import infer_type_from_section_name
 from data.search_scope import MEDICAL_SECTIONS, mentioned_grade, mentioned_type
 
-from app.schemas import DayInput, DayRow, DaysAskCalc, LegalCalc, LimitRow, LimitsCalc, MedicalCalc, Pet
+from app.schemas import DayInput, DayRow, DaysAskCalc, LegalCalc, LimitRow, LimitsCalc, MedicalCalc, Pet, ReferenceItem
 from app.services import daycalc, dayparse, intent
 
 _UNIT = {"억": 10 ** 8, "천만": 10 ** 7, "백만": 10 ** 6, "만": 10 ** 4, "천": 10 ** 3, "백": 100}
@@ -62,6 +62,9 @@ def _section(question: str, pet: Pet, results: list[dict], chosen: str | None) -
     medical = {p.section_name: p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species]}
     if chosen in medical:
         return chosen
+    said = [w for w in ("통원", "입원") if w in question]
+    if len(said) == 1 and not any(said[0] in name for name in medical):
+        return None              # 가입하지 않은 쪽을 물었다 — 다른 특약으로 계산하면 틀린 금액이다(4f: 모모 통원→입원 카드)
     for word in ("통원", "입원"):
         hits = [name for name in medical if word in name]
         if word in question and len(hits) == 1:
@@ -377,8 +380,10 @@ def legal_card(question: str, pet: Pet | None) -> LegalCalc | None:
 # ===== 한도 카드 — 금액 없이 한도만 물을 때 =====
 # "보장 얼마나 돼요?"도 한도를 묻는 것 — 사고 뒤 받을 금액이 아니다(평가 R070 "MRI 찍으면 보장 얼마나 돼요?"가 금액 되묻기에 걸렸다)
 _LIMIT_WORD = re.compile(r"한도|얼마까지|최대\s*(?:얼마|로|금액)|최고\s*얼마|보장\s*(?:은|이|금액)?\s*얼마")
-_NOT_MEDICAL = re.compile(r"소송|변호사|인지액|송달료|배상|법률")   # 법률비용·배상책임 질문 — 의료비 한도표가 아니다
+_NOT_MEDICAL = re.compile(r"소송|변호사|인지액|송달료|배상|법률|피해자|합의|약정")   # 법률비용·배상책임 질문 — 의료비 한도표가 아니다
 # 치료비·보험금이 아닌 돈 이야기 — 한도 카드와 금액 되묻기에서 뺀다("중도인출 하면 얼마까지 돼요?"에 의료비 한도 카드가 떴다)
+# 올해 받은·남은 보험금을 묻는다 — 치료비를 되물을 질문이 아니다(4f: "올해 얼마 더 받을 수 있어요?"에 되묻기가 걸렸다)
+ANNUAL_ASK = re.compile(r"(?:올해|이번\s*해|올\s*한\s*해|금년).*(?:받았|받은|더\s*받|남은|남았|남아|사용|썼)")
 OTHER_MONEY = re.compile(r"보험료|환급|자기\s*부담|가입\s*금액|연체|이자|위약|해지|해약|공제|중도\s*인출|대출|적립")
 
 
@@ -394,7 +399,7 @@ def limit_card(question: str, pet: Pet | None, chosen: str | None = None) -> Lim
     else:
         for word in ("통원", "입원"):
             if word in question:
-                medical = [p for p in medical if word in p.section_name] or medical
+                medical = [p for p in medical if word in p.section_name]   # 가입하지 않은 쪽이면 카드 없음(4f: 두부 입원)
     # 질문이 등급·유형을 말하면 그에 맞는 가입 특약만 — 맞는 것이 없으면(가입과 다른 등급) 이 고객의 한도가 아니라 내지 않는다
     grade, type_ = mentioned_grade(question), mentioned_type(question)
     if grade:
@@ -466,7 +471,7 @@ def needs_amount(question: str, pet: Pet | None, embed: "intent.Embed | None" = 
     if pet is None or not any(p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type for p in pet.policies):
         return False
     if (treatment_cost(question) is not None or _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question)
-            or OTHER_MONEY.search(question)):
+            or OTHER_MONEY.search(question) or ANNUAL_ASK.search(question)):
         return False
     asks = intent.asks_amount(question, embed)
     return bool(_ASK_MONEY.search(question)) if asks is None else asks
@@ -489,14 +494,63 @@ def _won(n: int) -> str:
 
 
 def matched_exclusions(text: str, pet: Pet | None) -> list[str]:
-    """질문(기준 질문 포함)에 걸리는 부담보 질병 — 화면 배너(ExclusionBanner.matchExclusions)와 같은 글자 대조:
-    공백을 무시한 전체 일치, 또는 3글자 이상 낱말 일치. 동의어("무릎" ↔ "슬개골")는 못 잡는다"""
+    """질문(기준 질문 포함)에 걸리는 부담보 질병. 세 가지로 대조한다(공백 무시):
+    ① 부담보 이름 그대로 또는 3글자 이상 낱말(예전 화면 규칙) ② 특정질병 분류표(별첨)에서 그 분류에 든 질병 이름
+    ("비뇨기과질환" ← 방광염·요로 결석증, "뒷다리근골격계질환" ← 고관절 이형성증) ③ 같은 부위 다른 이름(SYNONYMS — 무릎뼈·슬관절 ↔ 슬개골).
+    2026-10-21 기준선: 방광염·무릎·고관절 이형성증으로 물으면 배너가 안 떴다(부담보 0/9). 서버가 이 결과를 화면에 보낸다(ExclusionsMsg)"""
     if pet is None:
         return []
     flat = re.sub(r"\s+", "", text)
     conds = [c for p in pet.policies for c in p.excluded_conditions]
-    return [c for c in dict.fromkeys(conds)
-            if re.sub(r"\s+", "", c) in flat or any(len(w) >= 3 and w in flat for w in c.split())]
+    table = disease_table(pet.species)
+    out = []
+    for c in dict.fromkeys(conds):
+        key = re.sub(r"\s+", "", c)
+        terms = {key} | {w for w in c.split() if len(w) >= 3}
+        if key in table:                                   # 분류 이름 — 그 분류의 질병 이름 전부
+            terms |= table[key]
+        else:                                              # 질병 이름 — 같은 낱말이 든 분류표 질병 이름
+            head = re.sub(r"\(.*?\)", "", c).split()[0]
+            terms |= {t for names in table.values() for t in names if head in t}
+        for word, alias in SYNONYMS.items():
+            if word in key:
+                terms |= set(alias)
+        if any(t in flat for t in terms):
+            out.append(c)
+    return out
+
+
+# 같은 부위의 다른 이름 — 분류표에 없는 일상어. 잘못 걸려도 배너(확인 안내)라 비용이 작다
+SYNONYMS = {"슬개골": ("무릎뼈", "무릎", "슬관절"), "비뇨기": ("방광", "요로", "소변", "오줌")}
+_TABLE_STOP = ("신생물", "기타", "원인불명", "불확실")
+_TABLES: dict[str, dict[str, set[str]]] = {}
+
+
+def disease_table(species: str) -> dict[str, set[str]]:
+    """특정질병 분류표(별첨 청크) — 분류 이름(공백 없이) → 그 분류의 질병 이름(공백·괄호 없이, 3글자 이상, 신생물·기타 제외)"""
+    if species in _TABLES:
+        return _TABLES[species]
+    import json
+    from app import config
+    path = config.CHUNKS_DIR / f"petmint_{species}.json"
+    table: dict[str, set[str]] = {}
+    if path.exists():
+        for ch in json.loads(path.read_text(encoding="utf-8")):
+            if ch.get("section") != "별첨":
+                continue
+            t = re.sub(r"\s+", " ", ch["content"])
+            m = re.match(r"\s*(.+?)\s*\(관련 질병코드", t)
+            if not m:
+                continue
+            names = re.findall(r"[A-Z]{3}\d{3}:\s*(.+?)(?=\s+-\s+[A-Z]{3}\d{3}:|$)", t)
+            terms = set()
+            for n in names:
+                core = re.sub(r"\s+", "", re.sub(r"\(.*?\)", "", n))
+                if len(core) >= 3 and not any(s in core for s in _TABLE_STOP):
+                    terms.add(core)
+            table[re.sub(r"\s+", "", m.group(1))] = terms
+    _TABLES[species] = table
+    return table
 
 
 def _day_name(setting: str, i: int) -> str:
@@ -639,6 +693,22 @@ def reply_turn(question: str, card_text: str, stage: str, prior_payout: dict | N
     if isinstance(card, DaysAskCalc):
         return card, days_ask_answer(card)
     return card, amount_answer(card, pet, card_text, hint=not card.exact and card.days > MAX_FORM_DAYS)
+
+
+def code_references(card, pet: Pet | None, text: str) -> list[ReferenceItem]:
+    """코드가 쓴 답의 근거 조항(2026-10-21, 4c단계) — 계산의 근거인 그 특약 제1조(보험금의 지급사유: 1일 한도·자기부담금·보상비율 표).
+    부담보에 걸리면 부담보 특약 제2조(특별면책조건의 내용). 모델 답처럼 글자 대조(used_references)로 찾을 수 없다 — 계산이 표에서 나왔다"""
+    if pet is None or card is None or getattr(card, "kind", "medical") not in ("medical", "days_ask"):
+        return []
+    refs = [ReferenceItem(citation_label="제1조(보험금의 지급사유)", species=pet.species, section="특별약관",
+                          section_name=card.section_name, article_num=1)]
+    if matched_exclusions(text, pet):
+        refs.append(ReferenceItem(citation_label="제2조(특별면책조건의 내용)", species=pet.species, section="특별약관",
+                                  section_name=EXCLUSION_SECTION_NAME, article_num=2))
+    return refs
+
+
+EXCLUSION_SECTION_NAME = "반려동물 특정 질병 보장제한부 인수 특별약관"
 
 
 def _has_batchim(word: str) -> bool:

@@ -72,7 +72,8 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
           const turnPet = t.pet_id ? petsById.get(t.pet_id) : undefined;
           // 후속 턴은 기준 질문(↳ 줄)까지 본다 — 금액 되묻기 직후 "치료비 50만원이요"에는 질병 이름이 앞 질문에만 있다
           const text = t.context?.text ? `${t.context.text} ${t.question}` : t.question;
-          const excl = turnPet ? matchExclusions(text, turnPet.policies.flatMap((p) => p.excluded_conditions)) : [];
+          // 서버가 대조한 부담보가 있으면 그것(분류표·같은 부위 이름까지), 없으면(지난 턴) 화면 대조
+          const excl = t.exclusions ?? (turnPet ? matchExclusions(text, turnPet.policies.flatMap((p) => p.excluded_conditions)) : []);
           return (
             <TurnView key={t.key} turn={t} inlineSources="mobile" exclusions={excl}
                       petLabel={turnPet && customer.pets.length > 1 ? `${SPECIES_ICON[turnPet.species]} ${turnPet.name}` : undefined}

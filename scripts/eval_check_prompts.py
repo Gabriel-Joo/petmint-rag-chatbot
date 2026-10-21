@@ -17,7 +17,7 @@ from pymilvus import MilvusClient
 from app import config
 from app.schemas import Pet
 from app.services import policy_data
-from app.services.answer import PROMPT_BUDGET, SEARCH_TOP_K, count_tokens, cut_weak_results
+from app.services.answer import PROMPT_BUDGET, SEARCH_TOP_K, count_tokens, cut_weak_results, display_parent
 from app.services.customers import scope_for
 from app.services.retrieval import Retriever
 from data import prompts
@@ -30,6 +30,8 @@ def rebuild(question: str, pet: Pet, retriever: Retriever, builder: ContextBuild
     """서버 answer.run_turn → _generate와 같은 순서(단독 질문, 업무특화)"""
     results = build_full_context(retriever, builder, question, scope_for(pet), SEARCH_TOP_K)
     results = cut_weak_results(results, "업무특화")
+    if config.DISPLAY_PARENT:
+        results = display_parent(results, builder, pet.species)
     items = prompts.fit_to_budget(question, [replace(prompts.ExcerptItem.from_search_result(x), key=str(i))
                                             for i, x in enumerate(results)], PROMPT_BUDGET, count_tokens)
     return prompts.build_messages(question, items, system=prompts.SYSTEM_PROMPT, excerpt_header=prompts.EXCERPT_HEADER)
@@ -52,7 +54,7 @@ def main():
     pets = {p["pet_id"]: Pet.model_validate(p) for c in cs for p in c["pets"]}
     chunks, graphs = policy_data.load()
     builder = ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
-    retriever = Retriever(config.SEARCH_SERVICE_URL)
+    retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL)
     picked = [r for r in report["turns"] if r["turn_id"] in logged and not r["context"] and not r.get("clarify")][: args.n]
     same, diff = 0, []
     for r in picked:

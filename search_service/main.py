@@ -3,7 +3,8 @@ search_service/main.py
 search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 7-3절). 호스트(GPU)에서 띄우고 Pod의 앱이 부른다.
 검색 로직은 여기 두지 않는다 — 노트북 01~08은 SearchEngine을 직접 import하고, 서비스만 HTTP로 같은 코드를 부른다(3-3절).
 
-  POST /search  {query, scope, top_k, candidate_k} → SearchEngine.search의 list[dict] 그대로
+  POST /search  {query, scope, top_k, candidate_k, expand?, variant?} → SearchEngine.search의 list[dict] 그대로
+                expand·variant는 실험용(기본 끔) — 보내지 않으면 예전과 같은 결과
                 scope는 SearchScope.describe() 결과 — from_describe로 되살린다
   POST /embed   {texts} → {vectors} — KURE 문장 임베딩(정규화). 앱의 금액 되묻기 판별(app/services/intent.py)이 쓴다
   GET  /health  모델이 올라왔는지(장치), Milvus에 닿는지, 코퍼스별 컬렉션이 있는지
@@ -48,6 +49,9 @@ class SearchRequest(BaseModel):
     scope: dict                                # SearchScope.describe()
     top_k: int = Field(5, ge=1)                # 기본값은 SearchEngine.search와 같다
     candidate_k: int = Field(20, ge=1)
+    expand: bool = False                       # 질의 확장(data/query_expansion.py) — 기본 끔. 실험·앱 설정이 켤 때만
+    variant: str | None = Field(None, pattern=r"^[a-z0-9_]{1,16}$")   # 실험용 청크 묶음(data/chunks/<variant>/) — 기본 지금 청크
+    pool_k: int | None = Field(None, ge=1, le=200)      # 1차 후보 깊이(Dense·BM25 각각) — 기본 candidate_k
 
 
 @app.post("/search")
@@ -61,9 +65,12 @@ def search(req: SearchRequest) -> list[dict]:
         raise HTTPException(422, f"올라오지 않은 코퍼스: {scope.species}")
     try:
         with _gpu_lock:
-            return engine.search(req.query, scope, top_k=req.top_k, candidate_k=req.candidate_k)
+            return engine.search(req.query, scope, top_k=req.top_k, candidate_k=req.candidate_k, expand=req.expand,
+                                 variant=req.variant, pool_k=req.pool_k)
     except MilvusException as e:                     # Milvus가 내려갔거나 컬렉션이 없다(색인 전 코퍼스)
         raise HTTPException(503, f"Milvus: {e}")
+    except FileNotFoundError as e:                   # 없는 variant
+        raise HTTPException(422, f"청크 묶음 없음: {e}")
 
 
 class EmbedRequest(BaseModel):
