@@ -210,17 +210,8 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
         # 입력칸 카드(days_ask)로 한 번 더 묻는다
         out = payout.reply_turn(ctx.question, r.card_text, r.reply_stage, r.prior_calc, ctx.pet, results, chosen)
         if out is not None:
-            card, text = out
-            if card is not None:
-                ctx.calc = card
-                yield CalcMsg(turn_id=ctx.turn_id, result=card)
-            else:                               # 총액 없이 일수·'모르겠어요'만 — 다시 묻는다(NEED_COST_TEXT도 되묻기다)
-                ctx.clarified = True
-            ctx.answer = text
-            ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
-            yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
-            yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
-            ctx.log = _turn_log(ctx, "ok", [], [], [])
+            for m in _code_answer(ctx, *out):
+                yield m
             return
     if await asyncio.to_thread(payout.needs_amount, r.card_text, ctx.pet, deps.retriever.embed):
         # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 입원/통원에 따라 총액과 일수(횟수)를 함께 묻는다.
@@ -236,8 +227,15 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     # 카드 순서: 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는 나오지 않는다.
     # 업무특화 후속은 기준 질문까지 읽는다 — "그럼 입원은요?"의 금액·한도 낱말은 앞 질문에 있다
     q = r.card_text
-    ctx.calc = (payout.legal_card(q, ctx.pet) or payout.estimate(q, ctx.pet, results, chosen)
-                or payout.limit_card(q, ctx.pet, chosen))
+    ctx.calc = payout.legal_card(q, ctx.pet)
+    if ctx.calc is None:
+        # 의료비 카드가 뜨면 답도 카드 값으로 — 처음부터 금액을 다 말한 질문도 되묻기 뒤 턴과 같다(모델은 거절했다, R2·R26·R29)
+        out = payout.question_turn(q, ctx.pet, results, chosen)
+        if out is not None:
+            for m in _code_answer(ctx, *out):
+                yield m
+            return
+        ctx.calc = payout.limit_card(q, ctx.pet, chosen)
     if ctx.calc is not None:
         yield CalcMsg(turn_id=ctx.turn_id, result=ctx.calc)
 
@@ -270,6 +268,22 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     references, graph_refs, used_graph = await asyncio.to_thread(_used, ctx.answer, results, items, corpus)
     yield ReferencesMsg(turn_id=ctx.turn_id, items=references)
     ctx.log = _turn_log(ctx, "ok", references, graph_refs, used_graph)
+
+
+def _code_answer(ctx: TurnContext, card: CalcResult | None, text: str) -> list[ServerMessage]:
+    """코드가 답하는 턴 — 카드(있으면)와 같은 계산 결과로 만든 답을 한 번에 보낸다. 모델·근거 판정 없음.
+    카드 없이 답만이면(총액 없이 일수만 — NEED_COST_TEXT) 되묻기다"""
+    out: list[ServerMessage] = []
+    if card is not None:
+        ctx.calc = card
+        out.append(CalcMsg(turn_id=ctx.turn_id, result=card))
+    else:
+        ctx.clarified = True
+    ctx.answer = text
+    ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
+    out += [TokenMsg(turn_id=ctx.turn_id, text=text), ReferencesMsg(turn_id=ctx.turn_id, items=[])]
+    ctx.log = _turn_log(ctx, "ok", [], [], [])
+    return out
 
 
 def _used(answer: str, results: list[dict], items: list[prompts.ExcerptItem],

@@ -175,10 +175,11 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
                                             ("rows.0.non_surgery", 300000), ("rows.0.surgery", 2000000), ("rows.1.section_name", "(없음)")),
          pet_id="P013", human=(HUMAN_MATCH, "수술한 날 200만원까지 말하는가(안 말해도 실패 아님) — 한도 카드는 통원 한 줄")),
     Case("R2", "통원 치료비가 50만원 나왔는데 보험금 얼마 받을 수 있어요?",
-         "계산 카드: 고급형 통원·수술하지 않은 날 — (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 답변이 카드와 어긋나지 않는가",
-         must_include=(("30만원", "300000원"),), suspect_include=("32만9천", "329000원", "35만원", "350000원"),
-         expect_calc="medical", calc_values=(("claimed", 500000), ("limit", 300000), ("payout", 300000)),
-         pet_id="P013", human=("계산 카드 금액(30만원)과 답변 금액이 같은가 — 답변이 거절해도 카드에 '금액은 약관 표로 계산한 값'이 붙는가",)),
+         "계산 카드: 고급형 통원·수술하지 않은 날 — (50만 − 3만) × 70% = 32.9만 → 1일 한도 30만원. 의료비 카드가 뜨면 답도 카드 값으로"
+         "(10-21 — 모델은 거절했다). 통원 횟수를 몰라 하루로 계산했다고 밝힌다",
+         must_include=(("30만원", "300000원"), ("하루 치료비로 계산했습니다",)), suspect_include=("32만9천", "329000원", "35만원", "350000원"),
+         expect_calc="medical", calc_values=(("claimed", 500000), ("limit", 300000), ("payout", 300000), ("flow", "ask")),
+         pet_id="P013", human=("계산 카드 금액(30만원)과 답변 금액이 같은가",)),
     Case("R3", "하루 한도가 얼마예요?",
          "되묻기 — 통원(고급형)·입원(기본형)이 다른 (유형, 등급) 조합이라 sources → clarify에서 멈춰야 한다",
          pet_id="P005", human=("clarify 선택지가 통원·입원 둘인가",)),
@@ -246,7 +247,7 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
                                          ("annual_remaining", 11500000)),
          human=("부담보 안내 문장이 자연스러운가",)),
     # ---- 여러 날 입원·여러 번 통원(2026-10-21) — 날마다 자기부담금·그날 한도, 합계에 연간 남은 한도. 코드가 계산하고 답한다.
-    #      R18~R26은 C010(별이 — 청구 이력 없음), R27~R29는 C006(해피·뭉치 — 청구 이력 있음) ----
+    #      R18~R26·R30은 C010(별이 — 청구 이력 없음), R27~R29는 C006(해피·뭉치 — 청구 이력 있음) ----
     Case("R18", "입원하면 보험금 얼마 나와요?", "금액 되묻기(입원) — 총액과 입원 일수, 수술한 날 치료비를 함께 묻는다",
          must_include=(("치료비 총액과 입원 일수",),), expect_calc="none", pet_id="P013", session="r-days"),
     Case("R19", "3일 입원했고 총 70만원이요",
@@ -274,10 +275,14 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
          must_include=(("30만원~128만1000원",), ("쉼표로 이어 보내 주시면",)), expect_calc="medical", pet_id="P013",
          expect_context="concat", session="r-week", calc_values=(("exact", False), ("days", 7), ("range_max", 1281000), ("even", 1253000))),
     Case("R26", "통원 3번 다녀서 치료비가 총 45만원 나왔는데 얼마 받아요?",
-         "단독 질문 — 카드만 하루 단위로: 범위 25.2만~28만원(예전 하루치 29.4만원은 많게 안내했다). 답 문장은 모델 그대로",
-         expect_calc="medical", pet_id="P013", must_not_include=("29만4000원",),
-         calc_values=(("exact", False), ("range_min", 252000), ("range_max", 280000), ("days", 3)),
-         human=("답 문장이 카드와 다른 금액을 말하면 기록 — 단독 질문 답 문장은 고치지 않았다(R2 유형)",)),
+         "단독 질문도 되묻기 뒤와 같다 — 3번 총액이라 날짜별 금액 입력 카드(예전 하루치 29.4만원은 많게 안내했다)",
+         must_include=(("진료비 세부내역서에 일자별로",),), must_not_include=("29만4000원",), expect_calc="days_ask",
+         calc_values=(("days", 3), ("total", 450000), ("setting", "통원")), pet_id="P013", session="r-visit"),
+    Case("R30", "잘 모르겠어요",
+         "(R26 뒤) 범위 25만 2,000원 ~ 28만원 + '통원 3번은 서로 다른 3일로' 가정 + 정확한 금액 단서",
+         must_include=(("25만2000원~28만원",), ("서로 다른 3일",), ("날짜별 치료비가 있어야 계산됩니다",)),
+         expect_calc="medical", expect_context="concat", pet_id="P013", session="r-visit",
+         calc_values=(("exact", False), ("range_min", 252000), ("range_max", 280000))),
     Case("R27", "입원 보험금 얼마나 나와요?", "금액 되묻기(해피 — 입원 기본형Ⅰ, 올해 474.5만원 받음)",
          must_include=(("입원 일수",),), expect_calc="none", pet_id="P007", session="r-hist"),
     Case("R28", "2박 3일 입원했고 날짜별로 20만원, 20만원, 20만원",
@@ -286,10 +291,9 @@ RAG = ModeSpec(key="rag", mode="업무특화", model="PETMINT_MODEL_RAG(kabyul-t
          expect_context="concat",
          calc_values=(("payout", 255000), ("capped", True), ("annual_used", 4745000), ("annual_remaining", 255000))),
     Case("R29", "MRI 찍어서 통원 치료비가 120만원 나왔는데 얼마 받아요?",
-         "단독 질문(뭉치 — 통원Ⅲ 고급형, 올해 MRI 한 번 청구) → 이번은 두 번째: 1일 한도 30만원(첫 번째면 100만원)",
-         expect_calc="medical", pet_id="P008",
-         calc_values=(("mri_before", 1), ("limit", 300000), ("payout", 300000), ("annual_used", 749000)),
-         human=("답 문장이 100만원(첫 번째 한도)을 말하면 기록 — 카드는 청구 이력으로 두 번째",)),
+         "단독 질문(뭉치 — 통원Ⅲ 고급형, 올해 MRI 한 번 청구) → 이번은 두 번째: 1일 한도 30만원(첫 번째면 100만원). 답도 카드 값으로",
+         must_include=(("예상보험금은**30만원**",), ("이번은 2번째",)), expect_calc="medical", pet_id="P008",
+         calc_values=(("mri_before", 1), ("limit", 300000), ("payout", 300000), ("annual_used", 749000))),
 ))
 
 MODES = {m.key: m for m in (HR, GENERAL, RAG)}

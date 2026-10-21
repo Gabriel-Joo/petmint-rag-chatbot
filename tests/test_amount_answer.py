@@ -313,5 +313,40 @@ class Standalone(unittest.TestCase):
         self.assertEqual((card.exact, card.payout), (True, 378_000))
 
 
+class QuestionTurn(unittest.TestCase):
+    """처음부터 금액을 다 말한 단독 질문 — 의료비 카드가 뜨면 답도 카드 값(question_turn). 모델은 거절했다(R2·R26·R29)"""
+
+    def test_answer_matches_card(self):
+        card, ans = payout.question_turn("통원 치료비가 50만원 나왔는데 보험금 얼마 받을 수 있어요?", BYEOL, [], None, on=ON)
+        self.assertEqual((card.payout, card.flow), (300_000, "ask"))
+        self.assertEqual(bold(ans), payout._won(card.payout))
+        self.assertIn(no_days("통원"), ans)
+
+    def test_days_in_question_asks_per_day(self):
+        """3일 총액 — 단독 질문도 날짜별 입력 카드로(정확한 값을 먼저)"""
+        card, ans = payout.question_turn("3일 입원했는데 치료비가 총 70만원 나왔어요. 얼마 받아요?", BYEOL, [], None, on=ON)
+        self.assertIsInstance(card, DaysAskCalc)
+        self.assertIn("진료비 세부내역서에 일자별로", ans)
+
+    def test_mri_and_exclusion(self):
+        card, ans = payout.question_turn("MRI 찍어서 통원 치료비가 120만원 나왔는데 얼마 받아요?", MUNGCHI, [], None, on=ON)
+        self.assertEqual(card.payout, 300_000)
+        self.assertIn("이번은 2번째", ans)
+        _, ans = payout.question_turn("슬개골 탈구로 입원해서 치료비 50만원 나왔는데 얼마 받아요?", CHEESE, [], None, on=ON)
+        self.assertIn("부담보 대상", ans)
+
+    def test_continues_next_turn(self):
+        """일수를 몰라 하루로 계산한 답 뒤 '3일이요'를 이어 받는다"""
+        q = "입원 치료비가 70만원 나왔는데 얼마 받아요?"
+        card, ans = payout.question_turn(q, BYEOL, [], None, on=ON)
+        prior = [PriorTurn(question=q, anchor=q, answer=ans, pet_id="P", chosen_section=None, payout=card.model_dump(mode="json"))]
+        r = asyncio.run(context.resolve("업무특화", "3일이요", prior, BYEOL, None))
+        self.assertEqual((r.after_amount_ask, r.reply_stage), (True, "again"))
+
+    def test_no_card_no_code_answer(self):
+        self.assertIsNone(payout.question_turn("해외에서 다친 것도 나오나요?", BYEOL, [], None, on=ON))
+        self.assertIsNone(payout.question_turn("치료비 얼마까지 나와요?", BYEOL, [], None, on=ON))
+
+
 if __name__ == "__main__":
     unittest.main()
