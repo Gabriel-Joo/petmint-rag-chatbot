@@ -15,7 +15,8 @@ payout.py
 심급·사건 종류가 있으면 【별표5】 송달료까지 낸다(limit_table). 소송 금액 없이 심급만 말하면 송달료만.
 legal_card(question, pet): 민사소송법률비용 특약 가입자에게만 법률비용 카드(LegalCalc).
 limit_card(question, pet, chosen): 치료비 금액 없이 한도를 물으면 가입한 의료비 특약의 한도표(LimitsCalc).
-답변 흐름의 순서는 법률비용 → 의료비(금액 있음) → 한도. 카드만 붙이고 답변 문장은 건드리지 않는다.
+답변 흐름의 순서는 법률비용 → 의료비(금액 있음) → 한도. 의료비 카드가 뜨면 답도 카드 값으로 코드가 만든다(question_turn·reply_turn) —
+모델은 치료비를 받아 계산하는 답을 못 했다. 법률비용·한도 카드는 카드만 붙이고 답변은 모델이 쓴다.
 """
 
 import re
@@ -250,18 +251,36 @@ def _mri_note(nth: int, lim: daycalc.DayLimits) -> str:
             f"(첫 번째는 {_won(lim.mri_1st)}).")
 
 
-def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None,
-             on: date | None = None) -> MedicalCalc | None:
-    """단독 질문의 의료비 카드. 업무특화(가입 정보가 있을 때)만 — 일반·사내규정은 pet이 None.
-    치료비 낱말과 금액이 있어야 한다(treatment_cost). 일수·날짜별 금액도 읽는다 — 날짜별 금액을 모르면 범위(답 문장은 모델이라
-    되묻지 않는다)"""
-    if pet is None or treatment_cost(question) is None:
+def _question_costs(question: str) -> Costs | None:
+    """단독 질문의 치료비 — 치료비 낱말과 금액이 있어야 한다(treatment_cost). 일수·날짜별 금액도 읽는다"""
+    if treatment_cost(question) is None:
         return None
     c = read_costs(question)
     if c.total is None and not c.per_day:
         c.total = treatment_cost(question)
-    card = medical_card(question, pet, results, chosen, c, on=on)
+    return c
+
+
+def estimate(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None,
+             on: date | None = None) -> MedicalCalc | None:
+    """단독 질문의 의료비 카드만(입력 카드로 되묻지 않는다). 업무특화(가입 정보가 있을 때)만 — 일반·사내규정은 pet이 None"""
+    c = _question_costs(question) if pet is not None else None
+    card = medical_card(question, pet, results, chosen, c, on=on) if c else None
     return card if isinstance(card, MedicalCalc) else None
+
+
+def question_turn(question: str, pet: Pet | None, results: list[dict], chosen: str | None = None,
+                  on: date | None = None) -> tuple[MedicalCalc | DaysAskCalc, str] | None:
+    """치료비가 든 단독 질문 — 의료비 카드가 뜨면 답도 카드 값으로 코드가 만든다(2026-10-21: 카드는 맞는데 모델이 거절했다,
+    검증 R2·R26·R29). 되묻기 뒤 턴(reply_turn)과 같다 — 2~5일 총액이면 날짜별 입력 카드, 6일 이상은 범위.
+    flow="ask"라 다음 턴의 일수·날짜별 금액을 이어 받는다. 카드가 안 뜨면 None(모델이 답한다)"""
+    c = _question_costs(question) if pet is not None else None
+    card = medical_card(question, pet, results, chosen, c, allow_ask=True, flow="ask", on=on) if c else None
+    if card is None:
+        return None
+    if isinstance(card, DaysAskCalc):
+        return card, days_ask_answer(card)
+    return card, amount_answer(card, pet, question, hint=not card.exact and card.days > MAX_FORM_DAYS)
 
 
 # ===== 민사소송법률비용 — 별표3·4·5 =====
