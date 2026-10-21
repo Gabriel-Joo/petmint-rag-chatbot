@@ -38,6 +38,8 @@ FINETUNED_MODEL = os.environ.get("PETMINT_MODEL_RAG", "tri-7b-rag-1")  # 업무�
 
 # 지난 채팅 제목(10번 2-1절) — 첫 질문을 베이스 모델로 한 번 요약. 끄면(0) 첫 질문 첫 줄을 잘라 쓴다
 TITLE_USE_LLM = os.environ.get("PETMINT_TITLE_LLM", "1") == "1"
+# 평가용(scripts/eval_serving.py): 설정하면 업무특화·사내규정 턴의 프롬프트를 이 파일에 JSON 한 줄씩 남긴다. 배포에서는 비운다
+PROMPT_LOG = os.environ.get("PETMINT_PROMPT_LOG") or None
 TITLE_MAX_CHARS = 40
 TITLE_TIMEOUT_SEC = 15
 

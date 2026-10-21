@@ -214,7 +214,47 @@ SEARCH_TOP_K = 3      # 서비스 기본값(app/services/retrieval.py)
 SEARCH_BUDGET = 2400  # user 메시지 토큰 상한 — 학습 MAX_LENGTH 3072에서 시스템 프롬프트·생성 300토큰을 뺀 근사
 
 
-def build_search_inputs(n_no_answer: int, top_k: int = SEARCH_TOP_K) -> list[dict]:
+def build_search_inputs(n_no_answer: int, top_k: int = SEARCH_TOP_K, legacy: bool = False) -> list[dict]:
+    """--search: gold 문항에 정답 발췌 하나 대신 실제 검색 결과(top_k)를 넣는다. 정답이 검색 결과에 있었는지(gold_rank)도 남긴다.
+    2026-10-21부터 서빙과 같은 함수로 만든다 — search-service(HTTP Retriever) + build_full_context(참조 조문 포함) +
+    answer.fit_to_budget(서버의 글자 수 어림 예산). 예전 경로(search_with_graph — 참조 없음, 토크나이저 예산)는 서빙보다 근거를 덜 줬다
+    (평가 97문항 중 evidence가 프롬프트에 든 문항 71 ↔ 서빙 84). legacy=True면 예전 경로(이전 결과와 비교할 때만).
+    검색 범위는 문항의 scope(고객 없음) — 고객 범위까지 서빙과 같게 재려면 scripts/eval_serving.py"""
+    if legacy:
+        return _build_search_inputs_legacy(n_no_answer, top_k)
+    from dataclasses import replace as dc_replace
+
+    from pymilvus import MilvusClient
+
+    from app import config as app_config
+    from app.services import policy_data
+    from app.services.answer import PROMPT_BUDGET, count_tokens
+    from app.services.retrieval import Retriever
+    from data import rag_context
+    chunks, graphs = policy_data.load()
+    builder = rag_context.ContextBuilder(client=MilvusClient(uri=app_config.MILVUS_URL), chunks=chunks, graphs=graphs)
+    retriever = Retriever(app_config.SEARCH_SERVICE_URL)
+    gold = {it["id"]: it for it in build_inputs(builder, 0)}
+    items = []
+    for case in R.load_cases():
+        if not case["gold"]:
+            continue
+        results = rag_context.build_full_context(retriever, builder, case["query"], R.scope_of(case), top_k)
+        rank = next((i for i, r in enumerate(results, 1) if any(R.matches(r, g) for g in case["gold"])), None)
+        ex_items = prompts.fit_to_budget(case["query"], [dc_replace(prompts.ExcerptItem.from_search_result(r), key=str(i))
+                                                         for i, r in enumerate(results)], PROMPT_BUDGET, count_tokens)
+        messages = prompts.build_messages(case["query"], ex_items)
+        g = gold[case["id"]]
+        excerpt = messages[1]["content"].split(prompts.QUESTION_HEADER)[0]
+        items.append({**{k: g[k] for k in ("id", "kind", "category", "species", "question", "question_orig", "q_reason",
+                                            "coverage_type", "evidence", "noted")},
+                      "label": " / ".join(it.label for it in ex_items), "gold_rank": rank,
+                      "evidence_in": bool(g["evidence"]) and _flat(g["evidence"]) in _flat(excerpt), "messages": messages})
+    items += [it for it in build_inputs(builder, n_no_answer) if it["kind"] == "no_answer"]
+    return items
+
+
+def _build_search_inputs_legacy(n_no_answer: int, top_k: int = SEARCH_TOP_K) -> list[dict]:
     """--search(2026-10-15): gold 문항에 정답 발췌 하나 대신 SearchScope를 거친 실제 검색 결과(top_k)를 넣는다.
     학습은 여러 발췌 중 고르는 조건(07 C안)이었다 — 입력 조건 차이가 거절의 원인인지 본다. 정답이 검색 결과에 있었는지(gold_rank)도 남긴다.
     no_answer 20건은 build_inputs와 같다(val 방해 발췌). 검색 모델은 이 함수 안에서 올리고 내린다 — 생성 모델과 GPU를 겹치지 않게."""
@@ -486,6 +526,7 @@ def main(argv=None):
     ap.add_argument("--adapter", nargs="+", default=[str(DEFAULT_ADAPTER)],
                     help="어댑터(체크포인트 폴더도 됨) 여러 개 — 베이스 답은 한 번만 만들고 어댑터마다 결과 파일을 따로 쓴다")
     ap.add_argument("--search", action="store_true", help=f"gold 문항을 실제 검색 결과(top {SEARCH_TOP_K})로 넣는다 — 정답 포함 여부도 기록")
+    ap.add_argument("--search-legacy", action="store_true", help="--search를 10-21 이전 경로(참조 없음)로 — 이전 결과와 비교할 때만")
     ap.add_argument("--no-answer", type=int, default=20)
     ap.add_argument("--dry-run", action="store_true", help="모델 없이 입력 조립·토큰 길이만 확인(GPU 안 씀)")
     exp = ap.add_mutually_exclusive_group()
@@ -500,7 +541,7 @@ def main(argv=None):
     assert not (args.search and (args.common_note or args.normalize_question)), "--search는 실험 A·B와 같이 쓰지 않는다"
     from data.rag_context import ContextBuilder
     if args.search:
-        items = build_search_inputs(args.no_answer)
+        items = build_search_inputs(args.no_answer, legacy=args.search_legacy)
         g = [it for it in items if it["kind"] == "gold"]
         print(f"검색 입력: gold {len(g)}건 중 정답이 top {SEARCH_TOP_K}에 있음 {sum(it['gold_rank'] is not None for it in g)}건, "
               f"evidence 문구가 발췌에 있음 {sum(it['evidence_in'] for it in g)}건")
