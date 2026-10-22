@@ -40,7 +40,7 @@ if ! step train; then
     log "search-service 내림(pid $SPID) — 학습 동안 운영 검색 중단"
     kill $SPID; sleep 5
   fi
-  PETMINT_FT_DATA_DIR=data/finetune/rebuild5 PETMINT_ADAPTER_TAG=rebuild5 python -m jupyter nbconvert --to notebook --execute \
+  PETMINT_FT_DATA_DIR=$PWD/data/finetune/rebuild5 PETMINT_ADAPTER_TAG=rebuild5 python -m jupyter nbconvert --to notebook --execute \
     notebooks/07_파인튜닝.ipynb --output-dir $L --output 07_executed_rebuild5.ipynb --ExecutePreprocessor.timeout=-1 >> $L/train.log 2>&1
   RC=$?
   if [ -n "$SPID" ]; then
