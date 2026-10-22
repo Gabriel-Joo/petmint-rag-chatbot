@@ -372,6 +372,155 @@ def build(out_dir: Path):
     print(json.dumps(stats, ensure_ascii=False))
 
 
+# ---------- 5b: 결론 단정 완화 · 정답 없는 답 → 거절 · 짝 거절 (2026-10-22 사용자 지시, rebuild5 불채택 뒤) ----------
+# rebuild5 평가: 틀림 9.0 → 20.0. ① 정답 단위가 발췌에 없는데 답한 샘플 743건(train 13%)이 "정답 없으면 거절" 신호를 뒤집었다 →
+# 전부 거절로 바꾸고, rebuild4처럼 같은 질문의 정답 빠진 발췌 짝 거절을 되살린다. ② "보장됩니다. 다만 … 지급 대상이 아닙니다"처럼
+# 첫 문장이 조건 없이 단정하고 뒤 단서와 어긋난다 → 단서가 있는 답의 첫 문장을 조건부로 고쳐 쓴다(내용·숫자는 그대로)
+SOFT = OUT / "soft.jsonl"
+PAIRS = OUT / "pairs.jsonl"
+PAIR_N = 600               # 짝 거절 수 — rebuild4 짝 거절 비율(748/7,376 = 10%)에 맞춤
+PAIR_TRY = 900             # 판정에서 빠질 것을 감안해 더 뽑는다
+EXCEPTION = re.compile(r"다만|단,|제외|아닙니다|않습니다|않을 수|경우에는|경우에만|한하여|한해")
+SOFT_RULE = """당신은 반려동물 보험 상담 답변을 다듬는 편집자입니다. [원래 답변]은 [약관 발췌]만 보고 [질문]에 답한 것입니다.
+첫 문장이 조건 없이 결론을 단정하는데 뒤 문장의 단서·예외가 그 결론을 제한하거나 뒤집으면, 결론과 단서가 어긋나지 않게 고쳐 쓰세요.
+- 질문의 상황이 단서·예외에 해당하면 그 단서에 따른 결론을 첫 문장에 씁니다.
+- 질문만으로 단서에 해당하는지 알 수 없으면 첫 문장에 조건을 넣어 씁니다(예: "선천적 원인이 아니면 보상됩니다. 선천적·유전적 원인이면 보상하지 않습니다.").
+- 이미 어긋남이 없으면 원래 답변을 그대로 씁니다.
+- 발췌와 원래 답변에 없는 내용·조건·숫자를 더하지 않습니다. 숫자·기간·조항 표현은 그대로 둡니다.
+- 2~4문장, 존댓말. 고친 답변만 쓰고 설명을 붙이지 않습니다."""
+
+
+def needs_soften(r: dict) -> bool:
+    """정답이 발췌에 있는 답 중 둘째 문장부터 단서·예외 표현이 있는 것(정답 없는 답은 거절로 바뀌므로 대상 아님)"""
+    if r["label"] not in ("answer", "answer_warn") or not r.get("gold_rank"):
+        return False
+    s = re.split(r"(?<=[.!?])\s+", r["answer"].strip(), maxsplit=1)
+    return len(s) == 2 and bool(EXCEPTION.search(s[1]))
+
+
+def soften_one(r: dict) -> dict:
+    msgs = [{"role": "system", "content": SOFT_RULE},
+            {"role": "user", "content": f"{r['user_content']}\n\n[원래 답변]\n{r['answer']}"}]
+    a = re.sub(r"\s*근거\s*:.*$", "", chat(GEN_MODEL, msgs), flags=re.S).strip()
+    return {"key": r["key"], "question_05": r["question_05"], "soft": a, "changed": a.strip() != r["answer"].strip()}
+
+
+def soft_judge(s: dict, r: dict) -> dict:
+    """고친 답 검사 — 판정 ①(발췌) · 숫자 · 계산. 통과하면 고친 답, 아니면 원래 답(원래 답은 이미 판정을 통과했다)"""
+    a = s["soft"]
+    j1 = judge_excerpt(r["user_content"], a)
+    t1 = set(j1.get("types") or []) if j1.get("problem") else set()
+    miss = number_problems(a, r["user_content"] + " " + r["question"])
+    cv = V.verify_all({"question": r["question"], "answer": a}, r["coverage_type"], r["section_name"])
+    bad = (j1.get("problem") is None or t1 & {"unsupported", "reversal", "wrong_value", "wrong_refusal"} or miss
+           or (cv is not None and not cv[0]) or is_refusal(a) or len(a) < 15)
+    return {**s, "judge_soft": j1, "number_miss": miss, "ok": not bad,
+            "label": None if bad else ("answer_warn" if t1 & {"clause_mix", "missing_condition"} else "answer")}
+
+
+def pair_one(r: dict, ctx: Ctx) -> dict:
+    """짝 거절 — 같은 질문을 서빙 B로 검색하되 정답 단위가 든 결과를 빼고 다음 순위로 채운 발췌. 판정 ①이 '잘못된 거절'이
+    아니라고 봐야 쓴다(발췌로 답할 수 있으면 거절 학습이 틀린 신호가 된다)"""
+    from app.services.answer import SEARCH_TOP_K, display_parent
+    from data import finetune5 as F5
+    unit, _, _ = ctx.unit(r["species"], r["unit_id"])
+    res = display_parent(ctx.rag_context.build_full_context(ctx.retriever, ctx.builder, r["question"], scope_for_qa(r),
+                                                            SEARCH_TOP_K + 4), ctx.builder, r["species"])
+    res = [x for x in res if F5.gold_rank([x], unit) is None][:SEARCH_TOP_K]
+    items = F5.serving_items(r["question"], res)
+    messages = prompts.build_messages(r["question"], items)
+    j1 = judge_excerpt(messages[1]["content"], prompts.NO_ANSWER_TEXT) if items else {"problem": None}
+    return {"key": r["key"], "question_05": r["question_05"], "user_content": messages[1]["content"],
+            "excerpts": [it.label for it in items], "judge_excerpt": j1,
+            "ok": bool(items) and j1.get("problem") is False}
+
+
+def _load(path: Path) -> list[dict]:
+    return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()] if path.exists() else []
+
+
+def prep5b(workers: int):
+    """완화(생성 → 판정) · 짝 거절 후보(검색 + 판정). 재개 가능"""
+    recs = _load(FULL_JUDGED)
+    by = {r["key"] + "|" + r["question_05"]: r for r in recs}
+    cand = [r for r in recs if needs_soften(r)]
+    gen_out = OUT / "soft_gen.jsonl"
+    done = _done_keys(gen_out)
+    todo = [r for r in cand if r["key"] + "|" + r["question_05"] not in done]
+    print(f"완화 생성: 대상 {len(cand)} · 남은 {len(todo)}", flush=True)
+    _run_parallel(soften_one, todo, gen_out, workers, "완화 생성")
+    unload(GEN_MODEL)
+    done = _done_keys(SOFT)
+    todo = [s for s in _load(gen_out) if s["key"] + "|" + s["question_05"] not in done]
+    print(f"완화 판정: 남은 {len(todo)}", flush=True)
+    _run_parallel(lambda s: soft_judge(s, by[s["key"] + "|" + s["question_05"]]), todo, SOFT, workers, "완화 판정")
+    pool_ = [r for r in recs if r["label"] in ("answer", "answer_warn") and r.get("gold_rank")]
+    pick = random.Random(SEED + 1).sample(pool_, min(PAIR_TRY, len(pool_)))
+    done = _done_keys(PAIRS)
+    todo = [r for r in pick if r["key"] + "|" + r["question_05"] not in done]
+    print(f"짝 거절: 후보 {len(pick)} · 남은 {len(todo)}", flush=True)
+    ctx = Ctx()
+    _run_parallel(lambda r: pair_one(r, ctx), todo, PAIRS, workers, "짝 거절")
+    unload(faq_judge.JUDGE_MODEL)
+    soft, pairs = _load(SOFT), _load(PAIRS)
+    print(f"완화: {len(soft)}건 · 바뀜 {sum(s['changed'] for s in soft)} · 통과 {sum(s['ok'] for s in soft)} · "
+          f"바뀌고 통과 {sum(s['ok'] and s['changed'] for s in soft)}", flush=True)
+    print(f"짝 거절: {len(pairs)}건 · 통과 {sum(p['ok'] for p in pairs)}", flush=True)
+
+
+def build5b(out_dir: Path):
+    """5b 학습 샘플 — 정답 있는 답(완화 통과면 고친 답) · 정답 없는 답 → 거절 · C의 거절 전부 · 짝 거절(PAIR_N).
+    거절 상한 10%(사용자 결정 2)는 이번 지시(743건 거절 전환 + 짝 거절)로 대신한다"""
+    from data.finetune_data import MAX_LENGTH, TokenCounter, is_val, write_jsonl
+    recs = _load(FULL_JUDGED)
+    soft = {s["key"] + "|" + s["question_05"]: s for s in _load(SOFT) if s["ok"]}
+    pairs = [p for p in _load(PAIRS) if p["ok"]]
+    pairs = random.Random(SEED).sample(pairs, min(PAIR_N, len(pairs)))
+    by = {r["key"] + "|" + r["question_05"]: r for r in recs}
+    count = TokenCounter()
+    st, train, val = Counter(), [], []
+    rows = []
+    for r in recs:
+        k = r["key"] + "|" + r["question_05"]
+        if r["label"] in ("answer", "answer_warn") and r.get("gold_rank"):
+            s = soft.get(k)
+            st["softened"] += bool(s and s["changed"])
+            rows.append((r, r["user_content"], prompts.strip_citation(s["soft"] if s else r["answer"]),
+                         (s["label"] if s else r["label"]), "soft" if s and s["changed"] else "orig"))
+        elif r["label"] in ("answer", "answer_warn"):
+            rows.append((r, r["user_content"], prompts.NO_ANSWER_TEXT, "no_answer", "no_gold"))
+        elif r["label"] == "no_answer":
+            rows.append((r, r["user_content"], prompts.NO_ANSWER_TEXT, "no_answer", "c_refusal"))
+    for p in pairs:
+        rows.append((by[p["key"] + "|" + p["question_05"]], p["user_content"], prompts.NO_ANSWER_TEXT, "no_answer", "pair"))
+    for r, uc, target, kind, src in rows:
+        messages = [{"role": "system", "content": prompts.SYSTEM_PROMPT}, {"role": "user", "content": uc},
+                    {"role": "assistant", "content": target}]
+        n_tok = count.chat_len(messages)
+        if n_tok > MAX_LENGTH:
+            st["too_long"] += 1
+            continue
+        meta = {"species": r["species"], "unit_id": r["unit_id"], "kind": kind, "src": src, "n_items": r.get("n_items"),
+                "gold_pos": (r["gold_rank"] - 1) if r.get("gold_rank") and src != "pair" else None,
+                "gold_rank": r.get("gold_rank") if src != "pair" else None, "why": r.get("why"), "flags": r.get("flags"),
+                "origin": r["origin"], "question_05": r["question_05"], "n_tokens": n_tok, "prompt_version": prompts.PROMPT_VERSION}
+        (val if is_val(r["unit_id"]) else train).append({"messages": messages, "meta": meta})
+    random.Random(SEED).shuffle(train)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    write_jsonl(out_dir / "train.jsonl", train)
+    write_jsonl(out_dir / "val.jsonl", val)
+    allr = train + val
+    stats = {**st, "train": len(train), "val": len(val),
+             "kinds": dict(Counter(s["meta"]["kind"] for s in allr)), "srcs": dict(Counter(s["meta"]["src"] for s in allr)),
+             "no_answer_pct": round(100 * sum(s["meta"]["kind"] == "no_answer" for s in allr) / max(1, len(allr)), 1),
+             "answer_without_gold": sum(s["meta"]["kind"] != "no_answer" and not s["meta"]["gold_rank"] for s in allr),
+             "train_units": len({s["meta"]["unit_id"] for s in train}), "val_units": len({s["meta"]["unit_id"] for s in val}),
+             "unit_overlap": len({s["meta"]["unit_id"] for s in train} & {s["meta"]["unit_id"] for s in val}),
+             "max_length": MAX_LENGTH, "prompt_version": prompts.PROMPT_VERSION, "source": str(FULL_JUDGED), "pair_n": PAIR_N}
+    (out_dir / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(json.dumps(stats, ensure_ascii=False))
+
+
 def report(recs: list[dict], t: dict, ts: str):
     n = len(recs)
     by = Counter((r["origin"], r["label"]) for r in recs)
@@ -408,7 +557,7 @@ def report(recs: list[dict], t: dict, ts: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["pilot", "count", "full", "build"])
+    ap.add_argument("cmd", choices=["pilot", "count", "full", "build", "prep5b", "build5b"])
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--out-dir", default="data/finetune/rebuild5")
     ap.add_argument("--n", type=int, default=100)
@@ -422,6 +571,10 @@ def main():
         full(a.workers)
     elif a.cmd == "build":
         build(Path(a.out_dir))
+    elif a.cmd == "prep5b":
+        prep5b(a.workers)
+    elif a.cmd == "build5b":
+        build5b(Path(a.out_dir))
     else:
         pilot(a.n, a.revived)
 
