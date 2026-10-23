@@ -167,6 +167,21 @@ def excerpt_part(messages: list[dict]) -> str:
     return user.split(prompts.QUESTION_HEADER)[0]
 
 
+# 의료비 특약 제1조 ①(지급사유) — "보장되나요?"의 원칙. 2026-10-23 레오 유형: 이 문장이 [참조]에만 있고 발췌 본문은 예외 항뿐이면
+# 거절했다(24/36턴). 정답 문구(evidence)만으로는 이 유형이 잡히지 않아 따로 센다
+COVERAGE_RULE = "질병 또는 상해가 발생하여 그 치료를 직접적인 목적으로"
+
+
+def body_and_refs(messages: list[dict]) -> tuple[str, str]:
+    """발췌 본문과 [참조] 글을 나눈다(공백 없앤 글) — 정답이 참조에만 있는지 보려고"""
+    body, refs = [], []
+    for blk in re.split(r"(?=\[발췌 \d+\])", excerpt_part(messages))[1:]:
+        head, *rest = re.split(r"(?=\n\[참조\])", blk)
+        body.append(head)
+        refs += rest
+    return flat("".join(body)), flat("".join(refs))
+
+
 def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
     exp = t["expect"]
     ans = rec["answer"]
@@ -210,6 +225,12 @@ def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
         if prompt is not None:
             ex = flat(excerpt_part(prompt["messages"]))
             info["gold_in_prompt"] = any(flat(g["evidence"]) in ex for g in gold)
+            body, refs = body_and_refs(prompt["messages"])
+            info["gold_ref_only"] = info["gold_in_prompt"] and not any(flat(g["evidence"]) in body for g in gold)
+    if prompt is not None:
+        body, refs = body_and_refs(prompt["messages"])
+        rule = flat(COVERAGE_RULE)
+        info["rule_ref_only"] = rule in refs and rule not in body
     return dict(id=t["id"], ok=all(checks.values()), checks=checks, **info)
 
 

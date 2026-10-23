@@ -65,6 +65,27 @@ LLM_OPTIONS_BASE = {"num_predict": 512}
 HR_REL_CUT = 0.1
 
 
+RULE_ARTICLES = ("보험금의 지급사유", "보상하는 손해")
+
+
+def rule_first(results: list[dict]) -> list[dict]:
+    """1안(2026-10-23) — "○○ 걸렸는데 보장돼요?"에 지급사유 조항의 예외 항(30일 대기기간 등)만 본문으로 오고 원칙(제1항
+    "…보상합니다")은 [참조]로만 붙으면 모델이 거절했다(평가 220 원칙이 참조에만 있는 턴 24/36 거절). 같은 조 제1항 참조를
+    본문 앞으로 옮긴다 — 같은 글이 자리만 바뀌어 토큰은 늘지 않고(참조 머리줄만 빠진다) 예외 발췌는 그대로 남는다"""
+    out = []
+    for r in results:
+        refs = r.get("reference_contents") or []
+        title = r.get("article_title") or ""
+        rule = next((x for x in refs if any(t in title for t in RULE_ARTICLES) and x.get("article_num") == r.get("article_num")
+                     and x.get("paragraph_num") == 1 and x.get("section_name") in (None, r.get("section_name"))), None)
+        if rule is None or not (rule.get("content") or "").strip():
+            out.append(r)
+            continue
+        out.append({**r, "content": rule["content"].strip() + "\n" + r["content"],
+                    "reference_contents": [x for x in refs if x is not rule]})
+    return out
+
+
 def display_parent(results: list[dict], builder, species: str) -> list[dict]:
     """6단계 B 조건 — 청크 v2의 조각으로 찾은 결과를 부모(원래 청크) 글로 바꿔 보여준다. 같은 부모가 겹치면 처음 것만 남긴다
     (다음 순위로 채우지 않는다 — 형제 청크를 지우고 채운 10-19 실험이 거절을 늘렸다. 발췌 수가 줄어든 턴은 평가가 따로 센다).
@@ -169,6 +190,8 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
             ctx.results = cut_weak_results(ctx.results, ctx.session.mode)   # 출처 패널도 모델이 본 발췌만
             if config.DISPLAY_PARENT:
                 ctx.results = display_parent(ctx.results, deps.builder, ctx.scope.species)
+            if config.RULE_FIRST:
+                ctx.results = rule_first(ctx.results)
             ctx.sources = [_source_item(r, ctx.scope.species) for r in ctx.results]
         yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
         excl = payout.matched_exclusions(_r(ctx).card_text, ctx.pet) if config.CUSTOMER_FACTS else []   # 부담보 배너(4d)
@@ -317,6 +340,15 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
         for m in _code_answer(ctx, card, payout.limit_answer(card, ctx.pet, q), ask=False):
             yield m
         return
+
+    # 3안(2026-10-23) — 보장 여부 질문에서 코드가 확실히 아는 부정 사실(부담보·대기기간 안)은 모델 대신 코드가 답한다.
+    # 카드(금액·한도)가 먼저다 — 카드 답에는 이미 부담보·대기기간 줄이 붙는다
+    if mode == "업무특화" and config.COVERAGE_CODE and config.CUSTOMER_FACTS:
+        text = customer_facts.exclusion_answer(q, ctx.pet)        # 대기기간 결론(waiting_answer)은 측정에서 해가 커 쓰지 않는다
+        if text is not None:
+            for m in _code_answer(ctx, None, text, ask=False):
+                yield m
+            return
 
     items: list[prompts.ExcerptItem] = []
     if ctx.scope is None:                      # 일반 — 검색 없이 질문만(후속이면 최근 3턴 이력을 앞에)

@@ -231,6 +231,28 @@ def layout_table_to_md(content: str) -> tuple[str, bool]:
     return content[:start] + md + content[end:], True
 
 
+def _in_table(line: str, table_flat: str, max_pieces: int = 3, min_piece: int = 2, min_line: int = 12) -> bool:
+    """배치 줄이 표에 이미 있나 — 줄 전체가 표 글에 있거나, 표 글의 조각 max_pieces개 이하로 다시 만들어지면 있다.
+    두 칸이 한 줄에 섞인 배치 줄("보험  보험금 지급사유가 … 회사에 보험" / "수익자 금을 청구하여 …", 일반조항 제2조)은 줄 전체로는
+    표에 없다(2026-10-23 v4 — 가입 나이 4문항이 그 청크에서 3회 모두 거절). 짧은 줄(묶음 제목 "계약관련 용어")은 남긴다"""
+    s = flat(line)
+    if s in table_flat:
+        return True
+    if len(s) < min_line:
+        return False
+    i = pieces = 0
+    while i < len(s):
+        j = len(s)
+        while j - i >= min_piece and s[i:j] not in table_flat:
+            j -= 1
+        if j - i < min_piece:
+            return False
+        i, pieces = j, pieces + 1
+        if pieces > max_pieces:
+            return False
+    return True
+
+
 def clean_table_chunk(content: str) -> tuple[str, bool]:
     """배치 글자 + [표] Markdown이면 표에 이미 있는 배치 줄을 빼고 표를 정리한다. (새 글, 바뀌었나)"""
     if "[표]" not in content:
@@ -238,7 +260,7 @@ def clean_table_chunk(content: str) -> tuple[str, bool]:
     layout, _, md = content.partition("[표]")
     md_clean = clean_table(md)
     table_flat = flat(md_clean) + flat(md)
-    kept = [ln for ln in layout.split("\n") if ln.strip() and flat(ln) not in table_flat]
+    kept = [ln for ln in layout.split("\n") if ln.strip() and not _in_table(ln, table_flat)]
     new = ("\n".join(kept).strip() + "\n\n" if kept else "") + "[표]" + md_clean
     return new, new != content
 

@@ -7,6 +7,9 @@ customer_facts.py
 - annual_answer: 올해(보험연도) 받은 보험금·남은 연간 한도 — 청구 이력으로 코드가 답한다
 - notes: 답 끝에 붙일 고객 사실 — 가입 30일 이내 질병, 반려견 1년 이내 슬관절·고관절 / 반려묘 90일 이내 비뇨기계질환·전염성복막염,
   반려동물 나이
+- exclusion_answer · waiting_answer(2026-10-23 3안, PETMINT_COVERAGE_CODE): 보장 여부 질문에서 코드가 확실히 아는 부정 사실 —
+  그 반려동물의 부담보에 걸린 질문, 대기기간 안의 질병 — 은 모델 대신 코드가 답한다. 모델은 부담보(고객 데이터)를 모르고
+  90일 대기기간 조항과 섞어 "90일 지나면 된다"로 답했다(레오 비뇨기과질환). "보장됩니다"는 코드가 말하지 않는다(면책 사유를 모른다)
 """
 
 import re
@@ -112,3 +115,39 @@ def notes(question: str, pet: Pet | None, on: date | None = None) -> list[str]:
         out.append(f"참고: {pet.name}{_josa(pet.name, '은는')} 원장 기준 {pet.age}세입니다. 새로 가입할 수 있는 나이는 만 8세(실속형은 "
                    f"만 10세)까지이고, 재가입은 회사가 정한 재가입 나이 범위 안이어야 합니다(구체 나이는 약관에 없음).")
     return out
+
+
+# "특정질병이에요?"(분류 질문, P49)는 넣지 않는다 — 모델이 분류표로 답한다
+_COVERAGE_Q = re.compile(r"보장|보상|보험\s*(?:되|돼|처리)|나와|나오|되나요|돼요|되죠|받을\s*수|청구|언제부터|언제까지|부담보")
+
+
+def exclusion_answer(question: str, pet: Pet | None) -> str | None:
+    """질문이 그 반려동물의 부담보에 걸리면(배너와 같은 대조 — payout.matched_exclusions) 코드가 답한다. 부담보 기간은 원장에
+    없어 약관(반려동물 특정 질병 보장제한부 인수 특별약관 제2조) 그대로 범위만 말한다 — "영구"도 "N일 뒤"도 아니다"""
+    excl = payout.matched_exclusions(question, pet)
+    if not excl or pet is None or not _COVERAGE_Q.search(question):
+        return None
+    names = ", ".join(excl)
+    who = f"{pet.name}{_josa(pet.name, '은는')}"
+    return "\n".join([
+        f"{who} {names}{_josa(excl[-1], '이가')} 부담보(반려동물 특정 질병 보장제한부 인수 특별약관)라, 부담보 기간 동안 "
+        f"{names}{_josa(excl[-1], '을를')} 직접적인 원인으로 한 치료비는 보상하지 않습니다(제2조 ①).",
+        "부담보 기간은 특정질병의 상태에 따라 1개월부터 5년 또는 계약의 보험기간 중에서 회사가 정합니다(제2조 ②). "
+        "고객 원장에는 기간이 없어 보험증권에서 확인해야 합니다.",
+        "가입 후 30일·90일 같은 대기기간과는 별개입니다 — 대기기간이 지나도 부담보 기간에는 보상하지 않습니다.",
+        "다만 상해가 직접적인 원인이거나, 특정질병의 합병증으로 다른 질병이 진단 확정된 경우는 보상합니다(제2조 ④).",
+    ] + notes(question, pet))       # 대기기간이 함께 걸리면(초코 슬관절 1년 — C27) 그 줄도
+
+
+def waiting_answer(question: str, pet: Pet | None, on: date | None = None) -> str | None:
+    """보장 여부를 묻는 질문이고 대기기간 안이면(notes가 대기기간 줄을 낸다) 그 사실을 결론으로 코드가 답한다.
+    대기기간이 지났으면 None — 원칙상 보장 여부는 모델이 발췌로 답한다(1안: 원칙을 본문으로).
+    2026-10-23 측정(3안): 쓰지 않는다 — 가입 30일 안의 반려동물이면 질병 질문이 모두 이 답으로 넘어가 면책(유전병·치과·예방접종)을
+    묻는 질문의 모델 정답을 덮었다(S09·S10·S27 정확 → 실패), "다음 달에 걸리면요?"에도 30일만 되풀이했다(M19-2)"""
+    if pet is None or not _COVERAGE_Q.search(question):
+        return None
+    lines = [n.removeprefix("참고: ") for n in notes(question, pet, on) if "이내" in n and "보상하지 않습니다" in n]
+    if not lines:
+        return None
+    return "\n".join(lines + ["이 기간에 발생한 것인지는 진단일로 판단합니다. 기간이 지난 뒤 발생한 질병은 다른 면책 사유가 없으면 "
+                               "약관에 따라 보상 대상입니다."])
