@@ -118,7 +118,8 @@ def read_costs(text: str) -> Costs:
 
 
 def today() -> date:
-    return datetime.now(KST).date()
+    from app import config                      # 평가가 날짜를 고정할 때(PETMINT_TODAY) — 운영은 실제 날짜
+    return date.fromisoformat(config.TODAY) if config.TODAY else datetime.now(KST).date()
 
 
 def policy_year_start(contract: date, on: date) -> date:

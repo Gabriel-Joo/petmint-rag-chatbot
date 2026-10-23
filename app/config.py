@@ -43,6 +43,11 @@ RULE_FIRST = os.environ.get("PETMINT_RULE_FIRST", "0") == "1"
 COVERAGE_CODE = os.environ.get("PETMINT_COVERAGE_CODE", "0") == "1"
 # 2026-10-24: 신규 가입 나이를 숫자로 묻는 질문은 코드가 약관 기준(만 8세, 실속형 만 10세)과 비교해 답한다(customer_facts.enrollment_age_answer) — 기본 끔
 AGE_CODE = os.environ.get("PETMINT_AGE_CODE", "0") == "1"
+# 2026-10-24: 면책 단서가 보장 쪽으로 빼 주는 경우(⑫ 침술 · ② 1년 이내 예방접종 · ⑲ 치아 외 구강질환)는 코드가 답한다(customer_facts.proviso_answer) — 기본 끔
+PROVISO_CODE = os.environ.get("PETMINT_PROVISO_CODE", "0") == "1"
+# 평가 전용: 오늘 날짜를 고정한다(YYYY-MM-DD). 대기기간·보험연도가 날짜에 따라 바뀌어 평가 정답이 날마다 달라졌다 — 평가 220은 기준일 2026-10-21.
+# 운영에서는 비워 둔다(실제 날짜)
+TODAY = os.environ.get("PETMINT_TODAY") or None
 CUSTOMER_FACTS = os.environ.get("PETMINT_CUSTOMER_FACTS", "1") == "1"   # 고객 사실(customer_facts.py)·서버 부담보 대조 — 측정용 스위치
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
 MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다

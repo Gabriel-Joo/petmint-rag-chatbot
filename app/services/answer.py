@@ -356,6 +356,13 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                 yield m
             return
 
+    if mode == "업무특화" and config.PROVISO_CODE and config.CUSTOMER_FACTS:
+        text = customer_facts.proviso_answer(ctx.question, q, ctx.pet)  # 면책 단서 셋(2026-10-24) — 병명·치료 말은 지금 질문에서만
+        if text is not None:
+            for m in _code_answer(ctx, None, text, ask=False):
+                yield m
+            return
+
     items: list[prompts.ExcerptItem] = []
     if ctx.scope is None:                      # 일반 — 검색 없이 질문만(후속이면 최근 3턴 이력을 앞에)
         messages = r.history + [{"role": "user", "content": ctx.question}]
