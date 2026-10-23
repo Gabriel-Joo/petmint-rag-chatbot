@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from data.rag_context import ContextBuilder
 
 from app import deps
-from app.schemas import ArticleOut, Grade, Species
+from app.schemas import ArticleOut, Corpus, Grade
 
 router = APIRouter(prefix="/api/articles", tags=["articles"])
 
@@ -22,7 +22,7 @@ def _nullable(segment: str) -> str | None:
 
 
 @router.get("/{species}/{section}/{section_name:path}/{article_num}", response_model=ArticleOut)
-def get_article(species: Species, section: str, section_name: str, article_num: str,
+def get_article(species: Corpus, section: str, section_name: str, article_num: str,
                 coverage_type: Grade | None = None, paragraph_num: int | None = None,
                 builder: ContextBuilder = Depends(deps.builder)):
     num = _nullable(article_num)
