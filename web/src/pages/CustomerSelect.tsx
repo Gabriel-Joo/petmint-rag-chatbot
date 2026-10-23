@@ -44,7 +44,7 @@ export function CustomerSelect({ onStart, starting }: Props) {
       <h1 className={s.title}>고객 조회</h1>
       <p className={s.sub}>상담할 고객을 고르세요. 반려동물별 가입 특약과 등급·자기부담금은 상담 화면에서 확인할 수 있습니다.</p>
 
-      <div className={s.filters} role="tablist" aria-label="고객 목록">
+      <div className={`chat-text ${s.filters}`} role="tablist" aria-label="고객 목록">
         {TABS.map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={`btn ${tab === t ? "selected" : ""}`} onClick={() => setTab(t)}>
             {t}{t === "최근 상담" && recent.size > 0 && <span className={s.count}>{recent.size}</span>}
@@ -64,7 +64,7 @@ export function CustomerSelect({ onStart, starting }: Props) {
         </div>
       )}
 
-      <div className={s.grid}>
+      <div className={`chat-text ${s.grid}`}>
         {shown.map((c) => {
           const excl = c.pets.flatMap((p) => p.policies.flatMap((pol) => pol.excluded_conditions));
           const last = recent.get(c.customer_id);

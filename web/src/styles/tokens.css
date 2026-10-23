@@ -63,7 +63,8 @@
   --font-logo: "Wanju Daedunsan", "Wanted Sans Variable", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-body: "Wanted Sans Variable", "Wanted Sans", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
 
-  /* 무게 — 네 단계 */
+  /* 무게 — 다섯 단계 */
+  --font-weight-heavy: 900;   /* 작은 크기로 쓰는 화면 제목을 옆 글씨보다 더 굵게(고객 조회 제목 — 설명문과 같은 크기) */
   --font-weight-title: 800;   /* 화면 제목, 카드 제목, 고객 이름 */
   --font-weight-label: 700;   /* 헤더 메뉴, 버튼, 탭, 라벨 */
   --font-weight-body: 500;    /* 본문, 대화 내용, 약관 발췌 */
