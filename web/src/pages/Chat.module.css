@@ -19,7 +19,8 @@
 .resizer:focus-visible { outline: none; }
 
 /* 캐릭터 인사 — 도마뱀 머리 옆 말풍선. 꼬리는 머리 쪽(왼쪽)을 가리킨다 */
-.head { display: flex; align-items: center; gap: 12px; font-size: var(--font-md); }
+/* 인사 글씨는 대화 글씨(.log, --font-sm)와 같게 */
+.head { display: flex; align-items: center; gap: 12px; font-size: var(--font-sm); }
 .avatar { display: inline-flex; font-size: 1.4em; } /* 아이콘(--icon-mode: 1.5em)이 인사 글자보다 조금 크게 */
 .greeting {
   position: relative;

@@ -36,7 +36,7 @@ export function PastConsultations({ customer, excludeSessionId }: Props) {
         과거 상담
       </button>
       {open && createPortal(
-        <dialog ref={dialog} className={`raised ${s.dialog}`} aria-label={`${customer.name} 고객 과거 상담`}
+        <dialog ref={dialog} className={`raised chat-text ${s.dialog}`} aria-label={`${customer.name} 고객 과거 상담`}
                 onClose={() => setOpen(false)}
                 onClick={(e) => { e.stopPropagation(); if (e.target === dialog.current) dialog.current?.close(); }}>
           <PastBody customer={customer} excludeSessionId={excludeSessionId} onClose={() => dialog.current?.close()} />

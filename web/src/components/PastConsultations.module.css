@@ -6,6 +6,8 @@
   max-height: calc(100vh - 64px);
   padding: 0;
   color: var(--text);
+  /* 지난 상담 창은 대화 배율(.chat-text) 안 — 글씨는 업무특화 대화 로그(Consultation .log)와 같게. 지정하지 않으면 body의 32px가 그대로 물려 온다 */
+  font-size: var(--font-md);
   box-shadow: var(--shadow-4);
   overflow: hidden;
 }
