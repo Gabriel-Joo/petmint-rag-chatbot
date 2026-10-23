@@ -17,7 +17,7 @@ from pymilvus import MilvusClient
 from app import config
 from app.schemas import Pet
 from app.services import policy_data
-from app.services.answer import PROMPT_BUDGET, SEARCH_TOP_K, count_tokens, cut_weak_results, display_parent
+from app.services.answer import PROMPT_BUDGET, SEARCH_TOP_K, count_tokens, cut_weak_results, display_parent, rule_first
 from app.services.customers import scope_for
 from app.services.retrieval import Retriever
 from data import prompts
@@ -32,6 +32,8 @@ def rebuild(question: str, pet: Pet, retriever: Retriever, builder: ContextBuild
     results = cut_weak_results(results, "업무특화")
     if config.DISPLAY_PARENT:
         results = display_parent(results, builder, pet.species)
+    if config.RULE_FIRST:                       # 1안(2026-10-23) — 서버와 같은 순서
+        results = rule_first(results)
     items = prompts.fit_to_budget(question, [replace(prompts.ExcerptItem.from_search_result(x), key=str(i))
                                             for i, x in enumerate(results)], PROMPT_BUDGET, count_tokens)
     return prompts.build_messages(question, items, system=prompts.SYSTEM_PROMPT, excerpt_header=prompts.EXCERPT_HEADER)

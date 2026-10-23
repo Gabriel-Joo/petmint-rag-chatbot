@@ -37,6 +37,10 @@ SEARCH_VARIANT = os.environ.get("PETMINT_SEARCH_VARIANT") or None       # 실험
 NUMBER_GUARD = os.environ.get("PETMINT_NUMBER_GUARD", "1") == "1"       # 숫자 가드레일(guardrail.py) — 업무특화 모델 답
 # 6단계 B 조건: 작은 조각(청크 v2)으로 찾고 모델에게는 부모 청크를 보여준다 — 실험용, 기본 끔
 DISPLAY_PARENT = os.environ.get("PETMINT_DISPLAY_PARENT", "0") == "1"
+# 2026-10-23 1안: 지급사유 조항의 예외 항이 발췌 본문이면 같은 조 제1항(원칙)을 참조에서 본문 앞으로 옮긴다(answer.rule_first) — 기본 끔
+RULE_FIRST = os.environ.get("PETMINT_RULE_FIRST", "0") == "1"
+# 2026-10-23 3안′: 보장 여부 질문이 그 반려동물 부담보에 걸리면 모델 대신 코드가 답한다(customer_facts.exclusion_answer) — 기본 끔
+COVERAGE_CODE = os.environ.get("PETMINT_COVERAGE_CODE", "0") == "1"
 CUSTOMER_FACTS = os.environ.get("PETMINT_CUSTOMER_FACTS", "1") == "1"   # 고객 사실(customer_facts.py)·서버 부담보 대조 — 측정용 스위치
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
 MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다
