@@ -139,6 +139,55 @@ def exclusion_answer(question: str, pet: Pet | None) -> str | None:
     ] + notes(question, pet))       # 대기기간이 함께 걸리면(초코 슬관절 1년 — C27) 그 줄도
 
 
+# 2026-10-24 가입 나이(PETMINT_AGE_CODE) — 신규 가입 나이를 숫자로 묻는 질문만. 조건 셋이 모두 맞아야 한다:
+# 나이(숫자+살·세) · 신규 가입 · 재가입·갱신 아님. 평가 220·검색 회귀·답변 평가 307문장 중 P09·C51·C52만 걸린다.
+# 모델은 정답(일반조항 제2조 '반려동물' 1호)이 표 칸 안에 있어도 나이 비교를 못 해 거절했다(3/3). 재가입(C50 — 약관에 구체 나이 없음)·
+# 가입 대상(S42 경찰견)·"가입 나이 제한이 있어요?"(숫자 없음)는 넣지 않는다
+_NUM_WORDS = {"한": 1, "두": 2, "세": 3, "네": 4, "다섯": 5, "여섯": 6, "일곱": 7, "여덟": 8, "아홉": 9, "열": 10,
+              "열한": 11, "열두": 12, "열세": 13, "열네": 14, "열다섯": 15}
+_AGE_NUM = re.compile(r"(\d+|열다섯|열네|열세|열두|열한|다섯|여섯|일곱|여덟|아홉|열|한|두|세|네)\s*(?:살|세)(\s*(?:넘|초과|이상))?")
+_NEW_JOIN = re.compile(r"(?:새로|신규|처음|지금)\s*(?:보험\s*)?가입|가입\s*(?:할\s*수|돼|되|가능|이\s*되|하려|받아)")
+_NOT_NEW = re.compile(r"재가입|갱신|이어서|계속|연장|만기")
+_GRADES = ("고급형", "기본형", "실속형")
+AGE_LIMIT = {"고급형": 8, "기본형": 8, "실속형": 10}      # 일반조항 제2조 '반려동물' 1호 — 이 나이를 '초과'하면 가입 대상 아님
+
+
+def enrollment_age_answer(question: str, pet: Pet | None) -> str | None:
+    """신규 가입 나이 질문이면 원장·질문의 나이와 약관 기준(만 8세, 실속형 만 10세 초과는 가입 대상 아님)을 코드가 비교해 답한다"""
+    m = _AGE_NUM.search(question)
+    if pet is None or m is None or not _NEW_JOIN.search(question) or _NOT_NEW.search(question):
+        return None
+    n = int(m.group(1)) if m.group(1).isdigit() else _NUM_WORDS[m.group(1)]
+    over = bool(m.group(2))                       # "열 살 넘은" — n살보다 많다
+    species = "고양이" if "고양이" in question else "강아지" if re.search(r"강아지|개", question) else pet.species
+    animal = "고양이(猫)" if species == "고양이" else "개(犬)"
+    named = pet.name in question
+    who = f"{pet.name}{_josa(pet.name, '은는')} {n}살" if named else f"{n}살{' 넘은' if over else ''} {species}"
+    grades = [g for g in _GRADES if g in question] or list(_GRADES)
+
+    def verdict(g: str) -> tuple[str, str]:
+        lim = AGE_LIMIT[g]
+        if n > lim or (over and n >= lim):
+            return f"만 {lim}세를 넘어 새로 가입할 수 없습니다", "no"
+        if over:
+            return f"만 {lim}세 이하이면 새로 가입할 수 있습니다(정확한 나이 확인 필요)", "maybe"
+        return f"만 {lim}세를 '초과'해야 가입 대상에서 빠지므로 만 {n}세면 새로 가입할 수 있습니다", "yes"
+
+    groups: dict[str, list[str]] = {}            # 같은 결론의 등급끼리 묶는다 — "고급형·기본형은 …"
+    for g in grades:
+        groups.setdefault(verdict(g)[0], []).append(g)
+    parts = [f"{'·'.join(gs)}은 {text}" for text, gs in groups.items()]
+    lines = [f"{who}{'이라' if payout._has_batchim(who) else '라'} " + ", ".join(parts) + "."]
+    if len(grades) == 1 and grades[0] != "실속형" and verdict(grades[0])[1] == "no" and verdict("실속형")[1] == "yes":
+        lines.append("실속형은 만 10세까지라 실속형으로는 가입할 수 있습니다.")
+    lines.append(f"약관(반려동물 비용손해 관련 특별약관 일반조항 제2조 '반려동물' 1호): 보험가입 당시의 연령이 생후 60일 이하 또는 "
+                 f"만 8세(단, 실속형의 경우 만 10세)를 초과하는 {animal}는 이 보험의 가입 대상이 아닙니다.")
+    if named and pet.age is not None and pet.age != n:
+        lines.append(f"참고: 원장의 {pet.name} 나이는 {pet.age}세입니다.")
+    lines.append("나이는 만 나이 기준입니다. 생년월일로 가입 당시 만 나이를 확인해 주세요.")
+    return "\n".join(lines)
+
+
 def waiting_answer(question: str, pet: Pet | None, on: date | None = None) -> str | None:
     """보장 여부를 묻는 질문이고 대기기간 안이면(notes가 대기기간 줄을 낸다) 그 사실을 결론으로 코드가 답한다.
     대기기간이 지났으면 None — 원칙상 보장 여부는 모델이 발췌로 답한다(1안: 원칙을 본문으로).

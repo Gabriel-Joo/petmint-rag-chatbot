@@ -343,6 +343,12 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
 
     # 3안(2026-10-23) — 보장 여부 질문에서 코드가 확실히 아는 부정 사실(부담보·대기기간 안)은 모델 대신 코드가 답한다.
     # 카드(금액·한도)가 먼저다 — 카드 답에는 이미 부담보·대기기간 줄이 붙는다
+    if mode == "업무특화" and config.AGE_CODE and config.CUSTOMER_FACTS:
+        text = customer_facts.enrollment_age_answer(q, ctx.pet)       # 신규 가입 나이(2026-10-24) — 조건 셋, 범위 좁게
+        if text is not None:
+            for m in _code_answer(ctx, None, text, ask=False):
+                yield m
+            return
     if mode == "업무특화" and config.COVERAGE_CODE and config.CUSTOMER_FACTS:
         text = customer_facts.exclusion_answer(q, ctx.pet)        # 대기기간 결론(waiting_answer)은 측정에서 해가 커 쓰지 않는다
         if text is not None:
