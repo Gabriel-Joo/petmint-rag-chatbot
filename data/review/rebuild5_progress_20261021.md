@@ -340,3 +340,9 @@ rebuild4, 평가 220 보이는 세트 3회 평균. 흔들림(실행 사이 SD): 
 - **운영 반영 점검에서 찾은 결함**: variant를 켜면 사내규정 검색이 503(Milvus에 `hr_regulation_v3` 없음). 평가 220에는 사내규정 턴이
   없어 측정에 안 드러났다 → Retriever가 variant를 약관(강아지·고양이)에만 붙이게 고침(`tests/test_retrieval_variant.py`). 고친 뒤
   전부 켬 + 사전 v2로 서버를 띄워 사내규정 2문항·일반 1문항 정상 확인
+
+### 운영 반영 (2026-10-23) — 이미지 f7991c90f22e + ConfigMap(ronanlab-infra c824f60)
+- 플래그: 청크 v3 경로 · variant v3 · 부모 표시 · 질의 확장(사전 v2) · 답 아래 표. 모델 rebuild4 그대로. 기록 `docs/14_deployment.md` 1-11절
+- 확인: Pod 2개 Running, 로그 오류 0. Pod 안 시험 스크립트로 업무특화 3 · 사내규정 1 · 일반 1 — 모두 정상, 업무특화 둘에 표(하나는 행 강조)
+- 반영 직후 운영 로그에서 사내규정 근거 조항 열기 422 발견(예전 버그 — 조항 원문 API가 강아지·고양이만 받음) → f0279c2로 고침, 다음 push에 반영
+- rebuild5·5b 실패 기록: `docs/07_finetuning.md` 11절
