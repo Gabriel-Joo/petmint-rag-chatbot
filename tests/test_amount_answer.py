@@ -13,7 +13,7 @@ import unittest
 from datetime import date
 
 from app.schemas import Claim, DaysAskCalc, MedicalCalc, Pet, Policy
-from app.services import context, payout
+from app.services import context, dayparse, payout
 from app.services.turn_log import PriorTurn
 from data.limit_table import calculate_payout
 
@@ -177,6 +177,27 @@ class MultiDay(unittest.TestCase):
         self.assertEqual(([r.payout for r in card.day_rows], card.payout), ([189_000, 189_000, 49_000], 427_000))
         self.assertEqual(bold(ans), "42만 7,000원")
 
+    def test_days_ask_example_matches_total(self):
+        """날짜별 칸 안내의 예시가 말한 총액·일수와 맞는다(2026-10-23: 3일 30만원에 고정 예시 '30만, 30만, 10만' — 합 70만원)"""
+        _, ans = chain(BYEOL, self.Q, "보리가 3일 입원했고 수술은 받지 않았어요. 총 30만원이 나왔는데 보험금은 얼마나 나오나요?")
+        self.assertIn("'10만, 10만, 10만'처럼 보내 주세요", ans)
+        _, ans = chain(BYEOL, self.Q, "3일 입원했고 총 70만원이요")
+        self.assertIn("'23만, 23만, 24만'처럼", ans)
+
+    def test_day_example(self):
+        ex = payout.day_example
+        self.assertEqual(ex(300_000, 3), "10만, 10만, 10만")
+        self.assertEqual(ex(1_000_000, 3), "33만, 33만, 34만")          # 나누어떨어지지 않으면 마지막 날에
+        self.assertEqual(ex(255_000, 2), "12만, 13만5천")
+        self.assertEqual(ex(25_000, 2), "1만, 1만5천")
+        self.assertEqual(ex(5_000, 3), "1천, 1천, 3천")                 # 만원보다 작으면 천원 단위
+        self.assertEqual(ex(700_000, 3, [400_000, None, None]), "40만, 15만, 15만")   # 들은 날은 그 금액, 나머지를 나눈다
+        self.assertEqual(ex(300_000, 3, [400_000, None, None]), "10만, 10만, 10만")   # 들은 금액이 총액을 넘으면 총액만
+        self.assertEqual(ex(2_000_000, 7, show=3), "28만, 28만, 28만…")
+        for total, days in ((300_000, 3), (1_000_000, 3), (255_000, 2), (1_234_567, 4), (5_000, 3), (990_000, 5)):
+            got = [a.value for a in dayparse.amounts(ex(total, days))]
+            self.assertEqual((len(got), sum(got)), (days, total), (total, days))     # 예시를 그대로 보내도 읽히고 합이 총액
+
     def test_free_list_without_won(self):
         card, _ = chain(BYEOL, self.Q, "사흘 입원, 70만원", "첫날 30만 둘째 날 30만 셋째 날 10만")
         self.assertEqual(card.payout, 427_000)
@@ -195,7 +216,7 @@ class MultiDay(unittest.TestCase):
         card, ans = chain(BYEOL, self.Q, "일주일 입원했고 총 200만원이요")
         self.assertIsInstance(card, MedicalCalc)
         self.assertFalse(card.exact)
-        self.assertIn(payout.LIST_HINT, ans)
+        self.assertIn("'28만, 28만, 28만…'처럼 쉼표로 이어 보내 주시면", ans)   # 7일 200만원에 맞춘 예시(앞 세 날)
         card, _ = chain(BYEOL, self.Q, "일주일 입원했고 총 200만원이요", "30만, 30만, 30만, 30만, 30만, 30만, 20만")
         self.assertTrue(card.exact)
         self.assertEqual(card.payout, 6 * 189_000 + 119_000)

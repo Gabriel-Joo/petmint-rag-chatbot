@@ -714,7 +714,41 @@ def _tag(r: DayRow) -> str:
 
 
 EXACT_NEEDS = "정확한 금액은 진료비 세부내역서의 날짜별 치료비가 있어야 계산됩니다."
-LIST_HINT = "날짜별 치료비를 '30만, 30만, 10만…'처럼 쉼표로 이어 보내 주시면 정확히 계산합니다."
+
+
+def _example_won(n: int) -> str:
+    """예시 금액 — 원 없이 짧게, dayparse가 그대로 읽는 꼴(10만 · 13만5천 · 4,500원)"""
+    man, rest = divmod(n, 10_000)
+    if rest % 1_000:
+        return f"{n:,}원"
+    return (f"{man:,}만" if man else "") + (f"{rest // 1_000}천" if rest else "")
+
+
+def day_example(total: int, days: int, known: list[int | None] | None = None, show: int | None = None) -> str:
+    """날짜별 금액 예시 — 앞서 말한 총액·일수에 맞춘다(2026-10-23: 고정 예시 '30만, 30만, 10만'이 총 30만원·3일 질문에 합 70만원).
+    고르게 나누되 만원(작으면 천원) 단위로 내리고 남는 것은 마지막 날에. known: 이미 들은 날짜별 금액(그 칸은 그 값, 나머지를
+    남은 총액으로 나눈다). show: 앞 몇 날만 보이고 '…'(일수가 많을 때)"""
+    vals = list(known or []) + [None] * max(0, days - len(known or []))
+    vals = vals[:days]
+    rest_total = total - sum(v for v in vals if v)
+    blanks = [i for i, v in enumerate(vals) if not v]
+    if blanks and rest_total < len(blanks):        # 들은 금액이 총액을 넘는다 — 들은 것은 무시하고 총액만 나눈다
+        vals, rest_total, blanks = [None] * days, total, list(range(days))
+    if blanks:
+        k = len(blanks)
+        unit = 10_000 if rest_total >= k * 10_000 else 1_000 if rest_total >= k * 1_000 else 1
+        base = rest_total // k // unit * unit
+        for i in blanks:
+            vals[i] = base
+        vals[blanks[-1]] = rest_total - base * (k - 1)
+    parts = [_example_won(v) for v in vals]
+    if show and len(parts) > show:
+        return ", ".join(parts[:show]) + "…"
+    return ", ".join(parts)
+
+
+def list_hint(total: int, days: int) -> str:
+    return f"날짜별 치료비를 '{day_example(total, days, show=3)}'처럼 쉼표로 이어 보내 주시면 정확히 계산합니다."
 
 
 def amount_answer(card: MedicalCalc, pet: Pet, text: str, hint: bool = False) -> str:
@@ -762,7 +796,7 @@ def amount_answer(card: MedicalCalc, pet: Pet, text: str, hint: bool = False) ->
             lines.append(f"금액을 아는 날은 그대로 계산했습니다({known}).")
         if card.capped:
             lines.append(f"올해 남은 연간 한도 {_won(rem)}까지로 줄인 금액입니다.")
-        lines.append(EXACT_NEEDS + (" " + LIST_HINT if hint else ""))
+        lines.append(EXACT_NEEDS + (" " + list_hint(card.claimed, card.days) if hint else ""))
     if card.annual_used and not card.capped:
         lines.append(f"올해 이미 받은 보험금 {_won(card.annual_used)}을 빼면 남은 연간 한도는 {_won(rem)}입니다.")
     lines += card.assumptions
@@ -783,7 +817,8 @@ def days_ask_answer(card: DaysAskCalc) -> str:
     if known:
         lines.append("말씀하신 " + ", ".join(f"{_won(d.cost)}{'(수술한 날)' if d.surgery else '(MRI 등)' if d.mri else ''}"
                                           for d in known) + "은 칸에 넣어 두었습니다.")
-    lines.append("아래 칸에 날짜별 금액을 넣거나 '30만, 30만, 10만'처럼 보내 주세요. 모르면 [잘 모르겠어요]를 누르면 범위로 안내합니다.")
+    example = day_example(card.total, card.days, [d.cost for d in card.prefill])
+    lines.append(f"아래 칸에 날짜별 금액을 넣거나 '{example}'처럼 보내 주세요. 모르면 [잘 모르겠어요]를 누르면 범위로 안내합니다.")
     return "\n".join(lines)
 
 
