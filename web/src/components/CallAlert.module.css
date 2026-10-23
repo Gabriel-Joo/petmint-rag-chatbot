@@ -1,36 +1,40 @@
-/* 화면 가장자리에서 띄운다(오른쪽·아래 32px). 글씨가 2배(--text-scale)라 폭을 넉넉히 둔다 */
+/* 화면 가장자리에서 띄운다(오른쪽·아래 32px). 2026-10-23: 대화 배율(.chat-text) 안 — 고객 조회 카드와 같은 글씨.
+   크기는 글씨를 따라가게 em으로 둔다(카드 폭·초록 원·여백). 이 파일의 em은 카드 글씨(--font-sm) 기준 */
 .wrap {
   position: fixed;
   right: 32px;
   bottom: 32px;
   z-index: 50;
-  width: min(480px, calc(100vw - 64px));
-  padding: 28px 32px;
+  font-size: var(--font-sm);
+  width: min(22em, calc(100vw - 64px));
+  padding: 0.9em 1.1em;
   display: flex;
-  gap: 36px;
+  gap: 1.6em;
   align-items: center;
   overflow: hidden;            /* 링이 카드 밖으로 새지 않게 — 아래 여백 계산으로 안에 들어오지만 둥근 모서리까지 지킨다 */
   box-shadow: var(--shadow-3);
 }
 @media (max-width: 640px) {
-  .wrap { right: 16px; left: 16px; bottom: auto; top: 16px; width: auto; padding: 24px; gap: 32px; }
+  .wrap { right: 16px; left: 16px; bottom: auto; top: 16px; width: auto; }
 }
 
 /* 10-3: 초록 원에서 링이 퍼지며 투명해진다. 세 개를 시차를 두고 겹친다.
    흰 바탕에서는 가는 반투명 테두리만으로는 묻혀서, 진한 테두리 + 옅은 채움 원반으로 퍼지게 한다.
-   링은 원(64px)의 1.9배까지 — 원 밖으로 약 29px. 카드 왼쪽 여백(32px + 4px)과 오른쪽 간격(36px)이 그보다 커서 카드 안에서 끝난다 */
+   링은 원(2.8em)의 1.9배까지 — 원 밖으로 약 1.26em. 카드 왼쪽 여백(1.1em + 0.3em)과 오른쪽 간격(1.6em)이 그보다 커서 카드 안에서 끝난다.
+   원 안 아이콘은 원과 함께 글씨를 따라간다(전에는 64px 원 · 28px 아이콘 고정) */
 .phone {
   position: relative;
   flex: none;
-  margin-left: 4px;
-  width: 64px;
-  height: 64px;
+  margin-left: 0.3em;
+  width: 2.8em;
+  height: 2.8em;
   border-radius: 50%;
   background: var(--call);
   display: grid;
   place-items: center;
-  font-size: var(--font-call-icon);
+  font-size: 1em;
 }
+.icon { font-size: 1.3em; line-height: 1; position: relative; }
 .ring {
   position: absolute;
   inset: 0;
@@ -49,26 +53,34 @@
   .ring { animation: none; opacity: 0; }
 }
 
-.body { flex: 1; min-width: 0; position: relative; }   /* 글자를 링 위에 */
-/* 남은 시간 — 숫자를 크게, 아래 막대가 10초 동안 줄어든다 */
+.body { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; gap: 4px; }   /* 글자를 링 위에 */
+/* 남은 시간 — 숫자를 한 단계 크게, 아래 막대가 10초 동안 줄어든다 */
 .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.label { font-weight: var(--font-weight-label); font-size: var(--font-sm); color: var(--text-dim); }
+.label { font-weight: var(--font-weight-label); font-size: var(--font-xs); color: var(--text-dim); }
 .count {
-  font-size: var(--font-2xl);
+  font-size: var(--font-lg);
   font-weight: var(--font-weight-title);
   color: var(--call);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.unit { font-size: var(--font-sm); font-weight: var(--font-weight-label); margin-left: 2px; }
-.timer { height: 6px; margin: 8px 0 10px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.unit { font-size: var(--font-2xs); font-weight: var(--font-weight-label); margin-left: 2px; }
+.timer { height: 4px; margin: 2px 0 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .timerFill { height: 100%; background: var(--call); transition: width 1s linear; }
 @media (prefers-reduced-motion: reduce) {
   .timerFill { transition: none; }
 }
-.name { font-size: var(--font-lg); font-weight: var(--font-weight-title); }
-.pets { font-weight: var(--font-weight-caption); font-size: var(--font-sm); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.actions { display: flex; gap: 8px; margin-top: 12px; }
+/* 고객 — 고객 조회 카드와 같은 토큰: 이름 --font-sm(제목 무게), 전화·품종 --font-xs */
+.who { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.name { font-size: var(--font-sm); font-weight: var(--font-weight-title); }
+.tel { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); font-family: var(--mono); }
+.pets { display: flex; flex-direction: column; gap: 2px; }
+.pet { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
+.petName { font-size: var(--font-sm); font-weight: var(--font-weight-label); white-space: nowrap; }
+.petMeta { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* 받기·거절 — 글씨는 카드와 같고 높이는 손가락 크기(44px 이상)를 지킨다 */
+.actions { display: flex; gap: 8px; margin-top: 6px; }
+.accept, .reject { min-height: 44px; font-size: var(--font-sm); }
 .accept {
   flex: 1;
   border: none;
@@ -76,7 +88,7 @@
   background: var(--call);
   color: var(--card);
   font-weight: var(--font-weight-label);
-  padding: 8px;
+  padding: 6px 12px;
 }
 
 .notice {
@@ -84,8 +96,8 @@
   right: 32px;
   bottom: 32px;
   z-index: 50;
-  padding: 12px 16px;
-  font-size: var(--font-md);
+  padding: 10px 14px;
+  font-size: var(--font-sm);
 }
 @media (max-width: 640px) {
   .notice { right: 16px; left: 16px; bottom: auto; top: 16px; }
