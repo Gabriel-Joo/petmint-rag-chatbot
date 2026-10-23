@@ -29,7 +29,7 @@
   border-radius: var(--radius-card);
   background: var(--primary-soft);
   color: var(--text);
-  font-weight: var(--font-weight-body);
+  font-weight: var(--font-weight-label); /* 크기는 대화 글씨와 같고 굵기로 안내임을 드러낸다 */
 }
 .greeting::before {
   content: "";
