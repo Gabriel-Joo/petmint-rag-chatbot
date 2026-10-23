@@ -119,7 +119,7 @@ export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted
   }, [chat.turns]);
 
   return (
-    <div className={s.layout} ref={layoutRef}>
+    <div className={`chat-text ${s.layout}`} ref={layoutRef}>
       {/* 아직 질문이 없으면 이미 새 대화다 — 빈 세션을 늘리지 않는다 */}
       <ChatHistory mode={mode} currentId={sessionId} refreshKey={`${sessionId}:${chat.turns.length}:${chat.busy}`}
                    collapsed={collapsed} onToggle={toggleHistory} onOpen={openPast}
@@ -137,7 +137,7 @@ export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted
           <span className={s.avatar}><ModeIcon mode={mode} /></span>
           <p className={s.greeting}>{GREETING[mode]}</p>
         </div>
-        <div ref={logRef} className={`raised chat-text ${s.log}`}>
+        <div ref={logRef} className={`raised ${s.log}`}>
           {!session && <div className={s.empty}>세션을 여는 중…</div>}
           {chat.turns.map((t) => (
             <TurnView key={t.key} turn={t} inlineSources={mode === "사내규정" ? "always" : "never"} />

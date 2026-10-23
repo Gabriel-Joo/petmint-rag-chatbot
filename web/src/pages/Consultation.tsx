@@ -49,7 +49,7 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
   const petsById = useMemo(() => new Map(customer.pets.map((p) => [p.pet_id, p])), [customer]);
 
   return (
-    <main className={s.page}>
+    <main className={`chat-text ${s.page}`}>
       <div className={s.status}>
         <span className={s.mode}><ModeIcon mode="업무특화" />업무특화</span>
         {ended ? <span className={s.ended}>상담 종료됨 · 읽기 전용</span> : <span className="dim">상담 중</span>}
@@ -62,7 +62,7 @@ export function Consultation({ consult, onEnd, ending, onSessionLost }: Props) {
                       actions={<PastConsultations customer={customer} excludeSessionId={session.session_id} />} />
       </div>
 
-      <div ref={logRef} className={`raised chat-text ${s.log}`}>
+      <div ref={logRef} className={`raised ${s.log}`}>
         {chat.turns.length === 0 && (
           <div className={s.empty}>
             {ended ? "대화 없이 종료된 상담입니다." : `${customer.name} 고객 상담을 시작합니다. ${pet.name}에 대해 물어보세요.`}
