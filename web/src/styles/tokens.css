@@ -19,6 +19,12 @@
   --warn-fill: color-mix(in srgb, var(--warn) 8%, var(--bg));
   --call-ring: color-mix(in srgb, var(--call) 35%, transparent);
 
+  /* 특약 등급(2026-10-23, 고객 조회 카드 칩·띠) — 고급형은 브랜드 보라, 기본형 청록, 실속형 남회색.
+     부담보 주황(--warn)과 헷갈리지 않게 따뜻한 색은 쓰지 않는다 */
+  --grade-high: var(--primary);
+  --grade-mid: #0F766E;
+  --grade-low: #4A5B86;
+
   /* 10-2 그림자 — 깊이는 그림자로만 만든다. 1: 카드, 2: 누를 때(한 단계 위), 3: 떠 있는 알림 */
   --shadow-1: 0 1px 2px color-mix(in srgb, var(--text) 6%, transparent),
               0 2px 8px color-mix(in srgb, var(--text) 6%, transparent);
