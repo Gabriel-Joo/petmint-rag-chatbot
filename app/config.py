@@ -41,6 +41,8 @@ DISPLAY_PARENT = os.environ.get("PETMINT_DISPLAY_PARENT", "0") == "1"
 RULE_FIRST = os.environ.get("PETMINT_RULE_FIRST", "0") == "1"
 # 2026-10-23 3안′: 보장 여부 질문이 그 반려동물 부담보에 걸리면 모델 대신 코드가 답한다(customer_facts.exclusion_answer) — 기본 끔
 COVERAGE_CODE = os.environ.get("PETMINT_COVERAGE_CODE", "0") == "1"
+# 2026-10-24: 신규 가입 나이를 숫자로 묻는 질문은 코드가 약관 기준(만 8세, 실속형 만 10세)과 비교해 답한다(customer_facts.enrollment_age_answer) — 기본 끔
+AGE_CODE = os.environ.get("PETMINT_AGE_CODE", "0") == "1"
 CUSTOMER_FACTS = os.environ.get("PETMINT_CUSTOMER_FACTS", "1") == "1"   # 고객 사실(customer_facts.py)·서버 부담보 대조 — 측정용 스위치
 OLLAMA_URL = os.environ.get("PETMINT_OLLAMA_URL", "http://localhost:11434")
 MILVUS_URL = os.environ.get("PETMINT_MILVUS_URL", "http://localhost:19530")   # 조항 원문(ContextBuilder) — 행을 Milvus에서 읽는다
