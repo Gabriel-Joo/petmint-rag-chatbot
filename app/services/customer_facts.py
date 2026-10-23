@@ -188,6 +188,80 @@ def enrollment_age_answer(question: str, pet: Pet | None) -> str | None:
     return "\n".join(lines)
 
 
+# 2026-10-24 면책 단서(PETMINT_PROVISO_CODE) — 의료비 특약 제2조 면책 항목에 붙은 단서가 질문의 경우를 보장 쪽으로 빼 주는데 모델이 그 결론을
+# 못 냈다(탐침: 침술 직접 정답 0/12, 접종 사실 대입 0/6, Ⅰ 유형 잇몸 거절 3/3 — data/review/proviso_carveout_probe.md).
+# 병명·치료 말은 지금 질문(current)에 있어야 걸린다 — 앞 질문에서 이어 온 말로는 걸리지 않는다("한약은요?"·"이빨 뽑는 건요?"는 모델에게).
+# 보장을 묻는 뜻은 앞 질문까지 합친 글(card)에서 본다
+_ACU = re.compile(r"침술|침\s*(?:을|도|은|만)?\s*(?:맞|치료|시술|놓)|한방\s*침")
+_NOT_ACU = re.compile(r"한약|뜸|부항|약침|재활|물리\s*치료")
+_FOLLOW = re.compile(r"이면요|라면요|은요|는요")
+# ② 면책 대상 감염병(의료비 특약 제2조 ② ② — 반려견 10, 반려묘는 6 더). 이름은 약관 그대로
+_VAC_DISEASES = [(r"파보", "파보 바이러스 감염"), (r"디스템퍼", "디스템퍼 바이러스 감염"), (r"파라\s*인플루엔자", "파라 인플루엔자 감염"),
+                 (r"전염성\s*간염", "전염성 간염"), (r"아데노", "아데노 바이러스 2형 감염"), (r"광견병", "광견병"),
+                 (r"코로나", "코로나 바이러스 감염"), (r"렙토스피라", "렙토스피라 감염"), (r"필라리아|심장사상충", "필라리아(심장사상충) 감염"),
+                 (r"인플루엔자", "인플루엔자 감염")]
+_VAC_DISEASES_CAT = [(r"범백", "고양이범백혈구감소증"), (r"칼리시", "고양이칼리시바이러스 감염증"), (r"비기관지염", "고양이바이러스성비기관지염"),
+                     (r"고양이\s*백혈병", "고양이백혈병 바이러스감염증"), (r"헤르페스", "고양이헤르페스바이러스감염증"),
+                     (r"클라미디아", "고양이클라미디아감염증")]
+_VAC_WORD = re.compile(r"접종|백신|예방\s*주사")
+_VAC_NONE = re.compile(r"(?:접종|백신|예방\s*주사)[을를은는도]?\s*(?:안|못|한\s*적\s*없|기록\s*없|없)|안\s*맞|못\s*맞")
+_VAC_TIME = re.compile(r"(\d+|열한|열두|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(개월|달|년|주|일)\s*(전|안|이내|됐|지났|만)")
+_GUM = re.compile(r"잇몸|구내염|구강|치은")
+_TOOTH = re.compile(r"치아|이빨|스케일링|발치|뽑|치석|충치|치주")
+
+
+def _medical(pet: Pet) -> list:
+    return [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+
+
+def _vaccine_months(m: re.Match) -> tuple[float, bool]:
+    """(개월 수, '안·이내'처럼 기간 안이라는 말인가)"""
+    n = int(m.group(1)) if m.group(1).isdigit() else _NUM_WORDS[m.group(1)]
+    months = {"개월": n, "달": n, "년": n * 12, "주": n / 4.345, "일": n / 30.4}[m.group(2)]
+    return months, m.group(3) in ("안", "이내")
+
+
+def proviso_answer(current: str, card: str, pet: Pet | None) -> str | None:
+    """면책 단서 셋(⑫ 침술 · ② 예방접종 · ⑲ 구강질환) 중 걸리는 것의 코드 답. 고객 사실 줄(대기기간)을 붙인다"""
+    if pet is None or not _medical(pet):
+        return None
+    lines = None
+    if _ACU.search(current) and not _NOT_ACU.search(current) and (_COVERAGE_Q.search(card) or _FOLLOW.search(current)):
+        lines = ["침술은 한의학 면책(의료비 특약 제2조 ⑫ \"한의학(단, 침술을 제외합니다.)\")에서 빠져 있어, 침 치료라는 이유로는 "
+                 "보험금이 거절되지 않습니다. 동물병원에서 수의사에게 받은 침 치료라면 의료비 특약 제1조에 따라 보상합니다.",
+                 "다만 한약, 허브요법·아로마테라피 같은 다른 대체의료와 재활치료는 보상하지 않습니다(제2조 ⑫)."]
+    if lines is None:
+        found = next((name for pat, name in _VAC_DISEASES_CAT + _VAC_DISEASES
+                      if re.search(pat, card) and (pet.species == "고양이" or (pat, name) in _VAC_DISEASES)), None)
+        none = _VAC_NONE.search(current)
+        t = _VAC_TIME.search(current) if _VAC_WORD.search(current) else None
+        if found and (none or t):
+            rule = (f"{found}{_josa(found, '은는')} 면책 대상 감염병이지만, 질병 발생일로부터 과거 1년 이내의 예방접종 기록이 있으면 "
+                    f"보상합니다(의료비 특약 제2조 ②).")
+            if none:
+                verdict = "예방접종을 하지 않았다면 이 면책에 해당해 보상하지 않습니다."
+            else:
+                months, inside = _vaccine_months(t)
+                said = t.group(0)
+                if inside and months <= 12:
+                    verdict = f"말씀하신 대로 {said}에 접종했다면 1년 이내라 이 면책에 해당하지 않아 보상 대상입니다."
+                elif months < 12:
+                    verdict = f"말씀하신 대로 {said} 접종했다면 1년 이내라 이 면책에 해당하지 않아 보상 대상입니다."
+                elif months == 12:
+                    verdict = f"{said} 접종이면 1년 경계라, 질병이 발생한 날을 기준으로 접종일이 1년 안인지 확인해야 합니다."
+                else:
+                    verdict = f"{said} 접종이면 1년이 지나 이 면책에 해당해 보상하지 않습니다."
+            lines = [rule, verdict, "청구할 때 동물병원의 접종 기록으로 확인합니다."]
+    if lines is None:
+        type1 = [p for p in _medical(pet) if not re.search(r"Ⅱ|Ⅲ", p.section_name)]
+        if type1 and _GUM.search(current) and not _TOOTH.search(current) and _COVERAGE_Q.search(card):
+            lines = ["치아를 제외한 구강질환(잇몸 염증·구내염 등)은 보장합니다(의료비 특약 제2조 ⑲ 단서).",
+                     "다만 구강질환 치료 목적이라도 치아에 하는 치료(스케일링·발치 등)는 보장하지 않습니다."]
+    if lines is None:
+        return None
+    return "\n".join(lines + notes(card, pet))
+
+
 def waiting_answer(question: str, pet: Pet | None, on: date | None = None) -> str | None:
     """보장 여부를 묻는 질문이고 대기기간 안이면(notes가 대기기간 줄을 낸다) 그 사실을 결론으로 코드가 답한다.
     대기기간이 지났으면 None — 원칙상 보장 여부는 모델이 발췌로 답한다(1안: 원칙을 본문으로).
