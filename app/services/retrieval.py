@@ -19,6 +19,11 @@ from data.search_scope import SearchScope
 SEARCH_TIMEOUT = httpx.Timeout(30, connect=3)
 
 
+# 청크 묶음(v2·v3)은 약관만 다시 잘랐다 — 인사규정은 v3 폴더에 같은 파일만 있고 Milvus에 hr_regulation_v3 컬렉션이 없다.
+# variant를 인사규정 검색에 붙이면 search-service가 503을 낸다(2026-10-23 운영 반영 점검에서 발견) → 약관 검색에만 붙인다
+VARIANT_SPECIES = ("강아지", "고양이")
+
+
 class Retriever:
     def __init__(self, base_url: str, expand: bool = False, variant: str | None = None, pool_k: int | None = None,
                  expand_dict: str | None = None):
@@ -44,7 +49,8 @@ class Retriever:
         scope는 scope.describe()로 보내고 search-service가 같은 SearchScope로 되살린다."""
         r = httpx.post(f"{self.base_url}/search", timeout=SEARCH_TIMEOUT,
                        json={"query": query, "scope": scope.describe(), "top_k": top_k, "candidate_k": candidate_k}
-                       | ({"expand": True} if self.expand else {}) | ({"variant": self.variant} if self.variant else {})
+                       | ({"expand": True} if self.expand else {})
+                       | ({"variant": self.variant} if self.variant and scope.species in VARIANT_SPECIES else {})
                        | ({"pool_k": self.pool_k} if self.pool_k else {})
                        | ({"expand_dict": self.expand_dict} if self.expand and self.expand_dict else {}))
         r.raise_for_status()

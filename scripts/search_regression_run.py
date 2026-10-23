@@ -17,7 +17,7 @@ from data import search_regression as R
 
 
 def ranks(rep: dict) -> dict:
-    return {c["id"]: (c.get("rank"), [(t.get("section_name"), t.get("article_num")) for t in c.get("top", [])]) for c in rep["cases"]}
+    return {c["id"]: (c.get("rank"), [t if isinstance(t, str) else (t.get("section_name"), t.get("article_num")) for t in c.get("top", [])]) for c in rep["cases"]}
 
 
 def main():
