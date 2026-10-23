@@ -231,6 +231,14 @@ def judge_turn(t: dict, rec: dict, pet: Pet, prompt: dict | None) -> dict:
         body, refs = body_and_refs(prompt["messages"])
         rule = flat(COVERAGE_RULE)
         info["rule_ref_only"] = rule in refs and rule not in body
+        # 발췌 자리 다툼(2026-10-23, scripts/crowding_count.py) — 원칙이 본문에 있으면 몇 번째 발췌인지, 질문이 부담보 병명과
+        # 무관한데 부담보 특약 발췌가 자리를 차지했는지
+        user = next((m["content"] for m in prompt["messages"] if m["role"] == "user"), "")
+        bl = [flat(re.split(r"\n\[참조\]", x)[0]) for x in re.split(r"(?=\[발췌 \d+\])", excerpt_part(prompt["messages"]))[1:]]
+        info["rule_pos"] = next((i + 1 for i, x in enumerate(bl) if rule in x), None)
+        heads = re.findall(r"\[발췌 \d+\] ([^\n]*)", user)
+        info["rider_unmatched"] = any(h.startswith(payout.EXCLUSION_SECTION_NAME) for h in heads) and not payout.matched_exclusions(
+            f"{(rec.get('context') or {}).get('text') or ''} {t['query']}", pet)
     return dict(id=t["id"], ok=all(checks.values()), checks=checks, **info)
 
 
