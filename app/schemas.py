@@ -20,6 +20,8 @@ Mode = Literal["일반", "사내규정", "업무특화"]
 # 멀티턴 처리 종류(09번 5절) — rewrite: 사내규정, 베이스 모델 재작성 / concat: 업무특화, 앞 질문과 이어 붙여 검색 / history: 일반, 이력 전달
 ContextKind = Literal["rewrite", "concat", "history"]
 Species = Literal["강아지", "고양이"]
+# 조항 원문 API는 사내규정 코퍼스도 받는다(근거 조항 열기 — 2026-10-23 운영에서 422). 상담 턴의 반려동물 종(Species)과 따로 둔다
+Corpus = Literal["강아지", "고양이", "인사규정"]
 Grade = Literal[GRADES]           # 고급형 / 기본형 / 실속형
 Corpus = Literal["강아지", "고양이", "인사규정"]   # 검색 코퍼스. 사내규정 근거는 인사규정이라 Species로는 못 담는다
 
@@ -388,7 +390,7 @@ class RecentConsultation(_Model):
 
 
 class ArticleOut(_Model):
-    species: Species
+    species: Corpus
     section: str
     section_name: str | None
     article_num: int | None
