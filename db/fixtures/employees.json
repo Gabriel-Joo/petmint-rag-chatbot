@@ -1,0 +1,944 @@
+{
+ "note": "가상 직원 — 실제 인물이 아니다. db/fixtures/make_employees.py가 만든다",
+ "employees": [
+  {
+   "employee_id": "E2001003",
+   "name": "홍길동",
+   "email": "hong.gildong@petmint.example",
+   "team": "보상기획팀",
+   "grade": "부장",
+   "grade_since": "2016-01-01",
+   "employment_type": "정규직",
+   "hire_date": "2001-03-02",
+   "career_hire": false,
+   "birth_date": "1967-05-14",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2009021",
+   "name": "김민지",
+   "email": "kim.minji@petmint.example",
+   "team": "상품개발팀",
+   "grade": "차장",
+   "grade_since": "2021-01-01",
+   "employment_type": "정규직",
+   "hire_date": "2009-07-01",
+   "career_hire": false,
+   "birth_date": "1983-11-02",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2013007",
+   "name": "이서준",
+   "email": "lee.seojun@petmint.example",
+   "team": "보상심사팀",
+   "grade": "과장",
+   "grade_since": "2021-03-01",
+   "employment_type": "정규직",
+   "hire_date": "2013-01-07",
+   "career_hire": false,
+   "birth_date": "1986-02-20",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2020114",
+   "name": "박지은",
+   "email": "park.jieun@petmint.example",
+   "team": "재무팀",
+   "grade": "과장",
+   "grade_since": "2023-03-01",
+   "employment_type": "정규직",
+   "hire_date": "2020-09-14",
+   "career_hire": true,
+   "birth_date": "1985-08-09",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2018032",
+   "name": "최현우",
+   "email": "choi.hyunwoo@petmint.example",
+   "team": "고객상담1팀",
+   "grade": "대리",
+   "grade_since": "2022-03-01",
+   "employment_type": "정규직",
+   "hire_date": "2018-01-02",
+   "career_hire": false,
+   "birth_date": "1991-04-17",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2020005",
+   "name": "정다은",
+   "email": "jung.daeun@petmint.example",
+   "team": "고객상담2팀",
+   "grade": "대리",
+   "grade_since": "2024-03-01",
+   "employment_type": "정규직",
+   "hire_date": "2020-01-06",
+   "career_hire": false,
+   "birth_date": "1993-12-25",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2022071",
+   "name": "한수빈",
+   "email": "han.subin@petmint.example",
+   "team": "고객상담1팀",
+   "grade": "사원",
+   "grade_since": "2022-07-04",
+   "employment_type": "정규직",
+   "hire_date": "2022-07-04",
+   "career_hire": false,
+   "birth_date": "1997-06-30",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2025112",
+   "name": "강도윤",
+   "email": "kang.doyun@petmint.example",
+   "team": "고객상담2팀",
+   "grade": "사원",
+   "grade_since": "2025-12-01",
+   "employment_type": "정규직",
+   "hire_date": "2025-12-01",
+   "career_hire": false,
+   "birth_date": "2000-03-08",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2026090",
+   "name": "윤서연",
+   "email": "yoon.seoyeon@petmint.example",
+   "team": "보상심사팀",
+   "grade": "사원",
+   "grade_since": "2026-09-01",
+   "employment_type": "정규직",
+   "hire_date": "2026-09-01",
+   "career_hire": false,
+   "birth_date": "2001-10-11",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2025030",
+   "name": "임재현",
+   "email": "lim.jaehyun@petmint.example",
+   "team": "고객상담1팀",
+   "grade": "사원",
+   "grade_since": "2025-03-03",
+   "employment_type": "계약직",
+   "hire_date": "2025-03-03",
+   "career_hire": false,
+   "birth_date": "1995-01-19",
+   "retired_on": null
+  },
+  {
+   "employee_id": "E2015044",
+   "name": "오정민",
+   "email": "oh.jungmin@petmint.example",
+   "team": "인사팀",
+   "grade": "과장",
+   "grade_since": "2020-03-01",
+   "employment_type": "정규직",
+   "hire_date": "2015-02-02",
+   "career_hire": false,
+   "birth_date": "1984-07-07",
+   "retired_on": "2026-08-31"
+  }
+ ],
+ "certificates": [
+  {
+   "employee_id": "E2001003",
+   "cert_name": "손해사정사",
+   "acquired_on": "2005-06-10",
+   "submitted_on": "2005-06-20"
+  },
+  {
+   "employee_id": "E2009021",
+   "cert_name": "보험계리사",
+   "acquired_on": "2012-12-07",
+   "submitted_on": "2012-12-14"
+  },
+  {
+   "employee_id": "E2009021",
+   "cert_name": "정보처리기사",
+   "acquired_on": "2008-08-29",
+   "submitted_on": "2009-07-10"
+  },
+  {
+   "employee_id": "E2013007",
+   "cert_name": "손해평가사",
+   "acquired_on": "2017-09-15",
+   "submitted_on": "2017-09-22"
+  },
+  {
+   "employee_id": "E2020114",
+   "cert_name": "공인회계사",
+   "acquired_on": "2014-09-05",
+   "submitted_on": "2020-09-14"
+  },
+  {
+   "employee_id": "E2020005",
+   "cert_name": "정보처리기사",
+   "acquired_on": "2019-11-22",
+   "submitted_on": "2020-01-10"
+  },
+  {
+   "employee_id": "E2022071",
+   "cert_name": "손해사정사",
+   "acquired_on": "2026-06-12",
+   "submitted_on": "2026-06-19"
+  },
+  {
+   "employee_id": "E2026090",
+   "cert_name": "손해평가사",
+   "acquired_on": "2026-10-10",
+   "submitted_on": "2026-10-15"
+  },
+  {
+   "employee_id": "E2018032",
+   "cert_name": "정보처리기사",
+   "acquired_on": "2026-09-25",
+   "submitted_on": null
+  }
+ ],
+ "absences": [
+  {
+   "employee_id": "E2009021",
+   "kind": "육아휴직",
+   "start_date": "2014-03-01",
+   "end_date": "2015-02-28"
+  },
+  {
+   "employee_id": "E2013007",
+   "kind": "질병휴직",
+   "start_date": "2019-05-01",
+   "end_date": "2019-10-31"
+  },
+  {
+   "employee_id": "E2020005",
+   "kind": "가족돌봄휴직",
+   "start_date": "2025-04-01",
+   "end_date": "2025-05-30"
+  }
+ ],
+ "evaluations": [
+  {
+   "employee_id": "E2001003",
+   "period": "2025-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2001003",
+   "period": "2025-H2",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2001003",
+   "period": "2026-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2009021",
+   "period": "2025-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2009021",
+   "period": "2025-H2",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2009021",
+   "period": "2026-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2013007",
+   "period": "2025-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2013007",
+   "period": "2025-H2",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2013007",
+   "period": "2026-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2020114",
+   "period": "2025-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2020114",
+   "period": "2025-H2",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2020114",
+   "period": "2026-H1",
+   "grade": "S"
+  },
+  {
+   "employee_id": "E2018032",
+   "period": "2025-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2018032",
+   "period": "2025-H2",
+   "grade": "D"
+  },
+  {
+   "employee_id": "E2018032",
+   "period": "2026-H1",
+   "grade": "D"
+  },
+  {
+   "employee_id": "E2020005",
+   "period": "2025-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2020005",
+   "period": "2025-H2",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2020005",
+   "period": "2026-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2022071",
+   "period": "2025-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2022071",
+   "period": "2025-H2",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2022071",
+   "period": "2026-H1",
+   "grade": "A"
+  },
+  {
+   "employee_id": "E2025030",
+   "period": "2026-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2025112",
+   "period": "2026-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2015044",
+   "period": "2025-H1",
+   "grade": "B"
+  },
+  {
+   "employee_id": "E2015044",
+   "period": "2025-H2",
+   "grade": "C"
+  },
+  {
+   "employee_id": "E2015044",
+   "period": "2026-H1",
+   "grade": "B"
+  }
+ ],
+ "leaves": [
+  {
+   "employee_id": "E2001003",
+   "leave_type": "연차",
+   "start_date": "2026-04-13",
+   "end_date": "2026-04-17",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2001003",
+   "leave_type": "연차",
+   "start_date": "2026-08-03",
+   "end_date": "2026-08-07",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2001003",
+   "leave_type": "연차",
+   "start_date": "2026-10-02",
+   "end_date": "2026-10-02",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2009021",
+   "leave_type": "연차",
+   "start_date": "2026-07-27",
+   "end_date": "2026-07-31",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2009021",
+   "leave_type": "연차",
+   "start_date": "2026-09-18",
+   "end_date": "2026-09-18",
+   "days": 0.5,
+   "note": "오후 반차"
+  },
+  {
+   "employee_id": "E2009021",
+   "leave_type": "경조",
+   "start_date": "2026-05-11",
+   "end_date": "2026-05-15",
+   "days": 5,
+   "note": "부친상"
+  },
+  {
+   "employee_id": "E2013007",
+   "leave_type": "연차",
+   "start_date": "2026-01-26",
+   "end_date": "2026-01-30",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2013007",
+   "leave_type": "연차",
+   "start_date": "2026-06-15",
+   "end_date": "2026-06-16",
+   "days": 2,
+   "note": null
+  },
+  {
+   "employee_id": "E2013007",
+   "leave_type": "연차",
+   "start_date": "2026-09-04",
+   "end_date": "2026-09-04",
+   "days": 0.5,
+   "note": "오전 반차"
+  },
+  {
+   "employee_id": "E2013007",
+   "leave_type": "연차",
+   "start_date": "2026-10-16",
+   "end_date": "2026-10-16",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2020114",
+   "leave_type": "연차",
+   "start_date": "2025-12-29",
+   "end_date": "2025-12-31",
+   "days": 3,
+   "note": null
+  },
+  {
+   "employee_id": "E2020114",
+   "leave_type": "연차",
+   "start_date": "2026-08-10",
+   "end_date": "2026-08-12",
+   "days": 3,
+   "note": null
+  },
+  {
+   "employee_id": "E2018032",
+   "leave_type": "연차",
+   "start_date": "2026-03-09",
+   "end_date": "2026-03-13",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2018032",
+   "leave_type": "연차",
+   "start_date": "2026-07-06",
+   "end_date": "2026-07-10",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2018032",
+   "leave_type": "연차",
+   "start_date": "2026-09-21",
+   "end_date": "2026-09-22",
+   "days": 2,
+   "note": null
+  },
+  {
+   "employee_id": "E2018032",
+   "leave_type": "병가",
+   "start_date": "2026-05-18",
+   "end_date": "2026-05-29",
+   "days": 10,
+   "note": "진단서 제출"
+  },
+  {
+   "employee_id": "E2020005",
+   "leave_type": "연차",
+   "start_date": "2026-02-16",
+   "end_date": "2026-02-17",
+   "days": 2,
+   "note": null
+  },
+  {
+   "employee_id": "E2020005",
+   "leave_type": "연차",
+   "start_date": "2026-10-05",
+   "end_date": "2026-10-05",
+   "days": 0.5,
+   "note": "오후 반차"
+  },
+  {
+   "employee_id": "E2022071",
+   "leave_type": "연차",
+   "start_date": "2025-08-14",
+   "end_date": "2025-08-14",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2022071",
+   "leave_type": "연차",
+   "start_date": "2026-01-02",
+   "end_date": "2026-01-02",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2022071",
+   "leave_type": "연차",
+   "start_date": "2026-05-04",
+   "end_date": "2026-05-08",
+   "days": 5,
+   "note": null
+  },
+  {
+   "employee_id": "E2022071",
+   "leave_type": "경조",
+   "start_date": "2026-04-20",
+   "end_date": "2026-04-24",
+   "days": 5,
+   "note": "본인 결혼"
+  },
+  {
+   "employee_id": "E2025112",
+   "leave_type": "연차",
+   "start_date": "2026-03-20",
+   "end_date": "2026-03-20",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2025112",
+   "leave_type": "연차",
+   "start_date": "2026-08-14",
+   "end_date": "2026-08-14",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2025112",
+   "leave_type": "연차",
+   "start_date": "2026-10-08",
+   "end_date": "2026-10-08",
+   "days": 0.5,
+   "note": "오전 반차"
+  },
+  {
+   "employee_id": "E2025030",
+   "leave_type": "연차",
+   "start_date": "2026-06-05",
+   "end_date": "2026-06-05",
+   "days": 1,
+   "note": null
+  },
+  {
+   "employee_id": "E2025030",
+   "leave_type": "병가",
+   "start_date": "2026-09-07",
+   "end_date": "2026-09-08",
+   "days": 2,
+   "note": null
+  },
+  {
+   "employee_id": "E2015044",
+   "leave_type": "연차",
+   "start_date": "2026-03-03",
+   "end_date": "2026-03-06",
+   "days": 4,
+   "note": null
+  }
+ ],
+ "payroll": [
+  {
+   "employee_id": "E2001003",
+   "pay_month": "2026-07-01",
+   "base_pay": 6400000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 6900000
+  },
+  {
+   "employee_id": "E2001003",
+   "pay_month": "2026-08-01",
+   "base_pay": 6400000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 6900000
+  },
+  {
+   "employee_id": "E2001003",
+   "pay_month": "2026-09-01",
+   "base_pay": 6400000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 3200000,
+   "ordinary_wage": 6900000
+  },
+  {
+   "employee_id": "E2001003",
+   "pay_month": "2026-10-01",
+   "base_pay": 6400000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 6900000
+  },
+  {
+   "employee_id": "E2009021",
+   "pay_month": "2026-07-01",
+   "base_pay": 5350000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5850000
+  },
+  {
+   "employee_id": "E2009021",
+   "pay_month": "2026-08-01",
+   "base_pay": 5350000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5850000
+  },
+  {
+   "employee_id": "E2009021",
+   "pay_month": "2026-09-01",
+   "base_pay": 5350000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 2675000,
+   "ordinary_wage": 5850000
+  },
+  {
+   "employee_id": "E2009021",
+   "pay_month": "2026-10-01",
+   "base_pay": 5350000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5850000
+  },
+  {
+   "employee_id": "E2013007",
+   "pay_month": "2026-07-01",
+   "base_pay": 4550000,
+   "fixed_allowances": 400000,
+   "overtime_pay": 220000,
+   "bonus": 0,
+   "ordinary_wage": 4950000
+  },
+  {
+   "employee_id": "E2013007",
+   "pay_month": "2026-08-01",
+   "base_pay": 4550000,
+   "fixed_allowances": 400000,
+   "overtime_pay": 220000,
+   "bonus": 0,
+   "ordinary_wage": 4950000
+  },
+  {
+   "employee_id": "E2013007",
+   "pay_month": "2026-09-01",
+   "base_pay": 4550000,
+   "fixed_allowances": 400000,
+   "overtime_pay": 220000,
+   "bonus": 2275000,
+   "ordinary_wage": 4950000
+  },
+  {
+   "employee_id": "E2013007",
+   "pay_month": "2026-10-01",
+   "base_pay": 4550000,
+   "fixed_allowances": 400000,
+   "overtime_pay": 220000,
+   "bonus": 0,
+   "ordinary_wage": 4950000
+  },
+  {
+   "employee_id": "E2020114",
+   "pay_month": "2026-07-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 600000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5100000
+  },
+  {
+   "employee_id": "E2020114",
+   "pay_month": "2026-08-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 600000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5100000
+  },
+  {
+   "employee_id": "E2020114",
+   "pay_month": "2026-09-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 600000,
+   "overtime_pay": 0,
+   "bonus": 2250000,
+   "ordinary_wage": 5100000
+  },
+  {
+   "employee_id": "E2020114",
+   "pay_month": "2026-10-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 600000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 5100000
+  },
+  {
+   "employee_id": "E2018032",
+   "pay_month": "2026-07-01",
+   "base_pay": 3750000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2018032",
+   "pay_month": "2026-08-01",
+   "base_pay": 3750000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2018032",
+   "pay_month": "2026-09-01",
+   "base_pay": 3750000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 1875000,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2018032",
+   "pay_month": "2026-10-01",
+   "base_pay": 3750000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2020005",
+   "pay_month": "2026-07-01",
+   "base_pay": 3700000,
+   "fixed_allowances": 350000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2020005",
+   "pay_month": "2026-08-01",
+   "base_pay": 3700000,
+   "fixed_allowances": 350000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2020005",
+   "pay_month": "2026-09-01",
+   "base_pay": 3700000,
+   "fixed_allowances": 350000,
+   "overtime_pay": 150000,
+   "bonus": 1850000,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2020005",
+   "pay_month": "2026-10-01",
+   "base_pay": 3700000,
+   "fixed_allowances": 350000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 4050000
+  },
+  {
+   "employee_id": "E2022071",
+   "pay_month": "2026-07-01",
+   "base_pay": 3080000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3580000
+  },
+  {
+   "employee_id": "E2022071",
+   "pay_month": "2026-08-01",
+   "base_pay": 3080000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3580000
+  },
+  {
+   "employee_id": "E2022071",
+   "pay_month": "2026-09-01",
+   "base_pay": 3080000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 180000,
+   "bonus": 1540000,
+   "ordinary_wage": 3580000
+  },
+  {
+   "employee_id": "E2022071",
+   "pay_month": "2026-10-01",
+   "base_pay": 3080000,
+   "fixed_allowances": 500000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3580000
+  },
+  {
+   "employee_id": "E2025112",
+   "pay_month": "2026-07-01",
+   "base_pay": 3000000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 3300000
+  },
+  {
+   "employee_id": "E2025112",
+   "pay_month": "2026-08-01",
+   "base_pay": 3000000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 3300000
+  },
+  {
+   "employee_id": "E2025112",
+   "pay_month": "2026-09-01",
+   "base_pay": 3000000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 150000,
+   "bonus": 1500000,
+   "ordinary_wage": 3300000
+  },
+  {
+   "employee_id": "E2025112",
+   "pay_month": "2026-10-01",
+   "base_pay": 3000000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 150000,
+   "bonus": 0,
+   "ordinary_wage": 3300000
+  },
+  {
+   "employee_id": "E2026090",
+   "pay_month": "2026-09-01",
+   "base_pay": 2700000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 0,
+   "bonus": 1350000,
+   "ordinary_wage": 3000000
+  },
+  {
+   "employee_id": "E2026090",
+   "pay_month": "2026-10-01",
+   "base_pay": 2700000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 3000000
+  },
+  {
+   "employee_id": "E2025030",
+   "pay_month": "2026-07-01",
+   "base_pay": 2800000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3100000
+  },
+  {
+   "employee_id": "E2025030",
+   "pay_month": "2026-08-01",
+   "base_pay": 2800000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3100000
+  },
+  {
+   "employee_id": "E2025030",
+   "pay_month": "2026-09-01",
+   "base_pay": 2800000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3100000
+  },
+  {
+   "employee_id": "E2025030",
+   "pay_month": "2026-10-01",
+   "base_pay": 2800000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 180000,
+   "bonus": 0,
+   "ordinary_wage": 3100000
+  },
+  {
+   "employee_id": "E2015044",
+   "pay_month": "2026-07-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 4800000
+  },
+  {
+   "employee_id": "E2015044",
+   "pay_month": "2026-08-01",
+   "base_pay": 4500000,
+   "fixed_allowances": 300000,
+   "overtime_pay": 0,
+   "bonus": 0,
+   "ordinary_wage": 4800000
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { IS_FAKE_API } from "../api/client";
-import type { Mode } from "../api/types";
+import type { MeOut, Mode } from "../api/types";
 import { ModeIcon } from "./ModeIcon";
 import s from "./TopBar.module.css";
 
@@ -16,9 +16,12 @@ interface Props {
   autoRing: boolean;
   onAutoRing: (v: boolean) => void;
   onRing: () => void;
+  me: MeOut;
+  /** 앱 로그인일 때만 — 있으면 오른쪽 끝에 직원 이름·팀과 로그아웃 */
+  onLogout: (() => void) | null;
 }
 
-export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing }: Props) {
+export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing, me, onLogout }: Props) {
   // 1023px 이하에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -73,6 +76,19 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
             </button>
           </div>
         </div>
+
+        {/* 앱 로그인(13번 2-1절) — 누가 상담하는지. 상담 중에는 로그아웃을 막는다(종료 후에) */}
+        {onLogout && (
+          <div className={s.user}>
+            <span className={s.userName} title={me.email}>
+              {me.name ?? me.employee_id}{me.team && <span className={s.userTeam}> · {me.team}</span>}
+            </span>
+            <button className={`btn ${s.logout}`} onClick={onLogout} disabled={locked}
+                    title={locked ? "상담을 종료한 뒤 로그아웃할 수 있습니다" : undefined}>
+              로그아웃
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

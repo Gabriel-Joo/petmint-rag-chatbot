@@ -9,4 +9,5 @@ PyMySQL==1.2.3
 cryptography==50.0.1         # MySQL 8 기본 인증(caching_sha2_password)
 httpx==0.28.1                # Ollama·search-service 호출
 python-dotenv==1.2.3         # 로컬 .env(이미지에는 없다 — 환경변수로 받는다)
+argon2-cffi==25.1.0         # 앱 자체 로그인 비밀번호 해시(argon2id, 13번 2-1절)
 pymilvus==3.0.2              # data/rag_context.py가 모듈 맨 위에서 import한다. ContextBuilder를 붙이면 조항 원문 조회에 쓴다

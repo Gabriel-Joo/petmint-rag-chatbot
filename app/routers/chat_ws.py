@@ -23,7 +23,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
 from app import config
-from app.deps import agent_of
+from app.deps import header_agent, origin_ok, session_me
 from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
 from app.services import answer, context, dayparse, titles
 from app.services.answer import TurnContext, TurnDeps
@@ -64,7 +64,10 @@ async def chat(ws: WebSocket, session_id: str):
     turn_log: TurnLogStore = ws.app.state.turn_log
     customers: CustomerStore = ws.app.state.customers
     deps = TurnDeps(retriever=ws.app.state.retriever, builder=ws.app.state.builder, llm=ws.app.state.llm)
-    agent = agent_of(ws)
+    me = None
+    if config.AUTH == "app":                       # 쿠키 로그인(13번 2-1절) — 거절은 accept 뒤 코드로 닫는다(4404와 같은 방식)
+        me = None if not origin_ok(ws) else await asyncio.to_thread(session_me, ws)
+    agent = header_agent(ws) if config.AUTH != "app" else (me.email if me and not me.must_change_password else None)
     pending: dict[str, TurnContext] = {}           # 되묻기 응답을 기다리는 턴
 
     async def drop_pending() -> None:
@@ -84,6 +87,9 @@ async def chat(ws: WebSocket, session_id: str):
                                     first_token_ms=ctx.log.first_token_ms))
 
     await ws.accept()
+    if config.AUTH == "app" and agent is None:
+        await ws.close(code=config.WS_CLOSE_FORBIDDEN_ORIGIN if not origin_ok(ws) else config.WS_CLOSE_UNAUTHORIZED)
+        return
     if await asyncio.to_thread(store.get_open, session_id, agent) is None:
         await ws.close(code=config.WS_CLOSE_SESSION_NOT_FOUND)
         return
@@ -91,6 +97,9 @@ async def chat(ws: WebSocket, session_id: str):
     try:
         while True:
             raw = await ws.receive_text()
+            if config.AUTH == "app" and await asyncio.to_thread(session_me, ws) is None:   # 연결 중 로그아웃·만료·퇴직
+                await ws.close(code=config.WS_CLOSE_UNAUTHORIZED)
+                return
             session = await asyncio.to_thread(store.get_open, session_id, agent)
             if session is None:                    # 연결 중에 종료·제거됐다
                 await ws.close(code=config.WS_CLOSE_SESSION_NOT_FOUND)

@@ -327,3 +327,21 @@ export interface TableItem {
 
 /** WS 종료 코드 — 없는(만료된) 세션 */
 export const WS_CLOSE_SESSION_NOT_FOUND = 4404;
+
+// ----- 인증(13번 2-1절, 2026-10-28) — app/schemas.py MeOut·LoginIn·PasswordIn -----
+
+export type AuthMode = "access" | "app";
+
+export interface MeOut {
+  auth_mode: AuthMode;
+  email: string;
+  employee_id: string | null;
+  name: string | null;
+  team: string | null;
+  grade: string | null;
+  role: "상담원" | "관리자" | null;
+  must_change_password: boolean;
+}
+
+export interface LoginIn { employee_id: string; password: string }
+export interface PasswordIn { current: string; new: string }

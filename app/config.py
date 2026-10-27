@@ -25,6 +25,8 @@ WEB_DIST = Path(os.environ.get("PETMINT_WEB_DIST", ROOT / "web" / "dist"))
 
 DB = app_settings("petmint")                   # PETMINT_DB_HOST / _PORT / _NAME / _USER / _PASSWORD
 
+WS_CLOSE_UNAUTHORIZED = 4401                   # 로그인 안 됨·만료(PETMINT_AUTH=app) — 로그인 화면으로
+WS_CLOSE_FORBIDDEN_ORIGIN = 4403               # 다른 사이트에서 연 WS
 WS_CLOSE_SESSION_NOT_FOUND = 4404              # 없는·종료된·남의 세션. 업무특화는 고객 조회로, 일반·사내규정은 새 대화로
 
 # 7-3: GPU 쓰는 것은 호스트에 두고 네트워크로 호출한다. Pod에서는 호스트 주소로 바꿔 준다(기본값은 호스트에서 직접 띄울 때)
@@ -72,3 +74,15 @@ PROMPT_VERSION = PROMPT_VERSION
 # 13번: Cloudflare Access가 넣는 헤더 → sessions.agent_email. 로컬 개발에는 없으므로 기본값
 AGENT_HEADER = "Cf-Access-Authenticated-User-Email"
 DEFAULT_AGENT = os.environ.get("PETMINT_DEFAULT_AGENT", "dev@local")
+
+# 2026-10-28 앱 자체 인증(13번 2-1절). access: 지금처럼 위 헤더(없으면 기본값)가 상담원이다. app: 사번·비밀번호 로그인 쿠키가 있어야 한다.
+# 직원 신원은 기간계 insurance_core.employees(CORE_DB, 읽기만), 비밀번호·로그인 세션은 petmint.accounts·auth_sessions
+AUTH = os.environ.get("PETMINT_AUTH", "access")
+if AUTH not in ("access", "app"):
+    raise RuntimeError(f"PETMINT_AUTH는 access 또는 app: {AUTH!r}")
+AUTH_COOKIE = "petmint_session"
+COOKIE_SECURE = os.environ.get("PETMINT_COOKIE_SECURE", "1") == "1"   # 로컬 http 개발에서만 0
+# 상태를 바꾸는 요청·WS 연결의 Origin이 이 목록이나 요청 Host와 같아야 한다(쿠키 인증의 CSRF·WS 위조 방지). 개발 서버(vite)는
+# changeOrigin으로 Host를 바꾸므로 목록에 둔다
+ALLOWED_ORIGINS = [o.strip() for o in os.environ.get(
+    "PETMINT_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]

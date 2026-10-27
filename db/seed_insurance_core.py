@@ -12,6 +12,9 @@ insurance_seed 계정으로 돈다. 픽스처는 이미지에도 git에도 넣�
 청구 이력(claims, 0002)은 가상 데이터라 저장소에 둔다(db/fixtures/claims.json — 반려동물 ID·특약 이름·금액만, 개인정보 없음).
 고객과 함께 깔고, --if-empty여도 청구 이력 테이블이 비어 있으면 그것만 깐다(이미 고객이 있는 클러스터에 처음 넣을 때).
 원장에 없는 반려동물·가입하지 않은 특약의 청구는 건너뛰고 알린다 — 클러스터 원장이 픽스처와 다를 수 있다.
+
+인사 원장(0003 — 직원·자격·급여·휴가·휴직·평가)도 가상 데이터라 저장소에 둔다(db/fixtures/employees.json, make_employees.py가 만든다).
+옵션 없이 돌리면 고객과 함께 다시 깔고, --if-empty면 직원 테이블이 비어 있을 때만 깐다.
 """
 
 import argparse
@@ -24,6 +27,18 @@ from db.conn import ROOT, app_settings
 
 FIXTURE = ROOT / "app" / "fixtures" / "customers.json"
 CLAIMS = ROOT / "db" / "fixtures" / "claims.json"
+EMPLOYEES = ROOT / "db" / "fixtures" / "employees.json"
+# 인사 원장 테이블 → 픽스처 키와 넣을 열(자식 테이블이 뒤). employee_leaves·absences의 AUTO_INCREMENT 키는 넣지 않는다
+EMPLOYEE_TABLES = [
+    ("employees", "employees", ("employee_id", "name", "email", "team", "grade", "grade_since", "employment_type",
+                                "hire_date", "career_hire", "birth_date", "retired_on")),
+    ("employee_certificates", "certificates", ("employee_id", "cert_name", "acquired_on", "submitted_on")),
+    ("employee_payroll", "payroll", ("employee_id", "pay_month", "base_pay", "fixed_allowances", "overtime_pay", "bonus",
+                                     "ordinary_wage")),
+    ("employee_leaves", "leaves", ("employee_id", "leave_type", "start_date", "end_date", "days", "note")),
+    ("employee_absences", "absences", ("employee_id", "kind", "start_date", "end_date")),
+    ("employee_evaluations", "evaluations", ("employee_id", "period", "grade")),
+]
 CLAIM_COLS = ("claim_id", "pet_id", "section_name", "claim_date", "treatment_date", "treatment_type", "days",
               "treatment_cost", "paid", "surgery", "mri")
 
@@ -58,10 +73,24 @@ def insert_claims(cur, claims: list[dict]) -> int:
     return len(rows)
 
 
+def insert_employees(cur, data: dict, replace: bool) -> dict[str, int]:
+    """인사 원장을 넣는다. replace면 자식부터 비우고 다시 넣는다. 테이블별 건수"""
+    if replace:
+        for table, _, _ in reversed(EMPLOYEE_TABLES):
+            cur.execute(f"DELETE FROM {table}")
+    n = {}
+    for table, key, cols in EMPLOYEE_TABLES:
+        rows = [tuple(r[c] for c in cols) for r in data[key]]
+        cur.executemany(f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))})", rows)
+        n[table] = len(rows)
+    return n
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fixture", type=Path, default=FIXTURE)
     ap.add_argument("--claims", type=Path, default=CLAIMS)
+    ap.add_argument("--employees", type=Path, default=EMPLOYEES)
     ap.add_argument("--if-empty", action="store_true")
     args = ap.parse_args()
 
@@ -69,7 +98,13 @@ def main() -> None:
     try:
         with conn.cursor() as cur:
             claims = json.loads(args.claims.read_text(encoding="utf-8"))
+            staff = json.loads(args.employees.read_text(encoding="utf-8"))
             if args.if_empty:
+                cur.execute("SELECT COUNT(*) FROM employees")
+                if not cur.fetchone()[0]:
+                    e = insert_employees(cur, staff, replace=False)
+                    conn.commit()
+                    print(f"insurance_core: 비어 있던 인사 원장 ← {args.employees.name} 직원 {e['employees']}명")
                 cur.execute("SELECT COUNT(*) FROM customers")
                 n = cur.fetchone()[0]
                 if n:
@@ -94,13 +129,15 @@ def main() -> None:
                             " coverage_type, copay, contract_date, renewal, excluded_conditions)"
                             " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", pols)
             k = insert_claims(cur, claims)
+            e = insert_employees(cur, staff, replace=True)
         conn.commit()
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
-    print(f"insurance_core ← {args.fixture.name}: 고객 {len(cs)} · 반려동물 {len(ps)} · 특약 {len(pols)} · 청구 이력 {k}")
+    print(f"insurance_core ← {args.fixture.name}: 고객 {len(cs)} · 반려동물 {len(ps)} · 특약 {len(pols)} · 청구 이력 {k}"
+          f" · 직원 {e['employees']}(급여 {e['employee_payroll']} · 휴가 {e['employee_leaves']})")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ApiError, createSession, deleteSession } from "./api/client";
-import type { Customer, Mode, SessionOut, SessionSummary } from "./api/types";
+import type { Customer, MeOut, Mode, SessionOut, SessionSummary } from "./api/types";
 import { CallAlert } from "./components/CallAlert";
 import { TopBar } from "./components/TopBar";
 import { useCallSimulator } from "./hooks/useCallSimulator";
@@ -21,7 +21,14 @@ import s from "./App.module.css";
 type ChatMode = "일반" | "사내규정";
 type Screen = "mode" | ChatMode | "customers" | "consult";
 
-export default function App() {
+interface AppProps {
+  /** 지금 상담원(AuthGate) */
+  me: MeOut;
+  /** 앱 로그인(app 모드)일 때만 — access 모드는 로그아웃이 Cloudflare 쪽이라 없다 */
+  onLogout: (() => void) | null;
+}
+
+export default function App({ me, onLogout }: AppProps) {
   const [screen, setScreen] = useState<Screen>("mode");
   const [chatSessions, setChatSessions] = useState<Record<ChatMode, SessionOut | null>>({ 일반: null, 사내규정: null });
   const [consult, setConsult] = useState<ConsultState | null>(null);
@@ -129,7 +136,8 @@ export default function App() {
   return (
     <div className={s.app}>
       <TopBar current={currentMode} locked={locked} onHome={goHome} onMode={goMode}
-              autoRing={call.autoRing} onAutoRing={call.setAutoRing} onRing={() => void call.ring()} />
+              autoRing={call.autoRing} onAutoRing={call.setAutoRing} onRing={() => void call.ring()}
+              me={me} onLogout={onLogout} />
       {error && (
         <div className={s.error} role="alert">
           <span>{error}</span>
