@@ -98,3 +98,11 @@
   .callOpen { display: flex; }
   .call .ringBtn { text-align: center; }
 }
+
+/* 앱 로그인(2026-10-28) — 직원 이름·팀과 로그아웃. 전화 묶음 오른쪽, 헤더 메뉴와 같은 --font-xs. 아바타 원은 쓰지 않는다(11번) */
+.user { display: flex; align-items: center; gap: 0.6em; font-size: var(--font-xs); white-space: nowrap; }
+.userName { font-weight: var(--font-weight-label); }
+.userTeam { font-weight: var(--font-weight-caption); color: var(--text-dim); }
+.user .logout { padding: 0.15em 0.45em; line-height: 1.2; }
+.user .logout:hover:not(:disabled) { background: var(--card); border-color: var(--primary); color: var(--primary); }
+@media (max-width: 640px) { .userTeam { display: none; } }

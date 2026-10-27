@@ -2,12 +2,12 @@
 // API 층 — 백엔드 호출은 이 파일 하나에 모은다. 화면·훅은 이 파일의 export만 쓴다.
 //
 // 09 7-1(REST)·7-2(WS) 그대로. 경로는 상대 경로(/api, /ws)라 개발 중에는 vite 프록시가,
-// 배포에서는 같은 오리진의 FastAPI가 받는다. 상담원 신원(agent_email)은 Cloudflare Access 헤더를 서버가 읽는다 —
-// 프론트는 보내지 않는다.
+// 배포에서는 같은 오리진의 FastAPI가 받는다. 상담원 신원(agent_email)은 서버가 정한다 — Cloudflare Access 헤더(PETMINT_AUTH=access)
+// 또는 로그인 쿠키(app, HttpOnly라 스크립트가 읽지 못한다). 프론트는 신원을 보내지 않는다.
 // ============================================================================
 
 import type {
-  ArticleOut, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
+  ArticleOut, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
   SessionCreate, SessionDetail, SessionOut, SessionPatch, SessionSummary, TurnOut,
 } from "./types";
 
@@ -41,6 +41,10 @@ function errorDetail(body: unknown, fallback: string): string {
   return fallback;
 }
 
+/** 로그인이 풀렸다(401·WS 4401) — AuthGate가 듣고 로그인 화면으로 돌아간다. /api/auth/*의 401은 화면이 직접 처리한다 */
+export const UNAUTHORIZED_EVENT = "petmint:unauthorized";
+export const WS_CLOSE_UNAUTHORIZED = 4401;
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
@@ -54,8 +58,29 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   if (res.status === 204) return undefined as T;
   const data: unknown = await res.json().catch(() => null);
+  if (res.status === 401 && !path.startsWith("/api/auth/")) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
   if (!res.ok) throw new ApiError(res.status, errorDetail(data, res.statusText));
   return data as T;
+}
+
+// ----- 인증 -----
+
+/** GET /api/auth/me — 로그인 안 됐으면 401(app 모드). access 모드는 늘 답한다 */
+export function getMe(): Promise<MeOut> {
+  return request("GET", "/api/auth/me");
+}
+
+export function login(body: LoginIn): Promise<MeOut> {
+  return request("POST", "/api/auth/login", body);
+}
+
+export function logout(): Promise<void> {
+  return request("POST", "/api/auth/logout");
+}
+
+/** 바꾸면 다른 기기의 로그인은 서버가 끊는다 */
+export function changePassword(body: PasswordIn): Promise<void> {
+  return request("POST", "/api/auth/password", body);
 }
 
 const qs = (params: Record<string, string | number | null | undefined>) => {
@@ -160,6 +185,7 @@ export function openChatSocket(sessionId: string, handlers: ChatSocketHandlers):
     }
   };
   ws.onclose = (ev) => {
+    if (ev.code === WS_CLOSE_UNAUTHORIZED) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
     if (!closedByUs) handlers.onClose(ev.code);
   };
 

@@ -12,7 +12,7 @@ search-service에 닿는지는 기동 때 보지 않는다(Retriever.health는 �
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pymilvus import MilvusClient
@@ -20,10 +20,11 @@ from sqlalchemy import text
 
 from data.rag_context import ContextBuilder
 
-from app import config
+from app import config, deps
 from app.db import make_engine
-from app.routers import articles, chat_ws, consultations, customers, feedback, sessions
+from app.routers import articles, auth, chat_ws, consultations, customers, feedback, sessions
 from app.services import policy_data
+from app.services.auth import AuthStore
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.llm import OllamaClient
 from app.services.retrieval import Retriever
@@ -47,6 +48,7 @@ async def lifespan(app: FastAPI):
     if missing:
         raise RuntimeError(f"{config.DB!r}에 적용되지 않은 마이그레이션: {missing} — python -m db.migrate")
     app.state.sessions = SessionStore(engine)
+    app.state.auth = AuthStore(engine, core)                          # 로그인(PETMINT_AUTH=app). access 모드도 /api/auth/me가 쓴다
     app.state.turn_log = TurnLogStore(engine)
     app.state.llm = OllamaClient(config.OLLAMA_URL)
     # 검색(GPU)은 호스트 search-service. 기동 때 닿는지 보지 않는다 — 아직 배포 전이고, 없으면 턴이 search_unavailable로 끝난다
@@ -69,8 +71,21 @@ async def customer_data_error(request: Request, e: CustomerDataError):
     log.error("고객 원장 오류 (%s %s)\n%s", request.method, request.url.path, e)
     return JSONResponse(status_code=500, content={"detail": USER_MESSAGE})
 
-for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router, chat_ws.router):
-    app.include_router(r)
+
+@app.middleware("http")
+async def check_origin(request: Request, call_next):
+    """쿠키 인증(PETMINT_AUTH=app)의 CSRF 방지 — 상태를 바꾸는 /api 요청은 Origin이 허용 목록이거나 같은 Host여야 한다"""
+    if (config.AUTH == "app" and request.url.path.startswith("/api/")
+            and request.method not in ("GET", "HEAD", "OPTIONS") and not deps.origin_ok(request)):
+        return JSONResponse(status_code=403, content={"detail": "허용되지 않은 출처의 요청입니다."})
+    return await call_next(request)
+
+
+app.include_router(auth.router)
+# 보호 라우터 — access 모드에서 require_login은 아무것도 하지 않는다. WS는 핸들러가 직접 확인한다(4401)
+for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router):
+    app.include_router(r, dependencies=[Depends(deps.require_login)])
+app.include_router(chat_ws.router)
 
 # React 빌드물 — /api·/ws 라우트 뒤에 붙여 그쪽이 먼저 잡히게 한다. 빌드물이 없으면(개발 중 vite로 띄울 때) 붙이지 않는다
 if (config.WEB_DIST / "index.html").is_file():

@@ -539,3 +539,31 @@ ServerMessage = Annotated[Union[ContextMsg, SourcesMsg, TokenMsg, ClarifyMsg, Re
 
 TurnOut.model_rebuild()                            # SourceItem·ReferenceItem이 뒤에 정의돼 있다
 SessionDetail.model_rebuild()
+
+
+# ----- 인증(13번 2-1절, 2026-10-28) -----
+
+AuthMode = Literal["access", "app"]
+Role = Literal["상담원", "관리자"]
+
+
+class LoginIn(_Model):
+    employee_id: str = Field(min_length=1, max_length=16)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class PasswordIn(_Model):
+    current: str = Field(min_length=1, max_length=256)
+    new: str = Field(min_length=1, max_length=256)
+
+
+class MeOut(_Model):
+    """지금 상담원. access 모드는 헤더 이메일만 확실하다 — 인사 원장에 같은 이메일이 있으면 이름·팀을 붙인다"""
+    auth_mode: AuthMode
+    email: str
+    employee_id: str | None = None
+    name: str | None = None
+    team: str | None = None
+    grade: str | None = None
+    role: Role | None = None
+    must_change_password: bool = False
