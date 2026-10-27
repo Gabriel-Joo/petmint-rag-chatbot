@@ -1,5 +1,5 @@
 {
- "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다 · 2026-10-28 후속(sequences) 추가 — 운영에서 본인 연차 뒤 '연차 미사용분은 얼마 받나요?'가 모델로 갔다. HS는 이어받아야, HN은 모델로 · 2026-10-28 퇴직 예정일(HS06~12)·넓힌 이어받기의 음성(HN13~19) 추가 — 운영 '퇴직 날짜가 2026년 12월 30일 입니다'",
+ "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다 · 2026-10-28 후속(sequences) 추가 — 운영에서 본인 연차 뒤 '연차 미사용분은 얼마 받나요?'가 모델로 갔다. HS는 이어받아야, HN은 모델로 · 2026-10-28 퇴직 예정일(HS06~12)·넓힌 이어받기의 음성(HN13~19) 추가 — 운영 '퇴직 날짜가 2026년 12월 30일 입니다' · 2026-10-28 급여 개인화(HP34~40·HN20~26·HS13~14) — 제25조 개정(익월 10일, 휴일이면 전일) 기준",
  "today": "2026-10-28",
  "cases": [
   {
@@ -300,6 +300,76 @@
    "expect": [
     "3697608"
    ]
+  },
+  {
+   "id": "HP34",
+   "email": "kwon.taeho@petmint.example",
+   "topic": "급여",
+   "query": "제 월급 얼마예요?",
+   "expect": [
+    "10100000",
+    "2026년 10월 8일",
+    "2026년 11월 10일"
+   ]
+  },
+  {
+   "id": "HP35",
+   "email": "ryu.chaewon@petmint.example",
+   "topic": "급여",
+   "query": "제 급여 얼마 받았어요?",
+   "expect": [
+    "4350000",
+    "90%"
+   ]
+  },
+  {
+   "id": "HP36",
+   "email": "shin.haneul@petmint.example",
+   "topic": "급여",
+   "query": "제 이번 달 급여 내역 알려주세요",
+   "expect": [
+    "5300000"
+   ]
+  },
+  {
+   "id": "HP37",
+   "email": "jang.minhyuk@petmint.example",
+   "topic": "급여",
+   "query": "제 월급 언제 들어와요?",
+   "expect": [
+    "2026년 11월 10일"
+   ]
+  },
+  {
+   "id": "HP38",
+   "email": "kwon.taeho@petmint.example",
+   "topic": "통상임금",
+   "query": "제 통상임금 얼마예요?",
+   "expect": [
+    "6900000",
+    "33014",
+    "49522"
+   ]
+  },
+  {
+   "id": "HP39",
+   "email": "noh.eunbi@petmint.example",
+   "topic": "통상임금",
+   "query": "내 시급은 얼마야?",
+   "expect": [
+    "4050000",
+    "19378",
+    "29067"
+   ]
+  },
+  {
+   "id": "HP40",
+   "email": "moon.taeyang@petmint.example",
+   "topic": "급여",
+   "query": "제 월급 얼마예요?",
+   "expect": [
+    "개별근로계약"
+   ]
   }
  ],
  "negatives": [
@@ -342,6 +412,31 @@
    "id": "HN08",
    "email": "shin.haneul@petmint.example",
    "query": "자격수당은 언제부터 나와요?"
+  },
+  {
+   "id": "HN20",
+   "email": "kwon.taeho@petmint.example",
+   "query": "월급은 언제 들어와요?"
+  },
+  {
+   "id": "HN21",
+   "email": "kwon.taeho@petmint.example",
+   "query": "제 월급에서 세금 얼마 떼요?"
+  },
+  {
+   "id": "HN22",
+   "email": "jang.minhyuk@petmint.example",
+   "query": "제가 퇴직하면 마지막 월급은 언제 받아요?"
+  },
+  {
+   "id": "HN23",
+   "email": "jang.minhyuk@petmint.example",
+   "query": "급여에서 뭐가 공제돼요?"
+  },
+  {
+   "id": "HN24",
+   "email": "noh.eunbi@petmint.example",
+   "query": "시급은 어떻게 계산해요?"
   }
  ],
  "sequences": [
@@ -574,6 +669,46 @@
    "turns": [
     "제 연차 몇 개 남았어요?",
     "고맙습니다"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HS13",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 월급 얼마예요?",
+    "그럼 통상임금은요?"
+   ],
+   "expect": [
+    "6900000"
+   ]
+  },
+  {
+   "id": "HS14",
+   "email": "noh.eunbi@petmint.example",
+   "turns": [
+    "제 통상임금 얼마예요?",
+    "그럼 월급은 언제 들어와요?"
+   ],
+   "expect": [
+    "2026년 11월 10일"
+   ]
+  },
+  {
+   "id": "HN25",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 월급 얼마예요?",
+    "세금은 얼마 떼요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN26",
+   "email": "jang.minhyuk@petmint.example",
+   "turns": [
+    "제 월급 언제 들어와요?",
+    "퇴직하면 마지막 월급은요?"
    ],
    "expect": null
   }

@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 
 from app.services.hr_personal import (Facts, annual_leave, answer, average_wage, cert_allowance, inherited_topics, ordinary_daily,
-                                      parse_date, profile, promotion, replay, sources, tenure_days, topics_of)
+                                      paid_by, parse_date, pay_date, profile, promotion, replay, sources, tenure_days, topics_of)
 
 TODAY = date(2026, 10, 28)
 
@@ -12,7 +12,7 @@ TODAY = date(2026, 10, 28)
 def facts(**kw) -> Facts:
     base = dict(employee_id="E1", name="권태호", team="고객상담팀", grade="대리", grade_since=date(2022, 3, 1),
                 employment_type="정규직", hire_date=date(2018, 1, 2), birth_date=date(1990, 1, 1), retired_on=None)
-    extra = {k: kw.pop(k) for k in ("certificates", "payroll", "leaves", "absences", "evaluations") if k in kw}
+    extra = {k: kw.pop(k) for k in ("certificates", "payroll", "pay_detail", "leaves", "absences", "evaluations") if k in kw}
     f = Facts(**(base | kw))
     for k, v in extra.items():
         setattr(f, k, v)
@@ -115,6 +115,43 @@ class RetireDate(unittest.TestCase):
         self.assertIn(f"{days:,}일", text)
         self.assertIn("퇴직 전 3개월(8~10월)", text)                 # 기록이 있는 최근 3개월
         self.assertIn("퇴직일 전 3개월(9~11월) 급여가 아직", text)
+
+
+class Pay(unittest.TestCase):
+    """급여 개인화(2026-10-28) — 제25조 개정(익월 10일, 휴일이면 그 전일)"""
+
+    def test_pay_date_holiday_shift(self):
+        self.assertEqual(pay_date(date(2026, 9, 1)), date(2026, 10, 8))      # 10/10 토 → 10/9 한글날 → 10/8
+        self.assertEqual(pay_date(date(2026, 10, 1)), date(2026, 11, 10))    # 화
+        self.assertEqual(pay_date(date(2026, 12, 1)), date(2027, 1, 8))      # 1/10 일 → 1/9 토 → 1/8 금
+        self.assertTrue(paid_by(date(2026, 9, 1), date(2026, 10, 8)))
+        self.assertFalse(paid_by(date(2026, 9, 1), date(2026, 10, 7)))
+
+    def test_triggers(self):
+        for q, t in [("제 월급 얼마예요?", ["급여"]), ("제 월급 언제 들어와요?", ["급여"]), ("제 통상임금 얼마예요?", ["통상임금"]),
+                     ("내 시급은 얼마야?", ["통상임금"])]:
+            self.assertEqual(topics_of(q), t, q)
+        for q in ["월급은 언제 들어와요?", "제 월급에서 세금 얼마 떼요?", "제가 퇴직하면 마지막 월급은 언제 받아요?",
+                  "급여에서 뭐가 공제돼요?", "시급은 어떻게 계산해요?", "제 평균임금 얼마예요?"]:
+            self.assertEqual(topics_of(q), [], q)
+
+    def test_pay_answer(self):
+        f = facts(payroll=[(date(2026, 9, 1), 4_000_000, 3_500_000)],
+                  pay_detail=[(date(2026, 9, 1), 3_200_000, 300_000, 0, 500_000), (date(2026, 10, 1), 3_200_000, 300_000, 0, 0)])
+        text, arts = answer("제 월급 얼마예요?", f, TODAY)
+        self.assertIn("9월분 세전 4,000,000원", text)
+        self.assertIn("2026년 10월 8일 지급", text)
+        self.assertIn("2026년 11월 10일(화)", text)
+        self.assertEqual(arts, [24, 25, 26])
+        when, _ = answer("제 월급 언제 들어와요?", f, TODAY)
+        self.assertNotIn("세전", when)
+
+    def test_ordinary(self):
+        f = facts(payroll=[(date(2026, 9, 1), 7_000_000, 6_900_000)])
+        text, _ = answer("제 통상임금 얼마예요?", f, TODAY)
+        self.assertIn("6,900,000원", text)
+        self.assertIn(f"{round(6_900_000 / 209):,}원", text)
+        self.assertIn(f"{round(6_900_000 / 209 * 1.5):,}원", text)
 
 
 class Leave(unittest.TestCase):
