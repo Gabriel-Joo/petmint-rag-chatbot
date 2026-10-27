@@ -318,6 +318,16 @@ kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees list
 
 Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 열 때는 petmint 호스트의 Access 정책을 풀어야 앱 로그인 화면이 바로 보인다 — 이것은 Cloudflare 대시보드에서 사람이 한다(13번 1-3절).
 
+#### 1-17. 사내규정 개인화 (2026-10-28)
+
+1-16 위에 키 하나를 더 켠다. 앱 로그인(`PETMINT_AUTH: "app"`)과 같이 켠다 — 신원이 직원 이메일이어야 원장을 찾는다(access 모드의 헤더 없음·dev@local은 원장에 없어 모델이 답한다).
+
+| ConfigMap 키 | 값 | 하는 일 | 측정 |
+| --- | --- | --- | --- |
+| `PETMINT_HR_PERSONAL` | `1` | 사내규정 모드에서 본인 지칭 + 연차 잔여·퇴직금·자격수당·승진이면 인사 원장으로 코드가 답한다(근거 조항 제17·18·3·28·27·33조) | 개인 탐침 32문항 96/96(기준은 우연 일치 19/96), 대상 밖 프롬프트(음성 8·HR 18) 78/78 같음. 업무특화·검색은 경로 밖 (`data/review/hr_personal_measure.md`) |
+
+**반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
+
 ---
 
 #### 2. 왜 이렇게 했나

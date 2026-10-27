@@ -25,6 +25,7 @@ from app.db import make_engine
 from app.routers import articles, auth, chat_ws, consultations, customers, feedback, sessions
 from app.services import policy_data
 from app.services.auth import AuthStore
+from app.services.hr_personal import EmployeeStore
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.llm import OllamaClient
 from app.services.retrieval import Retriever
@@ -48,7 +49,8 @@ async def lifespan(app: FastAPI):
     if missing:
         raise RuntimeError(f"{config.DB!r}에 적용되지 않은 마이그레이션: {missing} — python -m db.migrate")
     app.state.sessions = SessionStore(engine)
-    app.state.auth = AuthStore(engine, core)                          # 로그인(PETMINT_AUTH=app). access 모드도 /api/auth/me가 쓴다
+    app.state.auth = AuthStore(engine, core)
+    app.state.employees = EmployeeStore(core)                         # 사내규정 개인화(PETMINT_HR_PERSONAL) — 인사 원장, SELECT만                          # 로그인(PETMINT_AUTH=app). access 모드도 /api/auth/me가 쓴다
     app.state.turn_log = TurnLogStore(engine)
     app.state.llm = OllamaClient(config.OLLAMA_URL)
     # 검색(GPU)은 호스트 search-service. 기동 때 닿는지 보지 않는다 — 아직 배포 전이고, 없으면 턴이 search_unavailable로 끝난다

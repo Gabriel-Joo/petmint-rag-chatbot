@@ -40,7 +40,7 @@ from app.db import now, utc
 from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, ExclusionsMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
                          TablesMsg,
                          Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
-from app.services import customer_facts, guardrail, payout, tables
+from app.services import customer_facts, guardrail, hr_personal, payout, tables
 from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
@@ -125,6 +125,7 @@ class TurnDeps:
     retriever: Retriever
     builder: ContextBuilder
     llm: OllamaClient
+    employees: "hr_personal.EmployeeStore | None" = None      # 사내규정 개인화(PETMINT_HR_PERSONAL) — 인사 원장
 
 
 @dataclass
@@ -291,6 +292,19 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
     r = _r(ctx)
+    if mode == "사내규정" and config.HR_PERSONAL and deps.employees is not None:
+        # 개인화(2026-10-28) — 본인 지칭 + 연차·퇴직금·자격수당·승진이면 인사 원장으로 코드가 답한다. 지금 질문 글자만 본다
+        facts = await asyncio.to_thread(deps.employees.load, ctx.session.agent_email)
+        out = hr_personal.answer(ctx.question, facts, payout.today())
+        if out is not None:
+            text, articles = out
+            refs = hr_personal.references(articles, deps.builder.chunks.get("인사규정", []))
+            ctx.answer = text
+            ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
+            yield TokenMsg(turn_id=ctx.turn_id, text=text)
+            yield ReferencesMsg(turn_id=ctx.turn_id, items=refs)
+            ctx.log = _turn_log(ctx, "ok", refs, [], [])
+            return
     if r.after_amount_ask:
         # 코드가 되물은 턴(금액·날짜별 금액·일수) 바로 뒤 — 모델을 부르지 않고 카드와 같은 계산 결과로 답한다(payout.reply_turn):
         # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md). 날짜별 금액이 필요하면
