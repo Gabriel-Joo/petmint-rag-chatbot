@@ -12,7 +12,7 @@
 
 ### 1. 최종 설계
 
-#### 1-1. 테이블 다섯
+#### 1-1. 테이블 다섯(+ 로그인 둘)
 
 ```
 sessions (상담 1건)
@@ -100,6 +100,32 @@ sessions (상담 1건)
 **feedback — 상담원 평가**
 
 `turn_id`(PK/FK), `rating`, `comment`, `created_at`. 원본 로그는 고치지 않고 따로 쌓는다.
+
+**accounts·auth_sessions — 앱 로그인(2026-10-28, 0006)**
+
+직원 신원은 기간계 인사 원장(아래)에 있고, 여기에는 앱이 쓰는 값만 둔다. `employee_id`는 다른 데이터베이스라 외래키를 걸지 않는다(`customer_id`와 같은 경계). `sessions.agent_email`도 그대로다 — 로그인한 직원의 이메일이 들어가고, 퇴직자의 상담 기록이 남아야 하므로 외래키를 걸지 않는다.
+
+| 테이블 | 칼럼 |
+| --- | --- |
+| accounts | `employee_id`(PK) · `role`(상담원·관리자) · `password_hash`(argon2id, NULL이면 로그인 불가) · `must_change_password` · `failed_count` · `locked_until` · `disabled_at` · `password_changed_at` · `last_login_at` · `created_at` |
+| auth_sessions | `token_hash`(PK, 쿠키 토큰의 SHA-256) · `employee_id`(FK → accounts, CASCADE) · `created_at` · `last_seen_at` · `expires_at` · `ip` · `user_agent` |
+
+**인사 원장 — insurance_core 0003(2026-10-28)**
+
+고객 원장과 같은 기간계 흉내다(`petmint_app`은 SELECT만). 로그인 신원과, 다음 단계의 **사내규정 개인화**(업무특화가 고객 원장을 쓰듯)가 이 사실을 쓴다. 칸은 인사규정이 계산에 쓰는 것에서 정했다. 계산 규칙은 저장하지 않는다 — 인사규정 본문(청크)에 있다.
+
+| 테이블 | 칼럼 | 쓰는 규정 |
+| --- | --- | --- |
+| employees | `employee_id`(사번) · `name` · `email` · `team` · `grade`(사원~부장) · `grade_since` · `employment_type`(정규직·계약직·파견직) · `hire_date` · `career_hire` · `birth_date` · `retired_on` | 근속(제3조 5호) · 수습 90%와 경력직 면제(제7조) · 계약직은 급여·퇴직 개별계약(제2조 ③) · 승진 체류연수(제33조 ②) · 정년 만 60세(제43조) · 출장비 직급(별표1) |
+| employee_certificates | `cert_name` · `acquired_on` · `submitted_on` | 자격수당 — 사본 낸 다음 달부터, 둘 이상이면 큰 것 하나(제27조) |
+| employee_payroll | `pay_month` · `base_pay` · `fixed_allowances` · `overtime_pay` · `bonus` · `ordinary_wage` · `total_pay`(생성 칼럼) | 평균임금 = 이전 3개월 임금총액 ÷ 총일수(제3조 4호) → 퇴직금(제28조), 미사용 연차수당·가산수당은 통상임금(제17조 ⑤·제12조) |
+| employee_leaves | `leave_type`(연차·병가·경조·특별) · `start_date` · `end_date` · `days`(반차 0.5) | 연차 잔여 = 부여(제17조) − 사용(제18조 ②) · 병가 연 60일·유급 30일(제20조) |
+| employee_absences | `kind`(질병·육아·가족돌봄·학업·병역휴직) · `start_date` · `end_date` | 육아·병역만 근속 산입(제22조 ④) |
+| employee_evaluations | `period`('2026-H1') · `grade`(S~D) | 최근 2회 연속 D면 승진 제외(제33조 ③) |
+
+직원은 전부 가상이다 — `db/fixtures/employees.json`(11명, `make_employees.py`가 만든다). 근속 25년(정년 임박)부터 수습 중 2개월까지, 사원~부장, 체류연수를 채운 사람과 못 채운 사람, 2회 연속 D, 자격 없음·하나·둘·사본 미제출·제출 다음 달, 육아(산입)·질병·가족돌봄(불산입) 휴직, 계약직, 퇴직자가 고루 들어 있다. 고객 픽스처와 달리 저장소에 둔다(가상이라 개인정보가 없다). 시드는 `db.seed_insurance_core`가 함께 깔고, `--if-empty`면 직원 테이블이 비어 있을 때만 깐다.
+
+출근율(제17조 ① 80%)과 1년 미만 월 개근(제17조 ②)은 담지 않았다 — 근태 기록이 없으면 개근으로 본다. 개인화 단계에서 필요하면 근태 테이블을 더한다.
 
 #### 1-2. 개발은 호스트 도커, 배포는 K8s
 
@@ -206,6 +232,7 @@ UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구�
 
 - **중복이 있다.** 같은 scope가 턴마다 반복된다. 정확성과 바꿔 받은 것이다
 - **보관 정책이 없다.** 일단 전부 남기고, 데이터가 쌓인 뒤에 오래된 본문을 비우는 정책을 붙인다
+- **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다)
 - **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절.
 
 ---
