@@ -63,7 +63,8 @@ async def chat(ws: WebSocket, session_id: str):
     store: SessionStore = ws.app.state.sessions
     turn_log: TurnLogStore = ws.app.state.turn_log
     customers: CustomerStore = ws.app.state.customers
-    deps = TurnDeps(retriever=ws.app.state.retriever, builder=ws.app.state.builder, llm=ws.app.state.llm)
+    deps = TurnDeps(retriever=ws.app.state.retriever, builder=ws.app.state.builder, llm=ws.app.state.llm,
+                    employees=getattr(ws.app.state, "employees", None))
     me = None
     if config.AUTH == "app":                       # 쿠키 로그인(13번 2-1절) — 거절은 accept 뒤 코드로 닫는다(4404와 같은 방식)
         me = None if not origin_ok(ws) else await asyncio.to_thread(session_me, ws)

@@ -1,0 +1,338 @@
+{
+ "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다",
+ "today": "2026-10-28",
+ "cases": [
+  {
+   "id": "HP01",
+   "email": "hong.gildong@petmint.example",
+   "topic": "연차",
+   "query": "제 연차 몇 개 남았어요?",
+   "expect": [
+    "14일"
+   ]
+  },
+  {
+   "id": "HP02",
+   "email": "hong.gildong@petmint.example",
+   "topic": "퇴직금",
+   "query": "지금 퇴사하면 제 퇴직금 얼마쯤 돼요?",
+   "expect": [
+    "200089547"
+   ]
+  },
+  {
+   "id": "HP03",
+   "email": "hong.gildong@petmint.example",
+   "topic": "자격수당",
+   "query": "제 자격수당 얼마 받고 있어요?",
+   "expect": [
+    "200000"
+   ]
+  },
+  {
+   "id": "HP04",
+   "email": "hong.gildong@petmint.example",
+   "topic": "승진",
+   "query": "저 언제 승진할 수 있어요?",
+   "expect": [
+    "부장"
+   ]
+  },
+  {
+   "id": "HP05",
+   "email": "kim.minji@petmint.example",
+   "topic": "연차",
+   "query": "내 연차휴가 며칠 남았지?",
+   "expect": [
+    "17.5일"
+   ]
+  },
+  {
+   "id": "HP06",
+   "email": "kim.minji@petmint.example",
+   "topic": "퇴직금",
+   "query": "내 퇴직금 예상액 알려줘",
+   "expect": [
+    "114339309"
+   ]
+  },
+  {
+   "id": "HP07",
+   "email": "kim.minji@petmint.example",
+   "topic": "자격수당",
+   "query": "제 자격수당은 얼마예요?",
+   "expect": [
+    "200000"
+   ]
+  },
+  {
+   "id": "HP08",
+   "email": "kim.minji@petmint.example",
+   "topic": "승진",
+   "query": "제가 부장 되려면 얼마나 남았나요?",
+   "expect": [
+    "2026년 1월 1일"
+   ]
+  },
+  {
+   "id": "HP09",
+   "email": "choi.hyunwoo@petmint.example",
+   "topic": "연차",
+   "query": "저 올해 연차 얼마나 남았나요?",
+   "expect": [
+    "6일"
+   ]
+  },
+  {
+   "id": "HP10",
+   "email": "choi.hyunwoo@petmint.example",
+   "topic": "퇴직금",
+   "query": "제 퇴직금 얼마예요?",
+   "expect": [
+    "41912327"
+   ]
+  },
+  {
+   "id": "HP11",
+   "email": "choi.hyunwoo@petmint.example",
+   "topic": "자격수당",
+   "query": "내 자격수당 얼마야?",
+   "expect": [
+    "정보처리기사",
+    "사본"
+   ]
+  },
+  {
+   "id": "HP12",
+   "email": "choi.hyunwoo@petmint.example",
+   "topic": "승진",
+   "query": "저 과장 승진 언제 돼요?",
+   "expect": [
+    "D"
+   ]
+  },
+  {
+   "id": "HP13",
+   "email": "jung.daeun@petmint.example",
+   "topic": "연차",
+   "query": "제 연차 잔여일수 알려주세요",
+   "expect": [
+    "14.5일"
+   ]
+  },
+  {
+   "id": "HP14",
+   "email": "jung.daeun@petmint.example",
+   "topic": "퇴직금",
+   "query": "지금 그만두면 제 퇴직금은요?",
+   "expect": [
+    "31331284"
+   ]
+  },
+  {
+   "id": "HP15",
+   "email": "jung.daeun@petmint.example",
+   "topic": "자격수당",
+   "query": "제 자격수당 얼마인가요?",
+   "expect": [
+    "50000"
+   ]
+  },
+  {
+   "id": "HP16",
+   "email": "jung.daeun@petmint.example",
+   "topic": "승진",
+   "query": "저 승진하려면 몇 년 남았어요?",
+   "expect": [
+    "2028년 3월 1일"
+   ]
+  },
+  {
+   "id": "HP17",
+   "email": "han.subin@petmint.example",
+   "topic": "연차",
+   "query": "내 연차 몇 개 남았어?",
+   "expect": [
+    "16일"
+   ]
+  },
+  {
+   "id": "HP18",
+   "email": "han.subin@petmint.example",
+   "topic": "퇴직금",
+   "query": "제 퇴직금 얼마나 돼요?",
+   "expect": [
+    "18061769"
+   ]
+  },
+  {
+   "id": "HP19",
+   "email": "han.subin@petmint.example",
+   "topic": "자격수당",
+   "query": "제 자격수당 얼마예요?",
+   "expect": [
+    "200000"
+   ]
+  },
+  {
+   "id": "HP20",
+   "email": "han.subin@petmint.example",
+   "topic": "승진",
+   "query": "제가 대리 승진 가능한가요?",
+   "expect": [
+    "2026년 7월 4일"
+   ]
+  },
+  {
+   "id": "HP21",
+   "email": "kang.doyun@petmint.example",
+   "topic": "연차",
+   "query": "제 연차 며칠 남았어요?",
+   "expect": [
+    "7.5일"
+   ]
+  },
+  {
+   "id": "HP22",
+   "email": "kang.doyun@petmint.example",
+   "topic": "퇴직금",
+   "query": "저 지금 퇴사하면 퇴직금 나와요?",
+   "expect": [
+    "1년"
+   ]
+  },
+  {
+   "id": "HP23",
+   "email": "kang.doyun@petmint.example",
+   "topic": "자격수당",
+   "query": "내 자격수당은?",
+   "expect": [
+    "없"
+   ]
+  },
+  {
+   "id": "HP24",
+   "email": "kang.doyun@petmint.example",
+   "topic": "승진",
+   "query": "저 언제 대리 될 수 있어요?",
+   "expect": [
+    "2029년 12월 1일"
+   ]
+  },
+  {
+   "id": "HP25",
+   "email": "yoon.seoyeon@petmint.example",
+   "topic": "연차",
+   "query": "제 연차 몇 개예요?",
+   "expect": [
+    "1일"
+   ]
+  },
+  {
+   "id": "HP26",
+   "email": "yoon.seoyeon@petmint.example",
+   "topic": "퇴직금",
+   "query": "제 퇴직금 얼마예요?",
+   "expect": [
+    "1년"
+   ]
+  },
+  {
+   "id": "HP27",
+   "email": "yoon.seoyeon@petmint.example",
+   "topic": "자격수당",
+   "query": "제 자격수당 언제부터 나와요?",
+   "expect": [
+    "11월",
+    "100000"
+   ]
+  },
+  {
+   "id": "HP28",
+   "email": "yoon.seoyeon@petmint.example",
+   "topic": "승진",
+   "query": "저 승진 언제 할 수 있어요?",
+   "expect": [
+    "2030년 9월 1일"
+   ]
+  },
+  {
+   "id": "HP29",
+   "email": "lim.jaehyun@petmint.example",
+   "topic": "연차",
+   "query": "제 연차 몇 개 남았어요?",
+   "expect": [
+    "개별근로계약"
+   ]
+  },
+  {
+   "id": "HP30",
+   "email": "lim.jaehyun@petmint.example",
+   "topic": "퇴직금",
+   "query": "제 퇴직금 얼마예요?",
+   "expect": [
+    "개별근로계약"
+   ]
+  },
+  {
+   "id": "HP31",
+   "email": "lim.jaehyun@petmint.example",
+   "topic": "자격수당",
+   "query": "내 자격수당 얼마?",
+   "expect": [
+    "개별근로계약"
+   ]
+  },
+  {
+   "id": "HP32",
+   "email": "lee.seojun@petmint.example",
+   "topic": "승진",
+   "query": "제가 차장 승진 대상인가요?",
+   "expect": [
+    "2026년 3월 1일"
+   ]
+  }
+ ],
+ "negatives": [
+  {
+   "id": "HN01",
+   "email": "hong.gildong@petmint.example",
+   "query": "연차는 몇 개 나와요?"
+  },
+  {
+   "id": "HN02",
+   "email": "hong.gildong@petmint.example",
+   "query": "퇴직금은 어떻게 계산해요?"
+  },
+  {
+   "id": "HN03",
+   "email": "choi.hyunwoo@petmint.example",
+   "query": "손해사정사 따면 자격수당 얼마예요?"
+  },
+  {
+   "id": "HN04",
+   "email": "choi.hyunwoo@petmint.example",
+   "query": "과장에서 차장 되려면 몇 년 있어야 해요?"
+  },
+  {
+   "id": "HN05",
+   "email": "jung.daeun@petmint.example",
+   "query": "할머니가 돌아가셨는데 제 경조휴가는 며칠이에요?"
+  },
+  {
+   "id": "HN06",
+   "email": "jung.daeun@petmint.example",
+   "query": "제 병가는 며칠까지 쓸 수 있어요?"
+  },
+  {
+   "id": "HN07",
+   "email": "han.subin@petmint.example",
+   "query": "제가 재택근무 며칠까지 되나요?"
+  },
+  {
+   "id": "HN08",
+   "email": "han.subin@petmint.example",
+   "query": "자격수당은 언제부터 나와요?"
+  }
+ ]
+}
