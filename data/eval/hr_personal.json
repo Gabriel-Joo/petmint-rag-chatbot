@@ -1,5 +1,5 @@
 {
- "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다",
+ "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다 · 2026-10-28 후속(sequences) 추가 — 운영에서 본인 연차 뒤 '연차 미사용분은 얼마 받나요?'가 모델로 갔다. HS는 이어받아야, HN은 모델로",
  "today": "2026-10-28",
  "cases": [
   {
@@ -291,6 +291,15 @@
    "expect": [
     "2026년 3월 1일"
    ]
+  },
+  {
+   "id": "HP33",
+   "email": "hong.gildong@petmint.example",
+   "topic": "연차수당",
+   "query": "제 연차 미사용 수당은 얼마예요?",
+   "expect": [
+    "3697608"
+   ]
   }
  ],
  "negatives": [
@@ -333,6 +342,99 @@
    "id": "HN08",
    "email": "han.subin@petmint.example",
    "query": "자격수당은 언제부터 나와요?"
+  }
+ ],
+ "sequences": [
+  {
+   "id": "HS01",
+   "email": "hong.gildong@petmint.example",
+   "turns": [
+    "제 연차는 몇 개 남았나요?",
+    "연차 미사용분은 얼마 받나요?"
+   ],
+   "expect": [
+    "3697608"
+   ]
+  },
+  {
+   "id": "HS02",
+   "email": "hong.gildong@petmint.example",
+   "turns": [
+    "제 연차 몇 개 남았어요?",
+    "미사용분은요?"
+   ],
+   "expect": [
+    "3697608"
+   ]
+  },
+  {
+   "id": "HS03",
+   "email": "kim.minji@petmint.example",
+   "turns": [
+    "내 연차휴가 며칠 남았지?",
+    "그럼 퇴직금은요?"
+   ],
+   "expect": [
+    "114339309"
+   ]
+  },
+  {
+   "id": "HS04",
+   "email": "choi.hyunwoo@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "그럼 자격수당은요?"
+   ],
+   "expect": [
+    "정보처리기사"
+   ]
+  },
+  {
+   "id": "HS05",
+   "email": "jung.daeun@petmint.example",
+   "turns": [
+    "제 연차 잔여일수 알려주세요",
+    "미사용 수당은 얼마나 나와요?"
+   ],
+   "expect": [
+    "2247847"
+   ]
+  },
+  {
+   "id": "HN09",
+   "email": "hong.gildong@petmint.example",
+   "turns": [
+    "연차는 몇 개 나와요?",
+    "미사용분은 얼마 받나요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN10",
+   "email": "hong.gildong@petmint.example",
+   "turns": [
+    "제 연차 몇 개 남았어요?",
+    "재택근무는 며칠까지 돼요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN11",
+   "email": "choi.hyunwoo@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "과장은 몇 년 있어야 차장 돼요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN12",
+   "email": "han.subin@petmint.example",
+   "turns": [
+    "제 자격수당 얼마예요?",
+    "퇴직금은 어떻게 계산해요?"
+   ],
+   "expect": null
   }
  ]
 }

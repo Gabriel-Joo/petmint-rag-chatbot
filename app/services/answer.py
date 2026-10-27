@@ -182,6 +182,13 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
         context = _r(ctx).message(ctx.turn_id)
         if context is not None:                 # 후속 질문 — 앞 대화로 어떻게 풀었는지(화면의 ↳ 줄)
             yield context
+        if ctx.session.mode == "사내규정" and config.HR_PERSONAL and deps.employees is not None:
+            done = False
+            async for m in _hr_personal(ctx, deps):
+                done = True
+                yield m
+            if done:
+                return
         if ctx.scope is not None:
             try:
                 adjust = (human_article_adjust(config.HUMAN_DEMOTE, config.TWIN_ARTICLE)
@@ -292,19 +299,6 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
     r = _r(ctx)
-    if mode == "사내규정" and config.HR_PERSONAL and deps.employees is not None:
-        # 개인화(2026-10-28) — 본인 지칭 + 연차·퇴직금·자격수당·승진이면 인사 원장으로 코드가 답한다. 지금 질문 글자만 본다
-        facts = await asyncio.to_thread(deps.employees.load, ctx.session.agent_email)
-        out = hr_personal.answer(ctx.question, facts, payout.today())
-        if out is not None:
-            text, articles = out
-            refs = hr_personal.references(articles, deps.builder.chunks.get("인사규정", []))
-            ctx.answer = text
-            ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
-            yield TokenMsg(turn_id=ctx.turn_id, text=text)
-            yield ReferencesMsg(turn_id=ctx.turn_id, items=refs)
-            ctx.log = _turn_log(ctx, "ok", refs, [], [])
-            return
     if r.after_amount_ask:
         # 코드가 되물은 턴(금액·날짜별 금액·일수) 바로 뒤 — 모델을 부르지 않고 카드와 같은 계산 결과로 답한다(payout.reply_turn):
         # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md). 날짜별 금액이 필요하면
@@ -446,6 +440,27 @@ def _log_prompt(ctx: TurnContext, messages: list[dict], options: dict, results: 
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
         log.exception("프롬프트 기록 실패: %s", config.PROMPT_LOG)
+
+
+async def _hr_personal(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMessage]:
+    """사내규정 개인화(2026-10-28) — 본인 연차·연차수당·퇴직금·자격수당·승진이면 인사 원장으로 코드가 답한다. 걸리지 않으면 아무것도 내지 않는다.
+    검색보다 먼저 정한다: 근거 조항(sources)은 검색 결과가 아니라 코드가 실제로 쓴 조항이다 — 검색 결과를 내보내면 연차 답에
+    제43조(정년)·제33조(승진)가 붙었다(운영). 지금 질문에 본인 지칭이 없어도 바로 앞 질문이 개인화였으면 이어받는다(hr_personal.inherited_topics)"""
+    r = _r(ctx)
+    facts = await asyncio.to_thread(deps.employees.load, ctx.session.agent_email)
+    out = hr_personal.answer(ctx.question, facts, payout.today(), r.prior_question, bool(r.follow_up))
+    if out is None:
+        return
+    text, articles = out
+    chunks = deps.builder.chunks.get(HR_CORPUS, [])
+    ctx.sources = hr_personal.sources(articles, chunks)
+    yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
+    refs = hr_personal.references(articles, chunks)
+    ctx.answer = text
+    ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
+    yield TokenMsg(turn_id=ctx.turn_id, text=text)
+    yield ReferencesMsg(turn_id=ctx.turn_id, items=refs)
+    ctx.log = _turn_log(ctx, "ok", refs, [], [])
 
 
 def _code_answer(ctx: TurnContext, card: CalcResult | None, text: str, ask: bool = True) -> list[ServerMessage]:
