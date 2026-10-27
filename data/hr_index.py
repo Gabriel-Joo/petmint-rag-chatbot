@@ -68,7 +68,9 @@ def main(argv=None):
              "citations_raw": ", ".join(x["raw"] for x in c["citations"]) or None,
              "context_prefix": c["context_prefix"], "effective_date": c["effective_date"]} for c, v in zip(chunks, vecs)]
     client.insert(collection_name=name, data=rows)
-    n = len(client.query(collection_name=name, filter="chunk_index >= 0", output_fields=["chunk_index"], limit=1000))
+    client.flush(name)     # 넣은 직후 세면 0행으로 나와 assert가 떨어졌다(2026-10-28 — 적재는 됐다). 비우고 강한 일관성으로 센다
+    n = len(client.query(collection_name=name, filter="chunk_index >= 0", output_fields=["chunk_index"], limit=1000,
+                         consistency_level="Strong"))
     print(f"{name}: {n}행 적재(청크 {len(chunks)}개)")
     assert n == len(chunks)
     if args.search_check:

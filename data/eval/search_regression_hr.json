@@ -496,6 +496,44 @@
    ],
    "k": 5,
    "note": "부칙 제3조(규정의 개정) — 본칙 제3조(용어의 정의)와 구분"
+  },
+  {
+   "id": "H025",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "월급은 매달 언제 들어와요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제5장 급여",
+     "article_num": 25,
+     "evidence": "익월 10일에 지급한다"
+    }
+   ],
+   "k": 5,
+   "note": "2026-10-28 제25조 ① 개정(당월 25일 → 익월 10일) — 개정 문구로 찾는지"
+  },
+  {
+   "id": "H026",
+   "species": "인사규정",
+   "category": "일반",
+   "scope": {
+    "kind": "unrestricted"
+   },
+   "query": "급여일이 휴일이면 언제 받아요?",
+   "gold": [
+    {
+     "section": "본칙",
+     "section_name": "제5장 급여",
+     "article_num": 25,
+     "evidence": "지급일이 휴일인 경우 그 전일에 지급한다"
+    }
+   ],
+   "k": 5,
+   "note": "2026-10-28 제25조 ② — 개정하지 않은 항이 그대로인지"
   }
  ]
 }

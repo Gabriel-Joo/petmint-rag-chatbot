@@ -156,9 +156,19 @@ def tenure_days(f: Facts, today: date) -> tuple[int, int]:
     return (today - f.hire_date).days - excluded, excluded
 
 
+PAY_DAY = 10                                 # 제25조 ① 2026-10-28 개정 — 산정기간(1일~말일)의 급여를 익월 10일에 지급
+
+
+def paid_by(month: date, on: date) -> bool:
+    """그 달 급여가 on까지 지급됐나 — 익월 10일(제25조 ①). 평균임금은 '지급된 임금'이다(제3조 4호).
+    휴일이면 그 전일에 지급하지만(②) 앞당겨질 뿐이라 10일로 본다(9일 이전 휴일 판정은 하지 않는다)"""
+    pay = _add_months(date(month.year, month.month, 1), 1).replace(day=PAY_DAY)
+    return pay <= on
+
+
 def average_wage(f: Facts, today: date) -> tuple[float, list[date], int, int] | None:
     """제3조 4호 — 최근 다 끝난 급여 달 3개의 임금총액 ÷ 그 기간 총일수. 3개월치가 없으면 None"""
-    done = [(m, t) for m, t, _ in f.payroll if (m.year, m.month) < (today.year, today.month)][-3:]   # today = 기준일(퇴직 예정일)
+    done = [(m, t) for m, t, _ in f.payroll if paid_by(m, today)][-3:]   # today = 기준일(퇴직 예정일)
     if len(done) < 3:
         return None
     first, last = done[0][0], done[-1][0]
@@ -240,7 +250,7 @@ def _leave_at(f: Facts, today: date, end: date, a: dict, money: bool) -> tuple[s
 
 def ordinary_daily(f: Facts, today: date) -> tuple[int, date, float] | None:
     """하루 통상임금 — 가장 최근 끝난 급여 달의 월 통상임금 ÷ 209시간 × 8시간. (월 통상임금, 그 달, 하루) 또는 None"""
-    done = [(m, o) for m, _, o in f.payroll if (m.year, m.month) < (today.year, today.month)]
+    done = [(m, o) for m, _, o in f.payroll if paid_by(m, today)]
     if not done:
         return None
     month, monthly = done[-1]
