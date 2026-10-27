@@ -27,7 +27,7 @@ CERT_PAY = {"손해사정사": 200_000, "보험계리사": 200_000, "공인회�
             "손해평가사": 100_000, "정보처리기사": 50_000}                       # 제27조 ① 표
 PROMOTION_YEARS = {"사원": ("대리", 4), "대리": ("과장", 4), "과장": ("차장", 5), "차장": ("부장", 5)}   # 제33조 ②
 COUNTED_ABSENCE = ("육아휴직", "병역휴직")                                         # 제22조 ④ 근속 산입
-ARTICLES = {43: "정년", 17: "연차유급휴가", 18: "연차휴가의 사용", 2: "적용범위", 3: "용어의 정의", 22: "휴직", 27: "자격수당",
+ARTICLES = {7: "수습", 12: "연장·야간·휴일근로", 24: "급여의 구성", 25: "급여의 지급", 26: "급여의 공제", 43: "정년", 17: "연차유급휴가", 18: "연차휴가의 사용", 2: "적용범위", 3: "용어의 정의", 22: "휴직", 27: "자격수당",
             28: "퇴직금", 32: "인사평가", 33: "승진", 41: "퇴직의 사유", 11: "근무시간"}
 
 _SELF = re.compile(r"(?:^|[\s,])(?:내|제|저|나)(?:\s|가|는|도|의)|저희\s*직원으로서|본인")
@@ -38,6 +38,10 @@ _UNUSED = re.compile(r"미사용|수당")
 _AMOUNT = re.compile(r"얼마|금액|받|나와|나오")
 _SEVERANCE = re.compile(r"퇴직금")
 _GRADE = re.compile(r"사원|대리|과장|차장|부장")
+_PAY = re.compile(r"월급|급여|봉급|임금|월급날")
+_ORDINARY = re.compile(r"통상\s*임금|통상\s*시급|시급|일급")
+_PAY_NOT = re.compile(r"세금|공제|실수령|떼|퇴직금|자격\s*수당|연차|평균\s*임금|통상|시급|일급")
+_WHEN = re.compile(r"언제|며칠|날짜|급여일|월급날|들어와|들어오|입금")
 _RETIRE = re.compile(r"퇴직|퇴사|그만\s*두|그만두|관두|그만\s*나|마지막\s*(?:근무|출근)")
 _YMD = re.compile(r"(\d{4})\s*[년./-]\s*(\d{1,2})\s*[월./-]\s*(\d{1,2})\s*일?")
 _MD = re.compile(r"(?:(올해|내년|후년)\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일")
@@ -65,6 +69,7 @@ class Facts:
     career_hire: bool = False                                                         # 경력직 — 수습 면제(제7조 ⑤)
     certificates: list[tuple[str, date, date | None]] = field(default_factory=list)   # (자격, 취득일, 사본 제출일)
     payroll: list[tuple[date, int, int]] = field(default_factory=list)                # (급여 달 1일, 임금총액, 월 통상임금)
+    pay_detail: list[tuple[date, int, int, int, int]] = field(default_factory=list)  # (급여 달, 기본급, 정기 수당, 연장 수당, 상여)
     leaves: list[tuple[str, date, float]] = field(default_factory=list)               # (종류, 시작일, 일수)
     absences: list[tuple[str, date, date]] = field(default_factory=list)              # (휴직 종류, 시작, 끝)
     evaluations: list[tuple[str, str]] = field(default_factory=list)                  # (기간, 등급) 오래된 것부터
@@ -86,8 +91,10 @@ class EmployeeStore:
             f = Facts(*e)
             f.certificates = [tuple(r) for r in c.execute(text(
                 "SELECT cert_name, acquired_on, submitted_on FROM employee_certificates WHERE employee_id = :e"), eid)]
-            f.payroll = [(r[0], int(r[1]), int(r[2])) for r in c.execute(text(
-                "SELECT pay_month, total_pay, ordinary_wage FROM employee_payroll WHERE employee_id = :e ORDER BY pay_month"), eid)]
+            rows = c.execute(text("SELECT pay_month, total_pay, ordinary_wage, base_pay, fixed_allowances, overtime_pay, bonus"
+                                  " FROM employee_payroll WHERE employee_id = :e ORDER BY pay_month"), eid).all()
+            f.payroll = [(r[0], int(r[1]), int(r[2])) for r in rows]
+            f.pay_detail = [(r[0], int(r[3]), int(r[4]), int(r[5]), int(r[6])) for r in rows]
             f.leaves = [(r[0], r[1], float(r[2])) for r in c.execute(text(
                 "SELECT leave_type, start_date, days FROM employee_leaves WHERE employee_id = :e"), eid)]
             f.absences = [tuple(r) for r in c.execute(text(
@@ -159,11 +166,25 @@ def tenure_days(f: Facts, today: date) -> tuple[int, int]:
 PAY_DAY = 10                                 # 제25조 ① 2026-10-28 개정 — 산정기간(1일~말일)의 급여를 익월 10일에 지급
 
 
+# 양력 고정 공휴일(월, 일) — 설·추석·부처님오신날(음력)과 대체공휴일은 넣지 않는다(답에 밝힌다)
+FIXED_HOLIDAYS = {(1, 1), (3, 1), (5, 5), (6, 6), (8, 15), (10, 3), (10, 9), (12, 25)}
+
+
+def is_holiday(d: date) -> bool:
+    return d.weekday() >= 5 or (d.month, d.day) in FIXED_HOLIDAYS
+
+
+def pay_date(month: date) -> date:
+    """그 달(산정기간 1일~말일) 급여의 지급일 — 익월 10일, 휴일이면 그 전일(제25조 ①②). 전일도 휴일이면 더 앞으로"""
+    d = _add_months(date(month.year, month.month, 1), 1).replace(day=PAY_DAY)
+    while is_holiday(d):
+        d -= timedelta(days=1)
+    return d
+
+
 def paid_by(month: date, on: date) -> bool:
-    """그 달 급여가 on까지 지급됐나 — 익월 10일(제25조 ①). 평균임금은 '지급된 임금'이다(제3조 4호).
-    휴일이면 그 전일에 지급하지만(②) 앞당겨질 뿐이라 10일로 본다(9일 이전 휴일 판정은 하지 않는다)"""
-    pay = _add_months(date(month.year, month.month, 1), 1).replace(day=PAY_DAY)
-    return pay <= on
+    """그 달 급여가 on까지 지급됐나. 평균임금은 '지급된 임금'이다(제3조 4호)"""
+    return pay_date(month) <= on
 
 
 def average_wage(f: Facts, today: date) -> tuple[float, list[date], int, int] | None:
@@ -306,6 +327,62 @@ def _severance_text(f: Facts, today: date, end: date | None = None) -> tuple[str
     return "\n".join(lines), arts + ([43] if end is not None and end > retire else [])
 
 
+_WEEKDAY = "월화수목금토일"
+
+
+def _ymdw(d: date) -> str:
+    return f"{_ymd(d)}({_WEEKDAY[d.weekday()]})"
+
+
+def _pay_text(f: Facts, today: date, question: str) -> tuple[str, list[int]]:
+    """급여 — 최근 지급된 달의 세전 내역과 다음 지급일. 지급일만 물으면 지급일만. 공제(세금·4대보험)는 원장에 없다"""
+    rows = {m: (b, fx, ot, bo) for m, b, fx, ot, bo in f.pay_detail}
+    paid = [m for m in sorted(rows) if paid_by(m, today)]
+    this = date(today.year, today.month, 1)
+    pending = next((m for m in sorted(set(rows) | {this}) if not paid_by(m, today) and m <= this), this)
+    nxt = f"{pending.month}월분(산정기간 {pending.month}월 1일~말일)은 **{_ymdw(pay_date(pending))}**에 지급됩니다"
+    holiday = ("" if pay_date(pending).day == PAY_DAY else " — 10일이 휴일이라 그 전일로 앞당겼습니다")
+    note = "- 지급일은 익월 10일, 휴일이면 그 전일입니다(제25조). 주말과 양력 공휴일만 따졌고 설·추석 같은 음력 공휴일·대체공휴일은 반영하지 않았습니다."
+    if _WHEN.search(question) and not re.search(r"얼마|금액|내역|명세", question):
+        return f"{_who(f)}의 {nxt}{holiday}.\n{note}", [25]
+    if not paid:
+        return f"{_who(f)}은 아직 지급된 급여가 없습니다. 첫 급여인 {nxt}{holiday}.\n{note}", [25]
+    m = paid[-1]
+    base, fixed, ot, bonus = rows[m]
+    cert = cert_allowance(f, m)["amount"]
+    lines = [f"{_who(f)}의 최근 지급 급여는 **{m.month}월분 세전 {_won(base + fixed + ot + bonus)}**({_ymd(pay_date(m))} 지급)입니다.",
+             f"- 기본급 {_won(base)} · 정기 수당 {_won(fixed)}(식대·교통비" + (f"·자격수당 {_won(cert)}" if cert else "") + ")"
+             + f" · 연장·야간·휴일근로수당 {_won(ot)}" + (f" · 상여 {_won(bonus)}" if bonus else ""),
+             f"- {nxt}{holiday}.", note,
+             "- 세금·4대보험 등 공제(제26조)는 인사 원장에 없어 실수령액은 급여명세서로 확인하세요."]
+    arts = [24, 25, 26]
+    end = probation_end(f)
+    if end is not None and m <= end:
+        lines.insert(2, f"- 수습 기간(~{_ymd(end)})이라 기본급은 정규 급여의 90%입니다(제7조 ②).")
+        arts.append(7)
+    return "\n".join(lines), arts
+
+
+def probation_end(f: Facts) -> date | None:
+    """수습이 끝나는 날(입사일부터 3개월, 경력직은 없음) — 정규직만"""
+    if f.employment_type != "정규직" or f.career_hire:
+        return None
+    return _add_months(f.hire_date, 3) - timedelta(days=1)
+
+
+def _ordinary_text(f: Facts, today: date) -> tuple[str, list[int]]:
+    d = ordinary_daily(f, today)
+    if d is None:
+        return f"{_who(f)}의 지급된 급여 기록이 없어 통상임금을 계산할 수 없습니다. 인사팀에 확인하세요.", [3]
+    monthly, month, daily = d
+    hourly = monthly / MONTHLY_HOURS
+    return ("\n".join([f"{_who(f)}의 월 통상임금은 **{_won(monthly)}**입니다({month.month}월분 — 기본급 + 정기·일률 수당).",
+                       f"- 시간당 {_won(round(hourly))}(월 {MONTHLY_HOURS}시간으로 나눔) · 하루 {_won(round(daily))}(1일 소정근로 {DAILY_HOURS}시간, 제11조)",
+                       f"- 연장·야간·휴일근로 1시간에는 통상임금의 50%를 더해 {_won(round(hourly * 1.5))}입니다(제12조 ②, 휴일근로 8시간 초과분은 100% 가산).",
+                       "- 월 209시간 환산은 주 40시간 + 주휴를 넣은 통상 기준입니다. 규정은 통상임금의 정의만 둡니다(제3조 3호)."]),
+            [3, 11, 12])
+
+
 def _cert_text(f: Facts, today: date) -> tuple[str, list[int]]:
     c = cert_allowance(f, today)
     if c["amount"]:
@@ -344,7 +421,7 @@ def _promotion_text(f: Facts, today: date) -> tuple[str, list[int]]:
     return "\n".join(lines), [32, 33] if p["dd"] else [33]
 
 
-TOPICS = ("연차", "연차수당", "퇴직금", "자격수당", "승진")
+TOPICS = ("연차", "연차수당", "퇴직금", "자격수당", "승진", "급여", "통상임금")
 FAMILY = {"연차": {"연차", "연차수당"}, "연차수당": {"연차", "연차수당"}}
 
 
@@ -364,6 +441,11 @@ def topics_of(question: str, assume_self: bool = False) -> list[str]:
         out.append("자격수당")
     if _PROMO.search(q):
         out.append("승진")
+    # 급여(2026-10-28) — 퇴직 맥락(마지막 급여는 제45조 14일)·세금·공제·실수령은 모델로. 다른 돈 주제(퇴직금·자격수당·연차수당)가 먼저다
+    if _PAY.search(q) and not _PAY_NOT.search(q) and not _RETIRE.search(q):
+        out.append("급여")
+    if _ORDINARY.search(q) and not re.search(r"세금|공제|실수령", q):
+        out.append("통상임금")
     return out
 
 
@@ -481,15 +563,16 @@ def answer(question: str, f: Facts | None, today: date, prior_questions: list[st
     if f.retired_on is not None and f.retired_on <= today:
         return f"{f.name}님은 {_ymd(f.retired_on)} 퇴직한 직원으로 기록되어 있어 재직 기준 계산을 하지 않습니다. 인사팀에 확인하세요.", [41]
     if f.employment_type != "정규직":
-        money = [t for t in topics if t in ("퇴직금", "자격수당")]
+        money = [t for t in topics if t in ("퇴직금", "자격수당", "급여", "통상임금")]
         return (f"{_who(f)}은 {f.employment_type} 직원입니다. {f.employment_type} 직원의 급여 및 퇴직에 관한 사항은 "
                 f"이 규정이 아니라 **개별근로계약**에 따릅니다(복무에 관한 사항만 이 규정을 준용합니다)."
-                + (" " + "·".join(money) + "은 근로계약서를 확인하세요." if money else
+                + (" " + "·".join(money) + ("은" if _batchim(money[-1]) else "는") + " 근로계약서를 확인하세요." if money else
                    " 연차·승진도 근로계약서에서 정한 바를 확인하세요.")), [2]
     parts, arts = [], []
     for t in topics:
         fn = {"연차": _leave_text, "연차수당": _unused_leave_text, "퇴직금": _severance_text, "자격수당": _cert_text,
-              "승진": _promotion_text}[t]
+              "승진": _promotion_text, "급여": lambda f, today: _pay_text(f, today, question),
+              "통상임금": _ordinary_text}[t]
         body, a = fn(f, today, end) if t in ("연차", "연차수당", "퇴직금") else fn(f, today)
         parts.append(body)
         arts += [x for x in a if x not in arts]
