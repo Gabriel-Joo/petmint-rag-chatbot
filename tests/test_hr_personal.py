@@ -10,7 +10,7 @@ TODAY = date(2026, 10, 28)
 
 
 def facts(**kw) -> Facts:
-    base = dict(employee_id="E1", name="홍길동", team="보상기획팀", grade="대리", grade_since=date(2022, 3, 1),
+    base = dict(employee_id="E1", name="권태호", team="고객상담팀", grade="대리", grade_since=date(2022, 3, 1),
                 employment_type="정규직", hire_date=date(2018, 1, 2), birth_date=date(1990, 1, 1), retired_on=None)
     extra = {k: kw.pop(k) for k in ("certificates", "payroll", "leaves", "absences", "evaluations") if k in kw}
     f = Facts(**(base | kw))

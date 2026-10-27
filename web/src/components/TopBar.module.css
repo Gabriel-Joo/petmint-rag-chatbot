@@ -7,15 +7,35 @@
   position: sticky;
   top: 0;
   z-index: 20; /* 본문 카드(누름 효과로 쌓임 맥락이 생김)보다 위, 전화 알림(50)보다 아래 */
-  display: flex;
-  flex-wrap: wrap;
+  /* 2026-10-28 두 칸 — 왼쪽(제목·탭·잠금, 좁으면 이 칸 안에서 줄바꿈) / 오른쪽(전화·상담원, 늘 첫 줄 오른쪽 끝).
+     한 줄로 흐르게 두면 상담원 표시가 상담 중 표시(🔒)에 밀려 둘째 줄로 내려갔다 */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "brand tabs right";
   align-items: center;
-  gap: 8px 16px; /* 제목 블록과 탭 사이 — 32px이면 1280px 일반 화면이 20px 모자라 두 줄이 됐다 */
+  gap: 8px 16px;
   padding: 8px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--primary-soft);
 }
 @media (max-width: 640px) { .bar { padding: 6px 16px; gap: 6px 12px; } }
+
+/* 왼쪽 칸은 상자가 아니다(display: contents) — 제목 블록과 탭이 각자 격자 칸(brand·tabs)에 들어간다.
+   넓으면 한 줄(제목 | 탭 | 전화·상담원), 한 줄에 안 들어가면 두 줄(제목 | 전화·상담원 / 탭 전체 폭). 어느 쪽이든 상담원은 첫 줄 오른쪽 끝 */
+.leftCol { display: contents; }
+.brandRow { grid-area: brand; }
+.left { grid-area: tabs; min-width: 0; }
+.rightCol { grid-area: right; display: flex; align-items: center; justify-content: flex-end; gap: 16px; white-space: nowrap; }
+@media (max-width: 1599px) {
+  .bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand right" "tabs tabs"; }
+}
+@media (max-width: 640px) {
+  .rightCol { gap: 8px; }
+  .brandSub { display: none; }               /* 휴대폰 폭 첫 줄 — 제목 · ☰ · 상담원 */
+  .user .logout { display: none; }           /* 로그아웃은 ☰ 메뉴 안으로(.menuLogout) */
+}
+.menuLogout { display: none; }
+@media (max-width: 640px) { .call .menuLogout { display: inline-block; } }
 
 /* 제목과 부제를 가로로 — 글자 밑선(baseline)을 맞춘다. 가짜 API 표시는 그 옆 */
 .brandRow { display: flex; align-items: center; gap: 12px; flex: none; }
@@ -28,7 +48,6 @@
 
 /* 탭·잠금 묶음과 전화 묶음 — 남은 폭을 다 쓰고, 전화 묶음은 오른쪽 끝(margin-left: auto).
    한 줄에 다 안 들어가면 이 묶음 통째로 제목 아래 줄로 내려간다 — 겹치지 않는다 */
-.navRow { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
 .left { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 
 .tabs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
@@ -50,12 +69,11 @@
 .tabOn { background: var(--card); color: var(--primary); box-shadow: var(--shadow-1); }
 /* 휴대폰 폭 — 탭 사이·안쪽 여백을 줄여 ☰ 버튼이 탭과 같은 줄에 남게 한다(400px에서 1px 모자라 ☰만 다음 줄로 내려갔다) */
 @media (max-width: 640px) {
-  .navRow { gap: 8px; }
   .tabs { gap: 4px; }
   .tab { padding: 0.25em 0.4em; }
 }
 
-.callWrap { position: relative; margin-left: auto; }
+.callWrap { position: relative; }
 /* 자동 전화와 전화 울리기 사이 — 글씨 크기에 비례(1.5em, 3배 배율에서 45px) */
 .call { display: flex; gap: 1.5em; align-items: center; font-size: var(--font-xs); color: var(--text); }
 .switch { display: inline-flex; gap: 0.3em; align-items: center; cursor: pointer; white-space: nowrap; }
@@ -99,10 +117,9 @@
   .call .ringBtn { text-align: center; }
 }
 
-/* 앱 로그인(2026-10-28) — 직원 이름·팀과 로그아웃. 전화 묶음 오른쪽, 헤더 메뉴와 같은 --font-xs. 아바타 원은 쓰지 않는다(11번) */
+/* 앱 로그인(2026-10-28) — "○○○ 상담원"(관리자 계정은 "○○○ 관리자")과 로그아웃. 오른쪽 칸 끝, 헤더 메뉴와 같은 --font-xs.
+   팀은 쓰지 않는다(상담원 전용 도구라 팀이 하나). 아바타 원은 쓰지 않는다(11번) */
 .user { display: flex; align-items: center; gap: 0.6em; font-size: var(--font-xs); white-space: nowrap; }
 .userName { font-weight: var(--font-weight-label); }
-.userTeam { font-weight: var(--font-weight-caption); color: var(--text-dim); }
 .user .logout { padding: 0.15em 0.45em; line-height: 1.2; }
 .user .logout:hover:not(:disabled) { background: var(--card); border-color: var(--primary); color: var(--primary); }
-@media (max-width: 640px) { .userTeam { display: none; } }

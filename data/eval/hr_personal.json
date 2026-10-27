@@ -4,7 +4,7 @@
  "cases": [
   {
    "id": "HP01",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "topic": "연차",
    "query": "제 연차 몇 개 남았어요?",
    "expect": [
@@ -13,7 +13,7 @@
   },
   {
    "id": "HP02",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "topic": "퇴직금",
    "query": "지금 퇴사하면 제 퇴직금 얼마쯤 돼요?",
    "expect": [
@@ -22,7 +22,7 @@
   },
   {
    "id": "HP03",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "topic": "자격수당",
    "query": "제 자격수당 얼마 받고 있어요?",
    "expect": [
@@ -31,7 +31,7 @@
   },
   {
    "id": "HP04",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "topic": "승진",
    "query": "저 언제 승진할 수 있어요?",
    "expect": [
@@ -40,7 +40,7 @@
   },
   {
    "id": "HP05",
-   "email": "kim.minji@petmint.example",
+   "email": "song.mikyung@petmint.example",
    "topic": "연차",
    "query": "내 연차휴가 며칠 남았지?",
    "expect": [
@@ -49,7 +49,7 @@
   },
   {
    "id": "HP06",
-   "email": "kim.minji@petmint.example",
+   "email": "song.mikyung@petmint.example",
    "topic": "퇴직금",
    "query": "내 퇴직금 예상액 알려줘",
    "expect": [
@@ -58,7 +58,7 @@
   },
   {
    "id": "HP07",
-   "email": "kim.minji@petmint.example",
+   "email": "song.mikyung@petmint.example",
    "topic": "자격수당",
    "query": "제 자격수당은 얼마예요?",
    "expect": [
@@ -67,7 +67,7 @@
   },
   {
    "id": "HP08",
-   "email": "kim.minji@petmint.example",
+   "email": "song.mikyung@petmint.example",
    "topic": "승진",
    "query": "제가 부장 되려면 얼마나 남았나요?",
    "expect": [
@@ -76,7 +76,7 @@
   },
   {
    "id": "HP09",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "topic": "연차",
    "query": "저 올해 연차 얼마나 남았나요?",
    "expect": [
@@ -85,7 +85,7 @@
   },
   {
    "id": "HP10",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "topic": "퇴직금",
    "query": "제 퇴직금 얼마예요?",
    "expect": [
@@ -94,7 +94,7 @@
   },
   {
    "id": "HP11",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "topic": "자격수당",
    "query": "내 자격수당 얼마야?",
    "expect": [
@@ -104,7 +104,7 @@
   },
   {
    "id": "HP12",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "topic": "승진",
    "query": "저 과장 승진 언제 돼요?",
    "expect": [
@@ -113,7 +113,7 @@
   },
   {
    "id": "HP13",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "topic": "연차",
    "query": "제 연차 잔여일수 알려주세요",
    "expect": [
@@ -122,7 +122,7 @@
   },
   {
    "id": "HP14",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "topic": "퇴직금",
    "query": "지금 그만두면 제 퇴직금은요?",
    "expect": [
@@ -131,7 +131,7 @@
   },
   {
    "id": "HP15",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "topic": "자격수당",
    "query": "제 자격수당 얼마인가요?",
    "expect": [
@@ -140,7 +140,7 @@
   },
   {
    "id": "HP16",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "topic": "승진",
    "query": "저 승진하려면 몇 년 남았어요?",
    "expect": [
@@ -149,7 +149,7 @@
   },
   {
    "id": "HP17",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "topic": "연차",
    "query": "내 연차 몇 개 남았어?",
    "expect": [
@@ -158,7 +158,7 @@
   },
   {
    "id": "HP18",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "topic": "퇴직금",
    "query": "제 퇴직금 얼마나 돼요?",
    "expect": [
@@ -167,7 +167,7 @@
   },
   {
    "id": "HP19",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "topic": "자격수당",
    "query": "제 자격수당 얼마예요?",
    "expect": [
@@ -176,7 +176,7 @@
   },
   {
    "id": "HP20",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "topic": "승진",
    "query": "제가 대리 승진 가능한가요?",
    "expect": [
@@ -185,7 +185,7 @@
   },
   {
    "id": "HP21",
-   "email": "kang.doyun@petmint.example",
+   "email": "cho.hyunseok@petmint.example",
    "topic": "연차",
    "query": "제 연차 며칠 남았어요?",
    "expect": [
@@ -194,7 +194,7 @@
   },
   {
    "id": "HP22",
-   "email": "kang.doyun@petmint.example",
+   "email": "cho.hyunseok@petmint.example",
    "topic": "퇴직금",
    "query": "저 지금 퇴사하면 퇴직금 나와요?",
    "expect": [
@@ -203,7 +203,7 @@
   },
   {
    "id": "HP23",
-   "email": "kang.doyun@petmint.example",
+   "email": "cho.hyunseok@petmint.example",
    "topic": "자격수당",
    "query": "내 자격수당은?",
    "expect": [
@@ -212,7 +212,7 @@
   },
   {
    "id": "HP24",
-   "email": "kang.doyun@petmint.example",
+   "email": "cho.hyunseok@petmint.example",
    "topic": "승진",
    "query": "저 언제 대리 될 수 있어요?",
    "expect": [
@@ -221,7 +221,7 @@
   },
   {
    "id": "HP25",
-   "email": "yoon.seoyeon@petmint.example",
+   "email": "ryu.chaewon@petmint.example",
    "topic": "연차",
    "query": "제 연차 몇 개예요?",
    "expect": [
@@ -230,7 +230,7 @@
   },
   {
    "id": "HP26",
-   "email": "yoon.seoyeon@petmint.example",
+   "email": "ryu.chaewon@petmint.example",
    "topic": "퇴직금",
    "query": "제 퇴직금 얼마예요?",
    "expect": [
@@ -239,7 +239,7 @@
   },
   {
    "id": "HP27",
-   "email": "yoon.seoyeon@petmint.example",
+   "email": "ryu.chaewon@petmint.example",
    "topic": "자격수당",
    "query": "제 자격수당 언제부터 나와요?",
    "expect": [
@@ -249,7 +249,7 @@
   },
   {
    "id": "HP28",
-   "email": "yoon.seoyeon@petmint.example",
+   "email": "ryu.chaewon@petmint.example",
    "topic": "승진",
    "query": "저 승진 언제 할 수 있어요?",
    "expect": [
@@ -258,7 +258,7 @@
   },
   {
    "id": "HP29",
-   "email": "lim.jaehyun@petmint.example",
+   "email": "moon.taeyang@petmint.example",
    "topic": "연차",
    "query": "제 연차 몇 개 남았어요?",
    "expect": [
@@ -267,7 +267,7 @@
   },
   {
    "id": "HP30",
-   "email": "lim.jaehyun@petmint.example",
+   "email": "moon.taeyang@petmint.example",
    "topic": "퇴직금",
    "query": "제 퇴직금 얼마예요?",
    "expect": [
@@ -276,7 +276,7 @@
   },
   {
    "id": "HP31",
-   "email": "lim.jaehyun@petmint.example",
+   "email": "moon.taeyang@petmint.example",
    "topic": "자격수당",
    "query": "내 자격수당 얼마?",
    "expect": [
@@ -285,7 +285,7 @@
   },
   {
    "id": "HP32",
-   "email": "lee.seojun@petmint.example",
+   "email": "lim.dongwook@petmint.example",
    "topic": "승진",
    "query": "제가 차장 승진 대상인가요?",
    "expect": [
@@ -294,7 +294,7 @@
   },
   {
    "id": "HP33",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "topic": "연차수당",
    "query": "제 연차 미사용 수당은 얼마예요?",
    "expect": [
@@ -305,49 +305,49 @@
  "negatives": [
   {
    "id": "HN01",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "query": "연차는 몇 개 나와요?"
   },
   {
    "id": "HN02",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "query": "퇴직금은 어떻게 계산해요?"
   },
   {
    "id": "HN03",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "query": "손해사정사 따면 자격수당 얼마예요?"
   },
   {
    "id": "HN04",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "query": "과장에서 차장 되려면 몇 년 있어야 해요?"
   },
   {
    "id": "HN05",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "query": "할머니가 돌아가셨는데 제 경조휴가는 며칠이에요?"
   },
   {
    "id": "HN06",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "query": "제 병가는 며칠까지 쓸 수 있어요?"
   },
   {
    "id": "HN07",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "query": "제가 재택근무 며칠까지 되나요?"
   },
   {
    "id": "HN08",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "query": "자격수당은 언제부터 나와요?"
   }
  ],
  "sequences": [
   {
    "id": "HS01",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "turns": [
     "제 연차는 몇 개 남았나요?",
     "연차 미사용분은 얼마 받나요?"
@@ -358,7 +358,7 @@
   },
   {
    "id": "HS02",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "turns": [
     "제 연차 몇 개 남았어요?",
     "미사용분은요?"
@@ -369,7 +369,7 @@
   },
   {
    "id": "HS03",
-   "email": "kim.minji@petmint.example",
+   "email": "song.mikyung@petmint.example",
    "turns": [
     "내 연차휴가 며칠 남았지?",
     "그럼 퇴직금은요?"
@@ -380,7 +380,7 @@
   },
   {
    "id": "HS04",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "turns": [
     "제 퇴직금 얼마예요?",
     "그럼 자격수당은요?"
@@ -391,7 +391,7 @@
   },
   {
    "id": "HS05",
-   "email": "jung.daeun@petmint.example",
+   "email": "noh.eunbi@petmint.example",
    "turns": [
     "제 연차 잔여일수 알려주세요",
     "미사용 수당은 얼마나 나와요?"
@@ -402,7 +402,7 @@
   },
   {
    "id": "HN09",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "turns": [
     "연차는 몇 개 나와요?",
     "미사용분은 얼마 받나요?"
@@ -411,7 +411,7 @@
   },
   {
    "id": "HN10",
-   "email": "hong.gildong@petmint.example",
+   "email": "kwon.taeho@petmint.example",
    "turns": [
     "제 연차 몇 개 남았어요?",
     "재택근무는 며칠까지 돼요?"
@@ -420,7 +420,7 @@
   },
   {
    "id": "HN11",
-   "email": "choi.hyunwoo@petmint.example",
+   "email": "jang.minhyuk@petmint.example",
    "turns": [
     "제 퇴직금 얼마예요?",
     "과장은 몇 년 있어야 차장 돼요?"
@@ -429,7 +429,7 @@
   },
   {
    "id": "HN12",
-   "email": "han.subin@petmint.example",
+   "email": "shin.haneul@petmint.example",
    "turns": [
     "제 자격수당 얼마예요?",
     "퇴직금은 어떻게 계산해요?"
