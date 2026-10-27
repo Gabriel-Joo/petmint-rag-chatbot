@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 
 from app.services.hr_personal import (Facts, annual_leave, answer, average_wage, cert_allowance, inherited_topics, ordinary_daily,
-                                      promotion, sources, tenure_days, topics_of)
+                                      profile, promotion, sources, tenure_days, topics_of)
 
 TODAY = date(2026, 10, 28)
 
@@ -125,6 +125,27 @@ class Promotion(unittest.TestCase):
     def test_top_grade(self):
         text, _ = answer("저 승진 언제 돼요?", facts(grade="부장", grade_since=date(2016, 1, 1)), TODAY)
         self.assertIn("규정에 나와 있지 않습니다", text)
+
+
+class Profile(unittest.TestCase):
+    """사내규정 본인 정보 블록 — 답과 같은 계산, 돈·평가는 싣지 않는다"""
+
+    def test_fields_and_no_money(self):
+        f = facts(birth_date=date(1967, 5, 14), hire_date=date(2013, 1, 7),
+                  absences=[("질병휴직", date(2019, 5, 1), date(2019, 10, 31))],
+                  certificates=[("정보처리기사", date(2026, 9, 25), None)], payroll=Severance.PAY,
+                  evaluations=[("2025-H2", "D"), ("2026-H1", "D")])
+        p = profile(f, TODAY)
+        self.assertEqual((p["tenure_years"], p["tenure_months"], p["tenure_excluded_days"]), (13, 3, 184))
+        self.assertEqual(p["retirement_on"], date(2027, 5, 31))
+        self.assertEqual(p["certificates"], [dict(name="정보처리기사", acquired_on=date(2026, 9, 25), submitted=False)])
+        self.assertFalse([k for k in p if any(w in k for w in ("pay", "wage", "allowance", "eval"))])
+
+    def test_probation_and_contract(self):
+        self.assertEqual(profile(facts(hire_date=date(2026, 9, 1)), TODAY)["probation_end"], date(2026, 11, 30))
+        self.assertIsNone(profile(facts(hire_date=date(2026, 9, 1), career_hire=True), TODAY)["probation_end"])
+        c = profile(facts(employment_type="계약직"), TODAY)
+        self.assertEqual((c["leave_total"], c["next_grade"]), (None, None))
 
 
 class Status(unittest.TestCase):

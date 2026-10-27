@@ -22,7 +22,7 @@ from data.rag_context import ContextBuilder
 
 from app import config, deps
 from app.db import make_engine
-from app.routers import articles, auth, chat_ws, consultations, customers, feedback, sessions
+from app.routers import articles, auth, chat_ws, consultations, customers, feedback, me, sessions
 from app.services import policy_data
 from app.services.auth import AuthStore
 from app.services.hr_personal import EmployeeStore
@@ -85,7 +85,7 @@ async def check_origin(request: Request, call_next):
 
 app.include_router(auth.router)
 # 보호 라우터 — access 모드에서 require_login은 아무것도 하지 않는다. WS는 핸들러가 직접 확인한다(4401)
-for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router):
+for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router, me.router):
     app.include_router(r, dependencies=[Depends(deps.require_login)])
 app.include_router(chat_ws.router)
 
