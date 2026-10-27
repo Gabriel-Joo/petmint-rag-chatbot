@@ -31,7 +31,8 @@ from typing import AsyncIterator
 import httpx
 
 from data import prompts
-from data.rag_context import ContextBuilder, build_full_context, graph_key, infer_type_from_section_name, used_references
+from data.rag_context import (ContextBuilder, build_full_context, graph_key, human_article_adjust,
+                              infer_type_from_section_name, used_references)
 from data.search_scope import MEDICAL_SECTIONS, SearchScope
 
 from app import config
@@ -182,8 +183,10 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
             yield context
         if ctx.scope is not None:
             try:
+                adjust = (human_article_adjust(config.HUMAN_DEMOTE, config.TWIN_ARTICLE)
+                          if ctx.session.mode == "업무특화" else None)
                 ctx.results = await asyncio.to_thread(build_full_context, deps.retriever, deps.builder,
-                                                      _r(ctx).retrieval_query, ctx.scope, SEARCH_TOP_K)
+                                                      _r(ctx).retrieval_query, ctx.scope, SEARCH_TOP_K, adjust)
             except httpx.HTTPError as e:        # search-service가 없거나 실패 — Milvus(조립) 오류는 아래 internal
                 yield _fail(ctx, e, "search_unavailable")
                 return

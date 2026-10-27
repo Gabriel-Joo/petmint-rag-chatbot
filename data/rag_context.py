@@ -557,15 +557,58 @@ def cross_article_refs(unit: dict, refs: list[dict]) -> tuple[list[dict], list[d
     return cross, other
 
 
+# 2026-10-28 보통약관은 사람 상해보험 약관이다 — 제3조(지급사유: 상해·후유장해)·제4조(세부규정)·제5조(지급하지 않는 사유:
+# 자해·임신·출산)는 반려동물 보장의 근거가 아닌데, 제목이 의료비 특약 제1조·제2조와 같아 "보험금 안 나오는 경우는?" 같은
+# 특약 낱말 없는 질문에서 첫 자리를 가져가 사람 보험 면책을 답했다(data/review/offtarget_search.md).
+HUMAN_ARTICLES = {3, 4, 5}
+HUMAN_DEMOTE = 0.5                          # 1안 — 이 조들의 점수에 곱한다
+TWIN_ARTICLE = {3: 1, 5: 2}                 # 2안 — 보통약관 조 → 같은 제목 의료비 특약 조
+RIDER_WORD = re.compile(r"통원|입원|치료|진료|수술|의료비|병원|질병|특약")
+
+
+def _is_human(r: dict) -> bool:
+    return r.get("section") == "보통약관" and r.get("article_num") in HUMAN_ARTICLES
+
+
+def human_article_adjust(demote: bool, twin: bool):
+    """업무특화 펫 검색의 후보 재정렬(섹션 가중 뒤). 끄면 None — search_with_graph는 그대로다.
+    demote: 보통약관 제3·4·5조 점수 × HUMAN_DEMOTE
+    twin:   질문에 특약 낱말이 없고 상위 3에 보통약관 제3·5조가 있으면, 후보 안의 같은 제목 의료비 특약 조각을
+            그 보통약관 조각 바로 앞으로 올린다(후보에 없으면 그대로 — 새로 찾아오지 않는다)"""
+    if not (demote or twin):
+        return None
+
+    def adjust(query: str, ranked: list[dict], top_k: int) -> list[dict]:
+        if demote:
+            for r in ranked:
+                if _is_human(r):
+                    r["adjusted_score"] *= HUMAN_DEMOTE
+            ranked.sort(key=lambda r: r["adjusted_score"], reverse=True)
+        if twin and not RIDER_WORD.search(query):
+            hum = next((i for i, r in enumerate(ranked[:top_k])
+                        if r.get("section") == "보통약관" and r.get("article_num") in TWIN_ARTICLE), None)
+            if hum is not None:
+                want = TWIN_ARTICLE[ranked[hum]["article_num"]]
+                twins = [r for r in ranked[top_k:] if "의료비" in (r.get("section_name") or "") and r.get("article_num") == want]
+                if twins:
+                    rest = [r for r in ranked if not any(r is t for t in twins)]
+                    ranked = rest[:hum] + twins + rest[hum:]
+        return ranked
+    return adjust
+
+
 def search_with_graph(engine, builder: ContextBuilder, query: str, scope: SearchScope,
-                      top_k: int = 5, candidate_k: int = 20) -> list[dict]:
+                      top_k: int = 5, candidate_k: int = 20, adjust=None) -> list[dict]:
     """Hybrid Search(BM25+Dense) + Reranker 상위 candidate_k개를 섹션 가중으로 재정렬해 top_k개.
-    scope: 검색 범위(가입 정보면 SearchScope.for_policies, 질문 속 등급·유형만 쓰려면 SearchScope.from_query)"""
+    scope: 검색 범위(가입 정보면 SearchScope.for_policies, 질문 속 등급·유형만 쓰려면 SearchScope.from_query)
+    adjust: 섹션 가중 뒤 후보 재정렬(human_article_adjust) — 기본 없음"""
     species = scope.species
     raw_results = engine.search(query, scope, top_k=candidate_k, candidate_k=candidate_k)
     for r in raw_results:
         r["adjusted_score"] = r["score"] * SECTION_PRIORITY.get(r.get("section"), 0.8)
     raw_results.sort(key=lambda r: r["adjusted_score"], reverse=True)
+    if adjust is not None:
+        raw_results = adjust(query, raw_results, top_k)
 
     # 조항 중복 제거(같은 조는 최고점 청크 하나)는 2026-10-19 뺐다 — 답이 든 형제 청크(뒷조각·본문)를 지워
     # 검색 모드 답변 거절이 rebuild3 7/69 → 14/70으로 늘었다. 조 단위 hit@5(88→90)는 이걸 못 봤다
@@ -586,11 +629,12 @@ def search_with_graph(engine, builder: ContextBuilder, query: str, scope: Search
     return enriched
 
 
-def build_full_context(engine, builder: ContextBuilder, query: str, scope: SearchScope, top_k: int = 3) -> list[dict]:
+def build_full_context(engine, builder: ContextBuilder, query: str, scope: SearchScope, top_k: int = 3,
+                       adjust=None) -> list[dict]:
     """04번 RAG용: 검색 결과마다 reference_contents(참조 조문 + inline 법령 정의)를 붙인다.
     가입 등급을 아는 scope면 등급 없는 결과의 참조도 그 등급 한 벌만 붙는다(coverage_hint)."""
     species = scope.species
-    results = search_with_graph(engine, builder, query, scope, top_k=top_k)
+    results = search_with_graph(engine, builder, query, scope, top_k=top_k, adjust=adjust)
     for r in results:
         # 검색 결과는 청크 1개 — content 완전 일치로 원본 청크를 찾는다(측정상 100/100 매칭)
         source = next((c for c in builder.chunks[species]
