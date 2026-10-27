@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 
 from app.services.hr_personal import (Facts, annual_leave, answer, average_wage, cert_allowance, inherited_topics, ordinary_daily,
-                                      profile, promotion, sources, tenure_days, topics_of)
+                                      parse_date, profile, promotion, replay, sources, tenure_days, topics_of)
 
 TODAY = date(2026, 10, 28)
 
@@ -61,7 +61,7 @@ class FollowUp(unittest.TestCase):
         f = facts(hire_date=date(2001, 3, 2), payroll=Severance.PAY, leaves=[("연차", date(2026, 4, 13), 11)])
         monthly, month, daily = ordinary_daily(f, TODAY)
         self.assertEqual((monthly, month), (2_926_000, date(2026, 9, 1)))
-        text, arts = answer("연차 미사용분은 얼마 받나요?", f, TODAY, self.PRIOR, False)
+        text, arts = answer("연차 미사용분은 얼마 받나요?", f, TODAY, [self.PRIOR])
         self.assertIn(f"{round(14 * 2_926_000 / 209 * 8):,}원", text)
         self.assertEqual(arts, [17, 11])
 
@@ -71,6 +71,50 @@ class FollowUp(unittest.TestCase):
                   {"section": "본칙", "section_name": "제8장 퇴직", "article_num": 43, "article_title": "정년", "content": "정년",
                    "chunk_index": 0, "paragraph_num": None, "coverage_type": None}]
         self.assertEqual([(x.article_num, x.content) for x in sources([17, 18], chunks)], [(17, "① 15일")])
+
+
+class RetireDate(unittest.TestCase):
+    """2026-10-28 운영 — 퇴직금 답 뒤 "퇴직 날짜가 2026년 12월 30일 입니다"·"…그랬을때 받을 수 있는 퇴직금이요"가 모델로 갔다"""
+
+    def test_parse(self):
+        self.assertEqual(parse_date("퇴직 날짜가 2026년 12월 30일 입니다", TODAY), (date(2026, 12, 30), True))
+        self.assertEqual(parse_date("12월 31일에 퇴사하면요?", TODAY), (date(2026, 12, 31), True))
+        self.assertEqual(parse_date("내년 3월에 그만두면", TODAY), (date(2027, 3, 31), False))
+        self.assertEqual(parse_date("그럼 내년 2월 말에 그만두면", TODAY), (date(2027, 2, 28), False))
+        self.assertEqual(parse_date("3월 2일", TODAY), (date(2027, 3, 2), True))          # 올해는 지났다 → 내년
+        self.assertIsNone(parse_date("2026년 1월 5일에 퇴직했어요", TODAY))                 # 지난 날짜
+        self.assertIsNone(parse_date("재택근무는 며칠까지 돼요?", TODAY))
+
+    def test_rule_r3(self):
+        """세 안을 잰 탐침(data/review/hr_personal_measure.md) — 이어받아야 7, 모델로 가야 7"""
+        pos = [["제 퇴직금은 얼마예요?", "퇴직 날짜가 2026년 12월 30일 입니다"],
+               ["제 퇴직금은 얼마예요?", "퇴직 날짜가 2026년 12월 30일 입니다", "퇴직 날짜가 그랬을때 받을 수 있는 퇴직금이요"],
+               ["제 퇴직금 얼마예요?", "12월 31일에 퇴사하면요?"], ["제 퇴직금 얼마예요?", "그럼 내년 2월 말에 그만두면 얼마예요?"],
+               ["제 퇴직금 얼마예요?", "12월 30일이요"], ["제 연차 몇 개 남았어요?", "내년 3월에 그만두면 연차 수당 얼마예요?"],
+               ["제 연차 미사용 수당은 얼마예요?", "그만두는 날이 12월 15일이에요"]]
+        neg = [["제 퇴직금 얼마예요?", "재택근무는 며칠까지 돼요?"], ["제 퇴직금 얼마예요?", "회사 주차장은 몇 시까지 쓸 수 있나요?"],
+               ["제 연차 몇 개 남았어요?", "경조휴가는 며칠이에요?"], ["제 퇴직금 얼마예요?", "정년은 몇 살이에요?"],
+               ["제 퇴직금 얼마예요?", "퇴직하면 회사 물품은 어떻게 반납해요?"], ["제 퇴직금 얼마예요?", "출장비는 어떻게 정산해요?"],
+               ["제 연차 몇 개 남았어요?", "고맙습니다"]]
+        for qs in pos:
+            self.assertTrue(replay(qs, TODAY)[-1][0], qs)
+        for qs in neg:
+            self.assertEqual(replay(qs, TODAY)[-1][0], [], qs)
+        self.assertEqual(replay(pos[1], TODAY)[-1], (["퇴직금"], date(2026, 12, 30)))     # 날짜가 셋째 턴까지 이어진다
+
+    def test_date_carries_in_chain_and_drops_after_break(self):
+        qs = ["제 퇴직금 얼마예요?", "12월 30일에 퇴사하면요?", "제 퇴직금 얼마예요?"]
+        self.assertEqual(replay(qs, TODAY)[-1], (["퇴직금"], date(2026, 12, 30)))       # 같은 사슬 — 답에 날짜를 밝힌다
+        qs = ["제 퇴직금 얼마예요?", "12월 30일에 퇴사하면요?", "재택근무는 며칠까지 돼요?", "제 퇴직금 얼마예요?"]
+        self.assertEqual(replay(qs, TODAY)[-1], (["퇴직금"], None))                     # 사슬이 끊겼다 — 오늘 기준
+
+    def test_severance_at_date(self):
+        f = facts(hire_date=date(2001, 3, 2), payroll=Severance.PAY)
+        text, _ = answer("퇴직 날짜가 2026년 12월 30일 입니다", f, TODAY, ["제 퇴직금은 얼마예요?"])
+        days = (date(2026, 12, 30) - date(2001, 3, 2)).days
+        self.assertIn(f"{days:,}일", text)
+        self.assertIn("퇴직 전 3개월(8~10월)", text)                 # 기록이 있는 최근 3개월
+        self.assertIn("퇴직일 전 3개월(9~11월) 급여가 아직", text)
 
 
 class Leave(unittest.TestCase):

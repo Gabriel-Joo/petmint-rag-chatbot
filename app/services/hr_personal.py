@@ -27,7 +27,7 @@ CERT_PAY = {"손해사정사": 200_000, "보험계리사": 200_000, "공인회�
             "손해평가사": 100_000, "정보처리기사": 50_000}                       # 제27조 ① 표
 PROMOTION_YEARS = {"사원": ("대리", 4), "대리": ("과장", 4), "과장": ("차장", 5), "차장": ("부장", 5)}   # 제33조 ②
 COUNTED_ABSENCE = ("육아휴직", "병역휴직")                                         # 제22조 ④ 근속 산입
-ARTICLES = {17: "연차유급휴가", 18: "연차휴가의 사용", 2: "적용범위", 3: "용어의 정의", 22: "휴직", 27: "자격수당",
+ARTICLES = {43: "정년", 17: "연차유급휴가", 18: "연차휴가의 사용", 2: "적용범위", 3: "용어의 정의", 22: "휴직", 27: "자격수당",
             28: "퇴직금", 32: "인사평가", 33: "승진", 41: "퇴직의 사유", 11: "근무시간"}
 
 _SELF = re.compile(r"(?:^|[\s,])(?:내|제|저|나)(?:\s|가|는|도|의)|저희\s*직원으로서|본인")
@@ -38,6 +38,11 @@ _UNUSED = re.compile(r"미사용|수당")
 _AMOUNT = re.compile(r"얼마|금액|받|나와|나오")
 _SEVERANCE = re.compile(r"퇴직금")
 _GRADE = re.compile(r"사원|대리|과장|차장|부장")
+_RETIRE = re.compile(r"퇴직|퇴사|그만\s*두|그만두|관두|그만\s*나|마지막\s*(?:근무|출근)")
+_YMD = re.compile(r"(\d{4})\s*[년./-]\s*(\d{1,2})\s*[월./-]\s*(\d{1,2})\s*일?")
+_MD = re.compile(r"(?:(올해|내년|후년)\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일")
+_M = re.compile(r"(?:(올해|내년|후년)\s*)?(\d{1,2})\s*월\s*(말|초|중순|에|달)?")
+_SHORT_DATE = 20                         # 날짜만 말한 짧은 답("12월 30일이요") — 이 길이 이하면 퇴직 낱말이 없어도 날짜 정보로 본다
 MONTHLY_HOURS = 209                     # 월 소정근로시간 — 주 40시간(제11조 ①) + 주휴, 통상임금 시급 환산의 통상 기준
 DAILY_HOURS = 8                         # 1일 소정근로시간(제11조 ①)
 _CERT = re.compile(r"자격\s*수당")
@@ -153,7 +158,7 @@ def tenure_days(f: Facts, today: date) -> tuple[int, int]:
 
 def average_wage(f: Facts, today: date) -> tuple[float, list[date], int, int] | None:
     """제3조 4호 — 최근 다 끝난 급여 달 3개의 임금총액 ÷ 그 기간 총일수. 3개월치가 없으면 None"""
-    done = [(m, t) for m, t, _ in f.payroll if (m.year, m.month) < (today.year, today.month)][-3:]
+    done = [(m, t) for m, t, _ in f.payroll if (m.year, m.month) < (today.year, today.month)][-3:]   # today = 기준일(퇴직 예정일)
     if len(done) < 3:
         return None
     first, last = done[0][0], done[-1][0]
@@ -199,8 +204,10 @@ def _who(f: Facts) -> str:
     return f"{f.name}님({f.grade}, 입사 {_ymd(f.hire_date)})"
 
 
-def _leave_text(f: Facts, today: date) -> tuple[str, list[int]]:
+def _leave_text(f: Facts, today: date, end: date | None = None) -> tuple[str, list[int]]:
     a = annual_leave(f, today)
+    if end is not None:
+        return _leave_at(f, today, end, a, money=False)
     head = (f"{_who(f)}의 이번 연차 기간({_ymd(a['start'])} ~ {_ymd(a['end'])}) 연차는 {_days(a['grant'])}({a['basis']})이고, "
             f"지금까지 {_days(a['used'])}을 써서 **{_days(a['left'])} 남았습니다.**")
     notes = ["1년간 80% 이상 출근했다고 보고 계산했습니다." if a["years"] >= 1 else
@@ -209,6 +216,26 @@ def _leave_text(f: Facts, today: date) -> tuple[str, list[int]]:
     if any(k not in COUNTED_ABSENCE for k, _, _ in f.absences):
         notes.append("휴직 기간을 연차 근속에서 빼는지는 규정에 따로 없어 입사일부터 셌습니다.")
     return head + "\n" + "\n".join(f"- {n}" for n in notes), [17, 18]
+
+
+def _leave_at(f: Facts, today: date, end: date, a: dict, money: bool) -> tuple[str, list[int]]:
+    """퇴직 예정일 기준 남은 연차(·수당) — 오늘 이후 연차를 더 쓰지 않는다고 본다. 예정일이 다음 연차 기간이면 이번 기간 몫만 계산한다"""
+    d = ordinary_daily(f, today) if money else None
+    if money and d is None:
+        return f"{_who(f)}의 급여 기록이 없어 통상임금을 계산할 수 없습니다. 인사팀에 확인하세요.", [17]
+    pay = (lambda days: f" — 미사용 연차수당 **약 {_won(round(days * d[2]))}**") if money else (lambda days: "")
+    if end <= a["end"]:
+        lines = [f"{_who(f)}이 {_ymd(end)}에 퇴직하면, 오늘 이후 연차를 더 쓰지 않는다고 볼 때 그날 남은 연차는 "
+                 f"**{_days(a['left'])}**입니다{pay(a['left'])}."]
+    else:
+        lines = [f"{_who(f)}의 이번 연차 기간은 {_ymd(a['end'])}에 끝납니다. 그때까지 더 쓰지 않으면 남은 **{_days(a['left'])}**은 "
+                 f"이 기간의 미사용분으로 정산됩니다{pay(a['left'])}.",
+                 f"- {_ymd(end)} 퇴직은 그다음 연차 기간 중이라, 새 기간의 연차를 기간 중 퇴직 때 어떻게 정산하는지는 규정에 따로 없습니다. "
+                 f"인사팀에 확인하세요."]
+    if money:
+        lines.append(f"- 하루 통상임금: 월 통상임금 {_won(d[0])}({d[1].month}월) ÷ {MONTHLY_HOURS}시간 × {DAILY_HOURS}시간 = {_won(round(d[2]))}"
+                     f"(1일 소정근로 {DAILY_HOURS}시간·주 40시간, 제11조). 실제 금액은 인사팀 정산을 따릅니다.")
+    return "\n".join(lines), [17, 11] if money else [17]
 
 
 def ordinary_daily(f: Facts, today: date) -> tuple[int, date, float] | None:
@@ -220,7 +247,9 @@ def ordinary_daily(f: Facts, today: date) -> tuple[int, date, float] | None:
     return monthly, month, monthly / MONTHLY_HOURS * DAILY_HOURS
 
 
-def _unused_leave_text(f: Facts, today: date) -> tuple[str, list[int]]:
+def _unused_leave_text(f: Facts, today: date, end: date | None = None) -> tuple[str, list[int]]:
+    if end is not None:
+        return _leave_at(f, today, end, annual_leave(f, today), money=True)
     a, d = annual_leave(f, today), ordinary_daily(f, today)
     if d is None:
         return f"{_who(f)}의 급여 기록이 없어 통상임금을 계산할 수 없습니다. 인사팀에 확인하세요.", [17]
@@ -235,24 +264,36 @@ def _unused_leave_text(f: Facts, today: date) -> tuple[str, list[int]]:
     return "\n".join(lines), [17, 11]
 
 
-def _severance_text(f: Facts, today: date) -> tuple[str, list[int]]:
-    days, excluded = tenure_days(f, today)
+def _severance_text(f: Facts, today: date, end: date | None = None) -> tuple[str, list[int]]:
+    """퇴직금 — end(퇴직 예정일)가 있으면 그날 기준 근속과 그 전 3개월 평균임금. 그 3개월 급여가 아직 없으면 기록이 있는 최근 3개월로"""
+    on = end or today
+    days, excluded = tenure_days(f, on)
+    when = f"오늘({_ymd(today)})" if end is None else _ymd(end)
     if days < 365:
         one = _add_years(f.hire_date, 1)
-        return (f"{_who(f)}은 계속 근로기간이 1년이 되지 않아 지금 퇴직하면 **퇴직금이 없습니다.** "
+        return (f"{_who(f)}은 {when} 퇴직하면 계속 근로기간이 1년이 되지 않아 **퇴직금이 없습니다.** "
                 f"퇴직금은 계속 근로기간이 1년 이상인 직원에게 지급합니다({_ymd(one)}부터)."), [28]
-    avg = average_wage(f, today)
+    avg = average_wage(f, on)
     if avg is None:
         return f"{_who(f)}의 최근 3개월 급여 기록이 없어 평균임금을 계산할 수 없습니다. 인사팀에 확인하세요.", [3, 28]
     per_day, months, total, period = avg
     amount = round(per_day * 30 * days / 365)
     span = f"{months[0].month}~{months[-1].month}월"
-    lines = [f"{_who(f)}이 오늘({_ymd(today)}) 퇴직한다고 보면 퇴직금은 **약 {_won(amount)}**입니다.",
-             f"- 평균임금: 최근 3개월({span}) 임금총액 {_won(total)} ÷ {period}일 = 하루 {_won(round(per_day))}",
+    lines = [f"{_who(f)}이 {when}{'' if end is None else '에'} 퇴직한다고 보면 퇴직금은 **약 {_won(amount)}**입니다.",
+             f"- 평균임금: {'최근' if end is None else '퇴직 전'} 3개월({span}) 임금총액 {_won(total)} ÷ {period}일 = 하루 {_won(round(per_day))}",
              f"- 근속: {days:,}일" + (f"(근속에 넣지 않는 휴직 {excluded}일 뺌)" if excluded else "")
-             + f" → 하루 평균임금 × 30일 × {days:,} ÷ 365",
-             "- 규정은 '30일분 이상'이라 이 금액이 최소 기준입니다. 실제 지급은 퇴직연금제도로 하므로 정확한 금액은 퇴직연금규정과 인사팀 정산을 따릅니다."]
-    return "\n".join(lines), [3, 22, 28] if excluded else [3, 28]
+             + f" → 하루 평균임금 × 30일 × {days:,} ÷ 365"]
+    if end is not None:
+        want = [_add_months(date(end.year, end.month, 1), -k) for k in (3, 2, 1)]
+        if months != want:
+            lines.append(f"- 퇴직일 전 3개월({want[0].month}~{want[-1].month}월) 급여가 아직 다 나오지 않아, 기록이 있는 최근 3개월로 "
+                         f"계산했습니다. 실제로는 퇴직일 전 3개월로 다시 계산하므로 상여 달이 빠지거나 들어가면 달라집니다.")
+        retire = _add_months(date(_add_years(f.birth_date, 60).year, _add_years(f.birth_date, 60).month, 1), 1) - timedelta(days=1)
+        if end > retire:
+            lines.append(f"- 이 날짜는 정년퇴직일({_ymd(retire)}, 만 60세가 되는 달의 말일)보다 뒤입니다(제43조).")
+    lines.append("- 규정은 '30일분 이상'이라 이 금액이 최소 기준입니다. 실제 지급은 퇴직연금제도로 하므로 정확한 금액은 퇴직연금규정과 인사팀 정산을 따릅니다.")
+    arts = [3, 22, 28] if excluded else [3, 28]
+    return "\n".join(lines), arts + ([43] if end is not None and end > retire else [])
 
 
 def _cert_text(f: Facts, today: date) -> tuple[str, list[int]]:
@@ -316,11 +357,91 @@ def topics_of(question: str, assume_self: bool = False) -> list[str]:
     return out
 
 
+def parse_date(question: str, today: date) -> tuple[date, bool] | None:
+    """질문 속 날짜 — (날짜, 일까지 말했나). "2026년 12월 30일"·"12월 30일"(올해, 지났으면 내년)·"내년 3월"(말일로)·"3월 말".
+    퇴직 예정일로만 쓴다 — 오늘보다 앞이면 None"""
+    q = question
+    m = _YMD.search(q)
+    if m:
+        d, exact = _safe(int(m[1]), int(m[2]), int(m[3])), True
+    elif (m := _MD.search(q)):
+        y = today.year + {"내년": 1, "후년": 2}.get(m[1] or "", 0)
+        d, exact = _safe(y, int(m[2]), int(m[3])), True
+        if d is not None and m[1] is None and d < today:
+            d = _safe(y + 1, int(m[2]), int(m[3]))
+    elif (m := _M.search(q)) and (m[1] or m[3]):
+        y = today.year + {"내년": 1, "후년": 2}.get(m[1] or "", 0)
+        mon = int(m[2])
+        if not 1 <= mon <= 12:
+            return None
+        first = date(y, mon, 1)
+        d, exact = (first if m[3] == "초" else _add_months(first, 1) - timedelta(days=1)), False
+        if m[1] is None and d < today:
+            d = _add_years(d, 1)
+    else:
+        return None
+    if d is None or d < today:
+        return None
+    return d, exact
+
+
+def _safe(y: int, m: int, d: int) -> date | None:
+    try:
+        return date(y, m, d)
+    except ValueError:
+        return None
+
+
+def date_info(question: str, today: date) -> date | None:
+    """퇴직 예정일을 알려 주는 말인가 — 날짜 + 퇴직 낱말, 또는 날짜만 있는 짧은 말"""
+    got = parse_date(question, today)
+    if got is None:
+        return None
+    if _RETIRE.search(question) or len(question.strip()) <= _SHORT_DATE:
+        return got[0]
+    return None
+
+
+def replay(questions: list[str], today: date) -> list[tuple[list[str], date | None]]:
+    """세션의 질문을 차례로 — 각 턴이 개인화로 답할 주제와 퇴직 예정일(앞 턴에서 이어 온 것 포함). 저장하지 않고 같은 규칙을 다시 돌린다.
+    이어받기(2026-10-28 운영 "퇴직 날짜가 2026년 12월 30일 입니다"): 바로 앞 턴이 개인화였고, 지금 질문이
+      ① 같은 주제 갈래이거나 짧은 후속에 주제 낱말이 있거나(inherited_topics) ② 퇴직 예정일 정보(date_info)일 때만.
+    "고맙습니다"·"재택근무는 며칠?"·"주차장은 몇 시까지?"는 이어받지 않는다(주제 낱말도 날짜도 없다)"""
+    from app.services.followup import follow_up_reason
+    out: list[tuple[list[str], date | None]] = []
+    prev: list[str] = []
+    end: date | None = None
+    for q in questions:
+        own = topics_of(q)
+        when = date_info(q, today) if (own or prev) else None
+        if own:
+            topics = own
+        elif prev:
+            topics = _inherit(q, prev, bool(follow_up_reason(q)))
+            if not topics and when is not None:
+                topics = [t for t in prev if t in ("퇴직금", "연차수당", "연차")] or []
+        else:
+            topics = []
+        if topics:
+            if when is not None:
+                end = when
+            elif own and not prev:
+                end = None                                  # 새로 시작한 개인화 질문 — 앞 사슬의 날짜를 끌고 오지 않는다
+        else:
+            end = None
+        out.append((topics, end if topics else None))
+        prev = topics
+    return out
+
+
 def inherited_topics(question: str, prior_question: str | None, short_follow_up: bool) -> list[str]:
     """본인 지칭이 없는 질문이 바로 앞의 개인화 질문을 이어받는가(2026-10-28 운영: "연차 미사용분은 얼마 받나요?").
     앞 질문이 개인화 질문이고, 지금 질문이 같은 주제 갈래(연차 ↔ 연차수당)이거나 짧은 후속("그럼 퇴직금은요?")일 때만.
     직급 이름이 든 승진 질문("과장은 몇 년 있어야 차장 돼요?")은 앞 주제가 승진일 때만 — 아니면 일반 질문이다"""
-    prior = topics_of(prior_question or "")
+    return _inherit(question, topics_of(prior_question or ""), short_follow_up)
+
+
+def _inherit(question: str, prior: list[str], short_follow_up: bool) -> list[str]:
     if not prior:
         return []
     q = question.strip()
@@ -333,15 +454,18 @@ def inherited_topics(question: str, prior_question: str | None, short_follow_up:
     return [t for t in now if t in family or short_follow_up]
 
 
-def may_inherit(question: str) -> bool:
-    """앞 턴을 읽어 볼 만한가 — 본인 지칭 없이 주제 낱말(또는 미사용·수당)만 있는 질문. chat_ws가 이때만 앞 턴을 DB에서 읽는다"""
-    return bool(topics_of(question, assume_self=True) or _UNUSED.search(question)) and not topics_of(question)
+PRIOR_TURNS = 6                          # 이어받기 사슬을 다시 돌릴 앞 턴 수(chat_ws가 읽는다)
 
 
-def answer(question: str, f: Facts | None, today: date, prior_question: str | None = None,
-           short_follow_up: bool = False) -> tuple[str, list[int]] | None:
-    """(답 글, 근거 조 번호) 또는 None(모델이 답한다). prior_question: 같은 세션 바로 앞 질문"""
-    topics = topics_of(question) or inherited_topics(question, prior_question, short_follow_up)
+def may_inherit(question: str, today: date) -> bool:
+    """앞 턴을 읽어 볼 만한가 — 본인 지칭 없이 주제 낱말(또는 미사용·수당)이나 퇴직 예정일 정보가 있는 질문, 또는 본인 질문인데
+    날짜가 있는 것(앞 턴의 날짜를 이을 수도 있다). chat_ws가 이때만 앞 턴을 DB에서 읽는다"""
+    return bool(topics_of(question, assume_self=True) or _UNUSED.search(question) or date_info(question, today))
+
+
+def answer(question: str, f: Facts | None, today: date, prior_questions: list[str] | None = None) -> tuple[str, list[int]] | None:
+    """(답 글, 근거 조 번호) 또는 None(모델이 답한다). prior_questions: 같은 세션의 앞 질문(오래된 순)"""
+    topics, end = replay((prior_questions or []) + [question], today)[-1]
     if not topics or f is None:
         return None
     if f.retired_on is not None and f.retired_on <= today:
@@ -354,8 +478,9 @@ def answer(question: str, f: Facts | None, today: date, prior_question: str | No
                    " 연차·승진도 근로계약서에서 정한 바를 확인하세요.")), [2]
     parts, arts = [], []
     for t in topics:
-        body, a = {"연차": _leave_text, "연차수당": _unused_leave_text, "퇴직금": _severance_text, "자격수당": _cert_text,
-                   "승진": _promotion_text}[t](f, today)
+        fn = {"연차": _leave_text, "연차수당": _unused_leave_text, "퇴직금": _severance_text, "자격수당": _cert_text,
+              "승진": _promotion_text}[t]
+        body, a = fn(f, today, end) if t in ("연차", "연차수당", "퇴직금") else fn(f, today)
         parts.append(body)
         arts += [x for x in a if x not in arts]
     return "\n\n".join(parts), arts

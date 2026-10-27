@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from app import config
 from app.deps import header_agent, origin_ok, session_me
 from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
-from app.services import answer, context, dayparse, hr_personal, titles
+from app.services import answer, context, dayparse, hr_personal, payout, titles
 from app.services.answer import TurnContext, TurnDeps
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.followup import follow_up_reason
@@ -144,9 +144,10 @@ async def chat(ws: WebSocket, session_id: str):
                 # 후속 규칙에 안 걸려도("30만, 30만, 10만"처럼 원 없이 쓴 날짜별 금액도)
                 # 사내규정 개인화(PETMINT_HR_PERSONAL): 본인 지칭 없이 연차·퇴직금 등을 물으면 바로 앞 질문이 개인화였는지 본다
                 # ("연차 미사용분은 얼마 받나요?" — 후속 규칙에 안 걸리는 온전한 문장). 후속이 아니면 resolve는 질문 그대로다
-                if (follow_up_reason(msg.text) or (session.mode == "업무특화" and dayparse.is_reply(msg.text))
-                        or (session.mode == "사내규정" and config.HR_PERSONAL and hr_personal.may_inherit(msg.text))):
-                    prior = await asyncio.to_thread(turn_log.recent_turns, session_id, context.HISTORY_TURNS)
+                hr_chain = session.mode == "사내규정" and config.HR_PERSONAL and hr_personal.may_inherit(msg.text, payout.today())
+                if follow_up_reason(msg.text) or (session.mode == "업무특화" and dayparse.is_reply(msg.text)) or hr_chain:
+                    prior = await asyncio.to_thread(turn_log.recent_turns, session_id,
+                                                    max(context.HISTORY_TURNS, hr_personal.PRIOR_TURNS if hr_chain else 0))
                     resolved = await context.resolve(session.mode, msg.text, prior, pet, ws.app.state.llm)
                 ctx = TurnContext(turn_id=turn_id, session=session, pet=pet, scope=answer.scope_of(session.mode, pet),
                                   question=msg.text, agent=agent, resolved=resolved)

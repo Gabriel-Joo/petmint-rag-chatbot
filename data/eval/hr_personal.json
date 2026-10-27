@@ -1,5 +1,5 @@
 {
- "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다 · 2026-10-28 후속(sequences) 추가 — 운영에서 본인 연차 뒤 '연차 미사용분은 얼마 받나요?'가 모델로 갔다. HS는 이어받아야, HN은 모델로",
+ "note": "사내규정 개인화 탐침(2026-10-28) — 가상 직원, 기준일 2026-10-28. 평가 220·HR 검증 세트에서 뽑지 않았다. 기대값은 규정 문구로 따로 계산했다 · 2026-10-28 후속(sequences) 추가 — 운영에서 본인 연차 뒤 '연차 미사용분은 얼마 받나요?'가 모델로 갔다. HS는 이어받아야, HN은 모델로 · 2026-10-28 퇴직 예정일(HS06~12)·넓힌 이어받기의 음성(HN13~19) 추가 — 운영 '퇴직 날짜가 2026년 12월 30일 입니다'",
  "today": "2026-10-28",
  "cases": [
   {
@@ -433,6 +433,147 @@
    "turns": [
     "제 자격수당 얼마예요?",
     "퇴직금은 어떻게 계산해요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HS06",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금은 얼마예요?",
+    "퇴직 날짜가 2026년 12월 30일 입니다"
+   ],
+   "expect": [
+    "201434723"
+   ]
+  },
+  {
+   "id": "HS07",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금은 얼마예요?",
+    "퇴직 날짜가 2026년 12월 30일 입니다",
+    "퇴직 날짜가 그랬을때 받을 수 있는 퇴직금이요"
+   ],
+   "expect": [
+    "201434723"
+   ]
+  },
+  {
+   "id": "HS08",
+   "email": "jang.minhyuk@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "12월 31일에 퇴사하면요?"
+   ],
+   "expect": [
+    "42745109"
+   ]
+  },
+  {
+   "id": "HS09",
+   "email": "jang.minhyuk@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "그럼 내년 2월 말에 그만두면 얼마예요?"
+   ],
+   "expect": [
+    "43512829"
+   ]
+  },
+  {
+   "id": "HS10",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "12월 30일이요"
+   ],
+   "expect": [
+    "201434723"
+   ]
+  },
+  {
+   "id": "HS11",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 연차 몇 개 남았어요?",
+    "내년 3월에 그만두면 연차 수당 얼마예요?"
+   ],
+   "expect": [
+    "3697608"
+   ]
+  },
+  {
+   "id": "HS12",
+   "email": "noh.eunbi@petmint.example",
+   "turns": [
+    "제 연차 미사용 수당은 얼마예요?",
+    "그만두는 날이 12월 15일이에요"
+   ],
+   "expect": [
+    "2247847"
+   ]
+  },
+  {
+   "id": "HN13",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "재택근무는 며칠까지 돼요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN14",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "회사 주차장은 몇 시까지 쓸 수 있나요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN15",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 연차 몇 개 남았어요?",
+    "경조휴가는 며칠이에요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN16",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "정년은 몇 살이에요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN17",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "퇴직하면 회사 물품은 어떻게 반납해요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN18",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 퇴직금 얼마예요?",
+    "출장비는 어떻게 정산해요?"
+   ],
+   "expect": null
+  },
+  {
+   "id": "HN19",
+   "email": "kwon.taeho@petmint.example",
+   "turns": [
+    "제 연차 몇 개 남았어요?",
+    "고맙습니다"
    ],
    "expect": null
   }
