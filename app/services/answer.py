@@ -445,10 +445,10 @@ def _log_prompt(ctx: TurnContext, messages: list[dict], options: dict, results: 
 async def _hr_personal(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMessage]:
     """사내규정 개인화(2026-10-28) — 본인 연차·연차수당·퇴직금·자격수당·승진이면 인사 원장으로 코드가 답한다. 걸리지 않으면 아무것도 내지 않는다.
     검색보다 먼저 정한다: 근거 조항(sources)은 검색 결과가 아니라 코드가 실제로 쓴 조항이다 — 검색 결과를 내보내면 연차 답에
-    제43조(정년)·제33조(승진)가 붙었다(운영). 지금 질문에 본인 지칭이 없어도 바로 앞 질문이 개인화였으면 이어받는다(hr_personal.inherited_topics)"""
+    제43조(정년)·제33조(승진)가 붙었다(운영). 지금 질문에 본인 지칭이 없어도 앞 턴들이 개인화 사슬이면 이어받는다(hr_personal.replay)"""
     r = _r(ctx)
     facts = await asyncio.to_thread(deps.employees.load, ctx.session.agent_email)
-    out = hr_personal.answer(ctx.question, facts, payout.today(), r.prior_question, bool(r.follow_up))
+    out = hr_personal.answer(ctx.question, facts, payout.today(), r.prior_questions)
     if out is None:
         return
     text, articles = out
