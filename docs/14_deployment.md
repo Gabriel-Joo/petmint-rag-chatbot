@@ -312,7 +312,7 @@ ronanlab-infra/
 첫 관리자는 사람이 Pod 안에서 만든다(비밀번호는 화면에 안 보이게 두 번 묻는다).
 
 ```bash
-kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees add E2001003 --role 관리자
+kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees add E2001003 --role 관리자   # 권태호(가상)
 kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees list
 ```
 
@@ -329,6 +329,14 @@ Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 �
 **반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
 
 2026-10-28 운영 피드백으로 고쳤다(키는 같다, 이미지만): 본인 지칭 없는 후속("연차 미사용분은 얼마 받나요?")이 바로 앞 개인화 질문을 이어받는다, 미사용 연차수당 금액, 코드 답의 근거 조항은 검색 결과가 아니라 코드가 쓴 조항. 후속 15/15(전 2/15), 대상 밖 프롬프트 93/93 같음.
+
+#### 1-18. 가상 직원 이름·팀 바꾸기 (2026-10-28)
+
+키는 그대로, 이미지와 마이그레이션 둘이다. 초기화 Job이 Sync 때 돌린다.
+- insurance_core `0004_employee_rename`: 가상 직원 11명의 이름·이메일을 예시 이름(홍길동 등)에서 고객과 성까지 겹치지 않는 이름으로, 팀을 고객상담팀 하나로. **사번은 그대로**(입사연도 + 순번 — 이름과 상관없고 로그인 ID다)
+- petmint `0007_agent_email_rename`: 상담 기록의 상담원 이메일(`sessions.agent_email`)을 새 이메일로 옮긴다 — 지난 채팅·세션 소유권이 이어진다. 로그인(accounts·auth_sessions)은 사번으로 묶여 있어 다시 로그인할 필요가 없다
+
+로컬에서 확인: 바꾸기 전후로 직원별 세션 수가 같고(148·111·99…), 같은 비밀번호로 로그인해 지난 채팅이 그대로 보인다.
 
 ---
 

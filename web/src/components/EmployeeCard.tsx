@@ -14,7 +14,7 @@ export function EmployeeCard({ p }: { p: EmployeeProfile }) {
       <div className={s.top}>
         <div className={s.big}>
           <span className={s.customer}>{p.name}</span>
-          <span className={s.pet}>{[p.team, p.grade].filter(Boolean).join(" · ")}</span>
+          <span className={s.pet}>{p.grade}</span>{/* 팀은 하나(고객상담팀)라 띄우지 않는다 — 직급은 승진·수습·정년 계산에 걸린다 */}
           <span className={s.petMeta}>
             {p.employment_type !== "정규직" && `${p.employment_type} · `}입사 {p.hire_date} · 근속 {tenure}
             {p.tenure_excluded_days > 0 && ` (휴직 ${p.tenure_excluded_days}일 제외)`}

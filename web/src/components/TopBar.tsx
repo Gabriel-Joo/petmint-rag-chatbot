@@ -34,18 +34,20 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
     return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
 
+  // 상담원 표기 — 모두 상담원이라 팀은 쓰지 않는다. 관리자 계정은 역할을 그대로 붙인다("○○○ 관리자")
+  const who = me.name ? `${me.name} ${me.role === "관리자" ? "관리자" : "상담원"}` : me.email;
+
   return (
     <header className={s.bar}>
-      {/* 한 줄: 제목·부제 블록 → 모드 탭(+잠금 표시) → 전화 묶음(오른쪽 끝) */}
-      <div className={s.brandRow}>
-        <button className={s.brand} onClick={onHome} disabled={locked}>
-          <span className={s.brandTitle}>펫퍼민트 상담</span>
-          <span className={s.brandSub}>약관 안내 챗봇</span>
-        </button>
-        {IS_FAKE_API && <span className={s.fake} title="백엔드 대신 고정 응답을 돌려주는 가짜 API 층">가짜 API</span>}
-      </div>
-
-      <div className={s.navRow}>
+      {/* 왼쪽: 제목·부제 → 모드 탭(+잠금 표시). 좁으면 이 칸 안에서만 줄을 바꾼다 */}
+      <div className={s.leftCol}>
+        <div className={s.brandRow}>
+          <button className={s.brand} onClick={onHome} disabled={locked}>
+            <span className={s.brandTitle}>펫퍼민트 상담</span>
+            <span className={s.brandSub}>약관 안내 챗봇</span>
+          </button>
+          {IS_FAKE_API && <span className={s.fake} title="백엔드 대신 고정 응답을 돌려주는 가짜 API 층">가짜 API</span>}
+        </div>
         <div className={s.left}>
           <nav className={s.tabs} aria-label="모드">
             {MODES.map((m) => (
@@ -58,7 +60,10 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
           </nav>
           {locked && <span className={s.lock}>🔒 상담 중</span>}
         </div>
+      </div>
 
+      {/* 오른쪽: 전화 묶음 → 상담원. 늘 첫 줄 오른쪽 끝 — 모드·상담 중 표시로 자리가 바뀌지 않는다(2026-10-28) */}
+      <div className={s.rightCol}>
         {/* 개발·시연용 가상 전화(10번 1절) */}
         <div className={s.callWrap} ref={menuRef}>
           <button className={s.menuBtn} aria-label="전화 메뉴" aria-expanded={menuOpen} aria-controls="call-menu"
@@ -74,15 +79,20 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
                     title={locked ? "상담 중에는 전화가 울리지 않습니다" : undefined}>
               전화 울리기
             </button>
+            {/* 휴대폰 폭에서는 로그아웃이 이 메뉴 안으로 들어온다(상단 첫 줄 폭) — 넓은 화면에서는 숨는다 */}
+            {onLogout && (
+              <button className={`btn ${s.ringBtn} ${s.menuLogout}`} onClick={() => { setMenuOpen(false); onLogout(); }} disabled={locked}
+                      title={locked ? "상담을 종료한 뒤 로그아웃할 수 있습니다" : undefined}>
+                로그아웃
+              </button>
+            )}
           </div>
         </div>
 
         {/* 앱 로그인(13번 2-1절) — 누가 상담하는지. 상담 중에는 로그아웃을 막는다(종료 후에) */}
         {onLogout && (
           <div className={s.user}>
-            <span className={s.userName} title={me.email}>
-              {me.name ?? me.employee_id}{me.team && <span className={s.userTeam}> · {me.team}</span>}
-            </span>
+            <span className={s.userName} title={me.email}>{who}</span>
             <button className={`btn ${s.logout}`} onClick={onLogout} disabled={locked}
                     title={locked ? "상담을 종료한 뒤 로그아웃할 수 있습니다" : undefined}>
               로그아웃

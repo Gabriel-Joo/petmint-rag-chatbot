@@ -195,7 +195,8 @@ def promotion(f: Facts, today: date) -> dict:
 # ----- 답
 
 def _who(f: Facts) -> str:
-    return f"{f.name}님({f.team + ' ' if f.team else ''}{f.grade}, 입사 {_ymd(f.hire_date)})"
+    """답 머리 — 팀은 쓰지 않는다(상담원 전용 도구라 팀이 하나, 2026-10-28). 직급은 계산(승진·수습·정년)에 걸리므로 쓴다"""
+    return f"{f.name}님({f.grade}, 입사 {_ymd(f.hire_date)})"
 
 
 def _leave_text(f: Facts, today: date) -> tuple[str, list[int]]:

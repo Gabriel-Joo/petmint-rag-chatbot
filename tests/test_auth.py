@@ -3,7 +3,7 @@ test_auth.py
 앱 자체 인증(2026-10-28, 13번 2-1절).
 
 - RouteTest·WsTest: 라우터·의존성·Origin 검사 — AuthStore를 목으로 바꾼다(DB 없음, 늘 돈다)
-- StoreTest: AuthStore의 SQL — 로컬 MySQL(petmint·insurance_core)에서 가상 직원 E2025112(강도윤)의 계정을 만들었다 지운다.
+- StoreTest: AuthStore의 SQL — 로컬 MySQL(petmint·insurance_core)에서 가상 직원 E2025112(조현석)의 계정을 만들었다 지운다.
   PETMINT_DB_TESTS=1일 때만 돈다
 """
 
@@ -19,7 +19,7 @@ from app import config, deps
 from app.routers import auth, chat_ws, sessions
 from app.services.auth import AuthError, Me
 
-ME = Me("E2018032", "최현우", "choi.hyunwoo@petmint.example", "고객상담1팀", "대리", "상담원", False)
+ME = Me("E2018032", "장민혁", "jang.minhyuk@petmint.example", "고객상담팀", "대리", "상담원", False)
 
 
 def make_app(store, mode="app"):
@@ -71,7 +71,7 @@ class RouteTest(unittest.TestCase):
         cookie = r.headers["set-cookie"]
         for part in ("petmint_session=tok123", "HttpOnly", "SameSite=lax", "Path=/"):
             self.assertIn(part.lower(), cookie.lower())
-        self.assertEqual(r.json()["name"], "최현우")
+        self.assertEqual(r.json()["name"], "장민혁")
 
     def test_login_failure_message(self):
         self.store.login.side_effect = AuthError(401, "사번 또는 비밀번호가 올바르지 않습니다.")
@@ -171,7 +171,7 @@ class StoreTest(unittest.TestCase):
 
     def test_login_resolve_logout(self):
         token, me = self.store.login(self.EID, "first-pass-123", "127.0.0.1", "test")
-        self.assertEqual((me.name, me.email, me.must_change_password), ("강도윤", "kang.doyun@petmint.example", True))
+        self.assertEqual((me.name, me.email, me.must_change_password), ("조현석", "cho.hyunseok@petmint.example", True))
         self.assertEqual(self.store.resolve(token).employee_id, self.EID)
         self.store.logout(token)
         self.assertIsNone(self.store.resolve(token))
