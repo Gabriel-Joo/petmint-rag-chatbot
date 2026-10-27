@@ -45,6 +45,9 @@ COVERAGE_CODE = os.environ.get("PETMINT_COVERAGE_CODE", "0") == "1"
 AGE_CODE = os.environ.get("PETMINT_AGE_CODE", "0") == "1"
 # 2026-10-24: 면책 단서가 보장 쪽으로 빼 주는 경우(⑫ 침술 · ② 1년 이내 예방접종 · ⑲ 치아 외 구강질환)는 코드가 답한다(customer_facts.proviso_answer) — 기본 끔
 PROVISO_CODE = os.environ.get("PETMINT_PROVISO_CODE", "0") == "1"
+# 2026-10-28 업무특화 검색에서 보통약관(사람 상해보험) 제3·4·5조 낮추기 / 같은 제목 의료비 특약 조 올리기 — 기본 끔
+HUMAN_DEMOTE = os.environ.get("PETMINT_HUMAN_DEMOTE", "0") == "1"
+TWIN_ARTICLE = os.environ.get("PETMINT_TWIN_ARTICLE", "0") == "1"
 # 평가 전용: 오늘 날짜를 고정한다(YYYY-MM-DD). 대기기간·보험연도가 날짜에 따라 바뀌어 평가 정답이 날마다 달라졌다 — 평가 220은 기준일 2026-10-21.
 # 운영에서는 비워 둔다(실제 날짜)
 TODAY = os.environ.get("PETMINT_TODAY") or None

@@ -110,10 +110,11 @@ def check_static(cases: list[dict], chunks: dict[str, list[dict]], graphs: dict 
     return errors
 
 
-def new_search_fn(engine, builder):
-    """현재 검색: search_fn(query, scope, top_k) -> 결과 목록"""
+def new_search_fn(engine, builder, adjust=None):
+    """현재 검색: search_fn(query, scope, top_k) -> 결과 목록. adjust: rag_context.human_article_adjust(펫 약관만)"""
     from data import rag_context
-    return lambda query, scope, top_k: rag_context.search_with_graph(engine, builder, query, scope, top_k=top_k)
+    return lambda query, scope, top_k: rag_context.search_with_graph(
+        engine, builder, query, scope, top_k=top_k, adjust=adjust if scope.species != "인사규정" else None)
 
 
 def _load_module(name: str, path: Path):
