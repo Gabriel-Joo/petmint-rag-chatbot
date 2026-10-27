@@ -57,6 +57,7 @@ class Facts:
     hire_date: date
     birth_date: date
     retired_on: date | None
+    career_hire: bool = False                                                         # 경력직 — 수습 면제(제7조 ⑤)
     certificates: list[tuple[str, date, date | None]] = field(default_factory=list)   # (자격, 취득일, 사본 제출일)
     payroll: list[tuple[date, int, int]] = field(default_factory=list)                # (급여 달 1일, 임금총액, 월 통상임금)
     leaves: list[tuple[str, date, float]] = field(default_factory=list)               # (종류, 시작일, 일수)
@@ -73,7 +74,7 @@ class EmployeeStore:
     def load(self, email: str) -> Facts | None:
         with self.core.connect() as c:
             e = c.execute(text("SELECT employee_id, name, team, grade, grade_since, employment_type, hire_date, birth_date,"
-                               " retired_on FROM employees WHERE email = :m"), dict(m=email.lower())).first()
+                               " retired_on, career_hire FROM employees WHERE email = :m"), dict(m=email.lower())).first()
             if e is None:
                 return None
             eid = dict(e=e[0])
@@ -381,3 +382,37 @@ def sources(articles: list[int], hr_chunks: list[dict]) -> list[SourceItem]:
                               article_num=n, article_title=c.get("article_title"), coverage_type=None, score=1.0,
                               content="\n".join(r["content"] for r in rows)))
     return out
+
+
+def profile(f: Facts, today: date) -> dict:
+    """사내규정 본인 정보 블록(EmployeeProfile) — 답과 같은 계산을 쓴다. 급여·평균임금·수당 금액·평가는 넣지 않는다"""
+    days, excluded = tenure_days(f, today)
+    start = f.hire_date + timedelta(days=excluded)        # 뺀 휴직만큼 입사일을 미룬 날부터 센다
+    years, months = _years(start, today), _months(start, today) % 12
+    regular = f.employment_type == "정규직"
+    a = annual_leave(f, today) if regular else None
+    p = promotion(f, today) if regular else None
+    probation = None
+    if regular and not f.career_hire:
+        end = _add_months(f.hire_date, 3) - timedelta(days=1)
+        probation = end if end >= today else None
+    sixty = _add_years(f.birth_date, 60)
+    retire = _add_months(date(sixty.year, sixty.month, 1), 1) - timedelta(days=1)
+    return dict(employee_id=f.employee_id, name=f.name, team=f.team, grade=f.grade, employment_type=f.employment_type,
+                hire_date=f.hire_date, tenure_years=years, tenure_months=months, tenure_excluded_days=excluded,
+                leave_start=a and a["start"], leave_end=a and a["end"], leave_total=a and a["grant"],
+                leave_used=a and a["used"], leave_left=a and a["left"],
+                certificates=[dict(name=n, acquired_on=acq, submitted=sub is not None) for n, acq, sub in
+                              sorted(f.certificates, key=lambda c: c[1])],
+                next_grade=p and p["next"], promotion_eligible_on=p and p.get("eligible"),
+                probation_end=probation, retirement_on=retire)
+
+
+def _add_months(d: date, n: int) -> date:
+    m = d.month - 1 + n
+    return date(d.year + m // 12, m % 12 + 1, 1) if d.day == 1 else _clamp(d.year + m // 12, m % 12 + 1, d.day)
+
+
+def _clamp(y: int, m: int, day: int) -> date:
+    import calendar
+    return date(y, m, min(day, calendar.monthrange(y, m)[1]))

@@ -345,3 +345,29 @@ export interface MeOut {
 
 export interface LoginIn { employee_id: string; password: string }
 export interface PasswordIn { current: string; new: string }
+
+// ----- 사내규정 본인 정보 블록(2026-10-28) — app/schemas.py EmployeeProfile. 급여·수당 금액·평가는 없다 -----
+
+export interface ProfileCert { name: string; acquired_on: string; submitted: boolean }
+
+export interface EmployeeProfile {
+  employee_id: string;
+  name: string;
+  team: string | null;
+  grade: string;
+  employment_type: string;
+  hire_date: string;
+  tenure_years: number;
+  tenure_months: number;
+  tenure_excluded_days: number;
+  leave_start: string | null;
+  leave_end: string | null;
+  leave_total: number | null;
+  leave_used: number | null;
+  leave_left: number | null;
+  certificates: ProfileCert[];
+  next_grade: string | null;
+  promotion_eligible_on: string | null;
+  probation_end: string | null;
+  retirement_on: string | null;
+}

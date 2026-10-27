@@ -567,3 +567,33 @@ class MeOut(_Model):
     grade: str | None = None
     role: Role | None = None
     must_change_password: bool = False
+
+
+# ----- 사내규정 본인 정보 블록(2026-10-28) — 급여·평균임금·수당 금액·평가는 싣지 않는다(옆에서 볼 수 있다. 물을 때만 답에 나온다)
+
+class ProfileCert(_Model):
+    name: str
+    acquired_on: date
+    submitted: bool                               # 자격증 사본 제출 — 안 냈으면 수당이 나오지 않는다(제27조 ③)
+
+
+class EmployeeProfile(_Model):
+    employee_id: str
+    name: str
+    team: str | None
+    grade: str
+    employment_type: str
+    hire_date: date
+    tenure_years: int
+    tenure_months: int
+    tenure_excluded_days: int                     # 근속에 넣지 않은 휴직 일수(제22조 ④)
+    leave_start: date | None                      # 연차 — 정규직만(계약직은 개별근로계약)
+    leave_end: date | None
+    leave_total: float | None
+    leave_used: float | None
+    leave_left: float | None
+    certificates: list[ProfileCert]
+    next_grade: str | None                        # 다음 직급과 최소 체류연수가 차는 날(제33조 ②)
+    promotion_eligible_on: date | None
+    probation_end: date | None                    # 수습 중이면 끝나는 날(제7조)
+    retirement_on: date | None                    # 정년퇴직일 — 만 60세가 되는 달의 말일(제43조)

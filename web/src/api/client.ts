@@ -7,7 +7,7 @@
 // ============================================================================
 
 import type {
-  ArticleOut, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
+  ArticleOut, EmployeeProfile, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
   SessionCreate, SessionDetail, SessionOut, SessionPatch, SessionSummary, TurnOut,
 } from "./types";
 
@@ -76,6 +76,11 @@ export function login(body: LoginIn): Promise<MeOut> {
 
 export function logout(): Promise<void> {
   return request("POST", "/api/auth/logout");
+}
+
+/** GET /api/me/profile — 사내규정 본인 정보 블록. 인사 원장에 없는 상담원이면 404(블록을 띄우지 않는다) */
+export function getProfile(): Promise<EmployeeProfile> {
+  return request("GET", "/api/me/profile");
 }
 
 /** 바꾸면 다른 기기의 로그인은 서버가 끊는다 */

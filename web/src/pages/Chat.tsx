@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { ApiError } from "../api/client";
-import type { SessionOut, SessionSummary } from "../api/types";
+import { ApiError, getProfile } from "../api/client";
+import type { EmployeeProfile, SessionOut, SessionSummary } from "../api/types";
 import { ChatHistory } from "../components/ChatHistory";
+import { EmployeeCard } from "../components/EmployeeCard";
 import { TurnView } from "../components/TurnView";
 import { Composer } from "../components/Composer";
 import { ModeIcon } from "../components/ModeIcon";
@@ -118,6 +119,15 @@ export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [chat.turns]);
 
+  // 사내규정 본인 정보 블록 — 인사 원장에 없는 상담원(404)이면 띄우지 않는다. 원장은 대화로 바뀌지 않으므로 화면을 열 때 한 번
+  const [profile, setProfile] = useState<EmployeeProfile | null>(null);
+  useEffect(() => {
+    if (mode !== "사내규정") return;
+    let alive = true;
+    getProfile().then((p) => { if (alive) setProfile(p); }).catch(() => { if (alive) setProfile(null); });
+    return () => { alive = false; };
+  }, [mode]);
+
   return (
     <div className={`chat-text ${s.layout}`} ref={layoutRef}>
       {/* 아직 질문이 없으면 이미 새 대화다 — 빈 세션을 늘리지 않는다 */}
@@ -137,6 +147,7 @@ export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted
           <span className={s.avatar}><ModeIcon mode={mode} /></span>
           <p className={s.greeting}>{GREETING[mode]}</p>
         </div>
+        {mode === "사내규정" && profile && <EmployeeCard p={profile} />}
         <div ref={logRef} className={`raised ${s.log}`}>
           {!session && <div className={s.empty}>세션을 여는 중…</div>}
           {chat.turns.map((t) => (
