@@ -573,7 +573,14 @@ DELETE /api/sessions/{id}          상담 종료 / 목록에서 제거(deleted_a
 GET    /api/consultations/recent   최근 상담 탭 — 고객 단위, 상담원으로 거르지 않는다
 GET    /api/articles/{species}/{section}/{section_name}/{article_num}
 POST   /api/turns/{turn_id}/feedback
+
+GET    /api/auth/me                지금 상담원(auth_mode·이름·팀·역할·must_change_password). app 모드 비로그인은 401
+POST   /api/auth/login             사번·비밀번호 → HttpOnly 쿠키(app 모드만, access 모드는 404)
+POST   /api/auth/logout            서버 세션 행과 쿠키를 지운다
+POST   /api/auth/password          현재·새 비밀번호. 이 세션만 남기고 그 직원의 다른 로그인을 끊는다
 ```
+
+`/api/auth/*` 밖의 `/api`는 app 모드에서 로그인이 없으면 401, 임시 비밀번호를 아직 안 바꿨으면 403이다. WS는 4401(로그인 없음·만료)·4403(다른 출처)으로 닫는다.
 
 **읽기와 쓰기가 다르다.** 세션을 바꾸는 작업(PATCH·DELETE·WS·피드백)과 내 목록(`GET /api/sessions`)은 `agent_email`로 거르고, 남의 것은 없는 세션과 같게 404다. 반면 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다.**
 
@@ -667,9 +674,9 @@ K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 
 
 #### 7-4. 인증
 
-Cloudflare Access를 쓴다. 이 화면들은 고객 이름과 전화번호를 보여주므로 터널을 열기 전에 인증이 있어야 한다.
+처음에는 Cloudflare Access만 썼다. 이 화면들은 고객 이름과 전화번호를 보여주므로 터널을 열기 전에 인증이 있어야 한다. 앱은 `Cf-Access-Authenticated-User-Email` 헤더만 읽어 상담원 ID로 로그에 남긴다(`PETMINT_AUTH=access`, 기본).
 
-Access는 코드가 0줄이다. 앱은 `Cf-Access-Authenticated-User-Email` 헤더만 읽어 상담원 ID로 로그에 남긴다. 내부망 직접 접속에는 헤더가 없으므로, 내부망도 터널을 거치게 하거나 개발용 기본값을 둔다. 상세는 13번 문서다.
+2026-10-28 앱 자체 인증을 더했다(`PETMINT_AUTH=app`) — 사번·비밀번호 로그인, 서버 저장 세션 쿠키. 신원은 기간계 인사 원장(`insurance_core.employees`)에서 온다. 어느 모드든 로그인한 사람의 이메일이 `agent_email`이 되므로 세션 소유권 코드는 같다. 전환 이유와 보안 설계는 13번 2-1절이다.
 
 ---
 

@@ -294,6 +294,30 @@ ronanlab-infra/
 
 **반영 순서.** 1-14와 같다. 앱(5f1d48a까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
 
+#### 1-16. 직원 원장과 앱 로그인 (2026-10-28)
+
+코드와 스키마만 들어간다. **기본은 지금 그대로(`PETMINT_AUTH=access`)** — ConfigMap을 바꾸지 않으면 동작이 같다.
+
+- 초기화 Job이 하는 일이 늘어난다(매니페스트는 그대로): `db.migrate`가 petmint `0006_accounts`, `db.migrate --app insurance_core`가 `0003_employees`를 적용하고, `db.seed_insurance_core --if-empty`가 직원 테이블이 비어 있으면 가상 직원 11명(`db/fixtures/employees.json`, 이미지 안)을 깐다
+- 앱 의존성에 `argon2-cffi`가 더해진다(이미지 재빌드)
+
+앱 로그인을 켤 때(`PETMINT_AUTH: "app"`):
+
+| ConfigMap 키 | 값 | 비고 |
+| --- | --- | --- |
+| `PETMINT_AUTH` | `app` | 사번·비밀번호 로그인. 되돌리면(`access`) 로그인 화면이 사라지고 Access 헤더가 신원이다 |
+| `PETMINT_COOKIE_SECURE` | 기본 `1` | HTTPS(Access·ingress TLS) 뒤라 그대로. 로컬 http 개발만 `0` |
+| `PETMINT_ALLOWED_ORIGINS` | 기본은 개발 서버 둘 | 같은 Host의 Origin은 늘 허용 — 운영 도메인은 넣지 않아도 된다 |
+
+첫 관리자는 사람이 Pod 안에서 만든다(비밀번호는 화면에 안 보이게 두 번 묻는다).
+
+```bash
+kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees add E2001003 --role 관리자
+kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees list
+```
+
+Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 열 때는 petmint 호스트의 Access 정책을 풀어야 앱 로그인 화면이 바로 보인다 — 이것은 Cloudflare 대시보드에서 사람이 한다(13번 1-3절).
+
 ---
 
 #### 2. 왜 이렇게 했나
