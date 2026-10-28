@@ -48,6 +48,7 @@ sessions (상담 1건)
 | pet_id / pet_name / species / breed / pet_age | 이 턴이 누구 얘기였나 — 상담 중에 바뀐다 |
 | is_hypothetical | 가정 질문 여부(09번 4절) |
 | clarified | 되묻기가 발동했는지(09번 4절). △ 기록 경로 코드 작성(2026-10-18), 실행 확인 전 |
+| code_rule | 답한 코드 규칙(`code_rules.Rule.key` 13개 또는 `hr_personal`). NULL이면 모델이 답했다. 2026-10-29 `0008_turn_code_rule` — 그 전 턴도 NULL이라 규칙별 집계(`db.rule_report`, 16번 5절)는 적용 시각 이후만 본다 |
 | model / prompt_version / index_version | 재현에 필요한 버전 |
 | first_token_ms / latency_ms / created_at | 첫 토큰까지의 시간, 전체 지연 시간, 시각. `first_token_ms`는 모델 스왑 지연 측정에 쓴다(09번 7-3절) |
 | status | `ok` / `cancelled` / `error`. 08 평가가 미완성 턴을 걸러낼 수 있어야 한다 |

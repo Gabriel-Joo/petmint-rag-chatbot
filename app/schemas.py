@@ -178,6 +178,7 @@ class TurnLog(_Model):
     is_hypothetical: bool = False                  # 가정 질문(질문에 쓴 등급으로 검색, 09번 4절)
     clarified: bool = False                        # 되묻기 발동(09번 4절)
     chosen_section: str | None = None              # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
+    code_rule: str | None = None                   # 답한 코드 규칙(code_rules.Rule.key·hr_personal). None이면 모델 답(docs/16 5절)
     scope: list[ScopeRow] = Field(default_factory=list)       # 일반·사내규정은 비어 있다
     retrieved: list[RetrievedRow] = Field(default_factory=list)
     model: str
