@@ -40,7 +40,7 @@ from app.db import now, utc
 from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, ExclusionsMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
                          TablesMsg,
                          Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
-from app.services import article_display, customer_facts, guardrail, hr_personal, payout, tables
+from app.services import article_display, code_rules, customer_facts, guardrail, hr_personal, payout, tables
 from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
@@ -150,6 +150,7 @@ class TurnContext:
     answer: str = ""
     first_token_ms: int | None = None
     log: TurnLog | None = None                                # 끝나면(ok·error·cancelled) 채운다 — chat_ws가 done 전에 쓴다
+    code_rule: str | None = None                              # 답한 코드 규칙(code_rules.Rule.key) — 운영 로그로 규칙별 발동을 세려고
 
 
 def scope_of(mode: Mode, pet: Pet | None) -> SearchScope | None:
@@ -299,92 +300,18 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                     chosen: str | None = None) -> AsyncIterator[ServerMessage]:
     mode = ctx.session.mode
     r = _r(ctx)
-    if r.after_amount_ask:
-        # 코드가 되물은 턴(금액·날짜별 금액·일수) 바로 뒤 — 모델을 부르지 않고 카드와 같은 계산 결과로 답한다(payout.reply_turn):
-        # 업무특화 모델은 이 계산을 못 했다(틀린 숫자·거절 — data/review/amount_turn_20261021.md). 날짜별 금액이 필요하면
-        # 입력칸 카드(days_ask)로 한 번 더 묻는다
-        out = payout.reply_turn(ctx.question, r.card_text, r.reply_stage, r.prior_calc, ctx.pet, results, chosen)
+    # 코드 답 규칙(code_rules.RULES) — 위에서부터 돌고 처음 답을 낸 규칙이 답한다(모델을 부르지 않는다). 순서·조건은 docs/16.
+    # 되묻기 답 이어받기 → 미가입 특약 → 올해 받은·남은 → 금액 되묻기 → 카드(가정 등급 → 법률비용 → 치료비 질문 → 한도표)
+    # → 가입 나이 → 부담보 → 면책 단서 → 상해 후속 → 병명 되묻기. 업무특화 후속은 기준 질문까지 읽는다(card = r.card_text)
+    inp = code_rules.Inputs(mode=mode, question=ctx.question, card=r.card_text, pet=ctx.pet, resolved=r, results=results,
+                            chosen=chosen, embed=deps.retriever.embed)
+    for rule in code_rules.RULES:
+        if not rule.enabled(inp):
+            continue
+        out = await asyncio.to_thread(rule.call, inp) if rule.threaded else rule.call(inp)
         if out is not None:
-            for m in _code_answer(ctx, *out):
-                yield m
-            return
-    # 고객 고유 사실(4d) — 가입하지 않은 특약, 올해 받은·남은 보험금은 코드가 답한다(모델은 고객 정보를 받지 않는다)
-    fact = (customer_facts.not_enrolled(r.card_text, ctx.pet) or customer_facts.annual_answer(r.card_text, ctx.pet)
-            if config.CUSTOMER_FACTS else None)
-    if fact is not None:
-        for m in _code_answer(ctx, None, fact, ask=False):
-            yield m
-        return
-    if await asyncio.to_thread(payout.needs_amount, r.card_text, ctx.pet, deps.retriever.embed):
-        # 금액 되묻기 — 모델을 부르지 않고 묻고 끝낸다(정상 완료 턴). 입원/통원에 따라 총액과 일수(횟수)를 함께 묻는다.
-        # 다음 턴 "3일 입원 총 70만원"은 멀티턴으로 이 질문과 이어 붙고 코드가 계산한다(reply_turn).
-        # 등급 되묻기가 있으면 그 뒤에 온다(이 함수는 되묻기 응답 뒤에 불린다)
-        ctx.clarified = True
-        ctx.answer = payout.ask_text(r.card_text, ctx.pet, chosen)
-        ctx.first_token_ms = int((time.monotonic() - ctx.started) * 1000)
-        yield TokenMsg(turn_id=ctx.turn_id, text=ctx.answer)
-        yield ReferencesMsg(turn_id=ctx.turn_id, items=[])
-        ctx.log = _turn_log(ctx, "ok", [], [], [])
-        return
-    # 카드 순서: 가정 등급·유형 → 법률비용 → 의료비(치료비 금액 있음) → 한도표(금액 없이 한도만). 소송 낱말이 있으면 한도표는
-    # 나오지 않는다. 카드가 뜨면 답도 카드 값으로 코드가 만든다(2026-10-21 — 모델은 3천만원 소송의 변호사비를 30만원이라 했다).
-    # 업무특화 후속은 기준 질문까지 읽는다 — "그럼 입원은요?"의 금액·한도 낱말은 앞 질문에 있다
-    q = r.card_text
-    card = payout.hypothetical_card(q, ctx.pet) if config.CUSTOMER_FACTS else None
-    if card is not None:
-        for m in _code_answer(ctx, card, payout.limit_answer(card, ctx.pet, q), ask=False):
-            yield m
-        return
-    card = payout.legal_card(q, ctx.pet)
-    if card is not None:
-        for m in _code_answer(ctx, card, payout.legal_answer(card), ask=False):
-            yield m
-        return
-    # 의료비 카드가 뜨면 답도 카드 값으로 — 처음부터 금액을 다 말한 질문도 되묻기 뒤 턴과 같다(모델은 거절했다, R2·R26·R29)
-    out = payout.question_turn(q, ctx.pet, results, chosen)
-    if out is not None:
-        for m in _code_answer(ctx, *out):
-            yield m
-        return
-    card = payout.limit_card(q, ctx.pet, chosen)
-    if card is not None:
-        for m in _code_answer(ctx, card, payout.limit_answer(card, ctx.pet, q), ask=False):
-            yield m
-        return
-
-    # 3안(2026-10-23) — 보장 여부 질문에서 코드가 확실히 아는 부정 사실(부담보·대기기간 안)은 모델 대신 코드가 답한다.
-    # 카드(금액·한도)가 먼저다 — 카드 답에는 이미 부담보·대기기간 줄이 붙는다
-    if mode == "업무특화" and config.AGE_CODE and config.CUSTOMER_FACTS:
-        text = customer_facts.enrollment_age_answer(q, ctx.pet)       # 신규 가입 나이(2026-10-24) — 조건 셋, 범위 좁게
-        if text is not None:
-            for m in _code_answer(ctx, None, text, ask=False):
-                yield m
-            return
-    if mode == "업무특화" and config.COVERAGE_CODE and config.CUSTOMER_FACTS:
-        text = customer_facts.exclusion_answer(q, ctx.pet)        # 대기기간 결론(waiting_answer)은 측정에서 해가 커 쓰지 않는다
-        if text is not None:
-            for m in _code_answer(ctx, None, text, ask=False):
-                yield m
-            return
-
-    if mode == "업무특화" and config.PROVISO_CODE and config.CUSTOMER_FACTS:
-        text = customer_facts.proviso_answer(ctx.question, q, ctx.pet)  # 면책 단서 셋(2026-10-24) — 병명·치료 말은 지금 질문에서만
-        if text is not None:
-            for m in _code_answer(ctx, None, text, ask=False):
-                yield m
-            return
-
-    if mode == "업무특화" and config.ASK_DISEASE and config.CUSTOMER_FACTS:
-        # 병명 되묻기 뒤 상해로 답한 턴(2026-10-28) — 상해 보상 원칙(대기기간 없음) + 금액 되묻기. 앞 답이 되묻기일 때만
-        text = customer_facts.injury_followup(ctx.question, r.prior_question, r.prior_answer, ctx.pet)
-        if text is not None:
-            for m in _code_answer(ctx, None, text):
-                yield m
-            return
-    if mode == "업무특화" and config.ASK_DISEASE and config.CUSTOMER_FACTS and not r.follow_up:
-        text = customer_facts.disease_ask(ctx.question, ctx.pet)     # 병명 없이 보장을 묻는다(2026-10-28) — 원칙 + 병명 되묻기
-        if text is not None:
-            for m in _code_answer(ctx, None, text):                  # ask=True — 되물은 턴(turns.clarified)
+            ctx.code_rule = rule.key
+            for m in _code_answer(ctx, out.card, out.text, ask=out.ask):
                 yield m
             return
 
@@ -466,6 +393,7 @@ async def _hr_personal(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[Server
     if out is None:
         return
     text, articles = out
+    ctx.code_rule = "hr_personal"
     chunks = deps.builder.chunks.get(HR_CORPUS, [])
     ctx.sources = hr_personal.sources(articles, chunks)
     yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)

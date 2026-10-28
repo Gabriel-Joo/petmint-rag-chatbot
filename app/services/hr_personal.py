@@ -20,6 +20,25 @@ from datetime import date, timedelta
 
 from sqlalchemy import Engine, text
 
+from app.services.lexicon import (AMOUNT_HR as _AMOUNT,
+                                  SELF_REF as _SELF,
+                                  LEAVE as _LEAVE,
+                                  LEAVE_ASK as _LEAVE_ASK,
+                                  NOT_LEAVE as _NOT_LEAVE,
+                                  UNUSED_PAY as _UNUSED,
+                                  SEVERANCE as _SEVERANCE,
+                                  GRADE as _GRADE,
+                                  PAY as _PAY,
+                                  ORDINARY_WAGE as _ORDINARY,
+                                  PAY_NOT as _PAY_NOT,
+                                  WHEN as _WHEN,
+                                  RETIRE as _RETIRE,
+                                  DATE_YMD as _YMD,
+                                  DATE_MD as _MD,
+                                  DATE_M as _M,
+                                  CERT_ALLOWANCE as _CERT,
+                                  CERT_IF as _CERT_IF,
+                                  PROMOTION as _PROMO)
 from app.schemas import ReferenceItem, SourceItem
 from data.rag_context import graph_key
 
@@ -30,28 +49,9 @@ COUNTED_ABSENCE = ("육아휴직", "병역휴직")                              
 ARTICLES = {7: "수습", 12: "연장·야간·휴일근로", 24: "급여의 구성", 25: "급여의 지급", 26: "급여의 공제", 43: "정년", 17: "연차유급휴가", 18: "연차휴가의 사용", 2: "적용범위", 3: "용어의 정의", 22: "휴직", 27: "자격수당",
             28: "퇴직금", 32: "인사평가", 33: "승진", 41: "퇴직의 사유", 11: "근무시간"}
 
-_SELF = re.compile(r"(?:^|[\s,])(?:내|제|저|나)(?:\s|가|는|도|의)|저희\s*직원으로서|본인")
-_LEAVE = re.compile(r"연차|휴가")
-_LEAVE_ASK = re.compile(r"남|잔여|몇\s*(?:일|개)|며칠|얼마")
-_NOT_LEAVE = re.compile(r"경조|병가|출산|육아|특별휴가|재택|휴직")
-_UNUSED = re.compile(r"미사용|수당")
-_AMOUNT = re.compile(r"얼마|금액|받|나와|나오")
-_SEVERANCE = re.compile(r"퇴직금")
-_GRADE = re.compile(r"사원|대리|과장|차장|부장")
-_PAY = re.compile(r"월급|급여|봉급|임금|월급날")
-_ORDINARY = re.compile(r"통상\s*임금|통상\s*시급|시급|일급")
-_PAY_NOT = re.compile(r"세금|공제|실수령|떼|퇴직금|자격\s*수당|연차|평균\s*임금|통상|시급|일급")
-_WHEN = re.compile(r"언제|며칠|날짜|급여일|월급날|들어와|들어오|입금")
-_RETIRE = re.compile(r"퇴직|퇴사|그만\s*두|그만두|관두|그만\s*나|마지막\s*(?:근무|출근)")
-_YMD = re.compile(r"(\d{4})\s*[년./-]\s*(\d{1,2})\s*[월./-]\s*(\d{1,2})\s*일?")
-_MD = re.compile(r"(?:(올해|내년|후년)\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일")
-_M = re.compile(r"(?:(올해|내년|후년)\s*)?(\d{1,2})\s*월\s*(말|초|중순|에|달)?")
 _SHORT_DATE = 20                         # 날짜만 말한 짧은 답("12월 30일이요") — 이 길이 이하면 퇴직 낱말이 없어도 날짜 정보로 본다
 MONTHLY_HOURS = 209                     # 월 소정근로시간 — 주 40시간(제11조 ①) + 주휴, 통상임금 시급 환산의 통상 기준
 DAILY_HOURS = 8                         # 1일 소정근로시간(제11조 ①)
-_CERT = re.compile(r"자격\s*수당")
-_CERT_IF = re.compile(r"따면|취득하면|있으면|생기면|붙으면")
-_PROMO = re.compile(r"승진|진급|(?:대리|과장|차장|부장)\s*(?:이|가)?\s*(?:되|될|돼|달)")
 
 
 @dataclass

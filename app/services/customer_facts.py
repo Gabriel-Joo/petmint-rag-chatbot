@@ -19,17 +19,36 @@ from data.rag_context import infer_type_from_section_name
 from data.search_scope import MEDICAL_SECTIONS
 
 from app.schemas import Pet
+from app.services.lexicon import (DISEASE_NOTE as _DISEASE,
+                                  INJURY_EXCLUDE as _INJURY_NOT,
+                                  NO_NAME_FILLER as _ASK_FILLER,
+                                  INJURY as _INJURY,
+                                  EVENT_HAPPENED as _ASK_EVENT,
+                                  LIABILITY as _LIAB_WORDS,
+                                  AMOUNT_UPSELL as _ASK_AMOUNT,
+                                  COVERAGE_Q as _COVERAGE_Q,
+                                  COVERAGE_Q_STRICT as _ASK_COVER,
+                                  MEDICAL_INTENT as _MEDICAL_INTENT,
+                                  KNEE as _KNEE,
+                                  URINARY as _URINARY,
+                                  GUM as _GUM,
+                                  TOOTH as _TOOTH,
+                                  AGE_TALK as _AGE,
+                                  AGE_NUM as _AGE_NUM,
+                                  NEW_JOIN as _NEW_JOIN,
+                                  NOT_NEW_JOIN as _NOT_NEW,
+                                  ACUPUNCTURE as _ACU,
+                                  NOT_ACUPUNCTURE as _NOT_ACU,
+                                  FOLLOW_TAIL as _FOLLOW,
+                                  VACCINE as _VAC_WORD,
+                                  VACCINE_NONE as _VAC_NONE,
+                                  VACCINE_WHEN as _VAC_TIME,
+                                  LEGAL as _LEGAL_WORDS,
+                                  ASKED_MARK)
 from app.services import daycalc, payout
 
 LIAB = "갱신형 펫퍼민트 반려견 배상책임보장 특별약관"
 LEGAL = "민사소송법률비용Ⅱ보장 특별약관"
-_LIAB_WORDS = re.compile(r"물었|물어|물림|물렸|물려|배상|피해자|다치게")
-_LEGAL_WORDS = re.compile(r"소송|변호사|법률\s*비용|송달료|인지액")
-_MEDICAL_INTENT = re.compile(r"치료|병원|진료|수술|보험금|한도|얼마|보장|보상|나와|나오|청구|입원비|통원비")
-_DISEASE = re.compile(r"질병|병(?!원)|감기|장염|염증|[가-힣]염\b|아프|아파|증상|걸렸|걸리|설사|구토|진단|감염|질환")
-_KNEE = re.compile(r"슬개골|슬관절|고관절|무릎|탈구")
-_URINARY = re.compile(r"비뇨|방광|요로|신장|결석|소변|오줌|복막염|FIP", re.I)
-_AGE = re.compile(r"나이|몇\s*살|\d+\s*살|살이|살인데|살\s*넘|재가입|가입\s*(?:되|돼|할\s*수|가능|이\s*되)")
 
 
 def _josa(word: str, pair: str) -> str:
@@ -118,7 +137,6 @@ def notes(question: str, pet: Pet | None, on: date | None = None) -> list[str]:
 
 
 # "특정질병이에요?"(분류 질문, P49)는 넣지 않는다 — 모델이 분류표로 답한다
-_COVERAGE_Q = re.compile(r"보장|보상|보험\s*(?:되|돼|처리)|나와|나오|되나요|돼요|되죠|받을\s*수|청구|언제부터|언제까지|부담보")
 
 
 def exclusion_answer(question: str, pet: Pet | None) -> str | None:
@@ -145,9 +163,6 @@ def exclusion_answer(question: str, pet: Pet | None) -> str | None:
 # 가입 대상(S42 경찰견)·"가입 나이 제한이 있어요?"(숫자 없음)는 넣지 않는다
 _NUM_WORDS = {"한": 1, "두": 2, "세": 3, "네": 4, "다섯": 5, "여섯": 6, "일곱": 7, "여덟": 8, "아홉": 9, "열": 10,
               "열한": 11, "열두": 12, "열세": 13, "열네": 14, "열다섯": 15}
-_AGE_NUM = re.compile(r"(\d+|열다섯|열네|열세|열두|열한|다섯|여섯|일곱|여덟|아홉|열|한|두|세|네)\s*(?:살|세)(\s*(?:넘|초과|이상))?")
-_NEW_JOIN = re.compile(r"(?:새로|신규|처음|지금)\s*(?:보험\s*)?가입|가입\s*(?:할\s*수|돼|되|가능|이\s*되|하려|받아)")
-_NOT_NEW = re.compile(r"재가입|갱신|이어서|계속|연장|만기")
 _GRADES = ("고급형", "기본형", "실속형")
 AGE_LIMIT = {"고급형": 8, "기본형": 8, "실속형": 10}      # 일반조항 제2조 '반려동물' 1호 — 이 나이를 '초과'하면 가입 대상 아님
 
@@ -192,9 +207,6 @@ def enrollment_age_answer(question: str, pet: Pet | None) -> str | None:
 # 못 냈다(탐침: 침술 직접 정답 0/12, 접종 사실 대입 0/6, Ⅰ 유형 잇몸 거절 3/3 — data/review/proviso_carveout_probe.md).
 # 병명·치료 말은 지금 질문(current)에 있어야 걸린다 — 앞 질문에서 이어 온 말로는 걸리지 않는다("한약은요?"·"이빨 뽑는 건요?"는 모델에게).
 # 보장을 묻는 뜻은 앞 질문까지 합친 글(card)에서 본다
-_ACU = re.compile(r"침술|침\s*(?:을|도|은|만)?\s*(?:맞|치료|시술|놓)|한방\s*침")
-_NOT_ACU = re.compile(r"한약|뜸|부항|약침|재활|물리\s*치료")
-_FOLLOW = re.compile(r"이면요|라면요|은요|는요")
 # ② 면책 대상 감염병(의료비 특약 제2조 ② ② — 반려견 10, 반려묘는 6 더). 이름은 약관 그대로
 _VAC_DISEASES = [(r"파보", "파보 바이러스 감염"), (r"디스템퍼", "디스템퍼 바이러스 감염"), (r"파라\s*인플루엔자", "파라 인플루엔자 감염"),
                  (r"전염성\s*간염", "전염성 간염"), (r"아데노", "아데노 바이러스 2형 감염"), (r"광견병", "광견병"),
@@ -203,11 +215,6 @@ _VAC_DISEASES = [(r"파보", "파보 바이러스 감염"), (r"디스템퍼", "�
 _VAC_DISEASES_CAT = [(r"범백", "고양이범백혈구감소증"), (r"칼리시", "고양이칼리시바이러스 감염증"), (r"비기관지염", "고양이바이러스성비기관지염"),
                      (r"고양이\s*백혈병", "고양이백혈병 바이러스감염증"), (r"헤르페스", "고양이헤르페스바이러스감염증"),
                      (r"클라미디아", "고양이클라미디아감염증")]
-_VAC_WORD = re.compile(r"접종|백신|예방\s*주사")
-_VAC_NONE = re.compile(r"(?:접종|백신|예방\s*주사)[을를은는도]?\s*(?:안|못|한\s*적\s*없|기록\s*없|없)|안\s*맞|못\s*맞")
-_VAC_TIME = re.compile(r"(\d+|열한|열두|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(개월|달|년|주|일)\s*(전|안|이내|됐|지났|만)")
-_GUM = re.compile(r"잇몸|구내염|구강|치은")
-_TOOTH = re.compile(r"치아|이빨|스케일링|발치|뽑|치석|충치|치주")
 
 
 def _medical(pet: Pet) -> list:
@@ -282,17 +289,8 @@ def waiting_answer(question: str, pet: Pet | None, on: date | None = None) -> st
 #   ① 실제로 겪은 일(입원했·통원했·수술했·다쳤·병원 갔…) ② 보장을 묻는다(보장·보상·보험 되나요·처리·나와요)
 #   ③ 금액·숫자 없음(금액은 payout 되묻기) ④ 후속 아님(앞 턴에 병명이 있을 수 있다 — 호출하는 쪽이 본다)
 #   ⑤ 반려동물 이름·①②의 말을 지우면 한글이 하나도 남지 않는다 — 병명·상해·치료 이름("침"·"눈 수술"·"중성화")이 있으면 걸리지 않는다
-_ASK_EVENT = re.compile(r"입원\s*(?:했|중|해\s*있|시켰)|통원\s*(?:했|치료\s*받)|수술\s*(?:했|받)|다쳤|다쳐서|아파서|아프다|아파요|"
-                        r"병원\s*(?:에\s*)?(?:갔|다녀|데려|왔)|치료\s*(?:를\s*)?받(?:았|고)")
-_ASK_COVER = re.compile(r"보장|보상|보험\s*(?:이|은|으로)?\s*(?:되|돼|처리)|보험\s*처리|나와요|나오나요|나올까요|청구\s*(?:되|돼|할\s*수|가능)")
-_ASK_AMOUNT = re.compile(r"얼마|금액|\d|만\s*원|보험금")
-_ASK_FILLER = re.compile(r"입원|통원|수술|병원|치료|다쳤|다쳐서|아파서|아프다|아파요|아파|다녀왔|데려갔|갔는데|갔어요|왔는데|는데|했어요|했는데|했고|했다|받았는데|"
-                         r"받았어요|받고|중인데|중이에요|보장|보상|보험|처리|되나요|돼요|되나|될까요|되죠|나와요|나오나요|나올까요|청구|가능|할\s*수\s*있|있나요|"
-                         r"있어요|있을까요|해요|이에|이에요|인데|예요|요|어제|오늘|지금|방금|이번에|지난주|저희|우리|애가|아이가|강아지|고양이|혹시|근데|그런데|좀|"
-                         r"이거|이건|그거|제가|[이가은는을를도에의로]\b")
 
 
-ASKED_MARK = "어떤 질병이나 상해로"                     # disease_ask 답에 늘 든다 — 다음 턴이 이 답 뒤인지 알아본다
 
 
 def _riders(question: str, pet: Pet):
@@ -331,10 +329,6 @@ def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str |
 # (탐침 DS3 0/3). 앞 답이 disease_ask(ASKED_MARK)이고 이번 말이 상해를 말하면 코드가 답한다 — 범위:
 #   상해 낱말(다쳤·떨어졌·넘어졌·물렸·부러졌·화상·차에 치였…) · 금액·숫자 없음 · 다음은 빼고 모델·다른 코드 답으로:
 #   슬관절·고관절·탈구(반려견 제1조 ④ 1년 이내는 상해도 보상하지 않는다) · 그 반려동물 부담보 · 제2조 ① 면책 사유(고의·자연재해·전쟁…) · 질병 낱말
-_INJURY = re.compile(r"다쳤|다쳐|부딪|떨어져|떨어졌|넘어져|넘어졌|미끄러|물려|물렸|베였|베여|찔렸|찔려|골절|부러|삐었|삐끗|접질|화상|데었|데여|"
-                     r"교통사고|차에\s*치|치였|끼였|끼어서|긁혔|찢어|상처")
-_INJURY_NOT = re.compile(r"슬관절|슬개골|고관절|탈구|형성부전|무릎뼈|고의|일부러|지진|분화|해일|홍수|태풍|폭우|자연재해|전쟁|폭동|방사|핵|"
-                         r"감기|장염|염증|질병|병이|암|종양|구토|설사|피부병|알레르기|기침|열이")
 
 
 def maybe_injury_reply(question: str) -> bool:
