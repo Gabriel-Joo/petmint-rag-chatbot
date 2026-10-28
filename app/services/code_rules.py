@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from app import config
-from app.services import customer_facts, name_check, payout
+from app.services import customer_facts, name_check, named_cover, payout
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,12 @@ def _card(card, answer, ask=False):
 
 
 _FACTS = lambda i: config.CUSTOMER_FACTS
+
+
+def _cover_switch(i: "Inputs") -> bool:
+    """금액 되묻기 바로 뒤에 금액 대신 병명 보장을 물었다("감기도 돼요?") — 앞 질문의 '얼마'로 금액 되묻기를 되풀이하지 않는다(NAMED_COVER)"""
+    return (config.NAMED_COVER and i.mode == "업무특화" and bool(i.resolved.follow_up) and i.resolved.prior_answer in payout.ASKS
+            and named_cover.fires(i.question, None, i.pet) is not None)
 _BIZ = lambda flag: (lambda i: i.mode == "업무특화" and getattr(config, flag) and config.CUSTOMER_FACTS)
 
 RULES: list[Rule] = [
@@ -66,7 +72,7 @@ RULES: list[Rule] = [
                                                 i.chosen))),
     Rule("not_enrolled", "미가입 특약", _FACTS, lambda i: _text(customer_facts.not_enrolled(i.card, i.pet))),
     Rule("annual", "올해 받은·남은", _FACTS, lambda i: _text(customer_facts.annual_answer(i.card, i.pet))),
-    Rule("needs_amount", "금액 되묻기", lambda i: True,
+    Rule("needs_amount", "금액 되묻기", lambda i: not _cover_switch(i),
          lambda i: (Outcome(None, payout.ask_text(i.card, i.pet, i.chosen), True)
                     if payout.needs_amount(i.card, i.pet, i.embed) else None), threaded=True),
     Rule("hypothetical", "가정 등급 한도표", _FACTS,
@@ -79,6 +85,8 @@ RULES: list[Rule] = [
     Rule("age", "가입 나이", _BIZ("AGE_CODE"), lambda i: _text(customer_facts.enrollment_age_answer(i.card, i.pet))),
     Rule("exclusion", "부담보", _BIZ("COVERAGE_CODE"), lambda i: _text(customer_facts.exclusion_answer(i.card, i.pet))),
     Rule("proviso", "면책 단서", _BIZ("PROVISO_CODE"), lambda i: _text(customer_facts.proviso_answer(i.question, i.card, i.pet))),
+    Rule("named_cover", "병명 보장 대조", _BIZ("NAMED_COVER"),
+         lambda i: _text(named_cover.answer(i.question, i.card, i.resolved.prior_answer, i.pet, customer_facts.notes))),
     Rule("injury_followup", "상해 후속", _BIZ("ASK_DISEASE"),
          lambda i: _text(customer_facts.injury_followup(i.question, i.resolved.prior_question, i.resolved.prior_answer, i.pet), ask=True)),
     Rule("disease_ask", "병명 되묻기", lambda i: _BIZ("ASK_DISEASE")(i) and not i.resolved.follow_up,

@@ -56,6 +56,9 @@ HR_PERSONAL = os.environ.get("PETMINT_HR_PERSONAL", "0") == "1"
 ASK_DISEASE = os.environ.get("PETMINT_ASK_DISEASE", "0") == "1"
 # 2026-10-28 B안: 병명 되묻기 ⑤(병명·증상 이름이 있는가)를 베이스 모델로 본다(name_check). 실패하면 정규식으로 — 기본 끔
 ASK_DISEASE_LLM = os.environ.get("PETMINT_ASK_DISEASE_LLM", "0") == "1"
+# 병명이 있는 보장 질문(2026-10-29) — 그 반려동물 의료비 특약 제2조 면책 목록과 대조해 코드가 답한다(named_cover). 금액 되묻기 뒤
+# "감기도 돼요?"처럼 다른 것을 물으면 금액 되묻기를 되풀이하지 않는다
+NAMED_COVER = os.environ.get("PETMINT_NAMED_COVER", "0") == "1"
 # 평가 전용: 오늘 날짜를 고정한다(YYYY-MM-DD). 대기기간·보험연도가 날짜에 따라 바뀌어 평가 정답이 날마다 달라졌다 — 평가 220은 기준일 2026-10-21.
 # 운영에서는 비워 둔다(실제 날짜)
 TODAY = os.environ.get("PETMINT_TODAY") or None
