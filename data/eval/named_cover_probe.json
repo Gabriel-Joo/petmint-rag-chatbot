@@ -1,0 +1,421 @@
+{
+ "note": "병명 보장 질문 탐침(2026-10-29) — 평가 220에서 뽑지 않았다. 기준일 2026-10-21. sequences만 쓴다(한 턴짜리도)",
+ "ask": [],
+ "negatives": [],
+ "sequences": [
+  {
+   "id": "NC01",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기도 보장되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC02",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기에 걸려서 입원한 것도 보장이 되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC03",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 감기에 걸려서 입원했는데 이것도 보장이 되나요? 보장되는 질병이 맞는지"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC04",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 입원했는데 보험금 얼마나 나와요?",
+    "감기도 돼요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ],
+    "none": [
+     "치료비 총액과 입원 일수를 알려"
+    ]
+   }
+  },
+  {
+   "id": "NC05",
+   "pet_id": "P005",
+   "customer_id": "C004",
+   "turns": [
+    "콩이가 장염으로 통원 치료 받았어요. 보장되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC06",
+   "pet_id": "P002",
+   "customer_id": "C001",
+   "turns": [
+    "나비 결막염도 보험 되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC07",
+   "pet_id": "P004",
+   "customer_id": "C003",
+   "turns": [
+    "치즈가 방광염인데 보장돼요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "90일"
+    ]
+   }
+  },
+  {
+   "id": "NC08",
+   "pet_id": "P013",
+   "customer_id": "C010",
+   "turns": [
+    "별이 피부염 치료도 보상되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "30일"
+    ]
+   }
+  },
+  {
+   "id": "NC09",
+   "pet_id": "P005",
+   "customer_id": "C004",
+   "turns": [
+    "콩이 중성화 수술도 보장되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "보상하지 않습니다"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC10",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 파보 걸렸는데 보장돼요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "예방접종 기록"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC11",
+   "pet_id": "P004",
+   "customer_id": "C003",
+   "turns": [
+    "치즈 칼리시 바이러스 걸렸는데 보험 되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "예방접종 기록"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC12",
+   "pet_id": "P005",
+   "customer_id": "C004",
+   "turns": [
+    "콩이 서혜부 탈장 수술 보장되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "보상하지 않습니다"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC13",
+   "pet_id": "P002",
+   "customer_id": "C001",
+   "turns": [
+    "나비가 진드기 때문에 피부가 상했는데 보상되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "보상하지 않습니다"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC14",
+   "pet_id": "P005",
+   "customer_id": "C004",
+   "turns": [
+    "콩이 유전병이 올해 처음 발견됐는데 보장되나요?"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "해당 보험기간에 한하여"
+    ]
+   }
+  },
+  {
+   "id": "NC15",
+   "pet_id": "P004",
+   "customer_id": "C003",
+   "turns": [
+    "치즈가 입원했는데 보험 되나요?",
+    "감기예요"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC16",
+   "pet_id": "P013",
+   "customer_id": "C010",
+   "turns": [
+    "별이가 입원했어요 보장되나요?",
+    "장염이요"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "30일"
+    ]
+   }
+  },
+  {
+   "id": "NC17",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기로 3일 입원했고 50만원 나왔는데 얼마 받아요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC18",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "슬개골 탈구도 보장되나요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ],
+    "any": [
+     "부담보"
+    ]
+   }
+  },
+  {
+   "id": "NC19",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "파보 예방접종 6개월 전에 했는데 파보 걸리면 보장돼요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC20",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기 걸리면 통원 몇 번까지 보장돼요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC21",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "태풍 때 비 맞고 감기 걸렸는데 보장되나요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC22",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기 치료비 청구는 어떻게 해요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC23",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코 장염이랑 피부염 둘 다 보장되나요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC24",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "감기 예방접종 비용도 보장되나요?"
+   ],
+   "expect": {
+    "none": [
+     "면책 목록에 없",
+     "면책 감염병이라"
+    ]
+   }
+  },
+  {
+   "id": "NC25",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 입원했는데 보험금 얼마나 나와요?",
+    "치료비는 50만원이에요"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "원"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC26",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 입원했는데 보험금 얼마나 나와요?",
+    "3일 입원했고 총 70만원이요"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "원"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  },
+  {
+   "id": "NC27",
+   "pet_id": "P001",
+   "customer_id": "C001",
+   "turns": [
+    "초코가 입원했는데 보험금 얼마나 나와요?",
+    "감기로 3일 입원했고 60만원이요"
+   ],
+   "expect": {
+    "refuse": false,
+    "any": [
+     "원"
+    ],
+    "none": [
+     "면책 목록에 없"
+    ]
+   }
+  }
+ ]
+}

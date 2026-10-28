@@ -14,7 +14,7 @@ from scripts.eval_serving import pets
 
 ROOT = Path(__file__).resolve().parent.parent
 ORDER = ["reply_turn", "not_enrolled", "annual", "needs_amount", "hypothetical", "legal", "question_turn", "limit", "age",
-         "exclusion", "proviso", "injury_followup", "disease_ask"]
+         "exclusion", "proviso", "named_cover", "injury_followup", "disease_ask"]
 NEEDS_HISTORY = {"reply_turn", "injury_followup"}          # 앞 턴이 있어야 발동 — 단독 질문 겹침 검사에서 뺀다
 KNOWN = {("올해 남은 입원 한도가 얼마예요?", ("annual", "limit")),
          ("슬개골 탈구로 입원했는데 보험금 얼마나 나와요?", ("needs_amount", "exclusion"))}   # docs/16 3-1절
@@ -34,7 +34,8 @@ class Registry(unittest.TestCase):
     def test_order(self):
         self.assertEqual([r.key for r in code_rules.RULES], ORDER)
 
-    @mock.patch.multiple(config, CUSTOMER_FACTS=True, AGE_CODE=True, COVERAGE_CODE=True, PROVISO_CODE=True, ASK_DISEASE=True)
+    @mock.patch.multiple(config, CUSTOMER_FACTS=True, AGE_CODE=True, COVERAGE_CODE=True, PROVISO_CODE=True, ASK_DISEASE=True,
+                         NAMED_COVER=True)
     def test_overlaps_are_known(self):
         pm = pets()
         stub = SimpleNamespace(after_amount_ask=False, follow_up=None, prior_question=None, prior_answer=None)
