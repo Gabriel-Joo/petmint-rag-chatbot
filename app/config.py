@@ -52,6 +52,8 @@ HUMAN_DEMOTE = os.environ.get("PETMINT_HUMAN_DEMOTE", "0") == "1"
 TWIN_ARTICLE = os.environ.get("PETMINT_TWIN_ARTICLE", "0") == "1"
 # 2026-10-28 사내규정 개인화: 상담원 본인의 연차 잔여·퇴직금·자격수당·승진 시점은 인사 원장으로 코드가 답한다(hr_personal) — 기본 끔
 HR_PERSONAL = os.environ.get("PETMINT_HR_PERSONAL", "0") == "1"
+# 2026-10-28 병명 없이 보장을 묻는 업무특화 질문은 코드가 원칙 + 병명 되묻기로 답한다(customer_facts.disease_ask) — 기본 끔
+ASK_DISEASE = os.environ.get("PETMINT_ASK_DISEASE", "0") == "1"
 # 평가 전용: 오늘 날짜를 고정한다(YYYY-MM-DD). 대기기간·보험연도가 날짜에 따라 바뀌어 평가 정답이 날마다 달라졌다 — 평가 220은 기준일 2026-10-21.
 # 운영에서는 비워 둔다(실제 날짜)
 TODAY = os.environ.get("PETMINT_TODAY") or None

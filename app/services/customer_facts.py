@@ -274,3 +274,46 @@ def waiting_answer(question: str, pet: Pet | None, on: date | None = None) -> st
         return None
     return "\n".join(lines + ["이 기간에 발생한 것인지는 진단일로 판단합니다. 기간이 지난 뒤 발생한 질병은 다른 면책 사유가 없으면 "
                                "약관에 따라 보상 대상입니다."])
+
+
+# 2026-10-28 병명 없이 보장을 묻는 질문(PETMINT_ASK_DISEASE) — "○○가 입원했어요. 보장되나요?"는 제1조·제2조가 발췌에 다 와도 모델이 거절했다
+# (평가 L02·L14 3/3, 탐침). 병명을 모르면 면책·부담보·대기기간을 볼 수 없으니 거절이 아주 틀린 것은 아니지만 상담원이 막힌다 →
+# 가입 의료비 특약으로 '질병·상해 치료면 보상' 원칙을 말하고 병명을 되묻는다. 범위를 좁게 — 다섯 조건이 다 맞아야 한다:
+#   ① 실제로 겪은 일(입원했·통원했·수술했·다쳤·병원 갔…) ② 보장을 묻는다(보장·보상·보험 되나요·처리·나와요)
+#   ③ 금액·숫자 없음(금액은 payout 되묻기) ④ 후속 아님(앞 턴에 병명이 있을 수 있다 — 호출하는 쪽이 본다)
+#   ⑤ 반려동물 이름·①②의 말을 지우면 한글이 하나도 남지 않는다 — 병명·상해·치료 이름("침"·"눈 수술"·"중성화")이 있으면 걸리지 않는다
+_ASK_EVENT = re.compile(r"입원\s*(?:했|중|해\s*있|시켰)|통원\s*(?:했|치료\s*받)|수술\s*(?:했|받)|다쳤|다쳐서|아파서|아프다|아파요|"
+                        r"병원\s*(?:에\s*)?(?:갔|다녀|데려|왔)|치료\s*(?:를\s*)?받(?:았|고)")
+_ASK_COVER = re.compile(r"보장|보상|보험\s*(?:이|은|으로)?\s*(?:되|돼|처리)|보험\s*처리|나와요|나오나요|나올까요|청구\s*(?:되|돼|할\s*수|가능)")
+_ASK_AMOUNT = re.compile(r"얼마|금액|\d|만\s*원|보험금")
+_ASK_FILLER = re.compile(r"입원|통원|수술|병원|치료|다쳤|다쳐서|아파서|아프다|아파요|아파|다녀왔|데려갔|갔는데|갔어요|왔는데|는데|했어요|했는데|했고|했다|받았는데|"
+                         r"받았어요|받고|중인데|중이에요|보장|보상|보험|처리|되나요|돼요|되나|될까요|되죠|나와요|나오나요|나올까요|청구|가능|할\s*수\s*있|있나요|"
+                         r"있어요|있을까요|해요|이에|이에요|인데|예요|요|어제|오늘|지금|방금|이번에|지난주|저희|우리|애가|아이가|강아지|고양이|혹시|근데|그런데|좀|"
+                         r"이거|이건|그거|제가|[이가은는을를도에의로]\b")
+
+
+def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str | None:
+    """병명 없이 보장을 묻는 질문 → 가입 의료비 특약의 원칙 + 병명 되묻기. 아니면 None"""
+    if pet is None or not (_ASK_EVENT.search(question) and _ASK_COVER.search(question)) or _ASK_AMOUNT.search(question):
+        return None
+    rest = re.sub(re.escape(pet.name) + r"(?:이|가|는|은|를|을|도|의)?", " ", question)
+    if re.search(r"[가-힣]", _ASK_FILLER.sub(" ", rest)):
+        return None
+    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+    kind = "입원" if re.search(r"입원", question) else "통원" if re.search(r"통원", question) else None
+    riders = [p for p in medical if kind is None or kind in p.section_name]
+    if not riders:
+        return None                                   # 그 특약이 없으면 not_enrolled가 먼저 답한다 — 여기서는 지어내지 않는다
+    names = ", ".join(short_name(p) for p in riders)              # short_name에 등급이 들어 있다
+    treat, did = {"입원": ("입원 치료를", "입원했는지"), "통원": ("통원 치료를", "통원했는지")}.get(kind, ("치료를", "치료받았는지"))
+    lines = [f"질병이나 상해로 {treat} 받았다면 {pet.name}{_josa(pet.name, '은는')} {names} 특약으로 보상됩니다"
+             f"(1일 지급 한도·자기부담금·보상비율 적용, 제1조).",
+             f"다만 질병에 따라 보상하지 않는 경우(제2조 면책·부담보·대기기간)가 있어, **어떤 질병이나 상해로 {did}** 알려 주시면 "
+             f"보장 여부를 확인해 드릴게요."]
+    on = on or payout.today()
+    start = max((p.contract_date for p in medical), default=None)
+    if start is not None and (on - start).days < 30:
+        end = start + timedelta(days=29)
+        lines.append(f"참고: {pet.name}{_josa(pet.name, '은는')} {start.isoformat()} 가입이라 {end.month}월 {end.day}일까지 발생한 질병은 "
+                     f"보상하지 않습니다(제1조 ③) — 발병일도 함께 알려 주세요. 상해는 해당하지 않습니다.")
+    return "\n".join(lines)

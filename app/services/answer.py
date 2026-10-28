@@ -374,6 +374,13 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                 yield m
             return
 
+    if mode == "업무특화" and config.ASK_DISEASE and config.CUSTOMER_FACTS and not r.follow_up:
+        text = customer_facts.disease_ask(ctx.question, ctx.pet)     # 병명 없이 보장을 묻는다(2026-10-28) — 원칙 + 병명 되묻기
+        if text is not None:
+            for m in _code_answer(ctx, None, text):                  # ask=True — 되물은 턴(turns.clarified)
+                yield m
+            return
+
     items: list[prompts.ExcerptItem] = []
     if ctx.scope is None:                      # 일반 — 검색 없이 질문만(후속이면 최근 3턴 이력을 앞에)
         messages = r.history + [{"role": "user", "content": ctx.question}]
