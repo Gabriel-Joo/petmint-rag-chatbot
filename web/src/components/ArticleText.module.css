@@ -1,0 +1,21 @@
+/* 근거 패널 약관 원문(2026-10-28) — 패널 글씨(--font-xs)를 따른다. 박스는 보라 띠, 예시는 초록 띠(상태 색이 아니라 구분용 옅은 색).
+   표는 패널 폭 안에서 줄바꿈하고, 넘치면 표만 가로로 민다(본문은 넘치지 않는다) */
+.raw { white-space: pre-wrap; }
+.doc { display: flex; flex-direction: column; }
+.section + .section { margin-top: 6px; }
+.p, .item { margin: 0 0 6px; }
+.item { padding-left: 1.1em; text-indent: -1.1em; }
+.label { font-size: var(--font-2xs); font-weight: var(--font-weight-label); color: var(--text-dim); margin: 8px 0 2px; }
+.label:first-child { margin-top: 0; }
+.box { border-left: 3px solid var(--primary-soft); background: var(--surface); border-radius: 0 6px 6px 0; padding: 6px 8px; margin: 2px 0 8px; font-size: var(--font-2xs); }
+.box .p, .box .item { margin-bottom: 4px; }
+.example { border-left-color: var(--grade-low); }
+.boxTitle { font-weight: var(--font-weight-label); margin-bottom: 4px; }
+.figure { margin: 4px 0 0; font-family: var(--mono); font-size: var(--font-2xs); color: var(--text-dim); white-space: pre; overflow-x: auto; }
+.tableWrap { overflow-x: auto; margin: 2px 0 8px; }
+.table { border-collapse: collapse; width: 100%; font-size: var(--font-2xs); }
+.table th, .table td { border: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; }
+.table th { background: var(--primary-soft); font-weight: var(--font-weight-label); }
+.grade { display: flex; align-items: center; gap: 0.3em; background: none; border: none; padding: 2px 0; font-size: var(--font-2xs);
+         font-weight: var(--font-weight-label); color: var(--text-dim); }
+.grade.mine { color: var(--primary); }

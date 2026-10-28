@@ -145,6 +145,27 @@ export interface ArticleOut {
   coverage_type: Grade | null;
   paragraph_num: number | null;
   content: string;
+  /** 표시용 블록(2026-10-28, app/services/article_display.py) — 약관만. 인사규정은 null이라 content를 그대로 보인다 */
+  sections?: ArticleSection[] | null;
+}
+
+/** label: 제N항 / p: 문단(item=항목) / box: 【】 박스(example=예시) / table: 공백 정렬 표 */
+export interface ArticleBlock {
+  kind: "label" | "p" | "box" | "table";
+  text?: string | null;
+  item?: boolean;
+  title?: string | null;
+  example?: boolean;
+  paras?: ArticleBlock[] | null;
+  figure?: string | null;
+  rows?: string[][] | null;
+}
+
+export interface ArticleSection {
+  grade: Grade | null;
+  /** 근거 결과의 등급(가입 등급) — 먼저 펼친다 */
+  mine: boolean;
+  blocks: ArticleBlock[];
 }
 
 export interface FeedbackIn {
@@ -176,6 +197,8 @@ export interface SourceItem {
   coverage_type: Grade | null;
   score: number;
   content: string;
+  /** 접힌 미리보기 — PDF 줄바꿈을 이은 글(약관만). 없으면 content */
+  snippet?: string | null;
 }
 
 export interface ReferenceItem {

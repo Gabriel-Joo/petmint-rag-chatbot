@@ -389,6 +389,24 @@ class RecentConsultation(_Model):
     last_consulted_at: datetime
 
 
+class ArticleBlock(_Model):
+    """표시용 블록(2026-10-28, article_display) — label: 제N항 / p: 문단(item=항목) / box: 【】 박스 / table: 공백 정렬 표"""
+    kind: Literal["label", "p", "box", "table"]
+    text: str | None = None
+    item: bool = False
+    title: str | None = None
+    example: bool = False
+    paras: list["ArticleBlock"] | None = None
+    figure: str | None = None                      # 박스 뒤 그림 글자(고정폭)
+    rows: list[list[str]] | None = None
+
+
+class ArticleSection(_Model):
+    grade: Grade | None                            # 등급별로 다른 조(의료비 특약 제1조 등)는 등급마다 한 묶음
+    mine: bool                                     # 근거 결과의 등급(가입 등급) — 화면이 먼저 펼친다
+    blocks: list[ArticleBlock]
+
+
 class ArticleOut(_Model):
     species: Corpus
     section: str
@@ -396,7 +414,8 @@ class ArticleOut(_Model):
     article_num: int | None
     coverage_type: Grade | None = None
     paragraph_num: int | None = None
-    content: str
+    content: str                                   # 원문 그대로(검색·발췌와 같은 글)
+    sections: list[ArticleSection] | None = None   # 약관(강아지·고양이)만 — 표시용. 인사규정은 None(원문이 이미 깨끗하다)
 
 
 class FeedbackIn(_Model):
@@ -444,6 +463,7 @@ class SourceItem(_Model):
     coverage_type: Grade | None = None
     score: float
     content: str
+    snippet: str | None = None                     # 접힌 미리보기 — PDF 줄바꿈을 이은 글(article_display.snippet). 약관만
 
 
 class ReferenceItem(_Model):

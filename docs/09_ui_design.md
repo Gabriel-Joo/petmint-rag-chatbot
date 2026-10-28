@@ -572,6 +572,7 @@ PATCH  /api/sessions/{id}          제목 변경·고정 — 일반·사내규�
 DELETE /api/sessions/{id}          상담 종료 / 목록에서 제거(deleted_at)
 GET    /api/consultations/recent   최근 상담 탭 — 고객 단위, 상담원으로 거르지 않는다
 GET    /api/articles/{species}/{section}/{section_name}/{article_num}
+                                   content는 원문 그대로, sections는 표시용 블록(약관만, 2026-10-28 — 10번 7절)
 POST   /api/turns/{turn_id}/feedback
 
 GET    /api/auth/me                지금 상담원(auth_mode·이름·팀·역할·must_change_password). app 모드 비로그인은 401
