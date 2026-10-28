@@ -16,6 +16,8 @@ from app.routers import articles
 def client(content: str | None) -> tuple[TestClient, mock.Mock]:
     builder = mock.Mock()
     builder.fetch_article_content.return_value = content
+    builder.fetch_article_rows.return_value = [{"content": content or "", "paragraph_num": None, "coverage_type": None}]
+    builder.chunks = {"강아지": [{"content": content or ""}]}
     app = FastAPI()
     app.include_router(articles.router)
     app.dependency_overrides[deps.builder] = lambda: builder
@@ -32,7 +34,14 @@ class ArticleRouteTest(unittest.TestCase):
 
     def test_pet_article(self):
         c, _ = client("본문")
-        self.assertEqual(c.get("/api/articles/강아지/보통약관/_/8").status_code, 200)
+        r = c.get("/api/articles/강아지/보통약관/_/8")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["content"], "본문")                       # 원문은 그대로
+        self.assertEqual(r.json()["sections"][0]["blocks"][0]["text"], "본문")  # 표시용 블록은 더해진다
+
+    def test_hr_article_has_no_display_blocks(self):
+        c, _ = client("월 3회 이상 무단지각한 직원은 징계할 수 있다.")
+        self.assertIsNone(c.get("/api/articles/인사규정/본칙/제6장 교육 및 평가/33").json()["sections"])
 
     def test_unknown_corpus(self):
         c, _ = client("본문")

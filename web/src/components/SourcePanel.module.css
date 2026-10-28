@@ -32,8 +32,7 @@
   padding: 8px 10px 10px;
   font-size: var(--font-xs);
   line-height: 1.65;
-  white-space: pre-wrap;
-  max-height: 320px;
+  max-height: 480px;          /* 2026-10-28 320 → 480 — 줄을 이으니 같은 높이에 더 들어가지만 표·박스가 있어 조금 늘린다 */
   overflow-y: auto;
 }
 .err { color: var(--warn); }

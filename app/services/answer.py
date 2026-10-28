@@ -40,7 +40,7 @@ from app.db import now, utc
 from app.schemas import (CalcMsg, CalcResult, ClarifyMsg, ErrorMsg, ExclusionsMsg, Mode, Pet, ReferenceItem, ReferencesMsg, ServerMessage,
                          TablesMsg,
                          Session, SourceItem, SourcesMsg, TokenMsg, TurnLog)
-from app.services import customer_facts, guardrail, hr_personal, payout, tables
+from app.services import article_display, customer_facts, guardrail, hr_personal, payout, tables
 from app.services.context import Resolved
 from app.services.customers import scope_for
 from app.services.llm import OllamaClient, OllamaError
@@ -203,7 +203,7 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
                 ctx.results = display_parent(ctx.results, deps.builder, ctx.scope.species)
             if config.RULE_FIRST:
                 ctx.results = rule_first(ctx.results)
-            ctx.sources = [_source_item(r, ctx.scope.species) for r in ctx.results]
+            ctx.sources = [_source_item(r, ctx.scope.species, deps.builder.chunks) for r in ctx.results]
         yield SourcesMsg(turn_id=ctx.turn_id, items=ctx.sources)
         excl = payout.matched_exclusions(_r(ctx).card_text, ctx.pet) if config.CUSTOMER_FACTS else []   # 부담보 배너(4d)
         if excl:
@@ -543,10 +543,12 @@ def _with_section(g: dict, edges: list) -> dict:
     return {**g, "section": section}
 
 
-def _source_item(r: dict, corpus: str) -> SourceItem:
+def _source_item(r: dict, corpus: str, chunks: dict | None = None) -> SourceItem:
+    snippet = (article_display.snippet(r["content"], article_display.vocab(chunks))
+               if chunks is not None and corpus in article_display.PET else None)   # 표시만(2026-10-28) — content는 그대로
     return SourceItem(graph_key=graph_key(r), species=corpus, section=r["section"], section_name=r.get("section_name"),
                       article_num=r.get("article_num"), article_title=r.get("article_title"),
-                      coverage_type=r.get("coverage_type"), score=float(r["score"]), content=r["content"])
+                      coverage_type=r.get("coverage_type"), score=float(r["score"]), content=r["content"], snippet=snippet)
 
 
 _FAIL_MESSAGE = {

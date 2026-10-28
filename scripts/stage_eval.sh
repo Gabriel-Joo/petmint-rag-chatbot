@@ -10,7 +10,7 @@ mkdir -p "$O"
 unload() { for m in $(curl -s localhost:11434/api/ps | python3 -c "import json,sys; print(' '.join(x['name'] for x in json.load(sys.stdin)['models']))"); do curl -s localhost:11434/api/generate -d "{\"model\":\"$m\",\"keep_alive\":0}" >/dev/null; done; }
 kill $(ss -ltnp | grep ":8000" | grep -o "pid=[0-9]*" | cut -d= -f2) 2>/dev/null; sleep 2
 rm -f "$O/prompts_$TAG.jsonl"
-PETMINT_PROMPT_LOG="$O/prompts_$TAG.jsonl" nohup uvicorn app.main:app --port 8000 > "$O/server_$TAG.log" 2>&1 &
+PETMINT_PROMPT_LOG="$O/prompts_$TAG.jsonl" nohup uvicorn --app-dir ${CODE:-.} app.main:app --port 8000 > "$O/server_$TAG.log" 2>&1 &
 for i in $(seq 1 90); do grep -q "startup complete" "$O/server_$TAG.log" && break; sleep 1; done
 grep -q "startup complete" "$O/server_$TAG.log" || { echo "서버 기동 실패"; exit 1; }
 unload

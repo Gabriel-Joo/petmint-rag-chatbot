@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ApiError, getArticle } from "../api/client";
-import type { ReferenceItem, SourceItem } from "../api/types";
+import type { ArticleSection, ReferenceItem, SourceItem } from "../api/types";
+import { ArticleText } from "./ArticleText";
 import s from "./SourcePanel.module.css";
 
 interface Props {
@@ -20,11 +21,12 @@ function itemLabel(it: SourceItem) {
 }
 
 // 같은 조항을 다시 펼칠 때 다시 부르지 않는다
-const articleCache = new Map<string, string>();
+interface Article { content: string; sections?: ArticleSection[] | null }
+const articleCache = new Map<string, Article>();
 
 function SourceRow({ it, used }: { it: SourceItem; used: boolean }) {
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState<string | null>(articleCache.get(it.graph_key) ?? null);
+  const [text, setText] = useState<Article | null>(articleCache.get(it.graph_key) ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const toggle = async () => {
@@ -33,8 +35,9 @@ function SourceRow({ it, used }: { it: SourceItem; used: boolean }) {
     if (!next || text !== null) return;
     try {
       const a = await getArticle(it.species, it.section, it.section_name, it.article_num, { coverage_type: it.coverage_type });
-      articleCache.set(it.graph_key, a.content);
-      setText(a.content);
+      const art = { content: a.content, sections: a.sections };
+      articleCache.set(it.graph_key, art);
+      setText(art);
     } catch (e) {
       setError(e instanceof ApiError ? e.detail : String(e));
     }
@@ -49,11 +52,11 @@ function SourceRow({ it, used }: { it: SourceItem; used: boolean }) {
           {it.coverage_type && <span>{it.coverage_type}</span>}
           {used && <span className={s.badge}>답변에 쓰임</span>}
         </span>
-        {!open && <span className={s.snippet}>{it.content}</span>}
+        {!open && <span className={s.snippet}>{it.snippet ?? it.content}</span>}
       </button>
       {open && (
         <div className={s.full}>
-          {error ? <span className={s.err}>{error}</span> : text ?? "불러오는 중…"}
+          {error ? <span className={s.err}>{error}</span> : text ? <ArticleText sections={text.sections} content={text.content} /> : "불러오는 중…"}
         </div>
       )}
     </li>

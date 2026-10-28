@@ -11,6 +11,7 @@ from data.rag_context import ContextBuilder
 
 from app import deps
 from app.schemas import ArticleOut, Corpus, Grade
+from app.services import article_display
 
 router = APIRouter(prefix="/api/articles", tags=["articles"])
 
@@ -32,5 +33,9 @@ def get_article(species: Corpus, section: str, section_name: str, article_num: s
     content = builder.fetch_article_content(species, section, name, n, coverage_type, paragraph_num)
     if content is None:
         raise HTTPException(404, f"조항 없음: {species}/{section}/{section_name}/{article_num}")
+    sections = None
+    if species in article_display.PET:                 # 표시용 블록 — 원문(content)은 그대로 둔다
+        rows = builder.fetch_article_rows(species, section, name, n, coverage_type, paragraph_num)
+        sections = article_display.article_sections(rows, coverage_type, article_display.vocab(builder.chunks))
     return ArticleOut(species=species, section=section, section_name=name, article_num=n,
-                      coverage_type=coverage_type, paragraph_num=paragraph_num, content=content)
+                      coverage_type=coverage_type, paragraph_num=paragraph_num, content=content, sections=sections)
