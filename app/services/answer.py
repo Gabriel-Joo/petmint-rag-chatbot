@@ -374,6 +374,13 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
                 yield m
             return
 
+    if mode == "업무특화" and config.ASK_DISEASE and config.CUSTOMER_FACTS:
+        # 병명 되묻기 뒤 상해로 답한 턴(2026-10-28) — 상해 보상 원칙(대기기간 없음) + 금액 되묻기. 앞 답이 되묻기일 때만
+        text = customer_facts.injury_followup(ctx.question, r.prior_question, r.prior_answer, ctx.pet)
+        if text is not None:
+            for m in _code_answer(ctx, None, text):
+                yield m
+            return
     if mode == "업무특화" and config.ASK_DISEASE and config.CUSTOMER_FACTS and not r.follow_up:
         text = customer_facts.disease_ask(ctx.question, ctx.pet)     # 병명 없이 보장을 묻는다(2026-10-28) — 원칙 + 병명 되묻기
         if text is not None:

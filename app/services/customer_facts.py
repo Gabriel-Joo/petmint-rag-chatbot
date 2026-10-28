@@ -292,6 +292,16 @@ _ASK_FILLER = re.compile(r"입원|통원|수술|병원|치료|다쳤|다쳐서|�
                          r"이거|이건|그거|제가|[이가은는을를도에의로]\b")
 
 
+ASKED_MARK = "어떤 질병이나 상해로"                     # disease_ask 답에 늘 든다 — 다음 턴이 이 답 뒤인지 알아본다
+
+
+def _riders(question: str, pet: Pet):
+    """(가입 의료비 특약 전부, 입원/통원/None, 질문에 맞는 특약) — 입원이면 입원의료비, 통원이면 통원의료비, 아니면 둘 다"""
+    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
+    kind = "입원" if re.search(r"입원", question) else "통원" if re.search(r"통원", question) else None
+    return medical, kind, [p for p in medical if kind is None or kind in p.section_name]
+
+
 def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str | None:
     """병명 없이 보장을 묻는 질문 → 가입 의료비 특약의 원칙 + 병명 되묻기. 아니면 None"""
     if pet is None or not (_ASK_EVENT.search(question) and _ASK_COVER.search(question)) or _ASK_AMOUNT.search(question):
@@ -299,9 +309,7 @@ def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str |
     rest = re.sub(re.escape(pet.name) + r"(?:이|가|는|은|를|을|도|의)?", " ", question)
     if re.search(r"[가-힣]", _ASK_FILLER.sub(" ", rest)):
         return None
-    medical = [p for p in pet.policies if p.section_name in MEDICAL_SECTIONS[pet.species] and p.coverage_type]
-    kind = "입원" if re.search(r"입원", question) else "통원" if re.search(r"통원", question) else None
-    riders = [p for p in medical if kind is None or kind in p.section_name]
+    medical, kind, riders = _riders(question, pet)
     if not riders:
         return None                                   # 그 특약이 없으면 not_enrolled가 먼저 답한다 — 여기서는 지어내지 않는다
     names = ", ".join(short_name(p) for p in riders)              # short_name에 등급이 들어 있다
@@ -316,4 +324,45 @@ def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str |
         end = start + timedelta(days=29)
         lines.append(f"참고: {pet.name}{_josa(pet.name, '은는')} {start.isoformat()} 가입이라 {end.month}월 {end.day}일까지 발생한 질병은 "
                      f"보상하지 않습니다(제1조 ③) — 발병일도 함께 알려 주세요. 상해는 해당하지 않습니다.")
+    return "\n".join(lines)
+
+
+# 2026-10-28 되물은 뒤 상해로 답한 턴 — "산책하다 다리를 다쳤어요"는 후속 규칙에 안 걸려 따로 검색됐고(별표2 장해분류표 셋), 모델이 거절했다
+# (탐침 DS3 0/3). 앞 답이 disease_ask(ASKED_MARK)이고 이번 말이 상해를 말하면 코드가 답한다 — 범위:
+#   상해 낱말(다쳤·떨어졌·넘어졌·물렸·부러졌·화상·차에 치였…) · 금액·숫자 없음 · 다음은 빼고 모델·다른 코드 답으로:
+#   슬관절·고관절·탈구(반려견 제1조 ④ 1년 이내는 상해도 보상하지 않는다) · 그 반려동물 부담보 · 제2조 ① 면책 사유(고의·자연재해·전쟁…) · 질병 낱말
+_INJURY = re.compile(r"다쳤|다쳐|부딪|떨어져|떨어졌|넘어져|넘어졌|미끄러|물려|물렸|베였|베여|찔렸|찔려|골절|부러|삐었|삐끗|접질|화상|데었|데여|"
+                     r"교통사고|차에\s*치|치였|끼였|끼어서|긁혔|찢어|상처")
+_INJURY_NOT = re.compile(r"슬관절|슬개골|고관절|탈구|형성부전|무릎뼈|고의|일부러|지진|분화|해일|홍수|태풍|폭우|자연재해|전쟁|폭동|방사|핵|"
+                         r"감기|장염|염증|질병|병이|암|종양|구토|설사|피부병|알레르기|기침|열이")
+
+
+def maybe_injury_reply(question: str) -> bool:
+    """앞 턴을 읽어 볼 만한가(chat_ws) — 상해 낱말이 있다. 후속 규칙에 안 걸리는 온전한 문장("산책하다 다리를 다쳤어요")도"""
+    return bool(_INJURY.search(question))
+
+
+def injury_followup(question: str, prior_question: str | None, prior_answer: str | None, pet: Pet | None,
+                    on: date | None = None) -> str | None:
+    """disease_ask 뒤 상해로 답한 턴 → 상해 보상 원칙(대기기간 없음) + 금액 되묻기. 아니면 None"""
+    if pet is None or not prior_answer or ASKED_MARK not in prior_answer or not _INJURY.search(question):
+        return None
+    if _INJURY_NOT.search(question) or _ASK_AMOUNT.search(question) or payout.matched_exclusions(question, pet):
+        return None
+    medical, kind, riders = _riders(prior_question or "", pet)
+    if not riders:
+        return None
+    names = ", ".join(short_name(p) for p in riders)
+    how = {"입원": "입원 일수와 치료비 총액", "통원": "통원 횟수와 치료비"}.get(kind, "입원·통원 여부와 치료비")
+    lines = [f"상해(다친 것)라면 {pet.name}{_josa(pet.name, '은는')} {names} 특약으로 보상됩니다(1일 지급 한도·자기부담금·보상비율 적용, 제1조)."]
+    on = on or payout.today()
+    start = max((p.contract_date for p in medical), default=None)
+    if start is not None and (on - start).days < 30:
+        lines.append(f"- {start.isoformat()} 가입이라 30일이 지나지 않았지만, 가입 후 30일 대기기간은 질병에만 적용되어 상해는 해당하지 않습니다(제1조 ③).")
+    else:
+        lines.append("- 가입 후 30일 대기기간은 질병에만 적용되어 상해는 해당하지 않습니다(제1조 ③).")
+    if pet.species == "강아지" and start is not None and (on - start).days < 365:
+        lines.append("- 다만 슬관절·고관절 탈구 등은 가입 후 1년 이내면 상해여도 보상하지 않습니다(제1조 ④) — 무릎·고관절을 다쳤다면 알려 주세요.")
+    lines.append("- 고의나 자연재해 등 보험금을 지급하지 않는 사유(제2조)에 해당하면 보상하지 않습니다.")
+    lines.append(f"보상 금액은 {how}{_josa(how, '을를')} 알려 주시면 계산해 드릴게요.")
     return "\n".join(lines)

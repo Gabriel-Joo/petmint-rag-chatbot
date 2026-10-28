@@ -49,7 +49,7 @@ async def ask_seq(customer_id: str, pet_id: str, queries: list[str]) -> list[dic
 
 def check(answer: str, refused_: bool, e: dict) -> bool:
     a = flat(answer)
-    return (refused_ == e.get("refuse", False) and (not e.get("any") or any(flat(x) in a for x in e["any"]))
+    return (("refuse" not in e or refused_ == e["refuse"]) and (not e.get("any") or any(flat(x) in a for x in e["any"]))
             and not any(flat(x) in a for x in e.get("none", [])))
 
 
