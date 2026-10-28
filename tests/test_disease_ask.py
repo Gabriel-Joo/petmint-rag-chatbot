@@ -5,7 +5,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from app.services.customer_facts import disease_ask
+from app.services.customer_facts import disease_ask, injury_followup
 from scripts.eval_serving import pets
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,6 +38,35 @@ class Text(unittest.TestCase):
         t = disease_ask("솜이 다쳐서 병원 갔는데 보상되나요?", PM["P015"], ON)
         self.assertIn("발병일도 함께", t)
         self.assertIn("어떤 질병이나 상해로 치료받았는지", t)
+
+
+class InjuryFollowUp(unittest.TestCase):
+    """되물은 뒤 상해로 답한 턴(2026-10-28) — 탐침 DS3 "산책하다 다리를 다쳤어요"는 따로 검색돼 장해분류표를 받고 거절했다"""
+
+    def reply(self, pid, q1, q2):
+        return injury_followup(q2, q1, disease_ask(q1, PM[pid], ON) or "(되묻기 아님)", PM[pid], ON)
+
+    def test_fires(self):
+        for pid, q1, q2 in [("P015", "솜이 다쳐서 병원 갔는데 보상되나요?", "산책하다 다리를 다쳤어요"),
+                            ("P001", "초코가 입원했어요. 보장되나요?", "계단에서 떨어져서 다리가 부러졌어요"),
+                            ("P004", "치즈 입원했는데 보험 되나요?", "다른 고양이한테 물렸어요"),
+                            ("P013", "별이가 입원했어요 보장되나요?", "뜨거운 물에 화상 입었어요")]:
+            self.assertIsNotNone(self.reply(pid, q1, q2), q2)
+
+    def test_does_not_fire(self):
+        for pid, q1, q2 in [("P004", "치즈 입원했는데 보험 되나요?", "감기예요"),
+                            ("P001", "초코가 입원했어요. 보장되나요?", "슬개골이 빠졌어요"),
+                            ("P005", "콩이가 통원 치료 받았는데 보장돼요?", "산책하다 넘어져서 슬개골 탈구됐어요"),
+                            ("P015", "솜이 다쳐서 병원 갔는데 보상되나요?", "태풍 때 날아온 물건에 다쳤어요"),
+                            ("P015", "솜이 다쳐서 병원 갔는데 보상되나요?", "다쳤는데 치료비 30만원이에요"),
+                            ("P001", "초코 슬개골 수술했는데 보장되나요?", "산책하다 다쳤어요")]:      # 앞 답이 되묻기 아님
+            self.assertIsNone(self.reply(pid, q1, q2), q2)
+
+    def test_text(self):
+        t = self.reply("P013", "별이가 입원했어요 보장되나요?", "뜨거운 물에 화상 입었어요")
+        self.assertIn("입원의료비", t)
+        self.assertIn("30일이 지나지 않았지만", t)
+        self.assertIn("입원 일수와 치료비 총액을 알려", t)
 
 
 if __name__ == "__main__":

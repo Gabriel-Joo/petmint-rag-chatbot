@@ -57,7 +57,8 @@ class Resolved:
     reply_stage: str | None = None                 # payout.reply_stage — ask(금액) / days(날짜별 금액 칸) / again(일수 더)
     prior_calc: dict | None = None                 # 앞 턴 카드(turns.payout) — 날짜별 되묻기의 총액·일수가 여기 있다
     prior_question: str | None = None              # 같은 세션 바로 앞 질문(후속이 아니어도)
-    prior_questions: list[str] = field(default_factory=list)   # 같은 세션 앞 질문들(오래된 순) — 사내규정 개인화가 이어받기 사슬을 다시 돈다
+    prior_questions: list[str] = field(default_factory=list)
+    prior_answer: str | None = None                # 같은 세션 바로 앞 답 — 병명 되묻기 뒤 상해로 답한 턴인지(customer_facts.injury_followup)   # 같은 세션 앞 질문들(오래된 순) — 사내규정 개인화가 이어받기 사슬을 다시 돈다
 
     @property
     def retrieval_query(self) -> str:
@@ -120,6 +121,7 @@ async def resolve(mode: Mode, question: str, prior: list[PriorTurn], pet: Pet | 
     last = prior[-1]
     r.prior_question = last.question
     r.prior_questions = [t.question for t in prior]
+    r.prior_answer = last.answer
     # 코드가 되물은 턴(금액 되묻기·날짜별 금액 칸·일수를 모른 계산) 바로 뒤에 금액·일수·'모르겠어요'를 말했으면
     # 후속 규칙에 안 걸려도 후속이다("35만원 정도 나왔고 수술은 안 했어요"처럼 길거나 물음표가 있어도)
     stage = payout.reply_stage(last.answer, last.payout) if mode == "업무특화" else None
