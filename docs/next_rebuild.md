@@ -292,3 +292,14 @@ B-1′ final에서 등급 어구가 아닌 QA 300건(seed 42)을 20~35자·원�
 본 실행 설정(사용자 확정): `--order=B --name=rebuild3 --composition=90/0/10 --n-distract=2 --na-items=3 --no-confirm --search-top-k=20
 --na-judge=q2 --na-fill=refill --distractor-hard --pair-na --gate-max-na-judge-bad=off --gate-max-low-overlap-na=off --gate-min-low-overlap-pos=off`.
 판정 기준: answerable 거절 ≤ 12 · 등급 어구 거절 ≤ 11/23 · no_answer 거절 ≥ 14/20 · 검색 입력 정답 top 3 answerable 거절 ≤ **8**/69.
+
+---
+
+#### 9. rebuild5에 넣을 것 — 2026-10-28 추가 (지금 하지 않는다)
+
+**9-1. 도구 호출 학습 (docs/16 4절 C안).** 코드 답 규칙의 트리거(이 질문이 어느 계산을 원하는가)를 모델 안으로 옮긴다. 계산 함수는 지금 코드 그대로 도구로 노출한다 — 보험금 계산(payout), 부담보·면책 단서·대기기간 확인(customer_facts), 한도표, 연차·퇴직금·급여(hr_personal).
+- 학습 데이터: 지금 코드 답 규칙이 답한 턴을 "질문 → 도구 호출(인자) → 결과 → 답"으로 바꿔 넣는다(규칙이 정답 호출을 만든다). 규칙이 안 걸리는 말투는 gemma 생성(disease_ask_gemma 방식)으로 보탠다
+- 판정: 도구 선택 정확도·인자 정확도를 규칙과 같은 탐침(병명 되묻기·사내규정 개인화·면책 단서)과 평가 220으로 대조. 규칙보다 나쁘면 규칙을 남긴다(지금 등록부 `code_rules.py`가 그대로 대비책)
+- 비용: 학습 데이터 생성 + 재학습 + 전면 재평가. 7B의 함수 호출 정확도가 관건이라 소규모 예비 학습으로 먼저 본다
+
+**9-2. PDF 줄바꿈을 전처리에서 고친다 (data/review/article_display_survey.md 3절).** 지금은 근거 패널 표시만 고쳤다. 운영 모델이 줄바꿈이 든 발췌로 학습했으므로, 전처리를 고치려면 학습 데이터도 같은 판으로 다시 만들어야 한다 — rebuild5에서 함께 한다. 약관 컬렉션 8개 재색인·검색 회귀 포함.

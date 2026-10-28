@@ -40,6 +40,26 @@ class Text(unittest.TestCase):
         self.assertIn("어떤 질병이나 상해로 치료받았는지", t)
 
 
+class ModelNameCheck(unittest.TestCase):
+    """B안(2026-10-28) — ⑤를 모델(name_check)로. 모델이 없으면 정규식, 면책 사실은 코드가 막는다"""
+    Q = "초코가 입원했는데 보험 보장되는지 확인 부탁드려요."      # 정규식 ⑤는 '확인·부탁'이 남아 되묻지 않는다
+
+    def test_model_no_name_asks(self):
+        self.assertIsNone(disease_ask(self.Q, PM["P001"], ON))
+        self.assertIsNotNone(disease_ask(self.Q, PM["P001"], ON, name_check=lambda q, n: False))
+
+    def test_model_says_name(self):
+        self.assertIsNone(disease_ask("초코가 입원했어요. 보장되나요?", PM["P001"], ON, name_check=lambda q, n: True))
+
+    def test_model_unavailable_falls_back_to_regex(self):
+        self.assertIsNotNone(disease_ask("초코가 입원했어요. 보장되나요?", PM["P001"], ON, name_check=lambda q, n: None))
+        self.assertIsNone(disease_ask(self.Q, PM["P001"], ON, name_check=lambda q, n: None))
+
+    def test_exempt_fact_blocks(self):
+        for q in ("달이 데리고 일본 갔다가 거기서 다쳤어요. 병원 갔는데 보장되나요?", "태풍 때 다쳐서 입원했는데 보상되나요?"):
+            self.assertIsNone(disease_ask(q, PM["P014"], ON, name_check=lambda q, n: False), q)
+
+
 class InjuryFollowUp(unittest.TestCase):
     """되물은 뒤 상해로 답한 턴(2026-10-28) — 탐침 DS3 "산책하다 다리를 다쳤어요"는 따로 검색돼 장해분류표를 받고 거절했다"""
 

@@ -7,6 +7,6 @@ export PETMINT_CHUNKS_DIR=$PWD/data/chunks/v3 PETMINT_GRAPH_DIR=$PWD/data/graph/
 for kv in "$@"; do export "$kv"; done
 PETMINT_PROMPT_LOG=$PWD/$O/prompts.jsonl nohup uvicorn --app-dir ${CODE:-.} app.main:app --port 8000 > $O/server.log 2>&1 &
 for i in $(seq 1 90); do grep -q "startup complete" $O/server.log && break; sleep 1; done
-python -m scripts.disease_ask_probe $O/answers.json --runs ${RUNS:-3} > $O/probe.log 2>&1; rc=$?
+python -m scripts.disease_ask_probe $O/answers.json --runs ${RUNS:-3} --file ${FILE:-data/eval/disease_ask_probe.json} > $O/probe.log 2>&1; rc=$?
 kill $(ss -ltnp | grep "127.0.0.1:8000" | grep -o "pid=[0-9]*" | cut -d= -f2)
 tail -n 1 $O/probe.log; exit $rc

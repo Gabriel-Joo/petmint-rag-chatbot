@@ -44,7 +44,7 @@ from app.services.lexicon import (DISEASE_NOTE as _DISEASE,
                                   VACCINE_NONE as _VAC_NONE,
                                   VACCINE_WHEN as _VAC_TIME,
                                   LEGAL as _LEGAL_WORDS,
-                                  ASKED_MARK)
+                                  ASKED_MARK, EXEMPT_FACT)
 from app.services import daycalc, payout
 
 LIAB = "갱신형 펫퍼민트 반려견 배상책임보장 특별약관"
@@ -300,12 +300,20 @@ def _riders(question: str, pet: Pet):
     return medical, kind, [p for p in medical if kind is None or kind in p.section_name]
 
 
-def disease_ask(question: str, pet: Pet | None, on: date | None = None) -> str | None:
-    """병명 없이 보장을 묻는 질문 → 가입 의료비 특약의 원칙 + 병명 되묻기. 아니면 None"""
+def disease_ask(question: str, pet: Pet | None, on: date | None = None, name_check=None) -> str | None:
+    """병명 없이 보장을 묻는 질문 → 가입 의료비 특약의 원칙 + 병명 되묻기. 아니면 None.
+    name_check(question, pet_name) -> bool|None: ⑤를 모델로 본다(name_check.has_name). None이 오면(모델 실패) 정규식 ⑤로"""
     if pet is None or not (_ASK_EVENT.search(question) and _ASK_COVER.search(question)) or _ASK_AMOUNT.search(question):
         return None
-    rest = re.sub(re.escape(pet.name) + r"(?:이|가|는|은|를|을|도|의)?", " ", question)
-    if re.search(r"[가-힣]", _ASK_FILLER.sub(" ", rest)):
+    verdict = None
+    if name_check is not None:
+        if EXEMPT_FACT.search(question):          # 면책·자격을 가르는 사실(태풍·해외·가입 전·고의) — 모델은 이걸 '이름'으로 안 본다
+            return None
+        verdict = name_check(question, pet.name)
+    if verdict is None:
+        rest = re.sub(re.escape(pet.name) + r"(?:이|가|는|은|를|을|도|의)?", " ", question)
+        verdict = bool(re.search(r"[가-힣]", _ASK_FILLER.sub(" ", rest)))
+    if verdict:
         return None
     medical, kind, riders = _riders(question, pet)
     if not riders:
