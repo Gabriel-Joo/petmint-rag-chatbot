@@ -57,8 +57,9 @@ async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out")
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--file", default="data/eval/disease_ask_probe.json")
     a = ap.parse_args()
-    d = json.loads((ROOT / "data/eval/disease_ask_probe.json").read_text(encoding="utf-8"))
+    d = json.loads((ROOT / a.file).read_text(encoding="utf-8"))
     rows = []
     for run in range(a.runs):
         for kind in ("ask", "negatives"):

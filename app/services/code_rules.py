@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from app import config
-from app.services import customer_facts, payout
+from app.services import customer_facts, name_check, payout
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,9 @@ RULES: list[Rule] = [
     Rule("injury_followup", "상해 후속", _BIZ("ASK_DISEASE"),
          lambda i: _text(customer_facts.injury_followup(i.question, i.resolved.prior_question, i.resolved.prior_answer, i.pet), ask=True)),
     Rule("disease_ask", "병명 되묻기", lambda i: _BIZ("ASK_DISEASE")(i) and not i.resolved.follow_up,
-         lambda i: _text(customer_facts.disease_ask(i.question, i.pet), ask=True)),
+         lambda i: _text(customer_facts.disease_ask(i.question, i.pet,
+                                                    name_check=name_check.has_name if config.ASK_DISEASE_LLM else None), ask=True),
+         threaded=True),                              # 모델 판정(ASK_DISEASE_LLM)이면 HTTP — 스레드로
 ]
 
 # 사내규정 개인화 — 검색 전에 answer._hr_personal(hr_personal.answer)이 돈다. 주제별 조건은 hr_personal.topics_of·replay
