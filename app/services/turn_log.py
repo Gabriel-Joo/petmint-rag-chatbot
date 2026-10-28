@@ -92,10 +92,10 @@ class TurnLogStore:
         with self.engine.begin() as c:
             c.execute(text(
                 "INSERT INTO turns (turn_id, session_id, question, rewritten_question, follow_up, context_kind, context_turns,"
-                " answer, payout, pet_id, pet_name, species, breed, pet_age, is_hypothetical, clarified, chosen_section,"
+                " answer, payout, pet_id, pet_name, species, breed, pet_age, is_hypothetical, clarified, code_rule, chosen_section,"
                 " model, prompt_version, index_version, first_token_ms, latency_ms, status, created_at)"
                 " VALUES (:turn_id, :session_id, :question, :rewritten_question, :follow_up, :context_kind, :context_turns,"
-                " :answer, :payout, :pet_id, :pet_name, :species, :breed, :pet_age, :is_hypothetical, :clarified, :chosen_section,"
+                " :answer, :payout, :pet_id, :pet_name, :species, :breed, :pet_age, :is_hypothetical, :clarified, :code_rule, :chosen_section,"
                 " :model, :prompt_version, :index_version, :first_token_ms, :latency_ms, :status, :created_at)"),
                 log.model_dump(exclude={"scope", "retrieved"}) | {
                     "created_at": log.created_at.replace(tzinfo=None),

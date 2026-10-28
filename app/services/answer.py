@@ -517,7 +517,7 @@ def _turn_log(ctx: TurnContext, status: str, references: list[ReferenceItem], gr
                    rewritten_question=r.anchor, follow_up=r.follow_up, context_kind=r.kind,
                    context_turns=len(r.history) // 2 if r.kind == "history" else None, chosen_section=ctx.chosen,
                    payout=ctx.calc.model_dump(mode="json") if ctx.calc else None, **pet_snapshot(ctx.pet),
-                   clarified=ctx.clarified, scope=scope_rows(ctx.pet),
+                   clarified=ctx.clarified, code_rule=ctx.code_rule, scope=scope_rows(ctx.pet),
                    retrieved=retrieved_rows(ctx.sources, references, corpus=corpus, graph_refs=graph_refs,
                                             used_graph=used_graph),
                    model=model_of(ctx.session.mode), prompt_version=config.PROMPT_VERSION,

@@ -350,6 +350,19 @@ Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 �
 
 | `PETMINT_ASK_DISEASE_LLM` | `1` | 병명 되묻기의 "병명·증상 이름이 있는가"를 베이스 모델(tri-7b)이 본다. 면책 사실은 코드가 막고, 모델 실패 시 정규식 | gemma 말투 무병명 되묻기 7/60 → 39/60(거절 46 → 16), 병명 잘못 되묻기 0, 평가 220 프롬프트·코드 답 같음 (`data/review/disease_ask_llm_measure.md`) |
 
+#### 1-20. 코드 답 규칙 운영 집계 (2026-10-29)
+
+키는 없다 — 이미지와 마이그레이션 하나다. 초기화 Job이 Sync 때 petmint `0008_turn_code_rule`(`turns.code_rule` 칸 하나, 기존 행 그대로)을 적용하고, 그다음 턴부터 답한 규칙 이름이 남는다(모델 답은 NULL).
+
+집계는 Pod 안에서 숫자만 낸다(질문·답 글, 세션·상담원·고객 값은 어떤 옵션으로도 찍지 않는다 — 16번 5절):
+
+```bash
+kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report                                       # 0008 적용 시각부터
+kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report --since 2026-11-01 --until 2026-11-08 --json
+```
+
+모드별 턴·코드 답·모델 거절, 규칙별 발동·되묻기·👍/👎·다음 턴(없음/코드/모델(거절)/실패), 모델이 거절한 턴의 놓침 후보 갈래(병명 되묻기 앞 조건 중 어디서 막혔나, 상해 낱말, 사내규정 개인화 주제 낱말)를 낸다. 모델은 부르지 않는다. **되돌리기:** 이미지만 되돌리면 된다 — 칸은 NULL 허용이라 옛 이미지가 쓰지 않아도 그대로 돈다.
+
 ---
 
 #### 2. 왜 이렇게 했나
