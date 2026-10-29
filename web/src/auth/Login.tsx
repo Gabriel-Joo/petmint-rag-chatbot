@@ -1,12 +1,20 @@
 // 로그인 · 첫 로그인 비밀번호 변경 화면(13번 2-1절). 한 화면 두 쓰임 — changeFor가 있으면 변경.
 // 실패 문구는 서버 것을 그대로 쓴다(사번이 없는지 비밀번호가 틀렸는지 구분하지 않는다).
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, changePassword, getMe, login } from "../api/client";
 import type { MeOut } from "../api/types";
 import s from "./Login.module.css";
 
 const MIN_PASSWORD = 10; // app/services/auth.py MIN_PASSWORD
+
+// 사번 기억하기(2026-10-30) — 사번만 이 브라우저에 둔다. 비밀번호는 저장하지 않는다(브라우저 비밀번호 관리자에 맡긴다).
+// 기본 꺼짐 — 공용 PC. 체크를 풀면 바로 지운다
+const REMEMBER_KEY = "petmint.login.employeeId";
+
+function savedEmployeeId(): string {
+  try { return localStorage.getItem(REMEMBER_KEY) ?? ""; } catch { return ""; }
+}
 
 interface Props {
   notice?: string | null;
@@ -16,12 +24,22 @@ interface Props {
 }
 
 export function Login({ notice = null, changeFor, onDone }: Props) {
-  const [employeeId, setEmployeeId] = useState("");
+  const [employeeId, setEmployeeId] = useState(savedEmployeeId);
+  const [remember, setRemember] = useState(() => savedEmployeeId() !== "");
   const [password, setPassword] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (changeFor) return;
+    try {
+      const id = employeeId.trim();
+      if (remember && id) localStorage.setItem(REMEMBER_KEY, id);
+      else localStorage.removeItem(REMEMBER_KEY);
+    } catch { /* 저장소를 못 쓰면 기억하지 않는다 */ }
+  }, [remember, employeeId, changeFor]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -48,34 +66,46 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
 
   return (
     <main className={s.page}>
-      <form className={`raised ${s.card}`} onSubmit={(e) => void submit(e)} noValidate>
+      <form className={`raised ${s.card}`} method="post" onSubmit={(e) => void submit(e)} noValidate>
         <h1 className={s.brand}>펫퍼민트 상담</h1>
         <p className={s.sub}>
           {changeFor ? `${changeFor.name ?? changeFor.employee_id}님, 처음 로그인하셨습니다. 비밀번호를 바꿔 주세요.` : "사번과 비밀번호로 로그인하세요."}
         </p>
         {notice && !changeFor && <p className={s.notice} role="status">{notice}</p>}
 
-        {!changeFor && (
-          <label className={s.field}>
-            <span>사번</span>
-            <input value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} autoComplete="username"
-                   autoFocus required spellCheck={false} />
-          </label>
+        {/* 브라우저 비밀번호 저장: 사번은 username, 비밀번호는 current-password · new-password. 변경 화면에도 사번을 숨겨 두어
+            새 비밀번호가 어느 계정 것인지 브라우저가 안다 */}
+        {changeFor ? (
+          <input type="text" name="username" autoComplete="username" value={changeFor.employee_id ?? ""} readOnly hidden />
+        ) : (
+          <div className={s.idGroup}>
+            <label className={s.field}>
+              <span>사번</span>
+              <input id="employee-id" name="username" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}
+                     autoComplete="username" autoCapitalize="none" autoFocus={!employeeId} required spellCheck={false} />
+            </label>
+            <label className={s.remember}>
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              <span>사번 기억하기</span>
+            </label>
+          </div>
         )}
         <label className={s.field}>
           <span>{changeFor ? "지금 비밀번호" : "비밀번호"}</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                 autoComplete="current-password" autoFocus={!!changeFor} required />
+          <input type="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                 autoComplete="current-password" autoFocus={!!changeFor || !!employeeId} required />
         </label>
         {changeFor && (
           <>
             <label className={s.field}>
               <span>새 비밀번호 <small>({MIN_PASSWORD}자 이상)</small></span>
-              <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" required />
+              <input type="password" value={next} onChange={(e) => setNext(e.target.value)} name="new-password"
+                     autoComplete="new-password" required />
             </label>
             <label className={s.field}>
               <span>새 비밀번호 확인</span>
-              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} name="confirm-password"
+                     autoComplete="new-password" required />
             </label>
           </>
         )}

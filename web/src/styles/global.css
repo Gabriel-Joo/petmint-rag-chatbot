@@ -78,9 +78,12 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   border-radius: var(--radius-control);
   padding: 6px 14px;
   font-weight: var(--font-weight-label);
-  transition: box-shadow var(--lift);
+  transition: background-color var(--lift), border-color var(--lift), box-shadow var(--lift);
 }
-.btn-primary:hover:not(:disabled) { box-shadow: var(--shadow-2); }
+/* 호버: 조금 어둡게 + 그림자 한 단계, 눌림: 더 어둡게 + 그림자 내림. 크기·위치는 바꾸지 않는다(누르다 빗나간다).
+   .btn과 함께 붙어도(로그인 버튼) .btn 호버의 연보라 배경이 덮지 않게 같은 선택자 무게로 뒤에 둔다 */
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); box-shadow: var(--shadow-2); }
+.btn-primary:active:not(:disabled) { background: var(--primary-press); border-color: var(--primary-press); box-shadow: var(--shadow-1); }
 
 /* 10-2 선택 상태 — 채움 primary-soft, 글자 primary. 진한 보라 채움은 주요 버튼에만 */
 .selected {
