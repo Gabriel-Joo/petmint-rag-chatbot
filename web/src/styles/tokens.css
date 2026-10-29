@@ -18,6 +18,9 @@
   --text-faint: color-mix(in srgb, var(--text-dim) 80%, var(--bg));
   --warn-fill: color-mix(in srgb, var(--warn) 8%, var(--bg));
   --call-ring: color-mix(in srgb, var(--call) 35%, transparent);
+  /* 주요 버튼 호버·눌림(2026-10-30) — 같은 보라를 조금씩 어둡게. 비활성은 흐리게(global.css button:disabled)라 방향이 반대다 */
+  --primary-hover: color-mix(in srgb, var(--primary) 88%, #000);
+  --primary-press: color-mix(in srgb, var(--primary) 76%, #000);
 
   /* 특약 등급(2026-10-23, 고객 조회 카드 칩·띠) — 고급형은 브랜드 보라, 기본형 청록, 실속형 남회색.
      부담보 주황(--warn)과 헷갈리지 않게 따뜻한 색은 쓰지 않는다 */
