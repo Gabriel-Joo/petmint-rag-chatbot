@@ -117,7 +117,7 @@
   .call .ringBtn { text-align: center; }
 }
 
-/* 앱 로그인(2026-10-28) — "○○○ 상담원"(관리자 계정은 "○○○ (관리자)")과 로그아웃. 오른쪽 칸 끝, 헤더 메뉴와 같은 --font-xs.
+/* 앱 로그인(2026-10-28) — "○○○ 상담원"(관리자 계정은 "○○○ 관리자")과 로그아웃. 오른쪽 칸 끝, 헤더 메뉴와 같은 --font-xs.
    팀은 쓰지 않는다(상담원 전용 도구라 팀이 하나). 아바타 원은 쓰지 않는다(11번) */
 .user { display: flex; align-items: center; gap: 0.6em; font-size: var(--font-xs); white-space: nowrap; }
 .userName { font-weight: var(--font-weight-label); }

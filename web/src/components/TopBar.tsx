@@ -34,8 +34,8 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
     return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
 
-  // 상담원 표기 — 모두 상담원이라 팀은 쓰지 않는다. 관리자만 괄호로 역할을 보인다("○○○ (관리자)"), 나머지는 "○○○ 상담원"(2026-10-30)
-  const who = me.name ? `${me.name} ${me.role === "관리자" ? "(관리자)" : "상담원"}` : me.email;
+  // 상담원 표기 — 모두 상담원이라 팀은 쓰지 않는다. 관리자 계정은 역할을 그대로 붙인다("○○○ 관리자")
+  const who = me.name ? `${me.name} ${me.role === "관리자" ? "관리자" : "상담원"}` : me.email;
 
   return (
     <header className={s.bar}>
