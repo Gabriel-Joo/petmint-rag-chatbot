@@ -24,6 +24,7 @@ __pycache__/
 .ipynb_checkpoints/
 venv/
 .env
+.env.telegram
 
 # 로그
 *.log
