@@ -1,0 +1,35 @@
+# search-service — GPU 호스트에서 KURE·리랭커·Milvus 검색을 HTTP로 낸다(search_service/main.py, 192.168.122.1:8100).
+# 2026-11-02까지는 손으로 띄운 프로세스라 재부팅하면 사라졌다. 시스템 유닛으로 둔다.
+#
+# 설치(sudo):
+#   sudo cp deploy/host/petmint-search.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now petmint-search
+#
+# 순서: docker(milvus·ollama 컨테이너)와 libvirtd(192.168.122.1을 가진 virbr0) 뒤에 뜬다.
+# 그래도 부팅 직후엔 Milvus가 아직 일어나는 중이거나 virbr0가 늦을 수 있다 — 기동 실패하면 Restart가 다시 띄운다.
+# 기동 중 Milvus 연결 실패는 SearchEngine(ResilientMilvusClient) 생성에서 예외로 끝나므로 멈춰 있지 않는다.
+
+[Unit]
+Description=petmint search-service (KURE + reranker + Milvus, :8100)
+After=network-online.target docker.service libvirtd.service
+Wants=network-online.target docker.service libvirtd.service
+
+[Service]
+Type=simple
+User=kopo17
+Group=kopo17
+WorkingDirectory=/home/kopo17/AI_programming/petmint-rag-chatbot
+Environment=VIRTUAL_ENV=/home/kopo17/llm_env
+Environment=PATH=/home/kopo17/llm_env/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/kopo17/llm_env/bin/python -m search_service.main
+StandardOutput=append:/home/kopo17/AI_programming/petmint-rag-chatbot/logs/search_service.log
+StandardError=append:/home/kopo17/AI_programming/petmint-rag-chatbot/logs/search_service.log
+Restart=on-failure
+RestartSec=15
+# 모델 두 개를 GPU에 올리는 데 30초 안팎 — 넉넉히
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+# milvus.yaml 위에 덮는 설정 — deploy/host/milvus/docker-compose.yml이 /milvus/configs/user.yaml로 붙인다.
+# 외부 etcd는 인증 없이 도커 네트워크 안에서만 연다. 이미지 기본 milvus.yaml은 etcd.auth.enabled: true(etcdadmin)라
+# embedded일 때는 자동으로 꺼졌지만 외부 etcd로 바꾸면 직접 꺼야 붙는다.
+etcd:
+  auth:
+    enabled: false

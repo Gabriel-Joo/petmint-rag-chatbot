@@ -1,5 +1,14 @@
 # deploy — 매니페스트는 ronanlab-infra로 옮겼다
 
+## 호스트(GPU 머신)에서 도는 것 — `host/`
+
+| 파일 | 무엇 |
+|---|---|
+| `host/milvus/docker-compose.yml` · `user.yaml` | Milvus standalone + 외부 etcd(2026-11-02 embedded에서 옮김 — 재시작 때 `leader changed` panic). `docker compose -f deploy/host/milvus/docker-compose.yml up -d --wait` |
+| `host/petmint-search.service` | search-service systemd 유닛(재부팅해도 뜬다). 설치 명령은 파일 머리말 |
+
+Milvus는 `127.0.0.1`·`192.168.122.1`(파드)에만, etcd는 호스트에 열지 않는다. 데이터는 `~/volumes/milvus`, `~/volumes/milvus-etcd`.
+
 2026-10-16부터 펫퍼민트 K8s 매니페스트는 **ronanlab-infra `apps/petmint/`** 에 있다(14번 1-5절). ArgoCD Application `petmint`가 그 디렉터리를 본다.
 이 리포에 남은 것은 호스트(GPU 머신)에서 돌리는 `scripts/host-nfs-setup.sh` 하나 — 약관·시드 디렉터리가 이 리포에 있어서다.
 

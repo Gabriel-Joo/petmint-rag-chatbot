@@ -1,0 +1,80 @@
+# 펫퍼민트 벡터 DB — GPU 호스트의 Milvus standalone + 외부 etcd (2026-11-02, embedded etcd에서 옮김)
+#
+# 왜 외부 etcd인가: embedded etcd는 Milvus 프로세스 안에서 같이 뜬다. 기존 데이터로 다시 켜지면 리더 선출에 0.5~0.9초가
+# 걸리는데, Milvus 구성 요소가 그 전에 etcd를 불러 `etcdserver: leader changed`를 받고 재시도 없이 panic(exit 134)한다.
+# 2026-11-02 재시작 때 이 루프가 17분 이어졌다. 재부팅해도 같다. 같은 프로세스라 "etcd를 기다려라"를 걸 데가 없다.
+#
+# - etcd를 따로 띄우고, Milvus는 etcd /health가 true(리더 있음)일 때까지 기다린 뒤 시작한다(command의 until 루프).
+#   도커는 데몬 재시작(재부팅) 때 depends_on을 따르지 않고 한꺼번에 띄우므로 순서는 이 루프가 보장한다.
+# - etcd 포트는 호스트에 열지 않는다(인증 없음). Milvus는 호스트 쪽 두 주소에만 연다:
+#     127.0.0.1      search-service(호스트) · 노트북 · 로컬 개발
+#     192.168.122.1  클러스터 파드(VM 사설망의 게이트웨이, ronanlab-infra apps/petmint/app/configmap.yaml PETMINT_MILVUS_URL)
+#   LAN(192.168.0.x)에는 열지 않는다.
+# - 데이터: Milvus는 ~/volumes/milvus(기존 그대로), etcd는 ~/volumes/milvus-etcd(embedded 데이터를 멈춘 상태에서 복사).
+#
+# 실행: docker compose -f deploy/host/milvus/docker-compose.yml up -d --wait
+# 리허설·실험은 아래 변수로 이름·포트·경로를 바꿔 같은 파일을 쓴다(기본값이 운영값).
+
+name: ${MILVUS_PROJECT:-petmint-milvus}
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.33          # embedded etcd와 같은 버전(로그의 etcd-version)
+    container_name: ${MILVUS_PREFIX:-milvus}-etcd
+    restart: unless-stopped
+    command:
+      - etcd
+      - --name=default                            # embedded의 멤버 설정 그대로 — 복사한 데이터의 WAL과 맞아야 한다
+      - --data-dir=/etcd
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://${MILVUS_PREFIX:-milvus}-etcd:2379
+      - --listen-peer-urls=http://localhost:2380
+      - --initial-advertise-peer-urls=http://localhost:2380
+      - --quota-backend-bytes=4294967296          # 아래 셋은 ~/embedEtcd.yaml과 같은 값
+      - --auto-compaction-mode=revision
+      - --auto-compaction-retention=1000
+      - --snapshot-count=100000
+    volumes:
+      - ${MILVUS_ETCD_DIR:-/home/kopo17/volumes/milvus-etcd}:/etcd
+    healthcheck:                                  # 이미지에 셸이 없다 — exec 형식
+      test: ["CMD", "/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  standalone:
+    image: milvusdb/milvus:v3.0.2
+    container_name: ${MILVUS_PREFIX:-milvus}-standalone
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "false"
+      ETCD_ENDPOINTS: ${MILVUS_PREFIX:-milvus}-etcd:2379
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
+    entrypoint: ["/tini", "--"]
+    command:
+      - sh
+      - -c
+      - >-
+        until curl -sf -m 2 http://${MILVUS_PREFIX:-milvus}-etcd:2379/health | grep -q '"health":"true"';
+        do echo "etcd 리더 대기"; sleep 1; done;
+        exec milvus run standalone
+    volumes:
+      - ./user.yaml:/milvus/configs/user.yaml:ro
+      - ${MILVUS_DATA_DIR:-/home/kopo17/volumes/milvus}:/var/lib/milvus
+    ports:
+      - 127.0.0.1:${MILVUS_PORT:-19530}:19530
+      - ${MILVUS_VM_BIND:-192.168.122.1}:${MILVUS_PORT:-19530}:19530
+      - 127.0.0.1:${MILVUS_METRICS_PORT:-9091}:9091
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 20s
+      start_period: 90s
+      retries: 3
+    depends_on:                                   # compose up 때의 순서. 재부팅 때는 위 until 루프가 맡는다
+      etcd:
+        condition: service_healthy
