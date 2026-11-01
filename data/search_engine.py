@@ -9,11 +9,11 @@ from pathlib import Path
 import json
 
 import torch
-from pymilvus import MilvusClient
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
 
 from data import query_expansion
+from data.milvus_conn import ResilientMilvusClient
 from data.search_scope import SearchScope
 
 BASE_DIR = Path(__file__).parent  # data/ 폴더 기준
@@ -79,7 +79,7 @@ class SearchEngine:
         print("리랭커 로드 중...")
         self.reranker = CrossEncoder(RERANKER_MODEL_NAME, max_length=RERANKER_MAX_LENGTH,
                                      model_kwargs={"torch_dtype": torch.float16})
-        self.client = MilvusClient(uri=MILVUS_URI)
+        self.client = ResilientMilvusClient(MILVUS_URI)   # 연결이 끊겨도 멈추지 않고 다시 붙는다(data/milvus_conn.py)
 
         self.chunks = {}
         self.bm25_index = {}

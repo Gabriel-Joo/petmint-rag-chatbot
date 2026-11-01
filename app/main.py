@@ -15,9 +15,9 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pymilvus import MilvusClient
 from sqlalchemy import text
 
+from data.milvus_conn import ResilientMilvusClient
 from data.rag_context import ContextBuilder
 
 from app import config, deps
@@ -41,7 +41,8 @@ async def lifespan(app: FastAPI):
     core = make_engine(config.CORE_DB)                                # 고객 원장(기간계) — SELECT만
     app.state.customers = CustomerStore.load(core, chunks)            # 접속 실패·CustomerDataError → 기동 실패
     # 조항 원문·참조 조문. 청크·그래프는 위에서 읽은 것을 넘긴다(rag_context 기본 경로를 쓰지 않는다)
-    app.state.builder = ContextBuilder(client=MilvusClient(uri=config.MILVUS_URL), chunks=chunks, graphs=graphs)
+    # 연결이 끊겨도 멈추지 않고 다시 붙는다(data/milvus_conn.py — 2026-11-02 milvus 재시작 뒤 "검색 중" 멈춤)
+    app.state.builder = ContextBuilder(client=ResilientMilvusClient(config.MILVUS_URL), chunks=chunks, graphs=graphs)
     engine = make_engine(config.DB)
     with engine.connect() as c:                                       # 접속 실패·스키마가 코드보다 뒤처짐 → 기동 실패
         applied = {r[0] for r in c.execute(text("SELECT version FROM schema_migrations"))}
