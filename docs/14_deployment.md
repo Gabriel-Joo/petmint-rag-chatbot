@@ -108,6 +108,7 @@ ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containe
 | Jenkins → Harbor | 클러스터 내부 Service | 거치지 않음 |
 | ArgoCD → Harbor | 클러스터 내부 Service | 거치지 않음 |
 | ArgoCD → GitHub | 공개 인터넷 | 무관 |
+| GitHub → ArgoCD · Jenkins 웹훅 | 공개 호스트명의 웹훅 경로만 | Bypass — 서명(HMAC SHA-256)이 지킨다(1-22절, 13번 1-3절) |
 | 사람 → ArgoCD·Harbor·Jenkins | 브라우저 | Access(운영자만) |
 
 기계가 공개 호스트명으로 나갔다 들어오면 Access에 막힌다. 그래서 자동화는 전부 내부 주소로 간다. 사람이 브라우저로 들어가는 경로만 Access가 막는다(13번 1-3절).
@@ -152,7 +153,7 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 | --- | --- |
 | 빌드 | BuildKit rootless v0.33.1. 특권 컨테이너 대신 seccomp·AppArmor만 푼다 |
 | 태그 | 커밋 해시(예: 4e81fa250169). latest를 쓰지 않는다 |
-| 트리거 | SCM 폴링 2분. webhook 은 Access 에 막힌다 |
+| 트리거 | ~~SCM 폴링 2분. webhook 은 Access 에 막힌다~~ 2026-11-03부터 GitHub 웹훅(githubPush) + 폴링 15분 안전망 — 1-22절 |
 | Jenkins 설정 | JCasC + job-dsl. 자격 증명과 Job 을 Helm values 가 만든다 |
 | Harbor 계정 | robot 둘로 나눔 — jenkins(push+pull), pull(pull 전용, 노드용) |
 
@@ -393,6 +394,23 @@ kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report --since 2
 **반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
 
 ---
+
+#### 1-22. GitHub 웹훅 — ArgoCD · Jenkins (2026-11-03)
+
+push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 않고 바로 반영된다.
+
+| | ArgoCD | Jenkins |
+| --- | --- | --- |
+| 받는 곳 | `https://argocd.ronanlab.dev/api/webhook` | `https://jenkins.ronanlab.dev/github-webhook/`(끝 `/`까지) |
+| 거는 저장소 | `ronanlab-infra`(ArgoCD 가 보는 저장소는 이것뿐) | `petmint-rag-chatbot` · `runshoes` |
+| 시크릿 | `argocd/argocd-secret` 키 `webhook.github.secret` | Secret `jenkins/github-webhook-secret` → JCasC 자격 증명 `github-webhook-secret`, `hookSecretConfigs` SHA256 |
+| 하는 일 | 저장소가 맞는 앱을 refresh 만 한다. Sync 는 각 앱 설정대로 | 저장소 URL 이 맞는 잡에 SCM 조회 한 번(githubPush). 안전망 pollSCM 15분 |
+
+- 시크릿은 둘로 나눴다(ArgoCD 하나, Jenkins 하나). 하나가 새도 다른 쪽은 받지 않는다 — 서로의 값으로 서명한 요청이 거부되는 것을 확인했다
+- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 11개의 작은 버전 올림은 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다)
+- **ArgoCD 는 웹훅 시크릿을 argocd-server 가 뜰 때 한 번 읽는다**(v2.13 `NewHandler`). 키를 넣은 뒤 재시작 전에는 같은 본문이 한 번 맞게 들어온 뒤 틀린 서명(`00`)도 200 으로 처리됐다. `rollout restart deploy/argocd-server` 뒤에는 맞는 서명 10/10, 틀린 · 다른 값 · 무작위 · 없는 서명 0/40 통과(Jenkins 도 같은 시험 10/10 · 0/40). **시크릿을 바꾸면 argocd-server 를 다시 띄운다**
+- 잰 값: infra 빈 커밋 push → argocd-server 가 push 이벤트를 받고 **6.2초 뒤** 루트가 새 커밋(2f1141b)을 봤다. 같은 push 에 petmint(수동 Sync, OutOfSync 그대로) · cloudflared(수동) 는 Sync 되지 않았다 — 마지막 Sync 시각 · 파드 UID · resourceVersion 이 push 전과 같다
+- Access 는 웹훅 경로만 Bypass 한다(13번 1-3절). 되돌리기와 측정 기록은 호스트 `~/k8s-cluster/backup/2026-11-03-webhooks/`
 
 #### 2. 왜 이렇게 했나
 
