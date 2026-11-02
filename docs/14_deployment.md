@@ -407,11 +407,27 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 | 하는 일 | 저장소가 맞는 앱을 refresh 만 한다. Sync 는 각 앱 설정대로 | 저장소 URL 이 맞는 잡에 SCM 조회 한 번(githubPush). 안전망 pollSCM 15분 |
 
 - 시크릿은 둘로 나눴다(ArgoCD 하나, Jenkins 하나). 하나가 새도 다른 쪽은 받지 않는다 — 서로의 값으로 서명한 요청이 거부되는 것을 확인했다
-- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 11개의 작은 버전 올림은 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다)
+- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 10개(workflow-cps · workflow-job 등)가 작은 버전으로 같이 올랐다 — 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다). 받아 둔 asm-api 새 버전은 적용되지 않았다. 이 때문에 다음 날 플러그인을 고정했다(1-23절)
 - **ArgoCD 는 웹훅 시크릿을 argocd-server 가 뜰 때 한 번 읽는다**(v2.13 `NewHandler`). 키를 넣은 뒤 재시작 전에는 같은 본문이 한 번 맞게 들어온 뒤 틀린 서명(`00`)도 200 으로 처리됐다. `rollout restart deploy/argocd-server` 뒤에는 맞는 서명 10/10, 틀린 · 다른 값 · 무작위 · 없는 서명 0/40 통과(Jenkins 도 같은 시험 10/10 · 0/40). **시크릿을 바꾸면 argocd-server 를 다시 띄운다**
 - 잰 값: infra 빈 커밋 push → argocd-server 가 push 이벤트를 받고 **6.2초 뒤** 루트가 새 커밋(2f1141b)을 봤다. 같은 push 에 petmint(수동 Sync, OutOfSync 그대로) · cloudflared(수동) 는 Sync 되지 않았다 — 마지막 Sync 시각 · 파드 UID · resourceVersion 이 push 전과 같다
 - 잰 값(Jenkins, 펫퍼민트 push 62216c0): Jenkins 웹훅 수신 21:45:32.1 → 잡 조회 · 변경 감지 · #46 트리거 21:45:34.7(2.6초) → 빌드 시작 21:45:42 · 60초 · SUCCESS("Started by GitHub push") → 태그 커밋 167ed37 21:46:37 → ArgoCD 웹훅 수신 21:46:42 → petmint OutOfSync. 앱 push 에서 OutOfSync 까지 약 70초(빌드 60초 포함) — 전에는 폴링 2분 + 빌드 + 조회 3분이었다. Sync 는 수동 그대로(사람이 21:47:24 에 눌렀다)
 - Access 는 웹훅 경로만 Bypass 한다(13번 1-3절). 되돌리기와 측정 기록은 호스트 `~/k8s-cluster/backup/2026-11-03-webhooks/`
+
+#### 1-23. Jenkins 플러그인 버전 고정 (2026-11-03)
+
+차트 기본(`installLatestPlugins: true` → `jenkins-plugin-cli --latest true`)은 재시작할 때마다 의존 플러그인을 최신으로 올린다. 빌드가 어느 날 깨져도 무엇이 바뀌었는지 알 수 없어서 고정했다(helm revision 7, infra 4ac6b93).
+
+| values | 값 | 뜻 |
+| --- | --- | --- |
+| `installPlugins` | 73개 전부 `이름:버전` — 직접 쓰는 6개 + 의존 67개 | 실행 중이던 목록 그대로(pluginManager API에서 뽑았다) |
+| `installLatestPlugins` | false | 목록에 없는 의존이 생기면 최신이 아니라 요구 최소 버전. 목록이 빠짐없어 받을 것이 없다 |
+| `overwritePlugins` | true | 기동마다 `JENKINS_HOME/plugins` 를 비우고 목록으로 다시 채운다 — 설치 = 목록 |
+
+- 고정 전 확인: 렌더된 `plugins.txt` 73개 = 실행 중 73개, 빈 디렉터리에서 `--latest false` 로 풀어도 결과가 같은 73개(더 받는 의존 없음)
+- 적용 뒤: 재시작 35초, pluginManager API 73개 모두 활성이고 고정 목록과 한 줄도 다르지 않다. JCasC · githubPush 트리거 · 서명 설정 그대로, 웹훅 서명 시험 맞음 200 · 틀림 400 · 없음 400
+- **찾은 것:** 그 전에는 `JENKINS_HOME/plugins` 에 `.jpi.pinned` 표시가 있어 받아 둔 새 버전이 적용되지 않는 경우가 있었다(asm-api). 받은 것(ref)과 실행 중인 것이 달라 "무엇이 깔려 있나"를 디스크로는 알 수 없었다 — 이제 overwritePlugins 로 둘이 같다. 목록은 디스크가 아니라 API(`/pluginManager/api/json`)로 뽑는다
+- **되돌리기:** 고정한 뒤로는 `helm rollback <이전 rev>` 가 플러그인 버전까지 되돌린다(overwritePlugins). 고정 전(rev6)으로 되돌리면 다시 `--latest true` 라 그때의 최신으로 오른다 — rev6 때 파일 그대로가 필요하면 호스트 `~/k8s-cluster/backup/2026-11-03-jenkins-pin/` 의 `JENKINS_HOME/plugins` 묶음(ROLLBACK.md)
+- 플러그인을 올릴 때: 올릴 것과 그 의존을 목록에서 같이 고치고 helm upgrade. 재시작마다 73개를 업데이트 센터에서 다시 받는다(전에도 ref 는 emptyDir 이라 매번 받았다)
 
 #### 2. 왜 이렇게 했나
 
