@@ -45,11 +45,15 @@
 | --- | --- |
 | petmint.ronanlab.dev | 로그인한 누구나(시연용). 통과한 사람의 이메일을 헤더로 전달 |
 | argocd / harbor / jenkins | 운영자만. Application 하나로 묶어 세션을 공유한다 |
+| argocd.ronanlab.dev/api/webhook · jenkins.ronanlab.dev/github-webhook | Bypass(누구나) — GitHub 웹훅만(2026-11-03). 지키는 것은 서버의 HMAC SHA-256 서명 검사다 |
 
 `ollama.ronanlab.dev`는 이 터널이 아니라 별도 터널(`ollama-tunnel`)로 나간다. Service Token으로 기구간 호출만 허용한다.
 
 > 현재 petmint.ronanlab.dev의 정책은 시연용으로 로그인한 누구나 접근 가능하다. 단, 실무에서는 Include를 Emails나 Email domain으로 바꿔 상담원만 통과시킨다. 어느 쪽이든 통과한 사람의 이메일이 헤더로 전달되므로 앱 코드는 바뀌지 않는다.
 > 
+
+> **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `..`·`%2e%2e`·`%2f`·`;` 우회 변형은 모두 Access 302였다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다 — 서버가 404·403·405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). 더 좁히려면 WAF 규칙으로 정확한 경로의 POST만 남긴다(선택, 미적용)
+>
 
 > 운영 도구 셋은 자체 로그인이 있지만 Access를 앞에 둔다. 로그인 화면 자체가 공격면이고, 인증 전에 터지는 취약점이 드물지 않기 때문이다. 정책이 같으므로 Application 하나에 묶었고, 하나를 인증하면 셋 다 통한다.
 > 
