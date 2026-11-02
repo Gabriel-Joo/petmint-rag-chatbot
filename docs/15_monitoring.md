@@ -1,4 +1,4 @@
-> 상태: △ 매니페스트 작성(2026-10-18, ronanlab-infra `platform/monitoring/`) — 적용·Sync 전. VM 메모리를 4096 → 8192로 올린 뒤 적용한다.
+> 상태: △ 매니페스트 작성(2026-10-18, ronanlab-infra `apps/monitoring/`, 2026-11-02 `platform/monitoring/`에서 옮김) — 적용·Sync 전. VM 메모리를 4096 → 8192로 올린 뒤 적용한다.
 > 아무것도 돌려보지 않았다. 앱(petmint) 지표와 Ollama·search-service 응답 여부는 계측이 없어 설계만 있다.
 
 ### 0. 목표
@@ -58,14 +58,14 @@ helm install로 넣지 않는다 — 설정이 클러스터 안에만 남아 Pod
 
 ```
 ronanlab-infra/
-  platform/monitoring/
+  apps/monitoring/
     kustomization.yaml       namespace monitoring, 리소스 목록
     README.md                처음 한 번(Namespace·Secret·Application), 크기 근거
     prometheus/              ServiceAccount·RBAC·ConfigMap(scrape 설정)·StatefulSet(PVC 5Gi)·Service
     grafana/                 Deployment·Service·데이터소스 ConfigMap
     node-exporter/           DaemonSet(hostNetwork :9100)·headless Service
     kube-state-metrics/      ServiceAccount·RBAC·Deployment·Service
-  platform/argocd/applications/monitoring.yaml   Application(수동 Sync·prune 없음·finalizer 없음)
+    app.yaml                 Application(수동 Sync·prune 없음·finalizer 없음) — 루트(bootstrap/root-app.yaml)가 만든다
 ```
 
 | 항목 | 값 |
@@ -81,7 +81,7 @@ ronanlab-infra/
 **긁는 것**: Prometheus 자신, node-exporter, kubelet cAdvisor(1절에 쓰는 지표 7개만 남김), kube-state-metrics(객체 12종만), 주석 단 Pod, Milvus(`up`만).
 **긁지 않는 것**: apiserver·kubelet `/metrics` — 시계열이 가장 많고 1절에 쓰지 않는다.
 
-**Requests/Limits** (근거는 `platform/monitoring/README.md` "크기")
+**Requests/Limits** (근거는 `apps/monitoring/README.md` "크기")
 
 | 구성 | requests | limits |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ ronanlab-infra/
 
 - [ ]  노드 네 대 모두 8192로 올라왔는가(`kubectl top nodes`, `free -m`) — 다시 재서 2절 판단이 그대로인지 본다
 - [ ]  `kubectl create namespace monitoring`, Secret `grafana-admin` 생성(README "처음 한 번")
-- [ ]  `kubectl apply -f platform/argocd/applications/monitoring.yaml` 뒤 monitoring만 Sync — petmint Application은 건드리지 않는다
+- [ ]  `bootstrap/root-app.yaml`의 `exclude: 'monitoring/app.yaml'` 줄을 지우고 push → 루트가 Application을 만든 뒤 monitoring만 Sync — petmint Application은 건드리지 않는다
 
 **뜨는가**
 
