@@ -410,6 +410,7 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 - Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 11개의 작은 버전 올림은 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다)
 - **ArgoCD 는 웹훅 시크릿을 argocd-server 가 뜰 때 한 번 읽는다**(v2.13 `NewHandler`). 키를 넣은 뒤 재시작 전에는 같은 본문이 한 번 맞게 들어온 뒤 틀린 서명(`00`)도 200 으로 처리됐다. `rollout restart deploy/argocd-server` 뒤에는 맞는 서명 10/10, 틀린 · 다른 값 · 무작위 · 없는 서명 0/40 통과(Jenkins 도 같은 시험 10/10 · 0/40). **시크릿을 바꾸면 argocd-server 를 다시 띄운다**
 - 잰 값: infra 빈 커밋 push → argocd-server 가 push 이벤트를 받고 **6.2초 뒤** 루트가 새 커밋(2f1141b)을 봤다. 같은 push 에 petmint(수동 Sync, OutOfSync 그대로) · cloudflared(수동) 는 Sync 되지 않았다 — 마지막 Sync 시각 · 파드 UID · resourceVersion 이 push 전과 같다
+- 잰 값(Jenkins, 펫퍼민트 push 62216c0): Jenkins 웹훅 수신 21:45:32.1 → 잡 조회 · 변경 감지 · #46 트리거 21:45:34.7(2.6초) → 빌드 시작 21:45:42 · 60초 · SUCCESS("Started by GitHub push") → 태그 커밋 167ed37 21:46:37 → ArgoCD 웹훅 수신 21:46:42 → petmint OutOfSync. 앱 push 에서 OutOfSync 까지 약 70초(빌드 60초 포함) — 전에는 폴링 2분 + 빌드 + 조회 3분이었다. Sync 는 수동 그대로(사람이 21:47:24 에 눌렀다)
 - Access 는 웹훅 경로만 Bypass 한다(13번 1-3절). 되돌리기와 측정 기록은 호스트 `~/k8s-cluster/backup/2026-11-03-webhooks/`
 
 #### 2. 왜 이렇게 했나
