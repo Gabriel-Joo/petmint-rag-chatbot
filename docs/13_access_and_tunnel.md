@@ -1,6 +1,6 @@
 > 상태: 구축 완료. 터널과 Access 정책은 설정을 마쳤다(petmint는 시연용으로 로그인한 누구나 통과).
 > 2026-10-28: 앱 자체 인증(사번·비밀번호)을 더했다 — `PETMINT_AUTH=app`. 기본(`access`)은 아래 Access 설계 그대로다(2-1절).
-> cloudflared 매니페스트는 ronanlab-infra `platform/cloudflared`에 있다(2026-10-18, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
+> cloudflared 매니페스트는 ronanlab-infra `apps/cloudflared`에 있다(2026-10-18 `platform/cloudflared`로 만들었고 2026-11-02 App of Apps 때 옮겼다, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
 > 
 
 ---
@@ -103,7 +103,7 @@
 | --- | --- | --- |
 | 장애 복구 | 죽으면 수동 재시작 | livenessProbe로 자동 재시작 |
 | 이중화 | 수동으로 프로세스 여러 개 | `replicas: 2` 한 줄 |
-| 설정 관리 | 호스트 파일 | ConfigMap — ronanlab-infra `platform/cloudflared`, ArgoCD Sync |
+| 설정 관리 | 호스트 파일 | ConfigMap — ronanlab-infra `apps/cloudflared`, ArgoCD Sync |
 
 RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한 흐름**이 되기도 한다.
 
@@ -137,7 +137,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 - **잠금이 사번 단위다.** 없는 사번을 돌려 가며 시도하는 것은 막지 못한다(IP 단위 제한 없음). 잠긴 계정은 "잠겼다"고 알려 주므로 그 사번이 있다는 것은 드러난다
 - **Access를 앞에 두면 로그인을 두 번 한다.** 운영에서 Access를 함께 쓰려면 Access 이메일로 앱 세션을 여는 연결(SSO 연동)이 따로 필요하다
 - **터널 ConfigMap을 쪼갤 수 없다.** 호스트가 늘면 한 파일이 계속 커진다
-- ~~cloudflared 매니페스트가 아직 저장소에 없다.~~ 2026-10-18 해결 — 2-3절의 판단대로 `petmint` 네임스페이스에서 `cloudflared` 네임스페이스로 옮겼다. 매니페스트는 ronanlab-infra `platform/cloudflared`, ArgoCD Application `cloudflared`(수동 Sync)가 관리한다. Secret `cloudflared-credentials`는 사람이 넣는다(같은 디렉터리 README.md)
+- ~~cloudflared 매니페스트가 아직 저장소에 없다.~~ 2026-10-18 해결 — 2-3절의 판단대로 `petmint` 네임스페이스에서 `cloudflared` 네임스페이스로 옮겼다. 매니페스트는 ronanlab-infra `apps/cloudflared`(2026-11-02 `platform/cloudflared`에서 옮김), ArgoCD Application `cloudflared`(수동 Sync, 루트가 만든다)가 관리한다. Secret `cloudflared-credentials`는 사람이 넣는다(같은 디렉터리 README.md)
 
 ---
 

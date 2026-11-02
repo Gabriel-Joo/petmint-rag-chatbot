@@ -188,6 +188,26 @@ ronanlab-infra/
 | 매니페스트 수신 | Jenkinsfile 에서 `sh 'git clone'` 으로 받는다 |
 | 조회 주기 | 3분 |
 
+**App of Apps (2026-11-02).** Application 을 손으로 `kubectl apply` 하지 않는다. 루트 `bootstrap/root-app.yaml` 하나만 사람이 넣었고, 루트가 `apps/*/app.yaml` 을 읽어 Application 을 만든다. 새 앱은 `apps/<이름>/` 에 `app.yaml` + 매니페스트를 넣고 push 하면 된다.
+
+```
+ronanlab-infra/
+  bootstrap/root-app.yaml     루트 — 이것만 사람이 kubectl apply (한 번)
+  apps/                       ArgoCD 가 배포하는 것. 폴더마다 app.yaml + 매니페스트
+    cloudflared/  petmint/  runshoes/  monitoring/(자리만 — 루트 exclude)
+  platform/                   ArgoCD 밖 기반(ArgoCD 보다 먼저 깔았다)
+    argocd/ingress.yaml  cert-manager/  coredns/  ingress-nginx/  metallb/  harbor/  jenkins/
+```
+
+| 루트 설정 | 값 · 이유 |
+| --- | --- |
+| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared · petmint 수동, runshoes 자동) |
+| Sync | 자동, prune 끔(폴더를 지워도 Application 이 남는다), selfHeal 끔, finalizer 없음(루트를 지워도 자식 · 리소스가 남는다) |
+| 자식 syncPolicy | 덮지 않는다(ignoreDifferences + RespectIgnoreDifferences) — 자동 Sync 켜고 끄기는 지금처럼 클러스터에서 patch 가 스위치다. 그러지 않으면 Jenkins 태그 커밋 하나에 루트가 다시 Sync 해 스키마 배포 중 꺼 둔 자동 Sync 를 도로 켠다 |
+| monitoring | app.yaml 자리만. 루트 `exclude: 'monitoring/app.yaml'` 한 줄을 지우면 만들어진다 |
+
+전환은 중단 없이 넘어갔다. 기존 Application 셋을 지우지 않고 같은 이름 · 같은 spec 을 루트가 apply 했다. cloudflared 만 path 가 `platform/cloudflared` → `apps/cloudflared` 로 바뀌었는데, 두 경로의 `kubectl kustomize` 출력이 0줄 차이라 Sync 없이 Synced 였다. 전환 뒤 세 앱의 파드 UID · 시작 시각, deploy · sts · cm · svc · ingress resourceVersion 이 전과 같고 자식 Sync 작업은 일어나지 않았다. 터널 커넥터 4/4, petmint · runshoes 공개 주소 200. 되돌리기와 전후 기록은 호스트 `~/k8s-cluster/backup/2026-11-02-app-of-apps/`. 폴더만으로 되는지는 시험 앱 `apps/zz-smoke/`(리소스 0개, 수동 Sync)를 push 해 확인했다 — 손대지 않아도 루트가 조회 주기(3분) 안에 Application `zz-smoke` 를 만들었다. 지울 때는 폴더를 지우는 커밋을 push 한 뒤 `kubectl -n argocd delete application zz-smoke` 를 따로 한다(prune 끔).
+
 배포는 이제 **ArgoCD 가 독점한다.** `kubectl apply` 나 `apply.sh` 를 쓰면 상태가 엇갈린다 — 실제로 `kubectl scale --replicas=3` 을 하자 즉시 OutOfSync 로 잡혔고 Sync 하니 Git 값인 2 로 돌아왔다.
 
 
