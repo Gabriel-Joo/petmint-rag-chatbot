@@ -1,5 +1,5 @@
 """코드 답 규칙 등록부(code_rules) — 순서, 규칙끼리 겹침(알려진 것 말고 새로 생기면 실패), 다음 턴이 알아보는 문구.
-겹침 표는 docs/16_code_answers.md 3-1절과 같아야 한다 — 규칙을 바꾸다 새 겹침이 생기면 순서를 정하고 표와 KNOWN을 같이 고친다"""
+겹침 표는 docs/02_pipeline/16_code_answers.md 3-1절과 같아야 한다 — 규칙을 바꾸다 새 겹침이 생기면 순서를 정하고 표와 KNOWN을 같이 고친다"""
 
 import json
 import unittest
