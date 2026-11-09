@@ -1,4 +1,4 @@
-> 상태: 구축 완료. 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. petmint.ronanlab.dev의 Access 정책은 데모 시연 때 상대방이 들어갈 수 있도록 사용자가 의도적으로 제거했다 — 지금은 앱 로그인(`/api/auth/me` 미로그인 401)만 건다(2026-11-09 확인). ollama.ronanlab.dev는 의도와 달리 토큰 없이 열려 있어 2026-11-09 터널을 껐다(1-3절).
+> 상태: 구축 완료. 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. petmint.ronanlab.dev의 Access 정책은 데모 시연 때 상대방이 들어갈 수 있도록 사용자가 의도적으로 제거했다 — 지금은 앱 로그인(`/api/auth/me` 미로그인 401)만 건다(2026-11-09 확인). ollama.ronanlab.dev(학교 PC용 Ollama 터널)는 Service Token 정책(`ollama-school-pc`)으로 막혀 있다(2026-11-09 다시 걸음, 1-3절).
 > 2026-10-28: 앱 자체 인증(사번·비밀번호)을 더했다 — `PETMINT_AUTH=app`. 기본(`access`)은 아래 Access 설계 그대로다(2-1절).
 > cloudflared 매니페스트는 ronanlab-infra `apps/cloudflared`에 있다(2026-10-18 `platform/cloudflared`로 만들었고 2026-11-02 App of Apps 때 옮겼다, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
 > 
@@ -48,7 +48,14 @@
 | argocd / harbor / jenkins | 운영자만. Application 하나로 묶어 세션을 공유한다 |
 | argocd.ronanlab.dev/api/webhook · jenkins.ronanlab.dev/github-webhook | Bypass(누구나) — GitHub 웹훅만(2026-11-03). 지키는 것은 서버의 HMAC SHA-256 서명 검사다 |
 
-`ollama.ronanlab.dev`는 이 터널이 아니라 별도 터널(`ollama-tunnel`)로 나간다. Service Token으로 기구간 호출만 허용하도록 설계했다. ✗ 2026-11-09 토큰 없이 `/api/version`·`/api/tags`가 200 — Access가 걸려 있지 않다(의도 아님). Ollama 로그로는 11-02부터 바깥 IP의 `GET /`·`HEAD /`가 들어왔다(생성·pull·delete는 바깥 IP 0건). 쓰는 곳이 없어(런슈즈·펫퍼민트 Pod는 `192.168.122.1:11434` 직접) Access를 다시 걸지 않고 터널을 껐다 — 2026-11-09 `systemctl disable --now cloudflared-ollama`, 바깥에서 530(1033) 확인. Cloudflare의 터널 객체·DNS 레코드 삭제는 대시보드 작업.
+**`ollama.ronanlab.dev` — 학교 PC에서 서버 PC의 Ollama를 부르는 경로.** 클러스터 터널이 아니라 호스트의 별도 터널이다.
+
+- 용도: 교육 PC(학교)는 환경이 달라 서버 PC의 Ollama API를 이 주소로 부른다. 브라우저가 아니라 API 호출이다
+- 구성: 호스트 systemd `cloudflared-ollama`(enabled) → 터널 `ollama-tunnel`(`~/.cloudflared/config.yml`) → `http://localhost:11434`. 이 파일들은 지우지 않는다
+- 인증: Access 앱 `ollama.ronanlab.dev`, 정책 Action **Service Auth** + Include Service Token **`ollama-school-pc`**. 이메일 로그인(`Allow`)은 API 호출이 통과할 수 없어 쓰지 않는다. 부르는 쪽은 요청마다 `CF-Access-Client-Id`·`CF-Access-Client-Secret` 헤더를 붙인다(값은 학교 PC 환경변수에만 둔다). 토큰은 런슈즈가 쓰던 `runshoes-ollama-token`의 이름을 바꿔 그대로 쓴다
+- 확인(2026-11-09): 토큰 없이 `/api/version`·`/api/tags`·`POST /api/generate` 모두 403
+- **런슈즈·펫퍼민트는 이 터널을 쓰지 않는다.** 두 앱의 Pod는 `OLLAMA_URL=http://192.168.122.1:11434`(VM 사설망의 GPU 호스트)로 직접 부른다(`ronanlab-infra/apps/runshoes/app/deployment.yaml`, 펫퍼민트 ConfigMap, 2026-11-09 Pod 환경변수로 확인). 런슈즈 `chatbot_server.py`의 기본값 `https://ollama.ronanlab.dev`와 CF 헤더 코드는 학교 시절(2026-10-18 이주 전)의 흔적이고, 운영에서는 쓰이지 않는다
+- 사고 기록(2026-11-09): 이 호스트에 Access 정책이 빠져 토큰 없이 열려 있었다 — Ollama 로그로 11-02부터 바깥 IP의 `GET /`·`HEAD /`가 들어왔다(생성·pull·delete는 바깥 IP 0건). 쓰는 곳이 없다고 잘못 보고 터널을 잠시 껐다가(`systemctl disable --now`) 학교 PC 용도를 확인해 다시 켜고, 위 Service Auth 정책을 걸었다. GPU가 한 장이라 바깥에서 긴 생성을 돌리면 펫퍼민트 서빙이 멈춘다 — 이 호스트는 늘 Access 뒤에 둔다
 
 > 설계상 petmint.ronanlab.dev의 정책은 시연용으로 로그인한 누구나 접근 가능하다(지금은 데모 공개를 위해 정책을 제거했다 — 위 표). 단, 실무에서는 Include를 Emails나 Email domain으로 바꿔 상담원만 통과시킨다. 어느 쪽이든 통과한 사람의 이메일이 헤더로 전달되므로 앱 코드는 바뀌지 않는다.
 > 
