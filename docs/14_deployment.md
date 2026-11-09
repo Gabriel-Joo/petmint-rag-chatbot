@@ -1,5 +1,5 @@
 > 상태: 설계 확정, 구현 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16 완료.
-> search-service와 답변 생성은 코드만 들어갔고(2026-10-18) 아직 배포 전이라, 클러스터의 WS는 더미 답변을 돌려준다.
+> search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다.
 
 #### 0. 한 줄 요약
 
@@ -14,7 +14,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | 프로세스 | 위치 | 이유 |
 | --- | --- | --- |
 | Ollama | GPU 호스트 | 모델 추론에 GPU |
-| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✗ 호스트 기동 전(코드는 2026-10-18 작성, `search_service/`) |
+| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✓ 호스트 systemd `petmint-search`(192.168.122.1:8100, 2026-11-02부터 유닛). 코드는 `search_service/` |
 | Milvus | 호스트 도커 → Pod 가능 | GPU를 쓰지 않는다. search-service와 함께 판단한다  |
 | MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 |
 | FastAPI + React 빌드물 | Pod | GPU를 쓰지 않는다 |
@@ -65,13 +65,13 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | `PETMINT_DB_HOST` / `PORT` / `NAME` / `USER` / `PASSWORD` | MySQL |
 | `PETMINT_MILVUS_URL` | Milvus |
 | `PETMINT_OLLAMA_URL` | GPU 호스트의 Ollama |
-| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service. ✗ 미배포라 지금 값은 `search-service-not-deployed.invalid` |
+| `PETMINT_SEARCH_URL` | GPU 호스트의 search-service. 지금 값은 `http://192.168.122.1:8100` |
 | `PETMINT_WEB_DIST` | React 빌드물 경로 |
 | `PETMINT_CORE_DB_*` | 고객 원장(`insurance_core`). 실무에서는 다른 호스트일 수 있어 따로 둔다 |
 | `PETMINT_DEFAULT_AGENT` | 내부망 직접 접속처럼 Access 헤더가 없을 때 쓸 상담원 ID |
-| `PETMINT_TITLE_LLM` | 세션 제목을 LLM으로 지을지(0/1). 재구축 중이라 지금은 0 |
+| `PETMINT_TITLE_LLM` | 세션 제목을 LLM으로 지을지(0/1). 지금은 1(업무특화는 늘 첫 질문 첫 줄) |
 | `PETMINT_MODEL_BASE` | 일반·사내규정 모드와 재작성기가 쓸 모델 이름 (기본 tri-7b). ✓ 이미지 빌드·태그 커밋·Sync 확인(2026-10-18) |
-| `PETMINT_MODEL_RAG` | 업무특화 모드가 쓸 어댑터 모델 이름 (기본 tri-7b-rag-1). ✓ 이미지 빌드·태그 커밋·Sync 확인(2026-10-18). ✗ 지금 값 tri-7b-rag-1은 Ollama에 없다 |
+| `PETMINT_MODEL_RAG` | 업무특화 모드가 쓸 어댑터 모델 이름 (기본 tri-7b-rag-1). ✓ 이미지 빌드·태그 커밋·Sync 확인(2026-10-18). 지금 값은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`(Ollama에 있다) |
 
 DB 환경변수가 없으면 이름을 밝히며 기동이 실패한다. 코드에 접속 정보를 하드코딩하지 않는다(12번 1-2절).
 
@@ -113,7 +113,7 @@ ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containe
 
 기계가 공개 호스트명으로 나갔다 들어오면 Access에 막힌다. 그래서 자동화는 전부 내부 주소로 간다. 사람이 브라우저로 들어가는 경로만 Access가 막는다(13번 1-3절).
 
-> Ollama는 예외다. `ollama.ronanlab.dev`가 Service Token으로 열려 있지만, 그것은 클러스터 밖에서 부를 때의 경로다. Pod는 사설 네트워크로 직접 호출한다 — 같은 물리 머신 안인데 Cloudflare 엣지를 왕복하면 스트리밍 토큰마다 지연이 쌓인다.
+> Ollama는 예외다. `ollama.ronanlab.dev`는 Service Token으로 열도록 설계했지만(2026-11-09 서버 PC에서 토큰 없이 `/api/tags` 200 — Access 정책 적용 여부는 바깥 망·대시보드에서 재확인 필요, 13번 1-3절), 그것은 클러스터 밖에서 부를 때의 경로다. Pod는 사설 네트워크로 직접 호출한다 — 같은 물리 머신 안인데 Cloudflare 엣지를 왕복하면 스트리밍 토큰마다 지연이 쌓인다.
 > 
 
 #### 1-7. 클러스터 진입점 — MetalLB + cert-manager
@@ -163,7 +163,7 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 ✓ **앱이 클러스터에서 돈다 (2026-10-16).** MySQL StatefulSet → 약관·시드 적재 → 초기화 Job → 앱 순으로 올렸고, Ingress 경유로 화면·고객 조회·조항 원문·WS 한 턴까지 응답한다. ✗ 약관 적재는 API 서버를 거쳐 Pod 안으로 tar를 흘려 넣어, m-k8s 디스크에 파일이 남지 않는다(아래 — 같은 날 NFS로 바꿨다).
 
-약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). ✓ 일반 모드는 클러스터에서 실제 답변을 확인했다(2026-10-18). ✗ search-service는 기동 전 — 업무특화·사내규정은 이것이 붙어야 답이 나온다.
+약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). ✓ 일반 모드는 클러스터에서 실제 답변을 확인했다(2026-10-18). ✓ search-service가 붙어 업무특화·사내규정도 답이 나온다(호스트 `petmint-search`).
 
 #### 1-10. GitOps — ArgoCD (2026-10-16)
 
@@ -178,7 +178,7 @@ ronanlab-infra/
     argocd/  harbor/  jenkins/
   apps/
     petmint/       앱 매니페스트
-    runshoes/      △ 나중에
+    runshoes/      런슈즈 앱 매니페스트
 ```
 
 | 항목 | 값 |
@@ -407,7 +407,7 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 | 하는 일 | 저장소가 맞는 앱을 refresh 만 한다. Sync 는 각 앱 설정대로 | 저장소 URL 이 맞는 잡에 SCM 조회 한 번(githubPush). 안전망 pollSCM 15분 |
 
 - 시크릿은 둘로 나눴다(ArgoCD 하나, Jenkins 하나). 하나가 새도 다른 쪽은 받지 않는다 — 서로의 값으로 서명한 요청이 거부되는 것을 확인했다
-- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 10개(workflow-cps · workflow-job 등)가 작은 버전으로 같이 올랐다 — 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다). 받아 둔 asm-api 새 버전은 적용되지 않았다. 이 때문에 다음 날 플러그인을 고정했다(1-23절)
+- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 10개(workflow-cps · workflow-job 등)가 작은 버전으로 같이 올랐다 — 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다). 받아 둔 asm-api 새 버전은 적용되지 않았다. 이 때문에 같은 날 플러그인을 고정했다(1-23절)
 - **ArgoCD 는 웹훅 시크릿을 argocd-server 가 뜰 때 한 번 읽는다**(v2.13 `NewHandler`). 키를 넣은 뒤 재시작 전에는 같은 본문이 한 번 맞게 들어온 뒤 틀린 서명(`00`)도 200 으로 처리됐다. `rollout restart deploy/argocd-server` 뒤에는 맞는 서명 10/10, 틀린 · 다른 값 · 무작위 · 없는 서명 0/40 통과(Jenkins 도 같은 시험 10/10 · 0/40). **시크릿을 바꾸면 argocd-server 를 다시 띄운다**
 - 잰 값: infra 빈 커밋 push → argocd-server 가 push 이벤트를 받고 **6.2초 뒤** 루트가 새 커밋(2f1141b)을 봤다. 같은 push 에 petmint(수동 Sync, OutOfSync 그대로) · cloudflared(수동) 는 Sync 되지 않았다 — 마지막 Sync 시각 · 파드 UID · resourceVersion 이 push 전과 같다
 - 잰 값(Jenkins, 펫퍼민트 push 62216c0): Jenkins 웹훅 수신 21:45:32.1 → 잡 조회 · 변경 감지 · #46 트리거 21:45:34.7(2.6초) → 빌드 시작 21:45:42 · 60초 · SUCCESS("Started by GitHub push") → 태그 커밋 167ed37 21:46:37 → ArgoCD 웹훅 수신 21:46:42 → petmint OutOfSync. 앱 push 에서 OutOfSync 까지 약 70초(빌드 60초 포함) — 전에는 폴링 2분 + 빌드 + 조회 3분이었다. Sync 는 수동 그대로(사람이 21:47:24 에 눌렀다)
@@ -415,7 +415,7 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 
 #### 1-23. Jenkins 플러그인 버전 고정 (2026-11-03)
 
-차트 기본(`installLatestPlugins: true` → `jenkins-plugin-cli --latest true`)은 재시작할 때마다 의존 플러그인을 최신으로 올린다. 빌드가 어느 날 깨져도 무엇이 바뀌었는지 알 수 없어서 고정했다(helm revision 7, infra 4ac6b93).
+차트 기본(`installLatestPlugins: true` → `jenkins-plugin-cli --latest true`)은 재시작할 때마다 의존 플러그인을 최신으로 올린다. 빌드가 어느 날 깨져도 무엇이 바뀌었는지 알 수 없어서 고정했다(helm revision 7, infra 5f4c6c3).
 
 | values | 값 | 뜻 |
 | --- | --- | --- |
@@ -491,7 +491,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 #### 2-7. ArgoCD 에 넘길 때 지킨 세 가지
 
-**Namespace 를 ArgoCD 관리에서 뺀다.** `petmint` 네임스페이스에는 cloudflared 터널과 사람이 넣은 Secret 네 개가 있다. 터널이 죽으면 ArgoCD·Harbor·Jenkins 공개 주소까지 함께 죽는다. ArgoCD 가 네임스페이스를 소유하면 prune 이나 Application 삭제 한 번에 이것이 모두 사라질 수 있다. Secret 처럼 사람이 만드는 쪽으로 남긴다.
+**Namespace 를 ArgoCD 관리에서 뺀다.** `petmint` 네임스페이스에는 사람이 넣은 Secret 네 개가 있다(cloudflared 터널도 처음엔 여기 있었으나 2026-10-18 `cloudflared` 네임스페이스로 옮겼다). 터널이 죽으면 ArgoCD·Harbor·Jenkins 공개 주소까지 함께 죽는다. ArgoCD 가 네임스페이스를 소유하면 prune 이나 Application 삭제 한 번에 이것이 모두 사라질 수 있다. Secret 처럼 사람이 만드는 쪽으로 남긴다.
 
 **deploy key 를 읽기·쓰기로 나눈다.** 토큰(fine-grained PAT)은 만료일이 있어 만료되면 배포가 **조용히 멈춘다** — 2-4절의 "조용한 실패를 만들지 않는다"와 어긋난다. 읽기와 쓰기를 나누는 것은 Harbor robot 을 pull 전용과 push 용으로 나눈 것과 같은 논리다. ArgoCD 키가 새도 저장소를 고칠 수 없다.
 
@@ -531,14 +531,14 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다
 - [ ]  **libvirt 관리망(192.168.121.x)은 DHCP다.** VM을 다시 만들면 주소가 바뀐다. 노드 설정에는 고정 IP인 사설망(192.168.122.x)을 쓴다
 - [ ]  **ArgoCD는 `ssl-passthrough`를 뺀 상태다.** 나중에 그 플래그를 켜면 붙인 인증서가 쓰이지 않는다
-- [ ]  **Jenkins 플러그인이 재시작마다 최신으로 올라간다.** 차트 기본값 `installLatestPlugins: true` 때문이다. 고정하려면 의존 플러그인까지 버전을 적어야 한다. 이미지 태그에 `latest`를 쓰지 않는 것과 같은 문제이므로 재현성이 필요해지면 끈다
+- [x]  ~~**Jenkins 플러그인이 재시작마다 최신으로 올라간다.**~~ 2026-11-03 해결 — 73개 버전 고정(1-23절)
 - [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다
 - [ ]  **약관을 바꾸면 앱 재시작이 필요하다.** 파일은 Pod에서 바로 보이지만 앱이 기동할 때 메모리에 올린다. 재색인 뒤에는 `rollout restart`가 필요하다
 - [ ]  **클러스터 DB는 픽스처 시드로 새로 시작했다.** 로컬 도커 MySQL의 개발 데이터는 옮기지 않았다
 - [ ]  **롤링에 워커 3대가 다 필요하다.** 같은 노드에 두 Pod를 두지 않으므로, 롤링 중 잠깐 생기는 세 번째 Pod가 남은 워커에 떠야 한다. 워커 하나가 빠진 동안 롤링하면 새 Pod가 Pending에 멈춘다
 - [ ]  앱 리포의 어떤 푸시에도 빌드가 돈다. docs만 고쳐도 새 이미지와 배포 커밋이 생긴다
-- [ ]  ArgoCD 초기 admin 비밀번호 Secret이 남아 있다. 비밀번호를 바꾼 뒤 지우는 것이 권고다
-- [ ]  **`PETMINT_TITLE_LLM`이 0이다.** 제목 생성이 호스트 GPU를 쓰는데 재구축 실험이 돌고 있어 꺼 두었다. 지금은 첫 질문 첫 줄이 제목이 된다. 실험이 끝나면 1로 돌린다
+- [x]  ~~ArgoCD 초기 admin 비밀번호 Secret이 남아 있다.~~ 지워졌다(2026-11-09 확인 — 없음)
+- [x]  ~~**`PETMINT_TITLE_LLM`이 0이다.**~~ 지금 1이다(일반·사내규정은 LLM 제목, 업무특화는 첫 질문 첫 줄)
 - [ ]  단일 장애점이 노드마다 흩어져 있다. MySQL은 w1, harbor-registry는 w2, Jenkins는 w3의 local-path에 묶여 있다. 노드 하나가 죽으면 그 서비스가 멈춘다
 
 ---
@@ -567,12 +567,12 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [x]  Sync하면 Pod가 한 대씩 새 태그로 교체되는가 (부하 중 HTTP 7,941건 실패 0)
 - [x]  매니페스트 변경이 빌드를 다시 트리거하지 않는가
 - [x]  kubectl로 바꾸면 ArgoCD가 OutOfSync로 잡는가
-- [x]  Pod에서 호스트의 Ollama·Milvus에 닿는가 (search-service는 아직 없다)
+- [x]  Pod에서 호스트의 Ollama·Milvus·search-service에 닿는가
 - [x]  롤링 중 HTTP 요청이 실패하지 않는가 — drain 5,621건 실패 0. WS는 1012로 한 번 끊기고 다시 연결된다
 
 ### 다음에 할 일
 
-**1. search-service** — ✗ 호스트 기동과 ConfigMap 주소 교체 전(코드는 2026-10-18 작성, `search_service/`). 이것이 붙어야 검색이 Pod에서 돌고, answer.py와 함께 더미 답변이 진짜 답변이 된다.
+**1. search-service** — ✓ 호스트 systemd `petmint-search`로 기동, ConfigMap 주소 `http://192.168.122.1:8100`. 클러스터 WS가 실제 답변을 돌려준다.
 
 **2. 08번 Ragas** — △ 검색 품질 측정. 오늘 top 3 적중 81/97을 쟀고,
 Context Recall을 제대로 보려면 이것이 필요하다.

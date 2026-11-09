@@ -1,4 +1,4 @@
-> 상태: 구축 완료. 터널과 Access 정책은 설정을 마쳤다(petmint는 시연용으로 로그인한 누구나 통과).
+> 상태: 구축 완료. 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. 2026-11-09 서버 PC에서 petmint.ronanlab.dev는 Access 리다이렉트 없이 200이었다(`/api/auth/me`는 앱 로그인이 401로 답함) — petmint 호스트의 Access 정책 적용 여부는 바깥 망·대시보드에서 재확인 필요.
 > 2026-10-28: 앱 자체 인증(사번·비밀번호)을 더했다 — `PETMINT_AUTH=app`. 기본(`access`)은 아래 Access 설계 그대로다(2-1절).
 > cloudflared 매니페스트는 ronanlab-infra `apps/cloudflared`에 있다(2026-10-18 `platform/cloudflared`로 만들었고 2026-11-02 App of Apps 때 옮겼다, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다.
 > 
@@ -43,13 +43,14 @@
 
 | 호스트 | 정책 |
 | --- | --- |
-| petmint.ronanlab.dev | 로그인한 누구나(시연용). 통과한 사람의 이메일을 헤더로 전달 |
+| petmint.ronanlab.dev | 로그인한 누구나(시연용). 통과한 사람의 이메일을 헤더로 전달. 2026-11-09 서버 PC에서 Access 리다이렉트 없이 200 — 적용 여부는 바깥 망·대시보드에서 재확인 필요 |
+| runshoes.ronanlab.dev | Access 없음(공개 사이트, 2026-10-18 이 터널로 옮김) |
 | argocd / harbor / jenkins | 운영자만. Application 하나로 묶어 세션을 공유한다 |
 | argocd.ronanlab.dev/api/webhook · jenkins.ronanlab.dev/github-webhook | Bypass(누구나) — GitHub 웹훅만(2026-11-03). 지키는 것은 서버의 HMAC SHA-256 서명 검사다 |
 
-`ollama.ronanlab.dev`는 이 터널이 아니라 별도 터널(`ollama-tunnel`)로 나간다. Service Token으로 기구간 호출만 허용한다.
+`ollama.ronanlab.dev`는 이 터널이 아니라 별도 터널(`ollama-tunnel`)로 나간다. Service Token으로 기구간 호출만 허용하도록 설계했다. 2026-11-09 서버 PC에서 토큰 없이 `/api/tags`가 200이었다 — Access 정책 적용 여부는 바깥 망·대시보드에서 재확인 필요.
 
-> 현재 petmint.ronanlab.dev의 정책은 시연용으로 로그인한 누구나 접근 가능하다. 단, 실무에서는 Include를 Emails나 Email domain으로 바꿔 상담원만 통과시킨다. 어느 쪽이든 통과한 사람의 이메일이 헤더로 전달되므로 앱 코드는 바뀌지 않는다.
+> 설계상 petmint.ronanlab.dev의 정책은 시연용으로 로그인한 누구나 접근 가능하다(현재 적용 여부는 위 표의 재확인 필요). 단, 실무에서는 Include를 Emails나 Email domain으로 바꿔 상담원만 통과시킨다. 어느 쪽이든 통과한 사람의 이메일이 헤더로 전달되므로 앱 코드는 바뀌지 않는다.
 > 
 
 > **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `..`·`%2e%2e`·`%2f`·`;` 우회 변형은 모두 Access 302였다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다 — 서버가 404·403·405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). 더 좁히려면 WAF 규칙으로 정확한 경로의 POST만 남긴다(선택, 미적용)
@@ -113,7 +114,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 
 #### 2-3. 터널 설정은 클러스터 단위, Access는 프로젝트 단위
 
-터널 ConfigMap은 **네 호스트가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다.
+터널 ConfigMap은 **다섯 호스트(petmint·argocd·harbor·jenkins·runshoes)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다.
 
 반면 **Access 정책은 호스트마다 따로 건다.** 프로젝트가 늘어나면 정책도 각각 추가하면 된다.
 

@@ -1,8 +1,8 @@
-> 상태: ✓ 조립 모듈(data/rag_context.py)과 SearchScope 필터 교체·검색 문장 정리(9절)는 2026-10-13까지 구현, 05(FAQ 생성)·08(평가)이 이 경로를 쓴다. △ 09 서비스 경로(answer.py → search-service → build_full_context)는 코드 작성(2026-10-18) — ✗ search-service 기동 전이라 실행 확인 전. △ 이웃 청크 포함(10절)은 검토만 했다.
+> 상태: ✓ 조립 모듈(data/rag_context.py)과 SearchScope 필터 교체·검색 문장 정리(9절)는 2026-10-13까지 구현, 05(FAQ 생성)·08(평가)이 이 경로를 쓴다. ✓ 09 서비스 경로(answer.py → search-service → build_full_context)는 운영 중이다(search-service는 호스트 systemd `petmint-search.service`, :8100. 서빙 설정 v3·부모 표시·질의 확장은 docs/14). △ 이웃 청크 포함(10절)은 검토만 했다.
 
 ### 0. 목표
 
-검색(02번) 결과에 그래프(03번) 참조 조문과 법령 박스를 붙여, LLM이 답변을 쓸 수 있는 **완결된 컨텍스트**를 만든다. 05번(FAQ 생성)이 이 조립을 쓴다. 09번(실제 서비스)도 같은 경로를 탄다 — answer.py가 retrieval.py(search-service)를 엔진 자리에 넣어 build_full_context를 부른다. △ 코드 작성(2026-10-18) — ✗ search-service 기동 전이라 실행 확인 전.
+검색(02번) 결과에 그래프(03번) 참조 조문과 법령 박스를 붙여, LLM이 답변을 쓸 수 있는 **완결된 컨텍스트**를 만든다. 05번(FAQ 생성)이 이 조립을 쓴다. 09번(실제 서비스)도 같은 경로를 탄다 — answer.py가 retrieval.py(search-service)를 엔진 자리에 넣어 build_full_context를 부른다. ✓ 운영 중 — search-service는 호스트 systemd `petmint-search.service`로 돈다(서빙 설정은 docs/14).
 
 ---
 
@@ -170,7 +170,7 @@ results = client.query(..., limit=3)
 
 **수정**: ✓ `data/search_scope.py`의 SearchScope로 교체했다. "가입하지 않은 특약·등급만 빼고 나머지는 전부 남긴다"는 의미로 바꿨다. Milvus의 not in은 null 행을 통과시키지 않으므로 (section_name IS NULL or section_name not in [...]) 형태로 써야 한다.
 
-**함께 고친 것**: BM25가 상위 20개를 먼저 자른 뒤 걸러서, 범위 안 후보가 20개보다 적게 남고 있었다. 이제 범위 밖을 먼저 거르고 상위 20개를 고른다.
+**함께 고친 것**: BM25가 상위 20개를 먼저 자른 뒤 걸러서, 범위 안 후보가 20개보다 적게 남고 있었다. 이제 범위 밖을 먼저 거르고 상위 후보(기본 20개, 서빙은 `PETMINT_SEARCH_POOL`=50 — docs/14)를 고른다.
 
 #### 9-1. 회귀 질문 세트
 
