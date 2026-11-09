@@ -1,5 +1,5 @@
-> 상태: △ 설계(2026-10-18). ✓ contexts 저장(answer_eval) 구현. △ 준비 코드 — Ragas 전용 venv(~/ragas_env, ragas 0.4.3), 파일럿(data/ragas_pilot.py), 실행 전.
-> 아무것도 돌려보지 않았다. 본 평가 러너(Ollama 생성 → Ragas 판정)는 아직 없다 — 파일럿 결과를 보고 짠다.
+> 상태: △ 설계(2026-10-18). ✓ contexts 저장(answer_eval) 구현. △ 준비 코드 — Ragas 전용 venv(~/ragas_env, ragas 0.4.3), 파일럿(data/ragas_pilot.py). △ 파일럿 1회 실행(2026-10-18 22:43, `data/review/ragas_pilot_20261018_2243.json`) — 판정 90회 중 55회가 JSON 파싱 실패(`RagasOutputParserException`)였다. 결과 정리·통과 판단 전.
+> 본 평가 러너(Ollama 생성 → Ragas 판정)는 아직 없다 — 파일럿 결과를 보고 짠다.
 
 ### 0. 목표
 
@@ -16,7 +16,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | 검색 | 정답 조항이 상위 k개에 들어왔나 | 기존 `data/search_regression.py`의 hit@k·MRR | gold가 **any-of**다(정답 조항 중 하나만 찾으면 맞음). Ragas의 ID 기반 recall은 "정답 ID 중 몇 개를 찾았나"로 계산해 정의가 어긋난다. LLM 기반 context recall은 참조 정답 문장이 필요한데 없다 |
 | 생성 | 답이 근거에 붙어 있나, 질문에 맞나 | Ragas faithfulness · answer_relevancy | 둘 다 참조 정답이 필요 없다 — 97문항 정답 문장은 쓰지 않는다 |
 
-검색 지표의 현재 값: 103문항 세트 상위 5개 안 88/97, MRR 0.745(2026-10-13, `data/eval/results/search_regression_20261013_A_current.json`). ✗ 검색 층에는 Ragas를 쓰지 않는다.
+검색 지표의 2026-10-13 값: 103문항 세트 상위 5개 안 88/97, MRR 0.745(`data/eval/results/search_regression_20261013_A_current.json`). 그 뒤 청크 v3·질의 확장으로 검색이 바뀌어 지금 값은 다시 재야 한다. ✗ 검색 층에는 Ragas를 쓰지 않는다.
 
 ---
 
@@ -26,7 +26,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | --- | --- | --- | --- |
 | faithfulness | 답변을 진술(문장)로 나누고, 각 진술이 발췌(contexts)로 뒷받침되는지 판정한 비율. 0~1 | 0.85 | △ 파일럿 뒤에 정한다 |
 | answer_relevancy | 답변에서 질문을 거꾸로 몇 개 만들어 원래 질문과 임베딩 코사인 유사도 평균. 얼버무린 답(noncommittal)은 0 | 0.80 | △ 파일럿 뒤에 정한다 |
-| hit@5 · MRR(검색) | gold any-of 중 하나라도 상위 5개 안 / 첫 정답 순위의 역수 평균 | — | △ 지금 값(88/97, 0.745)을 기준선으로 |
+| hit@5 · MRR(검색) | gold any-of 중 하나라도 상위 5개 안 / 첫 정답 순위의 역수 평균 | — | △ 지금 서빙 경로로 다시 잰 값을 기준선으로 |
 
 **거절 답변은 따로 센다.** "제공된 약관 발췌에서는 확인되지 않는 내용입니다…"는 faithfulness에서 진술이 없거나 판정이 갈리고, answer_relevancy에서는 얼버무림으로 0이 된다. 거절을 점수에 섞으면 "많이 거절하는 모델"이 점수로 벌을 받는지 상을 받는지 알 수 없다 → 조합마다 **거절률을 따로 보고**하고, 생성 지표는 거절이 아닌 답에서 잰다(거절 판정은 answer_eval의 `refused` 규칙). △
 
@@ -53,9 +53,9 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | --- | --- |
 | 평가 결과에 모델이 본 발췌(contexts)를 남긴다 | ✓ 구현(2026-10-18) — `answer_eval.contexts_of`가 렌더된 user 메시지(fit_to_budget 뒤, 참조 포함)를 블록으로 되돌려 rows의 `contexts`에 넣는다. 학습 프롬프트 8,464개로 바이트 단위 왕복 일치 확인, 실제 평가 실행 전 |
 | Ragas 설치 | △ 전용 venv `~/ragas_env`에 ragas 0.4.3(고정 목록 `data/eval/requirements-ragas.txt`), import·`pip check` 확인. 판정 실행 전 |
-| 파일럿(심판이 한국어를 제대로 판정하나) | △ 코드 작성 — `data/ragas_pilot.py`(6절), 실행 전 |
+| 파일럿(심판이 한국어를 제대로 판정하나) | △ 1회 실행(2026-10-18, `data/ragas_pilot.py` 6절) — 90회 중 55회 파싱 실패, 6절 확인 항목은 아직 채우지 않았다 |
 | Ollama 생성 러너(네 조합 생성 → rows에 질문·답·contexts) | △ 코드 없음 — 파일럿 통과 뒤 |
-| LoRA 어댑터 GGUF 변환(rebuild3에서 고른 체크포인트) | △ 10번 8절 절차, rebuild3 select 뒤 |
+| LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 8절 절차, Ollama 등록, 운영 모델) |
 | answer_relevancy 임베딩 | △ 정하지 않았다(8절) |
 
 **Ragas를 llm_env에 넣지 않은 이유**: ragas 0.4.3이 끌어오는 instructor 1.3.2가 `openai<2`·`rich<14`·`tenacity<9`를 요구해, llm_env의 openai 3.13.0·rich 15.0.0·tenacity 9.1.4·langchain-openai 1.6.2를 내린다(최신 instructor 1.17.0은 `rich<15`라 llm_env와 안 맞는다). 학습·서비스 환경을 건드리지 않게 따로 둔다. 같은 venv에서 langchain-community 0.4는 `chat_models.vertexai`가 빠져 ragas import가 깨지므로 0.3.31로 고정했다.
@@ -133,6 +133,6 @@ python -m data.ragas_pilot prepare                        # llm_env — Milvus �
 - answer_relevancy 임베딩 — KURE-v1을 쓰려면 ~/ragas_env에 sentence-transformers·torch를 더 넣거나(무겁다), search-service에 임베딩 엔드포인트를 붙이거나, Ollama 임베딩 모델을 새로 받는다
 - 생성 온도 — 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가를 재현하려면 0으로 고정할지
 - RAG 없음 조합의 입력 — 질문만 보낼지(일반 모드와 같음), `build_messages(question, [])`로 "(검색된 발췌 없음)"을 넣을지
-- RAG 조합의 발췌 조립 — 서비스는 `build_full_context`(참조 조문 포함), answer_eval `--search`는 `search_with_graph`(참조 없음). 서비스와 같게 하려면 전자
+- RAG 조합의 발췌 조립 — 서비스와 answer_eval `--search`(2026-10-21부터) 모두 `build_full_context`(참조 조문 포함). 예전 경로(`search_with_graph`, 참조 없음)는 `--search-legacy`로만 남았다
 - 목표치(2절) — 파일럿 뒤
 - no_answer 20문항을 생성 평가에 넣을지 — 넣으면 거절률 비교가 늘고 생성 횟수가 468회가 된다

@@ -1,6 +1,6 @@
 ---
 
-> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18) — 오프라인 측정으로 확인, 배포 경로 실행 전. △ 검색 경로·되묻기·계산 카드는 코드 작성(10-18), 실행 확인 전. ✗ search-service 기동 전. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). △ cancel·가정 질문 배너는 코드 없음.
+> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18). ✓ search-service 연결·업무특화 모델 rebuild4 운영(10-21, 14번 1-11절) — 검색 경로·되묻기·계산 카드가 운영에서 돈다. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). ✓ 앱 로그인(7-4절, 10-28). △ cancel·가정 질문 배너는 코드 없음.
 > 
 
 ---
@@ -174,7 +174,7 @@
 - 카드: 일수·횟수, 날마다 빠지는 자기부담금(× 일수), 정확한 값/범위/하루로 계산 표시, 날짜별 계산 줄, 연간 한도 사용·잔여("올해 사용 350만원 / 남은 한도 1,150만원"), 계산에 둔 가정
 - 연간 총 한도는 청구 이력(`insurance_core.claims`, 6-1절)에서 이번 보험연도(가입일의 계약해당일부터 1년)에 받은 보험금을 빼고 남은 한도까지. Ⅲ 유형 MRI·CT·내시경이 올해 몇 번째인지도 청구 이력으로 센다
 - "3번 통원"은 서로 다른 3일, "같은 날 두 번"은 하루, "2박 3일"은 3일로 센다 — 앞의 둘은 답에 가정을 적는다
-- **의료비 카드가 뜨면 답도 카드 값으로 코드가 만든다** — 되묻기를 거치든, 처음부터 금액을 다 말하든(`payout.question_turn`). 상담원은 처음부터 금액을 말하는 경우가 더 많은데, 그때 카드는 맞고 모델은 거절했다(검증 R2·R26·R29). 단독 질문도 같은 흐름이라 2~5일 총액이면 날짜별 입력 카드로 묻는다. 법률비용·한도 카드는 카드만 붙이고 답은 모델이 쓴다
+- **의료비 카드가 뜨면 답도 카드 값으로 코드가 만든다** — 되묻기를 거치든, 처음부터 금액을 다 말하든(`payout.question_turn`). 상담원은 처음부터 금액을 말하는 경우가 더 많은데, 그때 카드는 맞고 모델은 거절했다(검증 R2·R26·R29). 단독 질문도 같은 흐름이라 2~5일 총액이면 날짜별 입력 카드로 묻는다. 법률비용·한도 카드도 카드 값으로 코드가 답한다(`payout.legal_answer`·`limit_answer`, 2026-10-22 — 16번 ⑥·⑧)
 
 **부담보 배너**: 가입한 특약에 부담보(예: 슬개골 탈구 제외)가 있고 질문이 거기 해당하면, 코드가 대조해 경고를 띄운다. 모델에게 맡기지 않는 이유는 7B가 예외·단서 추론에서 가장 많이 틀리기 때문이다.
 
@@ -306,7 +306,7 @@ SearchScope    species, subscriptions, focus_sections
 
 시험: `tests/test_ask_amount.py`(규칙 경로), `tests/test_amount_intent.py`(낱말·임계값·실패 시 규칙 — 가짜 임베딩).
 
-**되묻기 직후 턴은 모델이 아니라 카드 값으로 답한다**(2026-10-21) — 업무특화 모델은 치료비를 받아 보험금을 계산하는 답을 못 했다. 다섯 사례 × 일곱 안 × 10회(후속만 · 기준+후속 · 규칙으로 만든 완성 질문 · 계산 결과를 발췌로 · 질문 안에)에서 맞힌 것은 한도에 걸린 80만원 사례의 2~4회뿐, 나머지는 약관 예시(33만원 → 21만원)를 옮기거나 거절했다(`data/review/amount_turn_20261021.md`). 화면에 카드와 다른 숫자가 뜨는 것이 원칙("모델은 계산에 손대지 않는다")보다 나쁘다 — 그래서 이 턴만 코드가 답한다(`payout.amount_answer`):
+**되묻기 직후 턴은 모델이 아니라 카드 값으로 답한다**(2026-10-21) — 업무특화 모델은 치료비를 받아 보험금을 계산하는 답을 못 했다. 다섯 사례 × 일곱 안 × 10회(후속만 · 기준+후속 · 규칙으로 만든 완성 질문 · 계산 결과를 발췌로 · 질문 안에)에서 맞힌 것은 한도에 걸린 80만원 사례의 2~4회뿐, 나머지는 약관 예시(33만원 → 21만원)를 옮기거나 거절했다(`data/review/amount_turn_20261021.md`). 화면에 카드와 다른 숫자가 뜨는 것이 원칙("모델은 계산에 손대지 않는다")보다 나쁘다 — 그래서 이 턴은 코드가 답한다(`payout.amount_answer`) — 2026-10-21부터는 의료비 카드가 계산되는 모든 턴으로 넓혔다(2-3절):
 
 ```
 입원 치료비 35만원에서 자기부담금 3만원을 뺀 32만원의 70%는 22만 4,000원입니다. 1일 지급 한도(30만원) 안이라 예상 보험금은 **22만 4,000원**입니다.
@@ -317,9 +317,9 @@ SearchScope    species, subscriptions, focus_sections
 - 되묻기 직후 턴: 앞 턴 답이 되묻기 문장이고 이번에 금액을 말했다 — 후속 규칙(금액만 16자 이하)에 안 걸리는 긴 답도. 그 금액은 치료비로 본다(치료비 낱말이 없는 "40만원이요"도 카드가 뜬다)
 - 보상비율은 `limit_table`에서(실속형 50%), 정수 계산. `calculate_payout`이 0.7을 실수로 곱해 1원 모자라던 것도 같이 고쳤다(치료비 4천원~300만원 1천원 간격 5,922개 중 722개, 예: 41,000원 → 7,699원)
 - 부담보 대조는 화면 배너와 같은 글자 대조(공백 무시 전체 일치 또는 3글자 이상 낱말). 배너도 후속 턴은 기준 질문까지 본다
-- 응답: 모델을 부르지 않아 0.19~0.39초(전엔 첫 토큰 0.75~2.3초). 범위는 되묻기 직후 턴만 — R2 같은 단독 금액 질문은 아직 모델이 답한다(나중에 본다)
+- 응답: 모델을 부르지 않아 0.19~0.39초(전엔 첫 토큰 0.75~2.3초). 처음엔 되묻기 직후 턴만 코드가 답했고, 2026-10-21부터는 의료비 카드가 계산되는 모든 턴을 코드가 답한다 — R2 같은 단독 금액 질문도(`payout.question_turn`, 2-3절·16번 ⑦)
 
-✓ 되묻기 판정·`clarify`·`clarify_answer`로 잇기(answer.py `clarify_options`·`resume_clarified`) — 로컬·배포 서버 확인(10-20·21, 검증 R3). ✓ 금액 되묻기(10-21, 검증 R14·R15). ✓ 여러 날 입원·여러 번 통원 — 날짜별 입력 카드·범위·청구 이력(10-21, 검증 R18~R29). △ 가정 질문 판정과 배너는 코드 없음.
+✓ 되묻기 판정·`clarify`·`clarify_answer`로 잇기(answer.py `clarify_options`·`resume_clarified`) — 로컬·배포 서버 확인(10-20·21, 검증 R3). ✓ 금액 되묻기(10-21, 검증 R14·R15). ✓ 여러 날 입원·여러 번 통원 — 날짜별 입력 카드·범위·청구 이력(10-21, 검증 R18~R29). △ 가정 질문 판정(`is_hypothetical`)과 "가입 계약 기준 아님" 배너는 코드 없음 — 가입과 다른 등급·유형의 한도 질문은 가정 등급 한도표(`payout.hypothetical_card`, 2026-10-21, 16번 ⑤)가 답한다.
 
 ---
 
@@ -375,13 +375,14 @@ WS: 후속이면 `sources` 앞에 `{"type": "context", "kind": "rewrite|concat|h
 
 **"더 짧게", "고객에게 말하듯이 다시"** 같은 고쳐쓰기는 검색 질의 문제가 아니라 직전 답변을 입력으로 받는 다른 작업이다. UI 버튼으로 받아 베이스 모델에 넘긴다. 약관 사실은 이미 직전 답변 안에 있으므로 베이스 모델로도 된다. ✗ 코드 없음.
 
---- | --- |
+| 방식 | 내용 |
+| --- | --- |
 | 질문 재작성 | 이력 + 후속 질문 → 독립 질문. 모델에는 완성된 질문 하나만 간다 |
 | 앞 턴 발췌 이월 | 직전 턴의 상위 발췌를 이번 발췌 목록에 추가. 형식이 그대로라 학습 형식을 안 깬다 |
 
 **재작성기는 베이스 모델을 쓴다.** 파인튜닝 모델은 "발췌를 읽고 상담 말투로 답하기"만 배우므로, 재작성을 시키면 질문을 다시 쓰지 않고 답을 해버릴 가능성이 크다.
 
-**재작성된 질문을 화면에 보여준다.** 상담원이 "내 질문이 저렇게 해석됐구나"를 알 수 있고, 틀렸으면 바로 고쳐 물을 수 있다. ✗ 재작성(`rewrite_question`)과 화면 표시 모두 코드 없음 — DB에는 rewritten_question 칸이 있지만 WS 메시지와 과거 턴 응답에 실을 자리가 없다.
+**재작성된 질문을 화면에 보여준다** — ✓ ③(↳ 줄, WS `context`, 과거 턴 `rewritten_question`·`context_kind`)로 구현했다(2026-10-21).
 
 ```
 ┌──────────────────────────────┐
@@ -533,12 +534,12 @@ customer_id · agent_email · mode는 sessions에 있으므로 턴에 중복해 
 
 **저장소는 MySQL이다 (2026-10-14 변경).** 초안은 JSONL 파일이었다 — 쓰기만 하고 08번 평가에서 통째로 읽으면 충분했기 때문이다. 그러나 상담 내역(고객별·기간별 조회)을 붙이면 매번 파일을 처음부터 훑어야 한다. 세션도 DB로 가면 재시작 시 소멸 문제가 풀린다(6-2절).
 
-테이블은 **다섯**이다. 칼럼 상세는 12번 1-1절이 기준이다.
+로그 테이블은 **다섯**이다(앱 로그인 accounts·auth_sessions 둘은 따로). 칼럼 상세는 12번 1-1절이 기준이다.
 
 | 테이블 | 내용 |
 | --- | --- |
 | sessions | session_id, mode, customer_id, agent_email, title, 시작·종료 시각, deleted_at, pinned |
-| turns | turn_id, session_id, 질문, 재작성된 질문, 답변, 반려동물 스냅샷, is_hypothetical, clarified, 모델, prompt_version, index_version, first_token_ms, latency_ms, status, payout |
+| turns | turn_id, session_id, 질문, 재작성된 질문, 후속 판별(follow_up·context_kind·context_turns), 답변, 반려동물 스냅샷, is_hypothetical, clarified, code_rule, chosen_section, 모델, prompt_version, index_version, first_token_ms, latency_ms, status, payout |
 | turn_scope | 그 턴에 적용된 가입 내용. 특약 하나당 한 줄 |
 | retrieved | turn_id별 검색 결과. 본문까지 남기므로 행이 가장 많다. 그래프로 따라간 조문도 via_graph로 표시해 함께 남긴다 — 그쪽은 청크가 아니라 graph_key·rank·score가 없다 |
 | feedback | turn_id, 평가. 원본 로그는 고치지 않는다 |
@@ -608,10 +609,13 @@ GET    /api/me/profile             사내규정 본인 정보 블록 — 근속�
   {"type": "clarify_answer", "turn_id": "...", "choice": "..."}
 
 서버 → 클라이언트
+  {"type": "context", "turn_id": "...", "kind": "rewrite|concat|history", "reason": "...", "text": "...", "turns": 1}   후속 질문이면 sources 앞에 (5절)
   {"type": "sources", "turn_id": "...", "items": [...]}      검색 결과 (생성 전)
   {"type": "token", "turn_id": "...", "text": "..."}         스트리밍
   {"type": "clarify", "turn_id": "...", "options": [...]}    되묻기
   {"type": "calc", "turn_id": "...", "result": {...}}       계산 카드 (치료비 질문이면 sources 다음에 한 번)
+  {"type": "exclusions", "turn_id": "...", "items": [...]}   질문에 걸린 부담보 — 배너
+  {"type": "tables", "turn_id": "...", "items": [...]}       모델이 답한 턴의 답 아래 표
   {"type": "references", "turn_id": "...", "items": [...]}   실제 쓴 근거
   {"type": "done", "turn_id": "...", "latency_ms": 2300, "first_token_ms": 480}
   {"type": "error", "turn_id": "...", "code": "...", "message": "..."}   오류
@@ -625,7 +629,7 @@ GET    /api/me/profile             사내규정 본인 정보 블록 — 근속�
 
 **답변은 Markdown으로 그린다 — 원시 HTML은 넣지 않는다(2026-10-20 사용자 지시, 커밋 `eaa93cb`)**: 세 모드와 과거 상담 모두 `web/src/components/AnswerMarkdown.tsx`(react-markdown 10.1.0 · remark-gfm 4.0.1 · remark-breaks 4.0.0, 버전 고정)로 그린다. 모델 출력이라 HTML 문자열을 넣지 않고 React 요소로만 만든다 — 원시 HTML(rehype-raw)을 붙이지 않아 `<script>`·`<img onerror>`는 글자로 보이고, `javascript:` 같은 링크 주소는 지우고, 이미지는 그리지 않고(외부 요청), 허용 목록(`ALLOWED`) 밖 요소는 내용만 남긴다. 스트리밍 중에는 덜 닫힌 ``` · ** · `를 그릴 때만 임시로 닫는다(`closeOpenMarks`) — 중간 상태 305개에서 기호가 글자째 보인 것 48 → 0(커밋 당시 측정).
 
-△ 위 순서(sources → calc → token → references → done, 되묻기면 clarify에서 멈춤, 실패면 error)는 코드 작성(2026-10-18, answer.py·chat_ws.py), 실행 확인 전. `calc`의 `result`는 `CalcResult`(section_name·coverage_type·claimed·copay·limit·payout·note)다.
+순서는 context(후속이면) → sources → exclusions(걸리면) → calc → token → tables(있으면) → references → done이고, 되묻기면 clarify에서, 실패면 error에서 멈춘다(answer.py·chat_ws.py). `calc`의 `result`는 `CalcResult` — `kind`로 갈리는 medical·legal·limits·days_ask 넷 중 하나다.
 
 #### 7-3. 프로세스 모델
 
@@ -661,11 +665,11 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 **검색 모델 둘은 상시 상주이고 Ollama 모델만 갈아 끼우는 구조다.** 따라서 `OLLAMA_MAX_LOADED_MODELS`와 `keep_alive`는 16GB에서 검색 모델 몫을 먼저 뺀 나머지로 정해야 한다.
 
-**둘이 함께 올라갈 수 있는지는 모드 전환 때만의 문제가 아니다.** 업무특화 모드는 한 턴 안에서 원본으로 질문을 재작성하고(5절) 파인튜닝으로 답한다 — **매 턴 두 모델을 다 쓴다.** 둘 다 상주가 가능하면 `OLLAMA_MAX_LOADED_MODELS=2`로 두고, 불가능하면 턴마다 갈아 끼우며 그 지연을 `first_token_ms`로 측정한다.
+**둘이 함께 올라갈 수 있는지는 모드 전환 때만의 문제가 아니다.** 업무특화는 재작성을 하지 않지만(5절) 병명 되묻기 판정(`name_check`, `PETMINT_ASK_DISEASE_LLM`)에서 같은 턴에 베이스 모델을 부른다. 둘 다 상주가 가능하면 `OLLAMA_MAX_LOADED_MODELS=2`로 두고, 불가능하면 갈아 끼우는 지연을 `first_token_ms`로 측정한다.
 
 실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, search-service 기동 직후와 Ollama 생성 중을 나눠 측정한다.
 
-**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. △ Milvus 의존 순서는 보장되지 않는다(코드 없음).
+**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02).
 
 K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
 
@@ -697,7 +701,7 @@ data/                 노트북 01~08이 import하는 순수 로직. 웹 의존�
   rag_context.py      컨텍스트 조립
   limit_table.py      한도표
 
-search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — ✗ 기동 전(코드는 10-18 작성)
+search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — ✓ 운영(10-21 연결, 11-02부터 systemd 유닛)
   main.py             data/search_engine.py를 감싸는 얇은 HTTP 래퍼.
                       검색 로직을 재구현하지 않고 호출만 한다.
                       GPU 직렬화(한 번에 하나씩)는 여기 안에서 처리한다
@@ -712,14 +716,14 @@ app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import�
   db.py               DB 연결
   schemas.py          Customer/Pet/Policy, Session, WS 메시지
   routers/
-    customers.py  sessions.py  consultations.py  articles.py  feedback.py  chat_ws.py
+    customers.py  sessions.py  consultations.py  articles.py  feedback.py  chat_ws.py  auth.py  me.py
   services/
     customers.py      insurance_core 조회 + 검증 + pet → SearchScope 변환
     sessions.py       MySQL 저장소 (12번)
-    retrieval.py      search-service HTTP 호출 — △ 코드 작성(10-18), 실행 확인 전
+    retrieval.py      search-service HTTP 호출
     llm.py            Ollama 스트리밍 + 취소 — ✓ 스트리밍 일반 모드에서 확인(10-18)
     answer.py         scope → 검색 → 되묻기 판정 → 계산 카드 → 생성 → used_references
-                      △ 코드 작성(10-18) — 일반 모드 경로만 ✓ 확인. ✗ 질문 재작성은 코드 없음
+                      세 모드 운영. 질문 재작성(사내규정)·이어 붙이기(업무특화)는 context.py, 코드 답 규칙은 code_rules.py(16번)
     payout.py         계산 카드 — 질문 속 치료비 + 가입 정보 → limit_table. 되묻기 뒤 턴은 코드가 답한다(reply_turn)
     daycalc.py        하루 단위 계산 — 날마다 자기부담금·그날 한도, 범위(최소·최대), 연간 남은 한도
     dayparse.py       자유 입력에서 총액·일수(횟수)·날짜별 금액·수술한 날 금액을 읽는다(규칙)
@@ -743,7 +747,9 @@ web/                  React + TypeScript (Vite)
     pages/            ModeSelect / CustomerSelect / Chat / Consultation
     components/       TopBar, ModeIcon, Composer, ChatHistory, TurnView,
                       SourcePanel, CalcCard, ExclusionBanner, CallAlert,
-                      CustomerCard, PastConsultations, SpeciesToggle, ArchDiagram
+                      CustomerCard, PastConsultations, SpeciesToggle, ArchDiagram,
+                      AnswerMarkdown, AnswerTable, ArticleText, EmployeeCard
+    auth/             AuthGate, Login (앱 로그인)
     hooks/            useChatSocket, useCallSimulator, useMediaQuery, useNow,
                       useReducedMotion, useScrollbarWidth
     api/              REST·WS 클라이언트, 타입
@@ -761,10 +767,10 @@ web/                  React + TypeScript (Vite)
 
 #### 9. 정하지 못한 것
 
-- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✗ Milvus 색인(hr_regulation)은 적재 전 — `data/hr_index.py`는 있고 실행하지 않았다. △ Pod 쪽 범위(`SearchScope.unrestricted("인사규정")`)는 코드 작성(10-18), 실행 확인 전.
+- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번).
 - **멀티턴 재작성의 실제 품질** — 재작성이 충분한지 측정하지 않았다. 부족하면 재작성기만 따로 학습할 수 있다.
 - **LangChain 사용 여부** — 재작성 → 검색 → 생성을 LCEL로 묶을지, 직접 짤지.
-- **업무특화 모드가 쓸 어댑터** — rag-1_7192건_rebuild2에서 answerable 거절이 12건까지 내려왔고, 검색 조건에서는 베이스보다 낫다(8/69 대 9/69). 등급 어구 문항만 미달이라 rebuild3를 준비 중이다(07번 10절). ✓ 모델명은 환경변수로 뺐다(2026-10-18, PETMINT_MODEL_RAG) — 교체는 ConfigMap 값만 바꾼다. ✗ 지금 값(tri-7b-rag-1)은 Ollama에 없고 search-service도 기동 전이라 업무특화는 답하지 못한다(10-18).
+- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-11절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다.
 
 ---
 

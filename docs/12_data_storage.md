@@ -1,5 +1,5 @@
-> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료.
-> 실제 검색 결과·계산 카드·되묻기를 턴 로그에 쓰는 경로는 코드만 들어갔고(2026-10-18) 돌려보지 않았다 — 지금까지 쌓인 턴은 더미 답변이라 retrieved 0줄, payout NULL이다.
+> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 그 뒤 0005 후속 판별·0006 로그인·0007 상담원 이메일 옮기기·0008 code_rule. 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료.
+> 검색 결과·계산 카드·되묻기를 턴 로그에 쓰는 경로는 search-service 연결(2026-10-21) 뒤 운영에서 돈다.
 > 
 
 ---
@@ -29,7 +29,7 @@ sessions (상담 1건)
 | session_id | PK |
 | mode | 일반 / 사내규정 / 업무특화 |
 | customer_id | 업무특화만. 상담 중 바뀌지 않는다 |
-| agent_email | Cloudflare Access 헤더에서 온 상담원 신원(13번). 로컬 개발은 기본값 |
+| agent_email | 상담원 신원 — 앱 로그인(`PETMINT_AUTH=app`, 운영 2026-10-28)이면 로그인한 직원의 이메일, `access`면 Cloudflare Access 헤더(13번). 헤더가 없으면 기본값(`PETMINT_DEFAULT_AGENT`) |
 | started_at | 상담 시작 |
 | ended_at | 업무특화만 채워진다. 일반·사내규정은 닫히지 않아 NULL로 남고, 그것이 곧 "이어 쓸 수 있다"는 표시다 |
 | title | 지난 대화 목록과 과거 상담 목록에 보일 제목. 자동으로 한 번 넣는다 — 일반·사내규정은 첫 질문을 베이스 모델로 요약하고(실패하거나 늦으면 첫 줄), 업무특화는 늘 첫 질문 첫 줄이다(베이스로 지으면 모델 교체로 첫 답이 약 5초 늦어졌다, `app/services/titles.py` `uses_llm`). 그 뒤에는 상담원이 바꿀 수 있다(PATCH). **세 모드 모두 채운다** — 업무특화도 고객 조회의 과거 상담 목록에서 제목을 쓴다(09번 2-2절) |
@@ -47,12 +47,12 @@ sessions (상담 1건)
 | question / rewritten_question / answer | 원문 질문, 재작성된 질문, 답변 |
 | pet_id / pet_name / species / breed / pet_age | 이 턴이 누구 얘기였나 — 상담 중에 바뀐다 |
 | is_hypothetical | 가정 질문 여부(09번 4절) |
-| clarified | 되묻기가 발동했는지(09번 4절). △ 기록 경로 코드 작성(2026-10-18), 실행 확인 전 |
-| code_rule | 답한 코드 규칙(`code_rules.Rule.key` 13개 또는 `hr_personal`). NULL이면 모델이 답했다. 2026-10-29 `0008_turn_code_rule` — 그 전 턴도 NULL이라 규칙별 집계(`db.rule_report`, 16번 5절)는 적용 시각 이후만 본다 |
+| clarified | 되묻기가 발동했는지(09번 4절) — 등급 되묻기, 그리고 코드가 되물은 턴(금액·병명 되묻기, 날짜별 금액 칸) |
+| code_rule | 답한 코드 규칙(`code_rules.Rule.key` 14개 또는 `hr_personal`). NULL이면 모델이 답했다. 2026-10-29 `0008_turn_code_rule` — 그 전 턴도 NULL이라 규칙별 집계(`db.rule_report`, 16번 5절)는 적용 시각 이후만 본다 |
 | model / prompt_version / index_version | 재현에 필요한 버전 |
 | first_token_ms / latency_ms / created_at | 첫 토큰까지의 시간, 전체 지연 시간, 시각. `first_token_ms`는 모델 스왑 지연 측정에 쓴다(09번 7-3절) |
 | status | `ok` / `cancelled` / `error`. 08 평가가 미완성 턴을 걸러낼 수 있어야 한다 |
-| payout | 계산 카드 결과(JSON). 치료비 질문이 아니면 NULL. △ 계산 카드 코드 작성(2026-10-18), 실행 확인 전 — 지금까지 쌓인 턴은 모두 NULL |
+| payout | 계산 카드 결과(JSON, `CalcResult` — 의료비·법률비용·한도·날짜별 입력). 카드가 없는 턴은 NULL |
 
 > **계산 결과도 저장한다.** `turn_scope`에 등급·자기부담금이 당시 값으로 남아 있어 다시 계산할 수도 있지만, `limit_table`이나 약관이 개정되면 같은 scope로도 다른 숫자가 나온다. 2-2절의 스냅샷 원칙이 여기에도 걸린다 — "그때 5만원이라고 안내했다"가 재현되어야 한다.
 > 
@@ -73,7 +73,7 @@ sessions (상담 1건)
 
 **retrieved — 그 질문에 검색된 조문**
 
-`turn_id`, `rank`, `graph_key`, `score`, `content`, `used`. 턴당 3~10줄(검색 `top_k` 설정에 따른다. 답변 경로의 top_k는 3이다. △ 실제 검색 경로는 코드 작성(2026-10-18), ✗ search-service 기동 전 — 지금까지 쌓인 턴은 더미 답변이거나 일반 모드(검색 없음)라 0줄). `used`는 답변에 실제로 쓰인 근거인지 — 08 평가에서 쓴다.
+`turn_id`, `rank`, `graph_key`, `score`, `content`, `used`. 턴당 3~10줄(검색 `top_k` 설정에 따른다. 답변 경로의 top_k는 3이다(`answer.SEARCH_TOP_K`). 일반 모드는 검색이 없어 0줄). `used`는 답변에 실제로 쓰인 근거인지 — 08 평가에서 쓴다.
 
 **조문 식별은 `graph_key`가 기준이다.** Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다(09번 6-3절). `section_name`+`article_num`만으로는 조문이 특정되지 않는다 — 강아지·고양이 약관에 같은 조합이 있고, 보통약관은 `section_name`이 NULL이며, 사내규정은 별도 코퍼스다.
 

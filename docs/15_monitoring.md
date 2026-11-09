@@ -46,9 +46,9 @@
 
 | 대상 | 방법 | 상태 |
 | --- | --- | --- |
-| Milvus | 호스트 `192.168.122.1:9091/metrics`를 긁어 `up`만 남긴다(내부 지표는 버림) | △ 설정만 |
+| Milvus | 호스트 `192.168.122.1:9091/metrics`를 긁어 `up`만 남긴다(내부 지표는 버림) | △ 설정만. 2026-11-02부터 9091은 `127.0.0.1`에만 열려 있어 지금 설정으로는 닿지 않는다 — 적용 전에 게시 주소를 정한다 |
 | Ollama | `/metrics`가 없다 — blackbox-exporter로 `GET /api/version` 프로브가 필요하다 | △ 구성 없음 |
-| search-service | `GET /health`(ok 필드) — blackbox-exporter 또는 search-service에 `/metrics` 추가 | △ 구성 없음, search-service도 미기동 |
+| search-service | `GET /health`(ok 필드) — blackbox-exporter 또는 search-service에 `/metrics` 추가 | △ 구성 없음(search-service는 호스트 `petmint-search`로 돈다) |
 
 ---
 
@@ -99,7 +99,7 @@ ronanlab-infra/
 
 △ 없다. Grafana의 `/var/lib/grafana`는 emptyDir라 UI에서 만든 대시보드는 Pod를 다시 만들면 사라진다. 남길 대시보드는 JSON을 ConfigMap으로 넣어 provisioning한다 — 데이터소스와 같은 방식. 1절 지표를 정한 뒤 노드·Pod·앱 세 장으로 만든다.
 
-**외부 노출**: △ 정하지 않았다. grafana.ronanlab.dev로 열려면 터널 ConfigMap에 호스트를 더하고 Access 정책을 붙여야 한다 — 터널 설정은 네 호스트가 한 파일에 있어 함께 다룬다(13번 2-3절).
+**외부 노출**: △ 정하지 않았다. grafana.ronanlab.dev로 열려면 터널 ConfigMap에 호스트를 더하고 Access 정책을 붙여야 한다 — 터널 설정은 다섯 호스트가 한 파일에 있어 함께 다룬다(13번 2-3절).
 
 ---
 

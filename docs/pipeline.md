@@ -1,4 +1,4 @@
-> 상태: 00~04 데이터 구축 완료, 05~08 재구축 진행 중. 09~14 화면·세션 저장·터널·배포는 구현됐다(클러스터 이주 2026-10-16). 답변 생성은 일반 모드만 배포 서버에서 확인(2026-10-18). search-service는 기동 전이라 업무특화·사내규정은 답하지 못한다. 인사규정 Milvus 색인은 시작 전, 15 모니터링은 매니페스트만 작성(2026-10-18, 적용 전).
+> 상태: 00~04 데이터 구축 완료. 05~07 재구축은 rebuild5b까지 했고 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`, 07 11절). 08 Ragas는 파일럿 1회(2026-10-18) 뒤 멈춰 있다. 09~14 화면·세션 저장·터널·배포는 구현됐다(클러스터 이주 2026-10-16). 배포 Pod는 호스트 search-service(192.168.122.1:8100, `/health`의 corpora 강아지·고양이·인사규정 모두 true)와 rebuild4 모델을 쓴다(2026-11-09 확인). 15 모니터링은 매니페스트만 작성(2026-10-18, 적용 전).
 
 ### **1. 전체 파이프라인**
 
@@ -13,7 +13,7 @@
 06. FAQ 품질 검증 (결정적 검사 + LLM 심판 + 사람 표본)
 06-1. 학습 데이터 구축 (발췌 조립, distractor 선정, no_answer 판정)
 07. 파인튜닝 (Tri-7B 기반 QLoRA)
-08. RAG 성능 정량 평가 (Ragas — Context Precision/Recall, Faithfulness)
+08. RAG 성능 정량 평가 (검색 hit@k·MRR + Ragas Faithfulness·Answer Relevancy)
 09. UI 설계 (화면·API·동시 접속 처리)
 10. 상담 흐름 설계 (전화 알림, 세션 수명, 화면 전환)
 11. 디자인 시스템 (색·글꼴·질감·캐릭터)
@@ -87,7 +87,7 @@ flowchart TD
 
 **search-service는 청크 top-k만 돌려주고, 발췌 조립은 Pod가 한다.** 그래프를 따라 참조 조문을 붙이고 길이 예산에 맞춰 자르는 일은 GPU가 필요 없고, 그 규칙은 자주 바뀌는 부분이라 Pod에 두어야 앱만 롤링하면 된다. 그래프는 모델이 쓰는 것이 아니라 코드가 발췌를 조립할 때 쓴다(4-1절 "근거는 코드가 조립한다"). 근거 패널에서 조항을 눌렀을 때 보여주는 원문도 Pod가 Milvus에서 바로 읽어 온다 — Milvus를 검색만 보는 것이 아니다.
 
-**✗ 아직 띄우지 않았다 — search-service.** search-service(`search_service/main.py`)와 턴 파이프라인(`answer.py`·`retrieval.py`)은 코드 작성(2026-10-18), 실행 확인 전이다. 배포 설정의 주소는 아직 `search-service-not-deployed.invalid`다. **✗ 인사규정 Milvus 컬렉션(`hr_regulation`)도 적재 전이다.** ✗ 업무특화·사내규정은 답하지 못한다(search-service 기동 전, hr_regulation 적재 전, 어댑터 모델 tri-7b-rag-1이 Ollama에 없음). 위 그림은 설계이며, ✓ 실제로 도는 것은 브라우저 → 터널 → Pod → MySQL 경로, 조항 원문 조회, 일반 모드 답변(Pod → Ollama, 2026-10-18)이다.
+**search-service는 호스트에서 돈다.** `search_service/main.py`를 systemd 유닛(`deploy/host/petmint-search.service`, 192.168.122.1:8100)으로 띄우고, `/health`의 corpora는 강아지·고양이·인사규정 모두 true다. 배포 설정의 주소는 `http://192.168.122.1:8100`, 업무특화 모델은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`다(2026-11-09 확인).
 
 ---
 
@@ -224,6 +224,10 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
 
 14. 배포 인프라 (컨테이너·K8s·CI/CD)
 
+15. 모니터링 (Prometheus·Grafana)
+
+16. 코드 답 규칙
+
 ---
 
 ### 8. 폴더 구조
@@ -232,17 +236,18 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
 ~/AI_programming/petmint-rag-chatbot/
   data/
     raw_pdf/              원본 약관 PDF (강아지/고양이), 인사규정 PDF
-    chunks/               01번 결과: petmint_{종}.json (항 단위), hr_인사규정.json
-    graph/                03번 결과: petmint_{종}_resolved.json, petmint_{종}_graph.json, hr_인사규정_graph.json
+    chunks/               01번 결과: petmint_{종}.json (항 단위), hr_인사규정.json (v2/·v3/·v4/ 판 — 운영은 v3)
+    graph/                03번 결과: petmint_{종}_resolved.json, petmint_{종}_graph.json, hr_인사규정_graph.json (v2/·v3/·v4/ 판 — 운영은 v3)
     cache/                표 변환 캐시
     faq/                  05번 결과: 생성 라운드별 FAQ와 _failures
       checked/            06번 결과: checked_all, final, review_queue, judge_cache
       review/             검수 회차별 표본·판정·오류 태그
       rewrite/            질문 재작성 파일럿
-      rebuild/, rebuild2/, rebuild3/   전체 재구축 출력 (라운드, checked/, logs/)
-      exp_*/, rebuild3_b1*/            실험용 (exp_c·exp_g·exp_r·exp_r3smoke, rebuild3_b1·b1p)
+      rebuild/ ~ rebuild5/   전체 재구축 출력 (라운드, checked/, logs/)
+      rag/                   C(서빙 발췌로 답 재생성) 출력 — faq_rag.py
+      exp_*/, rebuild3_b1*/            실험용 (exp_c·exp_g·exp_r·exp_r3smoke·exp_r4smoke, rebuild3_b1·b1p)
     finetune/             train.jsonl, val.jsonl, stats.json, no_answer 판정·검색 캐시
-      rebuild/, rebuild2/              재구축 학습 데이터
+      rebuild/ ~ rebuild5b/            재구축 학습 데이터
       exp_*/, rebuild3_b1*/, search_*_20261014/   실험용·스냅샷
     eval/                 회귀 세트, 답변 평가 라벨, 체크포인트 선택 세트, 축소판 세트
       results/            08번 평가·체크포인트별 답변 평가 결과
@@ -273,7 +278,7 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
     hr_preprocess.py      인사규정 전처리
     hr_index.py           인사규정 색인
   db/
-    migrations/petmint/          번호 붙인 SQL (0001~0004)
+    migrations/petmint/          번호 붙인 SQL (0001~0008)
     migrations/insurance_core/   고객 원장 스키마
     conn.py               접속 정보 (전부 환경변수, 기본값 없음)
     migrate.py            미적용 파일을 순서대로 적용
@@ -284,9 +289,10 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
     main.py, config.py, deps.py, db.py
     schemas.py            고객·세션·로그·REST·WS 모델
     services/             customers, sessions, retrieval, llm, answer,
-                          titles, turn_log, policy_data
+                          titles, turn_log, policy_data, context, followup, payout,
+                          code_rules, customer_facts, guardrail 등
     routers/              customers, sessions, consultations, articles,
-                          feedback, chat_ws
+                          feedback, chat_ws, auth, me
     fixtures/             샘플 고객 (git 제외, example만 올림)
     requirements.txt      컨테이너용 의존성
   web/                    React + TypeScript (Vite)
@@ -303,14 +309,15 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
     scripts/host-nfs-setup.sh   매니페스트는 ronanlab-infra/apps/petmint/
   models/
     base/Tri-7B/          HF 원본 (safetensors, 29GB)
-    gguf/                 Tri-7B-f16.gguf, Tri-7B-Q4_K_M.gguf, Modelfile.tri7b
+    gguf/                 Tri-7B·kabyul-tri-7b-rag1-rebuild{4,5,5b} GGUF와 Modelfile
+    merged/               병합본(rebuild4·5·5b)
     lora_adapter/         rag-1_<N>건_<이름>/ (재구축·실험별 어댑터)
   notebooks/
     00_모델_준비.ipynb … 07_파인튜닝.ipynb
   docs/
     README.md             문서 목록과 규칙 (노션 사본 아님)
-    next_rebuild.md       다음 재구축 계획 (노션 사본 아님)
-    requirements.md, pipeline.md, 00~14   노션 사본 (원천은 노션)
+    next_rebuild.md, 저녁실행.md, 모드검증.md   작업 문서 (노션 사본 아님)
+    requirements.md, pipeline.md, 00~16   설계 문서 (원천은 이 폴더, 노션은 사본)
   Dockerfile, .dockerignore, Jenkinsfile, .env.example
   backups/                단계별 산출물 백업
   logs/                   긴 실행 로그 (git 제외)
@@ -326,7 +333,7 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
 - **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다
 - **부담보 동의어 대조** — 현재 프론트에서 글자 일치로만 비교한다. "무릎"과 "슬개골" 같은 동의어는 잡지 못한다
 - **09번 UI — 메타데이터 선택 받기** △ 코드 작성(2026-10-18), 실행 확인 전. 고객 레코드의 `section_name`·`coverage_type`으로 만든 `SearchScope`(`customers.scope_for`)를 턴의 검색 범위로 넘긴다(`answer.scope_of`)
-- **09번 UI — 판단 불가 시 되묻기** △ 코드 작성(2026-10-18), 실행 확인 전. 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다
+- **09번 UI — 판단 불가 시 되묻기** △ `clarify_options`는 2026-10-21 로컬 모드 검증에서 확인(R3, sources → clarify). 고른 쪽으로 잇는 `resume_clarified`는 스크립트로 재지 않았다. 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다
 - **같은 질문으로 양성과 no_answer 쌍 구성** — no_answer를 gold 빼고 만들면 겹침이 구조적으로 낮아져, 모델이 발췌를 읽지 않고 질문 형태만 보고 라벨을 맞힌다. 지금 양쪽에 다 나오는 질문은 11개뿐이다(07번 10절)
 - **VM 메모리 증설** — Vagrantfile 4096 → 8192. 호스트가 61GB에 여유 44GB라 넉넉하다. `vagrant reload`가 필요하므로 아래 노드 재배치와 함께 한다
 - **노드 재배치** — w1에 MySQL+Harbor, w2·w3에 앱, Jenkins는 w3에 둔다. Jenkins와 MySQL을 떼어놓는 것이 핵심이다. Jenkins는 빌드 때 메모리가 튀지만 서비스 경로 밖이다
