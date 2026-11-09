@@ -18,7 +18,7 @@
            → ⑩ 부담보 → ⑪ 면책 단서 → ⑪′ 병명 보장 대조 → ⑫ 상해 후속 → ⑬ 병명 되묻기 → 모델 → [덧붙임: 숫자 가드레일 · 고객 사실 · 답 아래 표]
 ```
 
-순서는 **등록부 `app/services/code_rules.py`의 `RULES`**가 정한다. `answer._generate`가 위에서부터 돌고, 처음 답을 낸 규칙의 key가 `ctx.code_rule`에 남는다. 사내규정은 검색 전에 `answer._hr_personal`이 돈다. 트리거 낱말(정규식 46개 — A안 때 44개, B안에서 둘 더함)은 **`app/services/lexicon.py`** 한 곳에 개념별로 있다 — 질병·보장 질문·금액이 규칙마다 다르게 정의된 것이 거기서 보인다(2026-10-28 A안).
+순서는 등록부 **`app/services/code_rules.py`의 `RULES` 목록**이 정한다. `answer._generate`가 위에서부터 돌고, 처음 답을 낸 규칙의 key가 `ctx.code_rule`에 남는다. 사내규정은 검색 전에 `answer._hr_personal`이 돈다. 트리거 낱말(정규식 46개 — A안 때 44개, B안에서 둘 더함)은 **`app/services/lexicon.py`** 한 곳에 개념별로 있다 — 질병·보장 질문·금액이 규칙마다 다르게 정의된 것이 거기서 보인다(2026-10-28 A안).
 
 ---
 
