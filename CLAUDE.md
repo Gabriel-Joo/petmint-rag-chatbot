@@ -10,6 +10,7 @@
   - ollama 터널(`cloudflared-ollama`, ollama.ronanlab.dev)을 끄지 않는다 — 학교 PC가 쓴다(`docs/02_pipeline/13_access_and_tunnel.md` 1-3절).
   - 런슈즈 파일은 읽기만 한다.
   - 비밀값(토큰·비밀번호·키)을 출력하지 않는다.
+- 기본 제공 Explore 서브에이전트는 `.claude/agents/Explore.md`로 덮어써 sonnet으로 돈다(2026-11-09 사용자 지시). `CLAUDE_CODE_SUBAGENT_MODEL`은 쓰지 않으므로 다른 서브에이전트는 부모 모델을 따른다.
 
 ## 알림
 
