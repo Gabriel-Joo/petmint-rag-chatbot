@@ -29,3 +29,6 @@ data/pages
 data/cache
 data/review
 data/eval
+# 문서 — Dockerfile 이 COPY 하지 않는다. Jenkinsfile 은 이것들만 바뀐 빌드를 건너뛴다(2026-11-09) — 이미지에 들어가면 그 판단이 틀린다
+docs
+*.md
