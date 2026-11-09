@@ -1,6 +1,6 @@
 """
 ragas_pilot.py
-08 Ragas 파일럿 — 로컬 심판(gemma4:12b, Ollama)이 한국어 답변·약관 발췌로 faithfulness를 제대로 매기는지 10문항으로 본다(docs/08_ragas_eval.md 6절).
+08 Ragas 파일럿 — 로컬 심판(gemma4:12b, Ollama)이 한국어 답변·약관 발췌로 faithfulness를 제대로 매기는지 10문항으로 본다(docs/02_pipeline/08_ragas_eval.md 6절).
 안 되면 08 설계(평가자 모델)가 바뀐다 — 본 평가보다 먼저 돌린다.
 
 두 단계, 두 환경:

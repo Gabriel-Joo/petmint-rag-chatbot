@@ -68,7 +68,7 @@ BEST=$(python3 -c "import json; print(json.load(open('$AD/ckpt_select.json'))['b
 STEPN=$(python3 -c "import json; s=json.load(open('$AD/ckpt_select.json'))['best_step']; print(s if s < 10**9 else 'final')")
 NAME=kabyul-tri-7b-rag1-rebuild5b-ckpt$STEPN
 log "선택: $BEST → $NAME"
-# 6. 병합 → GGUF → Ollama(docs/저녁실행.md 7절과 같은 절차, 베이스와 같은 Q4_K_M·매개변수)
+# 6. 병합 → GGUF → Ollama(docs/ops/저녁실행.md 7절과 같은 절차, 베이스와 같은 Q4_K_M·매개변수)
 if ! step gguf; then
   log "6. 병합·GGUF·ollama create"
   unload

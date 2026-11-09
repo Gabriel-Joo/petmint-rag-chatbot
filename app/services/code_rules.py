@@ -6,7 +6,7 @@ code_rules.py
 - 규칙 하나 = (key, 이름, 켜졌는가, 부르기). 부르기는 Outcome(card, text, ask) 또는 None
 - ask=True면 되물은 턴(turns.clarified) — 금액 되묻기·병명 되묻기·카드의 날짜별 금액 칸
 - 사내규정 개인화(hr_personal)는 검색 전에 answer._hr_personal이 따로 돈다 — HR_TOPICS에 이름만 적는다
-- 트리거 낱말은 lexicon.py, 각 규칙의 범위·측정은 docs/16_code_answers.md
+- 트리거 낱말은 lexicon.py, 각 규칙의 범위·측정은 docs/02_pipeline/16_code_answers.md
 """
 
 from collections.abc import Callable

@@ -1,6 +1,6 @@
 """
 verify_cases.py
-모드 검증 질문 묶음과 판정 기준(docs/모드검증.md와 같은 내용). 실행 코드(verify_modes.py)는 모드와 무관하게 이것만 읽는다.
+모드 검증 질문 묶음과 판정 기준(docs/ops/모드검증.md와 같은 내용). 실행 코드(verify_modes.py)는 모드와 무관하게 이것만 읽는다.
 문서를 고치면 여기도 고친다 — `python -m scripts.verify_modes --check-doc`이 질문 문장이 문서에 있는지 대조한다.
 
 판정 기준 칸:

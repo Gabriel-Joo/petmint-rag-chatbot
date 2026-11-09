@@ -1,12 +1,12 @@
 """
 verify_modes.py
-모드 검증 — 질문 묶음(verify_cases.py)을 실제 서버에 WebSocket으로 던지고 응답을 모아 판정한다(docs/모드검증.md).
+모드 검증 — 질문 묶음(verify_cases.py)을 실제 서버에 WebSocket으로 던지고 응답을 모아 판정한다(docs/ops/모드검증.md).
 서버는 그대로 쓴다(검색은 search-service, 생성은 Ollama) — 이 스크립트는 GPU를 쓰지 않는다.
 
   python -m scripts.verify_modes --mode=hr
   python -m scripts.verify_modes --mode=general --base=http://localhost:8000
   python -m scripts.verify_modes --mode=rag --customer=C005 --pet=P005
-  python -m scripts.verify_modes --check-doc          # 질문 문장이 docs/모드검증.md에 있는지만 대조(서버 불필요)
+  python -m scripts.verify_modes --check-doc          # 질문 문장이 docs/ops/모드검증.md에 있는지만 대조(서버 불필요)
 
 세션: 질문마다 새 세션. Case.session이 같은 질문끼리는 한 세션·한 연결에서 차례로 묻는다(멀티턴 자리).
 결과: <out>/verify_<mode>_<YYYYMMDD_HHMM>.json + 화면 요약. 자동 판정은 ✓/✗, 사람이 볼 것은 '사람' 표시.
@@ -28,7 +28,7 @@ from websockets.exceptions import ConnectionClosed
 from scripts.verify_cases import MODES, REFUSAL_PHRASES, Case, ModeSpec
 
 ROOT = Path(__file__).resolve().parent.parent
-DOC = ROOT / "docs" / "모드검증.md"
+DOC = ROOT / "docs" / "ops" / "모드검증.md"
 AGENT_HEADER = "Cf-Access-Authenticated-User-Email"          # app/config.AGENT_HEADER — 로컬에서 상담원 값을 줄 때
 
 # 메시지 순서 규약 — 타입을 한 글자로 줄인 열에 맞춘다(X context, S sources, C calc, T token, R references, D done, Q clarify, E error).
@@ -269,7 +269,7 @@ def summary(report: dict) -> str:
 
 
 def check_doc() -> int:
-    """질문 문장이 docs/모드검증.md에 그대로 있는지(문서를 파싱하지 않고 문장 포함만 본다). 업무특화는 질문이 없어 건너뜀"""
+    """질문 문장이 docs/ops/모드검증.md에 그대로 있는지(문서를 파싱하지 않고 문장 포함만 본다). 업무특화는 질문이 없어 건너뜀"""
     text = DOC.read_text(encoding="utf-8")
     missing = [(m.key, c.id, c.question) for m in MODES.values() for c in m.cases if c.question not in text]
     for key, cid, q in missing:
@@ -279,7 +279,7 @@ def check_doc() -> int:
 
 
 def main():
-    p = argparse.ArgumentParser(description="모드 검증(docs/모드검증.md)")
+    p = argparse.ArgumentParser(description="모드 검증(docs/ops/모드검증.md)")
     p.add_argument("--mode", choices=sorted(MODES), help="hr=사내규정, general=일반, rag=업무특화")
     p.add_argument("--base", default="http://localhost:8000", help="서버 주소 — 배포는 https://petmint.ronanlab.dev")
     p.add_argument("--header", action="append", default=[], metavar="'Name: value'",
@@ -291,7 +291,7 @@ def main():
     p.add_argument("--first-timeout", type=float, default=600, help="질문마다 첫 메시지까지 기다릴 초(모델 로딩)")
     p.add_argument("--timeout", type=float, default=180, help="그 뒤 메시지 사이 최대 초")
     p.add_argument("--out", default=str(ROOT / "data" / "review"), help="결과 JSON 폴더")
-    p.add_argument("--check-doc", action="store_true", help="질문이 docs/모드검증.md와 같은지만 본다")
+    p.add_argument("--check-doc", action="store_true", help="질문이 docs/ops/모드검증.md와 같은지만 본다")
     args = p.parse_args()
     if args.check_doc:
         sys.exit(check_doc())
