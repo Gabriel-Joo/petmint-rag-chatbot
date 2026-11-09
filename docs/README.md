@@ -46,6 +46,7 @@
 |---|---|
 | `next_rebuild.md` | 다음 FAQ·파인튜닝 재구축 지시서 |
 | `ops/저녁실행.md` | rebuild3 뒤 실행 순서서(명령·시간·성공·실패·건너뛰면) |
+| `ops/배포기록.md` | 배포·알림 시험처럼 코드 변경 없이 배포를 일으킨 커밋의 기록 |
 | `ops/모드검증.md` | 일반·사내규정·업무특화 모드 검증 체크리스트(질문·정답 — `scripts/verify_modes.py`·`scripts/verify_cases.py`와 같다) |
 
 측정 기록과 검수 결과는 `docs/`가 아니라 `data/review/`에 둔다.
