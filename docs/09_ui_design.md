@@ -623,6 +623,8 @@ GET    /api/me/profile             사내규정 본인 정보 블록 — 근속�
 
 **스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다.
 
+**답변은 Markdown으로 그린다 — 원시 HTML은 넣지 않는다(2026-10-20 사용자 지시, 커밋 `eaa93cb`)**: 세 모드와 과거 상담 모두 `web/src/components/AnswerMarkdown.tsx`(react-markdown 10.1.0 · remark-gfm 4.0.1 · remark-breaks 4.0.0, 버전 고정)로 그린다. 모델 출력이라 HTML 문자열을 넣지 않고 React 요소로만 만든다 — 원시 HTML(rehype-raw)을 붙이지 않아 `<script>`·`<img onerror>`는 글자로 보이고, `javascript:` 같은 링크 주소는 지우고, 이미지는 그리지 않고(외부 요청), 허용 목록(`ALLOWED`) 밖 요소는 내용만 남긴다. 스트리밍 중에는 덜 닫힌 ``` · ** · `를 그릴 때만 임시로 닫는다(`closeOpenMarks`) — 중간 상태 305개에서 기호가 글자째 보인 것 48 → 0(커밋 당시 측정).
+
 △ 위 순서(sources → calc → token → references → done, 되묻기면 clarify에서 멈춤, 실패면 error)는 코드 작성(2026-10-18, answer.py·chat_ws.py), 실행 확인 전. `calc`의 `result`는 `CalcResult`(section_name·coverage_type·claimed·copay·limit·payout·note)다.
 
 #### 7-3. 프로세스 모델
