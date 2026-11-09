@@ -49,10 +49,8 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 
 | 변수 | 기본값 | 내용 |
 | --- | --- | --- |
-| `PETMINT_CHUNKS_DIR` | `data/chunks` | 약관 청크
- `컨테이너에서는 /var/lib/petmint/chunks (Dockerfile ENV)` |
-| `PETMINT_GRAPH_DIR` | `data/graph` | 참조 그래프
-`컨테이너에서는 /var/lib/petmint/graph (Dockerfile ENV)` |
+| `PETMINT_CHUNKS_DIR` | `data/chunks` | 약관 청크. `컨테이너에서는 /var/lib/petmint/chunks (Dockerfile ENV)` |
+| `PETMINT_GRAPH_DIR` | `data/graph` | 참조 그래프. `컨테이너에서는 /var/lib/petmint/graph (Dockerfile ENV)` |
 
 **없으면 기동이 실패한다.** `exit 3`과 함께 빠진 파일을 전부 밝히고, 파일이 있어도 청크가 비어 있으면 멈춘다. 조용히 0건이 되면 검색이 아무것도 못 찾는데 원인을 알 수 없다 — 09번 6-1절에서 로더가 `section_name` 불일치에 기동을 실패시키는 것과 같은 판단이다.
 
@@ -369,6 +367,8 @@ Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 �
 
 같은 키로 되물은 뒤 상해로 답한 턴도 코드가 답한다(2026-10-28, 이미지만): 상해 보상 원칙·대기기간 없음·금액 되묻기. 탐침 후속 12/24 → 21/24(상해 0/9 → 9/9), 평가 220 프롬프트 100개 같음.
 
+| ConfigMap 키 | 값 | 하는 일 | 측정 |
+| --- | --- | --- | --- |
 | `PETMINT_ASK_DISEASE_LLM` | `1` | 병명 되묻기의 "병명·증상 이름이 있는가"를 베이스 모델(tri-7b)이 본다. 면책 사실은 코드가 막고, 모델 실패 시 정규식 | gemma 말투 무병명 되묻기 7/60 → 39/60(거절 46 → 16), 병명 잘못 되묻기 0, 평가 220 프롬프트·코드 답 같음 (`data/review/disease_ask_llm_measure.md`) |
 
 #### 1-20. 코드 답 규칙 운영 집계 (2026-10-29)
