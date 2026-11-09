@@ -315,8 +315,11 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
     00_모델_준비.ipynb … 07_파인튜닝.ipynb
   docs/
     README.md             문서 목록과 규칙 (노션 사본 아님)
-    next_rebuild.md, 저녁실행.md, 모드검증.md   작업 문서 (노션 사본 아님)
-    requirements.md, pipeline.md, 00~16   설계 문서 (원천은 이 폴더, 노션은 사본)
+    requirements.md, pipeline.md   상위 설계 문서 (원천은 이 폴더, 노션은 사본)
+    02_pipeline/          단계 설계 문서 00~16 (노션 02의 하위 페이지)
+    ops/                  작업 문서 — 저녁실행.md, 모드검증.md (노션 사본 아님)
+    next_rebuild.md       작업 문서 — 재구축 지시서 (노션 사본 아님)
+    img/                  문서 그림
   Dockerfile, .dockerignore, Jenkinsfile, .env.example
   backups/                단계별 산출물 백업
   logs/                   긴 실행 로그 (git 제외)
