@@ -653,6 +653,7 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 #### 11-5. 남기는 것
 
 - 판정 기준을 결과 전에 고정하고, 같은 날 같은 코드로 기준 모델을 다시 잰 것은 유지한다. rebuild5의 정확 +3.3은 그것만 보면 좋아 보였지만 틀림 +11이 함께 왔다
+- 체크포인트는 11-2절 점수로 select가 고른 것을 쓰고, 눈으로 뒤집지 않는다(2026-10-16 사용자 결정, docs/next_rebuild.md 10절)
 - 학습 발췌를 서빙과 맞추는 것만으로는 "정답이 있는데 거절"이 풀리지 않는다. 거절이 줄어든 만큼 틀림이 늘었다. 이 지표 하나만 목표로 삼지 않는다
 - 거절 신호는 같은 질문의 짝(정답 있음/없음)으로 가르쳐야 하고, 짝이 없는 거절 샘플을 늘리면 맞히던 답까지 거절한다(5b)
 - 코드: `data/faq_rag.py`(C 생성·판정·5b), `scripts/rebuild5_chain.sh`·`rebuild5b_chain.sh`(생성부터 판정까지 연쇄), `scripts/ckpt_select220.py`, `scripts/rebuild5_verdict.py`. 모델 `kabyul-tri-7b-rag1-rebuild5-ckpt250`·`-rebuild5b-ckpt250`은 Ollama에 등록만 되어 있다
