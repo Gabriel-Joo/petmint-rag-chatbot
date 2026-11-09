@@ -332,9 +332,9 @@ B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select →
 - vLLM 서빙 최적화, 임베딩 모델 양자화
 - **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다
 - **부담보 동의어 대조** — 현재 프론트에서 글자 일치로만 비교한다. "무릎"과 "슬개골" 같은 동의어는 잡지 못한다
-- **09번 UI — 메타데이터 선택 받기** △ 코드 작성(2026-10-18), 실행 확인 전. 고객 레코드의 `section_name`·`coverage_type`으로 만든 `SearchScope`(`customers.scope_for`)를 턴의 검색 범위로 넘긴다(`answer.scope_of`)
-- **09번 UI — 판단 불가 시 되묻기** △ `clarify_options`는 2026-10-21 로컬 모드 검증에서 확인(R3, sources → clarify). 고른 쪽으로 잇는 `resume_clarified`는 스크립트로 재지 않았다. 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다
+- **09번 UI — 메타데이터 선택 받기** ✓ 운영(search-service 연결 2026-10-21 뒤). 고객 레코드의 `section_name`·`coverage_type`으로 만든 `SearchScope`(`customers.scope_for`)를 턴의 검색 범위로 넘긴다(`answer.scope_of`)
+- **09번 UI — 판단 불가 시 되묻기** ✓ 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다 — 로컬·배포 서버 확인(2026-10-20·21, 검증 R3, 09번 4절)
 - **같은 질문으로 양성과 no_answer 쌍 구성** — no_answer를 gold 빼고 만들면 겹침이 구조적으로 낮아져, 모델이 발췌를 읽지 않고 질문 형태만 보고 라벨을 맞힌다. 지금 양쪽에 다 나오는 질문은 11개뿐이다(07번 10절)
 - **VM 메모리 증설** — Vagrantfile 4096 → 8192. 호스트가 61GB에 여유 44GB라 넉넉하다. `vagrant reload`가 필요하므로 아래 노드 재배치와 함께 한다
 - **노드 재배치** — w1에 MySQL+Harbor, w2·w3에 앱, Jenkins는 w3에 둔다. Jenkins와 MySQL을 떼어놓는 것이 핵심이다. Jenkins는 빌드 때 메모리가 튀지만 서비스 경로 밖이다
-- **사내규정 모드** ✓ 전처리(청크 49개, 참조 그래프 7엣지). △ Pod 쪽 `SearchScope`(`SearchScope.unrestricted("인사규정")`)는 코드 작성(2026-10-18), 실행 확인 전. ✗ Milvus 색인(`python -m data.hr_index`) 전. 2절 그림의 사내규정 경로는 아직 돌지 않는다
+- **사내규정 모드** ✓ 전처리(청크 49개, 참조 그래프 7엣지). ✓ Milvus 색인(hr_regulation 49건)·Pod 쪽 `SearchScope.unrestricted("인사규정")`(`answer.scope_of`)로 운영 — 2절 그림의 사내규정 경로가 돈다(02번 상태 줄, `/health` corpora.인사규정 true 2026-11-09)
