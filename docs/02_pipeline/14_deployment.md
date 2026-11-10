@@ -448,7 +448,16 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
   w1 정비 때 MySQL(`mysql-0`, PV가 w1)이 19:35:15~19:36:55 KST 약 1분 40초 멈췄다 — `/`는 200이었지만 DB를 쓰는 API는 실패(사용자가 받아들인 중단).
   그 전 19:27:20~31 약 12초는 ingress-nginx 등을 재시작할 때 모든 호스트가 응답하지 않았다(원인 미확인, infra 문서 4절)
 - **정비 중에는 Sync하지 않는다**(사용자) — 워커가 하나 빠진 동안이다. 이번 증설 중 펫퍼민트 Sync는 없었다(08:54 UTC 사람이 한 Sync가 마지막)
-- **아직 아닌 것(묶음 2)**: MySQL Replica + 수동 승격, 앱은 w1 · w2 · 플랫폼은 w3 · w4로 배치 고정. 지금은 MySQL이 w1 한 곳이다(4절)
+- **묶음 2(같은 날 저녁)** — 노드마다 역할을 고정했다. 상세는 infra `docs/02_availability.md` 1절 · `docs/runbooks/mysql-replica.md`
+
+| 바뀐 것 | 펫퍼민트에 |
+| --- | --- |
+| 앱은 app 노드(w1 · w2)에만(nodeSelector) | app 노드가 둘이라 롤링을 **옛 Pod 하나 먼저 내리고 새 Pod**로 바꿨다(maxSurge 0 · maxUnavailable 1, 10번 8절의 maxSurge 1 · maxUnavailable 0 에서). 롤링 동안 잠깐 Pod 하나 — 1초 탐침 실패 0, `rollout restart` 23초 |
+| MySQL Replica `mysql-replica-0`(w2) | binlog 복제(파일 · 위치, GTID 꺼짐 — Primary 재시작 없이). 자동 전환은 없다 — 사람이 승격(SQL 0.2초 · Service 전환 0.1초, 시험은 runshoes로). 복제 계정 Secret `mysql-repl` |
+| Harbor · Jenkins · ArgoCD는 w3, 모니터링은 w4 | 배포 · 빌드는 w3가, 모니터링은 w4가 죽어도 상담은 돈다 |
+| 모니터링(15번) | Grafana가 턴 로그를 **Replica에서** 읽는다 — 계정 `grafana_ro`는 컬럼 단위 SELECT만(질문 · 답 · 코멘트 · 고객 · 상담원 컬럼 권한 없음) |
+
+- 펫퍼민트 Sync를 두 번 했다(Replica 추가 72d0716, 배치 고정 684774a) — 사람 대신 인프라 세션이 했고, 그 Sync마다 초기화 Job이 다시 돌았다(멱등)
 
 #### 2. 왜 이렇게 했나
 
@@ -556,12 +565,12 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다
 - [ ]  **약관을 바꾸면 앱 재시작이 필요하다.** 파일은 Pod에서 바로 보이지만 앱이 기동할 때 메모리에 올린다. 재색인 뒤에는 `rollout restart`가 필요하다
 - [ ]  **클러스터 DB는 픽스처 시드로 새로 시작했다.** 로컬 도커 MySQL의 개발 데이터는 옮기지 않았다
-- [ ]  **롤링에 스케줄 가능한 워커 3대가 필요하다.** 같은 노드에 두 Pod를 두지 않으므로, 롤링 중 잠깐 생기는 세 번째 Pod가 남은 워커에 떠야 한다. 2026-11-10 워커가 4대가 되어 하나가 빠진 동안에도 롤링이 된다(1-24절). 둘이 빠지면 새 Pod가 Pending에 멈춘다
+- [ ]  **app 노드가 둘이다(2026-11-10 배치 고정).** 롤링은 옛 Pod 하나를 먼저 내리고 새 Pod를 띄운다 — 롤링 동안 잠깐 Pod 하나. app 노드 하나가 빠지면 두 번째 Pod는 Pending이고 롤링도 멈춘다(남은 하나가 받는다). 그 전(워커 3대, 2+1 롤링)에는 워커 하나만 빠져도 롤링이 멈췄다
 - [x]  ~~앱 리포의 어떤 푸시에도 빌드가 돈다. docs만 고쳐도 새 이미지와 배포 커밋이 생긴다.~~ 2026-11-09 해결 — 바뀐 파일(직전 성공 빌드의 커밋 → 이번 커밋)이 모두 `docs/`·`data/review/`·루트 `*.md`이면 빌드는 SUCCESS로 끝나되 이미지 빌드·태그 커밋을 건너뛴다(빌드 설명 "건너뜀 — 문서만", FOREMAN 끝 알림 `"skipped": true`). 손으로 누른 빌드, 직전 성공 커밋이 없거나 못 찾을 때는 늘 빌드한다. 이 경로들은 Dockerfile이 COPY하지 않고 `.dockerignore`로도 뺀다(`Jenkinsfile` 머리 주석)
 - [x]  ~~ArgoCD 초기 admin 비밀번호 Secret이 남아 있다.~~ 지워졌다(2026-11-09 확인 — 없음)
 - [x]  ~~**`PETMINT_TITLE_LLM`이 0이다.**~~ 지금 1이다(일반·사내규정은 LLM 제목, 업무특화는 첫 질문 첫 줄)
 - [ ]  단일 장애점이 노드마다 흩어져 있다. MySQL · harbor-redis는 w1, harbor-registry는 w2, harbor-database · Jenkins는 w3의 local-path에 묶여 있다(2026-11-10 확인). 노드 하나가 죽으면 그 서비스가 멈춘다 — 배치 고정은 인프라 묶음 2
-- [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica + 수동 승격을 택했다(인프라 묶음 2에서 Replica 구성). 그 전까지는 w1이 돌아올 때까지 DB가 멈춘다
+- [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica(w2, 2026-11-10) + 수동 승격을 택했다. w1이 죽으면 사람이 런북(infra `docs/runbooks/mysql-replica.md`)대로 승격한다 — 기계 쪽 약 2분, 나머지는 알아채고 판단하는 시간. 앱 트래픽까지 옮기는 전환은 아직 해 보지 않았다. Replica는 백업이 아니다(지운 것은 Replica에서도 지워진다)
 - [ ]  **백업이 운영 DB와 같은 물리 디스크에 있다.** 백업 NFS(`~/backup/mysql/petmint`)와 MySQL PV(VM 디스크)가 같은 호스트 · 같은 NVMe다(12번 1-5절)
 - [ ]  **VM이 모두 같은 물리 서버에 있다.** 노드 분산은 VM · kubelet 장애만 막는다 — 서버 자체가 죽으면 전부 멈춘다(위 GPU 호스트 단일 장애점과 같은 머신)
 
