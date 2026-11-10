@@ -147,13 +147,27 @@ docker compose -f deploy/host/milvus/docker-compose.yml up -d --wait
 
 `search_service/`의 검색 서비스를 호스트 systemd 유닛 `petmint-search`(`deploy/host/petmint-search.service`, 192.168.122.1:8100)로 띄운다(14번 1-1절).
 
-<!-- 비워 둠: 유닛 설치 명령 — docs에 없다 -->
+```bash
+sudo cp deploy/host/petmint-search.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now petmint-search
+```
+
+유닛은 Milvus healthz(`127.0.0.1:9091`)를 최대 240초 기다린 뒤 `python -m search_service.main`을 실행한다. 유닛 파일의 사용자·작업 디렉터리·venv 경로(`User`·`WorkingDirectory`·`ExecStart`)는 이 서버 기준이므로 다른 머신에서는 고쳐 쓴다.
 
 **3. MySQL**
 
 접속 정보는 모두 환경변수로 받는다(14번 1-4절, `.env.example`). 스키마와 시드는 같은 앱 코드로 넣는다(14번).
 
-<!-- 비워 둠: DB·계정 만들기(db.bootstrap) 명령과 고객 시드 파일 준비 — docs에 없다 -->
+개발에서는 리포 루트 `.env`를 읽는다(`.env.example`을 복사해 채운다). DB 접속 변수에는 기본값이 없어서, 빠진 변수가 있으면 그 이름을 밝히고 바로 실패한다. 고객 시드는 git에 없다 — `app/fixtures/customers.example.json`을 `app/fixtures/customers.json`으로 복사해 채운다. 청구 이력과 가상 직원 시드는 `db/fixtures/`에 있다.
+
+```bash
+cp .env.example .env                                         # 값 채우기
+cp app/fixtures/customers.example.json app/fixtures/customers.json
+MYSQL_ROOT_PASSWORD=... python -m db.bootstrap               # DB와 계정 만들기(root로 한 번, 여러 번 돌려도 같다)
+```
+
+`db.bootstrap`은 기본으로 petmint·runshoes·insurance_core 세 데이터베이스와 계정을 만든다. 고르려면 `BOOTSTRAP_APPS`(기본 `PETMINT,RUNSHOES,INSURANCE_SEED`)로 정한다.
 
 ```bash
 python -m db.migrate                              # petmint 스키마
@@ -165,13 +179,25 @@ python -m db.seed_insurance_core --if-empty       # 비어 있을 때만 시드
 
 개발은 로컬에서 uvicorn(백엔드)과 vite(프론트)로 한다(14번). 약관 경로는 `PETMINT_CHUNKS_DIR`·`PETMINT_GRAPH_DIR`로 정하고, 파일이 없으면 앱이 뜨지 않는다(14번 1-3절). search-service 주소는 `PETMINT_SEARCH_URL`, Ollama 주소는 `PETMINT_OLLAMA_URL`이다.
 
-<!-- 비워 둠: uvicorn·vite 실행 명령과 개발 서버 설정 — docs에 없다 -->
+```bash
+uvicorn app.main:app --port 8000          # 백엔드(리포 루트에서)
+cd web && npm ci && npm run dev           # 프론트 개발 서버(vite, 기본 5173)
+```
+
+vite 개발 서버는 `/api`·`/ws`를 `http://localhost:8000`으로 넘긴다. 백엔드 주소를 바꾸려면 `PETMINT_API_URL`을 쓴다. 인증 기본값 `PETMINT_AUTH=access`에서는 로컬에 Access 헤더가 없어 상담원이 `dev@local`(`PETMINT_DEFAULT_AGENT`)로 잡힌다. 앱 로그인(`PETMINT_AUTH=app`)을 http로 시험할 때는 `PETMINT_COOKIE_SECURE=0`을 준다.
 
 **5. 배포**
 
 이미지는 멀티스테이지로 만든다. 1단계(node:20-alpine)에서 `web/`을 빌드하고, 2단계(python:3.14-slim)에 앱과 빌드물만 담아 비root로 실행한다(14번 1-2절).
 
-<!-- 비워 둠: docker build 명령 — docs에 없다 -->
+```bash
+docker build -t petmint-app .
+docker run -p 8000:8000 --env-file <접속 정보 파일> \
+  -v <약관>/chunks:/var/lib/petmint/chunks:ro \
+  -v <약관>/graph:/var/lib/petmint/graph:ro petmint-app
+```
+
+약관 청크·그래프와 `.env`는 이미지에 넣지 않는다. 실행할 때 읽기 전용 볼륨과 환경변수로 준다. 스키마는 같은 이미지로 `python -m db.migrate`를 돌려 넣는다.
 
 Kubernetes 매니페스트는 이 저장소가 아니라 인프라 저장소(ronanlab-infra `apps/petmint/`)에 있고, ArgoCD가 그 디렉터리를 본다. 호스트의 약관·시드 디렉터리는 `sudo deploy/scripts/host-nfs-setup.sh`로 클러스터에 읽기 전용으로 공유한다. 자세한 것은 [`deploy/README.md`](deploy/README.md)와 14번 문서에 있다.
 
