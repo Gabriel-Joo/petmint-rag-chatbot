@@ -1,5 +1,10 @@
-> 상태: △ 매니페스트 작성(2026-10-18, ronanlab-infra `apps/monitoring/`, 2026-11-02 `platform/monitoring/`에서 옮김) — 적용·Sync 전. VM 메모리를 4096 → 8192로 올린 뒤 적용한다.
-> 아무것도 돌려보지 않았다. 앱(petmint) 지표와 Ollama·search-service 응답 여부는 계측이 없어 설계만 있다.
+> 상태: ✓ 설치(2026-11-10, 인프라 가용성 묶음 2 — 전부 w4). 원본은 ronanlab-infra `apps/monitoring/README.md`. 아래 2절 이후는 처음 설계(2026-10-18)이고, 설치하며 바뀐 것은 이 상자에만 적는다:
+> - 보존 Prometheus **15일**(10Gi, 9GB) · Loki **7일**(서버 로그만 — 대화 기록은 넣지 않는다. runshoes 챗봇의 질문 원문 줄과 Jenkins 빌드 Pod 로그는 수집기 Alloy가 버린다)
+> - 앱 `/metrics`가 없어 HTTP 요청 수 · 에러율은 **ingress-nginx 메트릭**(같은 날 켬)에서, 질문 · 답 지표는 **턴 로그(DB Replica)**를 Grafana MySQL 데이터소스로 읽는다.
+>   읽기 계정 `grafana_ro`는 컬럼 단위 SELECT만 — turns(분류 · 시간 · 상태) · sessions(mode) · feedback(rating). 질문 · 답 · 코멘트는 권한이 없다(시험: ERROR 1143)
+> - 대시보드 `petmint — 운영`: Pod · 재시작 · 요청 · 에러율 / 모드별 · 시간대별 질문 / code_rule · 코드 답 vs 모델 답 · 👍👎 · 응답 시간 p50 · p90 / GPU · VRAM · Ollama 모델
+> - **거절률 · 검색 지연은 데이터가 없다** — 턴 로그에 칸이 없다(앱 계측 필요, 대시보드에 그렇게 적었다). GPU exporter(호스트 컨테이너)는 아직 띄우지 않았다. Milvus 9091은 그대로 닿지 않는다(4절)
+> - Ollama 응답은 json-exporter가 `/api/ps`를 읽는 것으로 본다(blackbox-exporter 대신 — 올라간 모델까지 보인다)
 
 ### 0. 목표
 
