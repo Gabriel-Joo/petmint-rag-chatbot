@@ -164,6 +164,47 @@ UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구�
 
 지난 대화 목록은 일반·사내규정에만 있다. 업무특화는 고객 조회 화면의 "최근 상담" 탭이 그 자리를 대신하므로(09번 2-2절) 제거 기능도 없다. 다만 `deleted_at`은 모드와 무관하게 `sessions`에 둔다 — 최근 상담 탭과 고객별 과거 상담 목록도 같은 필터를 쓴다.
 
+#### 1-5. 백업과 복구 (2026-11-10)
+
+클러스터 MySQL(`petmint/mysql-0`)을 **하루 한 번 `mysqldump`로 떠서 호스트에 둔다.**
+
+| 항목 | 값 |
+| --- | --- |
+| 무엇을 | CronJob `petmint/mysql-backup` — ronanlab-infra `apps/petmint/backup/cronjob.yaml` |
+| 언제 | 매일 03:30 KST(`timeZone: Asia/Seoul`). 겹치면 건너뛴다(`concurrencyPolicy: Forbid`) |
+| 대상 | `petmint`·`insurance_core` 두 데이터베이스. `mysql` 시스템 DB(계정)는 뜨지 않는다 — 계정·권한은 초기화 Job(`db.bootstrap`)이 Secret 값으로 다시 만든다 |
+| 방식 | `mysqldump --single-transaction --quick --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF --hex-blob` → gzip. 모든 테이블이 InnoDB라 일관 스냅샷이 되고 테이블 락이 없다 — 앱이 계속 쓴다 |
+| 어디에 | 호스트 `~/backup/mysql/petmint/petmint-YYYYMMDD-HHMMSS.sql.gz`(+ `.sha256`). 클러스터에서는 NFS 쓰기 export `/srv/nfs/backup/petmint`(호스트 설정 `deploy/scripts/host-nfs-backup-setup.sh`, sudo로 사람이 한 번)로 붙는다 |
+| 보존 | 30일. 단 최신 7개는 날짜와 상관없이 남긴다 — CronJob이 오래 멈췄다가 다시 돌아도 백업이 한꺼번에 사라지지 않는다 |
+| 비밀번호 | Secret `mysql-root`를 환경변수 `MYSQL_PWD`로 받는다. 명령 인자에 넣지 않는다 |
+| 실패 | 반쯤 쓴 파일을 남기지 않는다. `.part`로 쓰고 `gzip -t`와 끝 줄 `-- Dump completed`를 확인한 뒤 이름을 바꾼다. 확인이 안 되면 Job이 실패한다 |
+
+크기는 하루 약 136KB다(2026-11-10, 19개 테이블). 30일을 남겨도 5MB가 안 된다.
+
+**수동으로 뜨기** — 호스트에서 한다. CronJob과 같은 옵션을 쓴다:
+
+```bash
+K="ssh -i ~/k8s-cluster/.vagrant/machines/m-k8s/libvirt/private_key vagrant@192.168.122.10"
+F=~/backup/mysql/petmint/petmint-$(date +%Y%m%d-%H%M%S).sql.gz
+$K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" exec mysqldump -uroot --single-transaction --quick --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF --hex-blob --databases petmint insurance_core"' \
+  | gzip -9 > "$F.part" && gzip -t "$F.part" && zcat "$F.part" | tail -1 | grep -q '^-- Dump completed' \
+  && mv "$F.part" "$F" && (cd "$(dirname "$F")" && sha256sum "$(basename "$F")" > "$(basename "$F").sha256")
+```
+
+CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cronjob/mysql-backup mysql-backup-manual-$(date +%s)`.
+
+**복구 절차** — 운영 DB 전체를 백업 시점으로 되돌린다. 아래 `$K`는 위와 같다.
+
+1. **고를 파일을 확인한다.** `cd ~/backup/mysql/petmint && sha256sum -c petmint-<시각>.sql.gz.sha256`, `zcat petmint-<시각>.sql.gz | tail -1`이 `-- Dump completed`
+2. **앱을 멈춘다.** `$K 'kubectl -n petmint scale deploy/petmint-app --replicas=0'`. 복구 중에 앱이 쓰면 테이블이 섞인다. ArgoCD가 OutOfSync로 잡는 것은 정상이다 — 6에서 Sync하면 git 값(2)으로 돌아온다
+3. **지금 상태를 먼저 뜬다.** 위 "수동으로 뜨기"를 그대로 한다(파일 이름에 `-before-restore`를 붙여 두면 보존 정리에서 헷갈리지 않는다). 복구를 되돌릴 유일한 길이다
+4. **두 데이터베이스를 지운다.** `$K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" mysql -uroot -e \"DROP DATABASE petmint; DROP DATABASE insurance_core\""'`. 덤프는 테이블마다 `DROP TABLE IF EXISTS`만 하므로, 지우지 않으면 백업 뒤에 생긴 테이블이 남고 `schema_migrations`와 어긋난다. 계정 권한(`mysql` DB)은 데이터베이스를 지워도 남는다
+5. **넣는다.** `zcat petmint-<시각>.sql.gz | $K 'kubectl -n petmint exec -i mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" exec mysql -uroot"'`
+6. **ArgoCD에서 petmint를 Sync한다.** 초기화 Job이 돈다 — `db.bootstrap`이 계정·권한을 맞추고, `db.migrate`가 백업 뒤에 생긴 마이그레이션만 적용하고, 시드는 비어 있지 않으므로 건너뛴다. Deployment가 replicas 2로 돌아온다
+7. **확인한다.** 테이블별 행 수가 백업 시점과 같은지(아래 복구 시험과 같은 방법), 화면에서 지난 대화·고객 조회가 열리는지, 로그인이 되는지
+
+**복구 시험(2026-11-10).** 첫 수동 백업(`petmint-20261110-173427.sql.gz`)을 호스트의 빈 임시 컨테이너(`mysql:8.0.46`, 네트워크 없음)에 넣었다. 두 데이터베이스 19개 테이블의 행 수가 운영과 모두 같았다(sessions 169, turns 162, retrieved 464 등). CronJob 스크립트는 같은 이미지·uid 999로 돌려 보았다. 정상이면 파일과 `.sha256`이 생기고, 30일 지난 가짜 파일 10개 중 최신 7개만 남았으며, 비밀번호가 틀리면 exit 2로 실패하고 완성 파일을 만들지 않았다.
+
 ---
 
 ### 2. 왜 이렇게 했나
@@ -237,6 +278,10 @@ UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구�
 - **보관 정책이 없다.** 일단 전부 남기고, 데이터가 쌓인 뒤에 오래된 본문을 비우는 정책을 붙인다
 - **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다)
 - **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절.
+- **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. 바깥 사본은 아직 없다(1-5절)
+- **백업은 root 계정으로 뜬다.** 백업 전용 계정(SELECT·SHOW VIEW·TRIGGER·EVENT만)을 만들면 Secret이 하나 늘고 `db.bootstrap`을 고쳐야 해 미뤘다
+- **백업 실패를 알리지 않는다.** Job 실패는 `kubectl -n petmint get jobs`와 ArgoCD에서만 보인다
+- **하루 단위다.** 바이너리 로그로 특정 시각까지 되감는 복구(PITR)는 없다 — 마지막 백업 뒤의 대화는 잃는다
 
 ---
 
@@ -253,3 +298,6 @@ UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구�
 - [ ]  검색 행(via_graph=FALSE)에 graph_key 없이 들어가는 쓰기가 CHECK에 막히는가
 - [ ]  취소된 턴이 `status`로 구분되어 08 평가 입력에서 빠지는가
 - [ ]  약관 개정 후에도 과거 턴의 계산 카드가 당시 금액으로 보이는가
+- [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19)
+- [ ]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가(호스트 NFS 설정·Sync 뒤)
+- [ ]  복구 절차 1~7을 운영 DB에 그대로 해 본 적이 있는가(지금은 임시 컨테이너 시험만)
