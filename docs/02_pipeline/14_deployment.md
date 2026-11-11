@@ -200,7 +200,7 @@ ronanlab-infra/
 
 | 루트 설정 | 값 · 이유 |
 | --- | --- |
-| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared 수동, runshoes · petmint 자동 — petmint는 2026-11-11부터) |
+| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared 수동, runshoes · petmint · monitoring 자동 — 뒤 둘은 2026-11-11부터) |
 | Sync | 자동, prune 끔(폴더를 지워도 Application 이 남는다), selfHeal 끔, finalizer 없음(루트를 지워도 자식 · 리소스가 남는다) |
 | 자식 syncPolicy | 덮지 않는다(ignoreDifferences + RespectIgnoreDifferences) — 자동 Sync 켜고 끄기는 지금처럼 클러스터에서 patch 가 스위치다. 그러지 않으면 Jenkins 태그 커밋 하나에 루트가 다시 Sync 해 스키마 배포 중 꺼 둔 자동 Sync 를 도로 켠다 |
 | monitoring | app.yaml 자리만. 루트 `exclude: 'monitoring/app.yaml'` 한 줄을 지우면 만들어진다 |
@@ -470,6 +470,7 @@ petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → 
 | 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-10절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 |
 | 켠 때 | 켜기 전 Synced(git 최신 `cd4ee1f`과 같음) — 켜는 순간 반영될 것이 없었다. 켠 뒤 Synced · Healthy, 앱 Pod 재시작 없음 |
 | 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(4절 해결 항목) 배포가 일어나지 않는다 |
+| monitoring | 같은 날 같은 설정으로 자동 Sync를 켰다 — petmint가 자동인데 대시보드만 수동인 것은 맞지 않고, 대시보드는 깨져도 서비스에 영향이 없고 되돌리기 쉽다. 켤 때 밀려 있던 대시보드 ConfigMap 하나가 바로 반영됐다. cloudflared만 수동으로 남는다 |
 | 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` |
 
 #### 2. 왜 이렇게 했나

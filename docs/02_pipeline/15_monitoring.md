@@ -72,7 +72,7 @@ ronanlab-infra/
     grafana/                 Deployment·Service·데이터소스 ConfigMap
     node-exporter/           DaemonSet(hostNetwork :9100)·headless Service
     kube-state-metrics/      ServiceAccount·RBAC·Deployment·Service
-    app.yaml                 Application(수동 Sync·prune 없음·finalizer 없음) — 루트(bootstrap/root-app.yaml)가 만든다
+    app.yaml                 Application(자동 Sync 2026-11-11~·prune·selfHeal 없음·finalizer 없음) — 루트(bootstrap/root-app.yaml)가 만든다
 ```
 
 | 항목 | 값 |
