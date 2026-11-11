@@ -179,6 +179,7 @@ class TurnLog(_Model):
     clarified: bool = False                        # 되묻기 발동(09번 4절)
     chosen_section: str | None = None              # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
     code_rule: str | None = None                   # 답한 코드 규칙(code_rules.Rule.key·hr_personal). None이면 모델 답(docs/16 5절)
+    refused: bool | None = None                    # 답이 거절 문구인가(data/refusal — 평가와 같은 판정). ok 턴만, 나머지 None(0009)
     scope: list[ScopeRow] = Field(default_factory=list)       # 일반·사내규정은 비어 있다
     retrieved: list[RetrievedRow] = Field(default_factory=list)
     model: str
@@ -186,6 +187,7 @@ class TurnLog(_Model):
     index_version: str
     first_token_ms: int | None = None
     latency_ms: int
+    search_ms: int | None = None                   # search-service(/search·/embed)를 기다린 시간 합. 부르지 않은 턴은 None(0009)
     status: Literal["ok", "cancelled", "error"] = "ok"
     created_at: datetime
 

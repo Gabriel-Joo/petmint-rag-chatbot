@@ -119,6 +119,8 @@
 
 RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한 흐름**이 되기도 한다.
 
+**터널 Application은 수동 Sync로 둔다(2026-11-11 결정, 다른 Application은 자동).** 터널이 깨지면 공개 주소 7개가 한꺼번에 안 보인다 — 상담원 화면뿐 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)까지 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 곧바로 그 상태를 만들지 않게 사람이 Sync를 누르고 롤링을 지켜본다. 새 설정이 깨지면 새 Pod가 Ready가 못 되어 롤링이 멈추고 옛 Pod 둘이 계속 받는다(14번 1-25절, ronanlab-infra `apps/cloudflared/README.md`).
+
 #### 2-3. 터널 설정은 클러스터 단위, Access는 프로젝트 단위
 
 터널 ConfigMap은 **다섯 호스트(petmint·argocd·harbor·jenkins·runshoes)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다.

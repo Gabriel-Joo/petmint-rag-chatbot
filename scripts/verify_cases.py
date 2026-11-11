@@ -20,6 +20,8 @@ verify_cases.py
 
 from dataclasses import dataclass, field
 
+from data.refusal import REFUSAL_PHRASES  # 거절 문구 — 원천은 data/refusal.py(운영 turns.refused와 같다)
+
 
 @dataclass(frozen=True)
 class Case:
@@ -51,11 +53,6 @@ class ModeSpec:
     cases: tuple[Case, ...]
     needs_customer: bool = False                         # 업무특화 — 세션에 customer_id, 질문에 pet_id
 
-
-# 거절로 볼 문구 — 학습 목표 NO_ANSWER_TEXT(prompts.py)와 사내규정 시스템 프롬프트("인사부서에 확인")에서 온 것 + 흔한 변형.
-# 문구 기준 자동 판정이라 사람이 한 번 더 본다
-REFUSAL_PHRASES = ("확인되지 않", "확인되지않", "명시되어 있지 않", "명시되어있지않", "나와 있지 않", "규정에 없", "약관에 없",
-                   "찾을 수 없", "포함되어 있지 않", "언급되어 있지 않", "인사부서에 확인", "인사부서에 문의")
 
 HUMAN_MATCH = "답변 내용이 조항과 맞는가"
 # 규정에 없는 질문의 금지 값 — 비교 전에 공백·쉼표를 지운다(norm). 시각: 근무시간·휴게시간으로 유추한 답, 금액: 다른 조의 금액을 끌어온 답
