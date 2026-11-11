@@ -1,0 +1,3334 @@
+{
+ "model": "gemma4:12b",
+ "ollama": "http://localhost:11434",
+ "num_ctx": 8192,
+ "repeats": 3,
+ "started_at": "2026-10-18T22:43:33",
+ "results": [
+  {
+   "id": "R005",
+   "variant": "grounded_ft",
+   "question": "보험료 밀려서 해지된 걸 다시 살릴 수 있어요?",
+   "answer": "네, 보험료 납입이 연체되어 계약이 해지되었더라도 해약환급금을 받지 않은 경우, 계약자는 해지일로부터 3년 이내에 회사의 정해진 절차에 따라 계약의 부활(효력회복)을 청약할 수 있습니다.",
+   "context_chars": 456,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 54.05,
+       "prompt_tokens": 441,
+       "output_tokens": 7748
+      },
+      {
+       "sec": 41.01,
+       "prompt_tokens": 606,
+       "output_tokens": 7583
+      },
+      {
+       "sec": 39.87,
+       "prompt_tokens": 816,
+       "output_tokens": 7375
+      },
+      {
+       "sec": 40.66,
+       "prompt_tokens": 1069,
+       "output_tokens": 7122
+      }
+     ],
+     "sec": 178.36
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.5,
+       "prompt_tokens": 441,
+       "output_tokens": 7749
+      },
+      {
+       "sec": 40.56,
+       "prompt_tokens": 606,
+       "output_tokens": 7585
+      },
+      {
+       "sec": 39.23,
+       "prompt_tokens": 816,
+       "output_tokens": 7374
+      },
+      {
+       "sec": 41.26,
+       "prompt_tokens": 1069,
+       "output_tokens": 7122
+      }
+     ],
+     "sec": 167.0
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.37,
+       "prompt_tokens": 441,
+       "output_tokens": 7751
+      },
+      {
+       "sec": 40.85,
+       "prompt_tokens": 606,
+       "output_tokens": 7583
+      },
+      {
+       "sec": 38.37,
+       "prompt_tokens": 816,
+       "output_tokens": 7373
+      },
+      {
+       "sec": 39.35,
+       "prompt_tokens": 1069,
+       "output_tokens": 7120
+      }
+     ],
+     "sec": 163.8
+    }
+   ]
+  },
+  {
+   "id": "R005",
+   "variant": "grounded_base",
+   "question": "보험료 밀려서 해지된 걸 다시 살릴 수 있어요?",
+   "answer": "네, 보험료가 밀려서 계약이 해지된 경우, 해지된 날부터 3년 이내에 회사가 정한 절차에 따라 계약의 부활(효력 회복)을 청약할 수 있습니다. 이 경우, 부활을 승낙하면 연체된 보험료와 이에 대한 연체 이자를 더하여 납입해야 합니다. 다만, 이 과정에서 해약환급금이 차감되었거나 없는 경우에는 해당 사항이 적용되지 않을 수 있습니다. [발췌 1]에 명시된 내용에 따라, 구체적인 절차와 필요 금액은 회사의 정책에 따라 달라질 수 있으니, 정확한 정보는 해당 보험사에 문의하시는 것이 좋습니다.",
+   "context_chars": 456,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 39.95,
+       "prompt_tokens": 526,
+       "output_tokens": 7666
+      },
+      {
+       "sec": 41.16,
+       "prompt_tokens": 691,
+       "output_tokens": 7501
+      },
+      {
+       "sec": 40.54,
+       "prompt_tokens": 901,
+       "output_tokens": 7289
+      },
+      {
+       "sec": 39.32,
+       "prompt_tokens": 1154,
+       "output_tokens": 7036
+      }
+     ],
+     "sec": 163.44
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 39.93,
+       "prompt_tokens": 526,
+       "output_tokens": 7666
+      },
+      {
+       "sec": 41.83,
+       "prompt_tokens": 691,
+       "output_tokens": 7498
+      },
+      {
+       "sec": 40.62,
+       "prompt_tokens": 901,
+       "output_tokens": 7289
+      },
+      {
+       "sec": 39.2,
+       "prompt_tokens": 1154,
+       "output_tokens": 7038
+      }
+     ],
+     "sec": 163.98
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 39.85,
+       "prompt_tokens": 526,
+       "output_tokens": 7666
+      },
+      {
+       "sec": 40.52,
+       "prompt_tokens": 691,
+       "output_tokens": 7499
+      },
+      {
+       "sec": 40.79,
+       "prompt_tokens": 901,
+       "output_tokens": 7291
+      },
+      {
+       "sec": 39.72,
+       "prompt_tokens": 1154,
+       "output_tokens": 7037
+      }
+     ],
+     "sec": 163.29
+    }
+   ]
+  },
+  {
+   "id": "R005",
+   "variant": "fabricated",
+   "question": "보험료 밀려서 해지된 걸 다시 살릴 수 있어요?",
+   "answer": "네, 해지된 계약은 해지일로부터 10년 이내라면 언제든 별도 심사 없이 부활시킬 수 있고, 밀린 보험료는 내지 않아도 됩니다.",
+   "context_chars": 456,
+   "runs": [
+    {
+     "statements": [
+      "해지된 계약은 부활시킬 수 있습니다.",
+      "해지된 계약은 해지일로부터 10년 이내인 경우에 언제든 부활시킬 수 있습니다.",
+      "해지된 계약은 별도 심사 없이 부활시킬 수 있습니다.",
+      "밀린 보험료는 내지 않아도 됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "해지된 계약은 부활시킬 수 있습니다.",
+       "verdict": 1,
+       "reason": "The context describes the conditions and procedures under which a contract terminated due to overdue premium payments can be revived (restored to effect)."
+      },
+      {
+       "statement": "해지된 계약은 해지일로부터 10년 이내인 경우에 언제든 부활시킬 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context specifies that the application for revival must be made within 3 years from the date of termination, not 10 years."
+      },
+      {
+       "statement": "해지된 계약은 별도 심사 없이 부활시킬 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context states that the revival is subject to the company's procedures and approval ('회사가 정한 절차에 따라', '회사가 부활(효력회복)을 승낙한 때에'), which implies a review process."
+      },
+      {
+       "statement": "밀린 보험료는 내지 않아도 됩니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that the policyholder must pay the overdue premiums and the corresponding interest upon the revival of the contract."
+      }
+     ],
+     "score": 0.25,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 42.28,
+       "prompt_tokens": 420,
+       "output_tokens": 7503
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 7.05,
+       "prompt_tokens": 1229,
+       "output_tokens": 1152
+      }
+     ],
+     "sec": 51.74
+    },
+    {
+     "statements": [
+      "해지된 계약은 해지일로부터 10년 이내라면 언제든 부활시킬 수 있습니다.",
+      "해지된 계약은 별도 심사 없이 부활시킬 수 있습니다.",
+      "밀린 보험료는 내지 않아도 됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "해지된 계약은 해지일로부터 10년 이내라면 언제든 부활시킬 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context states that the contract can be revived within 3 years from the date of cancellation, not 10 years."
+      },
+      {
+       "statement": "해지된 계약은 별도 심사 없이 부활시킬 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context mentions that the revival is subject to procedures set by the company and requires the company's approval (\"회사가 정한 절차에 따라\", \"회사가 부활(효력회복)을 승낙한 때에\"), which implies a review process."
+      },
+      {
+       "statement": "밀린 보험료는 내지 않아도 됩니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that the policyholder must pay the overdue premiums and the corresponding interest upon revival (\"연체된 보험료와 이에 대한 연체된 이자...를 더하여 납입하여야 합니다\")."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 43.49,
+       "prompt_tokens": 420,
+       "output_tokens": 7748
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.16,
+       "prompt_tokens": 1212,
+       "output_tokens": 980
+      }
+     ],
+     "sec": 53.2
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.56,
+       "prompt_tokens": 420,
+       "output_tokens": 7771
+      },
+      {
+       "sec": 39.16,
+       "prompt_tokens": 585,
+       "output_tokens": 7604
+      },
+      {
+       "sec": 42.29,
+       "prompt_tokens": 795,
+       "output_tokens": 7394
+      },
+      {
+       "sec": 40.25,
+       "prompt_tokens": 1048,
+       "output_tokens": 7143
+      }
+     ],
+     "sec": 169.17
+    }
+   ]
+  },
+  {
+   "id": "R010",
+   "variant": "grounded_ft",
+   "question": "강아지가 몇 살이면 가입이 안 돼요?",
+   "answer": "보험 가입 대상이 아닌 개(犬)는 생후 60일 이하 또는 만 8세(실속형의 경우 만 10세)를 초과하는 경우입니다.",
+   "context_chars": 1732,
+   "runs": [
+    {
+     "statements": [
+      "생후 60일 이하의 개는 보험 가입 대상이 아닙니다.",
+      "만 8세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+      "실속형의 경우 만 10세를 초과하는 개는 보험 가입 대상이 아닙니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "생후 60일 이하의 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that dogs whose age at the time of insurance application is 60 days or less are excluded from the definition of a 'Pet' eligible for insurance."
+      },
+      {
+       "statement": "만 8세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 0,
+       "reason": "While the context mentions an age limit of 8 years, it also provides an exception for the 'Silsook-hyeong' (실속형) plan, where the limit is 10 years. Therefore, dogs over 8 years old can be eligible under the Silsook-hyeong plan, making the statement not universally true based on the context."
+      },
+      {
+       "statement": "실속형의 경우 만 10세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that for the 'Silsook-hyeong' (실속형) plan, the age limit for exclusion is 10 years."
+      }
+     ],
+     "score": 0.6666666666666666,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 15.42,
+       "prompt_tokens": 417,
+       "output_tokens": 2704
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 21.3,
+       "prompt_tokens": 1932,
+       "output_tokens": 3521
+      }
+     ],
+     "sec": 39.37
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.78,
+       "prompt_tokens": 417,
+       "output_tokens": 7772
+      },
+      {
+       "sec": 41.55,
+       "prompt_tokens": 582,
+       "output_tokens": 7608
+      },
+      {
+       "sec": 42.61,
+       "prompt_tokens": 792,
+       "output_tokens": 7397
+      },
+      {
+       "sec": 41.42,
+       "prompt_tokens": 1045,
+       "output_tokens": 7147
+      }
+     ],
+     "sec": 172.89
+    },
+    {
+     "statements": [
+      "생후 60일 이하의 개는 보험 가입 대상이 아닙니다.",
+      "만 8세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+      "실속형의 경우 만 10세를 초과하는 개는 보험 가입 대상이 아닙니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "생후 60일 이하의 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 1,
+       "reason": "The context explicitly lists dogs whose age at the time of insurance application is 60 days or less as one of the exclusions for the 'Pet' (반려동물) definition."
+      },
+      {
+       "statement": "만 8세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 0,
+       "reason": "The context states that dogs exceeding 8 years of age are excluded, but it provides a specific exception for the 'Sil-sok-hyeong' (실속형) plan, where the limit is 10 years. Therefore, the statement is not universally true for all plans mentioned in the context."
+      },
+      {
+       "statement": "실속형의 경우 만 10세를 초과하는 개는 보험 가입 대상이 아닙니다.",
+       "verdict": 1,
+       "reason": "The context specifies that for the 'Sil-sok-hyeong' (실속형) plan, the age limit for exclusion is 10 years, meaning dogs exceeding this age are not eligible."
+      }
+     ],
+     "score": 0.6666666666666666,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 13.81,
+       "prompt_tokens": 417,
+       "output_tokens": 2390
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 14.61,
+       "prompt_tokens": 1932,
+       "output_tokens": 2455
+      }
+     ],
+     "sec": 31.29
+    }
+   ]
+  },
+  {
+   "id": "R010",
+   "variant": "grounded_base",
+   "question": "강아지가 몇 살이면 가입이 안 돼요?",
+   "answer": "[발췌 1]에 따르면, 강아지가 보험 가입 대상이 아닌 경우는 다음과 같습니다:\n\n1. 보험가입 당시의 연령이 생후 60일 이하 또는 만 8세(단, 실속형의 경우 만 10세)를 초과하는 경우.\n\n따라서 강아지가 생후 60일 이하이거나 만 8세(실속형인 경우 만 10세)를 초과하면 이 보험에 가입할 수 없습니다.\n\n이 정보는 [발췌 1]의 \"반려동물\" 정의 부분에 명시되어 있으며, 이를 근거로 답변드렸습니다. 발췌 외의 내용은 추측하거나 단정하지 않았으며, 발췌에서 확인되지 않는다고 안내드렸습니다.",
+   "context_chars": 1732,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.81,
+       "prompt_tokens": 547,
+       "output_tokens": 7643
+      },
+      {
+       "sec": 41.48,
+       "prompt_tokens": 715,
+       "output_tokens": 7474
+      },
+      {
+       "sec": 39.86,
+       "prompt_tokens": 930,
+       "output_tokens": 7260
+      },
+      {
+       "sec": 38.12,
+       "prompt_tokens": 1193,
+       "output_tokens": 6999
+      }
+     ],
+     "sec": 163.67
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.56,
+       "prompt_tokens": 547,
+       "output_tokens": 7644
+      },
+      {
+       "sec": 40.61,
+       "prompt_tokens": 715,
+       "output_tokens": 7476
+      },
+      {
+       "sec": 38.56,
+       "prompt_tokens": 930,
+       "output_tokens": 7261
+      },
+      {
+       "sec": 38.05,
+       "prompt_tokens": 1193,
+       "output_tokens": 6998
+      }
+     ],
+     "sec": 161.15
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.97,
+       "prompt_tokens": 547,
+       "output_tokens": 7645
+      },
+      {
+       "sec": 39.96,
+       "prompt_tokens": 715,
+       "output_tokens": 7477
+      },
+      {
+       "sec": 39.65,
+       "prompt_tokens": 930,
+       "output_tokens": 7261
+      },
+      {
+       "sec": 38.84,
+       "prompt_tokens": 1193,
+       "output_tokens": 6999
+      }
+     ],
+     "sec": 165.55
+    }
+   ]
+  },
+  {
+   "id": "R010",
+   "variant": "fabricated",
+   "question": "강아지가 몇 살이면 가입이 안 돼요?",
+   "answer": "강아지는 나이 제한 없이 가입할 수 있습니다. 다만 15살이 넘으면 보험료가 두 배가 됩니다.",
+   "context_chars": 1732,
+   "runs": [
+    {
+     "statements": [
+      "강아지는 나이 제한 없이 가입할 수 있습니다.",
+      "15살이 넘는 강아지는 보험료가 두 배가 됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "강아지는 나이 제한 없이 가입할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that dogs under 60 days old or over 8 years old (or over 10 years old for the 'Practical' type) are excluded from the insurance coverage, meaning there are specific age restrictions."
+      },
+      {
+       "statement": "15살이 넘는 강아지는 보험료가 두 배가 됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention any information regarding doubling the insurance premium for dogs over 15 years old. In fact, it states that dogs over 8 or 10 years old are excluded from the contract entirely."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 8.36,
+       "prompt_tokens": 404,
+       "output_tokens": 1428
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.3,
+       "prompt_tokens": 1901,
+       "output_tokens": 930
+      }
+     ],
+     "sec": 17.11
+    },
+    {
+     "statements": [
+      "강아지는 나이 제한 없이 가입할 수 있습니다.",
+      "15살이 넘는 강아지는 보험료가 두 배가 됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "강아지는 나이 제한 없이 가입할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that dogs under 60 days old or over 8 years old (or over 10 years old for the 'Practical' type) are excluded from the insurance coverage, meaning there are age restrictions."
+      },
+      {
+       "statement": "15살이 넘는 강아지는 보험료가 두 배가 됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention anything about doubling the insurance premium for dogs over 15 years old. It only specifies age-based exclusions for eligibility."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 7.73,
+       "prompt_tokens": 404,
+       "output_tokens": 1319
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.1,
+       "prompt_tokens": 1901,
+       "output_tokens": 934
+      }
+     ],
+     "sec": 16.22
+    },
+    {
+     "statements": [
+      "강아지는 나이 제한 없이 가입할 수 있습니다.",
+      "15살이 넘는 강아지는 보험료가 두 배가 됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "강아지는 나이 제한 없이 가입할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that dogs under 60 days old or over 8 years old (or over 10 years old for the 'Practical' type) are excluded from the insurance coverage, meaning there are specific age restrictions."
+      },
+      {
+       "statement": "15살이 넘는 강아지는 보험료가 두 배가 됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention any information regarding doubling the insurance premium for dogs over 15 years old. Furthermore, dogs over 15 years old are excluded from the contract entirely based on the age restrictions provided."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 7.88,
+       "prompt_tokens": 404,
+       "output_tokens": 1319
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.61,
+       "prompt_tokens": 1901,
+       "output_tokens": 1081
+      }
+     ],
+     "sec": 18.0
+    }
+   ]
+  },
+  {
+   "id": "R018",
+   "variant": "grounded_ft",
+   "question": "개 물림 사고에서 보험이 안 해주는 경우는 뭐가 있어요?",
+   "answer": "보험은 계약자 또는 피보험자의 고의로 인한 손해, 전쟁이나 내란 같은 대규모 사태, 지진이나 분화 같은 천재지변, 핵연료물질 관련 사고, 피고용인의 업무 중 부상, 손해배상 약정에 따른 가중 책임, 재물 손상에 대한 정당한 권리자의 배상책임 등을 보상하지 않습니다.",
+   "context_chars": 965,
+   "runs": [
+    {
+     "statements": [
+      "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+      "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+      "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+      "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+      "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+      "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+      "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ① that the company does not compensate for damages caused by the intent of the policyholder or the insured."
+      },
+      {
+       "statement": "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ② that the company does not compensate for damages caused by war, revolution, civil war, and other similar situations."
+      },
+      {
+       "statement": "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ③ that the company does not compensate for damages caused by earthquakes, eruptions, floods, tsunamis, or similar natural disasters."
+      },
+      {
+       "statement": "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ④ that the company does not compensate for accidents caused by the radioactive, explosive, or other harmful characteristics of nuclear fuel materials or contaminated materials."
+      },
+      {
+       "statement": "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑥ that the company does not compensate for liability due to physical disabilities of the insured's employee while engaged in the insured's work."
+      },
+      {
+       "statement": "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑦ that the company does not compensate for increased liability according to an agreement between the insured and others regarding damage compensation."
+      },
+      {
+       "statement": "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑧ that the company does not compensate for liability to a person with a legitimate right to property owned, used, or managed by the insured when that property is damaged."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 11.95,
+       "prompt_tokens": 463,
+       "output_tokens": 2172
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 13.87,
+       "prompt_tokens": 1640,
+       "output_tokens": 2311
+      }
+     ],
+     "sec": 28.26
+    },
+    {
+     "statements": [
+      "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+      "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+      "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+      "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+      "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+      "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+      "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ① that the company does not compensate for damages caused by the intent of the policyholder or the insured."
+      },
+      {
+       "statement": "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ② that the company does not compensate for damages caused by war, revolution, civil war, and other similar situations."
+      },
+      {
+       "statement": "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ③ that the company does not compensate for damages caused by earthquakes, eruptions, floods, tsunamis, or similar natural disasters."
+      },
+      {
+       "statement": "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ④ that the company does not compensate for damages caused by the radioactive, explosive, or other harmful characteristics of nuclear fuel materials or contaminated materials."
+      },
+      {
+       "statement": "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑥ that the company does not compensate for liability caused by physical disabilities of the insured's employee while engaged in the insured's work."
+      },
+      {
+       "statement": "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑦ that the company does not compensate for increased liability according to an agreement between the insured and others regarding damage compensation."
+      },
+      {
+       "statement": "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑧ that the company does not compensate for liability to a person with a legitimate right to property owned, used, or managed by the insured when that property is damaged."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 14.39,
+       "prompt_tokens": 463,
+       "output_tokens": 2573
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 13.47,
+       "prompt_tokens": 1640,
+       "output_tokens": 2325
+      }
+     ],
+     "sec": 30.31
+    },
+    {
+     "statements": [
+      "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+      "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+      "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+      "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+      "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+      "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+      "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "보험은 계약자 또는 피보험자의 고의로 인한 손해를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ① that the company does not compensate for damages caused by the intent of the policyholder or the insured."
+      },
+      {
+       "statement": "보험은 전쟁이나 내란 같은 대규모 사태를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ② that the company does not compensate for damages caused by war, revolution, civil war, and other similar situations."
+      },
+      {
+       "statement": "보험은 지진이나 분화 같은 천재지변을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ③ that the company does not compensate for damages caused by earthquakes, eruptions, floods, tsunamis, or similar natural disasters."
+      },
+      {
+       "statement": "보험은 핵연료물질 관련 사고를 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ④ that the company does not compensate for damages caused by the radioactive, explosive, or other harmful characteristics of nuclear fuel materials or contaminated materials."
+      },
+      {
+       "statement": "보험은 피고용인의 업무 중 부상을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑥ that the company does not compensate for liability caused by physical disabilities of the insured's employee while engaged in the insured's work."
+      },
+      {
+       "statement": "보험은 손해배상 약정에 따른 가중 책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑦ that the company does not compensate for increased liability according to an agreement between the insured and others regarding damage compensation."
+      },
+      {
+       "statement": "보험은 재물 손상에 대한 정당한 권리자의 배상책임을 보상하지 않습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in item ⑧ that the company does not compensate for liability to a person with a legitimate right to property owned, used, or managed by the insured when that property is damaged."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 12.03,
+       "prompt_tokens": 463,
+       "output_tokens": 2176
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 13.56,
+       "prompt_tokens": 1640,
+       "output_tokens": 2325
+      }
+     ],
+     "sec": 27.97
+    }
+   ]
+  },
+  {
+   "id": "R018",
+   "variant": "grounded_base",
+   "question": "개 물림 사고에서 보험이 안 해주는 경우는 뭐가 있어요?",
+   "answer": "개 물림 사고에서 보험이 보상하지 않는 경우는 다음과 같습니다. [발췌 1]에 명시된 내용을 기준으로 설명합니다:\n\n1. **고의에 의한 사고**: 계약자 또는 피보험자(반려견 소유자)의 고의로 인해 발생한 개 물림 사고는 보상하지 않습니다.\n2. **전쟁, 혁명, 내란 등 유사 사태**: 이러한 사태로 인해 발생한 개 물림 사고는 보상 대상이 아닙니다.\n3. **천재지변**: 지진, 분화, 홍수, 해일 등 천재지변으로 인한 개 물림 사고는 보상하지 않습니다.\n4. **핵 관련 사고**: 핵연료물질 또는 핵연료물질에 의해 오염된 물질로 인한 사고는 보상하지 않습니다.\n5. **피보험자의 피고용인 배상책임**: 피보험자(반려견 소유자)의 피고용인이 업무 중 입은 신체 장해로 인한 배상책임은 보상하지 않습니다.\n6. **손해배상 약정에 따른 가중 책임**: 피보험자와 타인 간에 손해배상 약정이 있어 그 약정에 따라 가중된 배상책임은 보상하지 않습니다.\n7. **재물에 대한 정당한 권리자의 배상책임**: 피보험자가 소유, 사용 또는 관리하는 재물이 손해를 입었을 경우, 그 재물에 대한 정당한 권리자에게 부담하는 배상책임은 보상하지 않습니다.\n8. **심신상실로 인한 배상책임**: 피보험자의 심신상실로 인해 발생한 배상책임은 보상하지 않습니다.\n9. **지시에",
+   "context_chars": 965,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.09,
+       "prompt_tokens": 761,
+       "output_tokens": 7431
+      },
+      {
+       "sec": 39.9,
+       "prompt_tokens": 925,
+       "output_tokens": 7265
+      },
+      {
+       "sec": 40.14,
+       "prompt_tokens": 1145,
+       "output_tokens": 7045
+      },
+      {
+       "sec": 38.8,
+       "prompt_tokens": 1408,
+       "output_tokens": 6782
+      }
+     ],
+     "sec": 162.3
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.6,
+       "prompt_tokens": 761,
+       "output_tokens": 7428
+      },
+      {
+       "sec": 40.02,
+       "prompt_tokens": 925,
+       "output_tokens": 7266
+      },
+      {
+       "sec": 39.33,
+       "prompt_tokens": 1145,
+       "output_tokens": 7044
+      },
+      {
+       "sec": 38.88,
+       "prompt_tokens": 1408,
+       "output_tokens": 6782
+      }
+     ],
+     "sec": 161.94
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.0,
+       "prompt_tokens": 761,
+       "output_tokens": 7431
+      },
+      {
+       "sec": 40.16,
+       "prompt_tokens": 925,
+       "output_tokens": 7264
+      },
+      {
+       "sec": 40.36,
+       "prompt_tokens": 1145,
+       "output_tokens": 7046
+      },
+      {
+       "sec": 38.22,
+       "prompt_tokens": 1408,
+       "output_tokens": 6783
+      }
+     ],
+     "sec": 164.65
+    }
+   ]
+  },
+  {
+   "id": "R018",
+   "variant": "fabricated",
+   "question": "개 물림 사고에서 보험이 안 해주는 경우는 뭐가 있어요?",
+   "answer": "개 물림 사고는 어떤 경우든 전액 보상되며, 보험이 보상하지 않는 경우는 없습니다.",
+   "context_chars": 965,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.03,
+       "prompt_tokens": 400,
+       "output_tokens": 7791
+      },
+      {
+       "sec": 43.5,
+       "prompt_tokens": 565,
+       "output_tokens": 7627
+      },
+      {
+       "sec": 43.88,
+       "prompt_tokens": 775,
+       "output_tokens": 7416
+      },
+      {
+       "sec": 40.52,
+       "prompt_tokens": 1028,
+       "output_tokens": 7163
+      }
+     ],
+     "sec": 173.34
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.64,
+       "prompt_tokens": 400,
+       "output_tokens": 7790
+      },
+      {
+       "sec": 43.31,
+       "prompt_tokens": 565,
+       "output_tokens": 7626
+      },
+      {
+       "sec": 42.68,
+       "prompt_tokens": 775,
+       "output_tokens": 7417
+      },
+      {
+       "sec": 41.24,
+       "prompt_tokens": 1028,
+       "output_tokens": 7163
+      }
+     ],
+     "sec": 172.28
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.29,
+       "prompt_tokens": 400,
+       "output_tokens": 7790
+      },
+      {
+       "sec": 42.78,
+       "prompt_tokens": 565,
+       "output_tokens": 7624
+      },
+      {
+       "sec": 43.73,
+       "prompt_tokens": 775,
+       "output_tokens": 7414
+      },
+      {
+       "sec": 41.2,
+       "prompt_tokens": 1028,
+       "output_tokens": 7162
+      }
+     ],
+     "sec": 172.4
+    }
+   ]
+  },
+  {
+   "id": "R020",
+   "variant": "grounded_ft",
+   "question": "중성화 수술도 수술비로 나오나요?",
+   "answer": "중성화 수술은 피임목적의 수술로 정의되어 이 특별약관에서 제외됩니다. 따라서 중성화 수술은 보장 대상이 아닙니다.",
+   "context_chars": 405,
+   "runs": [
+    {
+     "statements": [
+      "중성화 수술은 피임목적의 수술로 정의됩니다.",
+      "중성화 수술은 이 특별약관에서 제외됩니다.",
+      "중성화 수술은 보장 대상이 아닙니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 4.15,
+       "prompt_tokens": 411,
+       "output_tokens": 691
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 42.35,
+       "prompt_tokens": 1162,
+       "output_tokens": 7029
+      },
+      {
+       "sec": 41.24,
+       "prompt_tokens": 1370,
+       "output_tokens": 6820
+      },
+      {
+       "sec": 39.31,
+       "prompt_tokens": 1704,
+       "output_tokens": 6487
+      },
+      {
+       "sec": 38.36,
+       "prompt_tokens": 2108,
+       "output_tokens": 6084
+      }
+     ],
+     "sec": 169.01
+    },
+    {
+     "statements": [
+      "중성화 수술은 피임목적의 수술로 정의됩니다.",
+      "중성화 수술은 이 특별약관에서 제외됩니다.",
+      "중성화 수술은 보장 대상이 아닙니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 6.53,
+       "prompt_tokens": 411,
+       "output_tokens": 1122
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 42.53,
+       "prompt_tokens": 1162,
+       "output_tokens": 7028
+      },
+      {
+       "sec": 40.43,
+       "prompt_tokens": 1370,
+       "output_tokens": 6822
+      },
+      {
+       "sec": 38.85,
+       "prompt_tokens": 1704,
+       "output_tokens": 6486
+      },
+      {
+       "sec": 37.6,
+       "prompt_tokens": 2108,
+       "output_tokens": 6084
+      }
+     ],
+     "sec": 170.12
+    },
+    {
+     "statements": [
+      "중성화 수술은 피임목적의 수술로 정의됩니다.",
+      "중성화 수술은 이 특별약관에서 제외됩니다.",
+      "중성화 수술은 보장 대상이 아닙니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 5.88,
+       "prompt_tokens": 411,
+       "output_tokens": 983
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 42.4,
+       "prompt_tokens": 1162,
+       "output_tokens": 7027
+      },
+      {
+       "sec": 31.22,
+       "prompt_tokens": 1370,
+       "output_tokens": 5126
+      },
+      {
+       "sec": 37.26,
+       "prompt_tokens": 1905,
+       "output_tokens": 6286
+      },
+      {
+       "sec": 34.54,
+       "prompt_tokens": 2339,
+       "output_tokens": 5852
+      }
+     ],
+     "sec": 155.1
+    }
+   ]
+  },
+  {
+   "id": "R020",
+   "variant": "grounded_base",
+   "question": "중성화 수술도 수술비로 나오나요?",
+   "answer": "중성화 수술은 [발췌 1]에서 정의된 \"피임목적의 수술\"에 해당합니다. 따라서 이 계약에서 중성화 수술은 수술비 보장 대상에서 제외됩니다. [발췌 1] 제3조에 명시된 제외 항목에 \"피임목적의 수술\"이 포함되어 있기 때문에, 중성화 수술은 보장되지 않습니다.\n\n보험금은 발췌에 있는 계산 예시만 그대로 옮기고, 새 금액으로 직접 계산하지 말라고 하셨으므로, 이 부분에 대한 구체적인 금액 안내는 불가능합니다. 다만, 보장되지 않는 수술이라는 점만 명확히 드립니다.\n\n더 자세한 내용이나 다른 질문이 있으시면, [발췌]에 명시된 내용만을 근거로 답변해 드리겠습니다.",
+   "context_chars": 405,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.4,
+       "prompt_tokens": 556,
+       "output_tokens": 7636
+      },
+      {
+       "sec": 40.96,
+       "prompt_tokens": 725,
+       "output_tokens": 7466
+      },
+      {
+       "sec": 40.39,
+       "prompt_tokens": 941,
+       "output_tokens": 7248
+      },
+      {
+       "sec": 38.97,
+       "prompt_tokens": 1206,
+       "output_tokens": 6984
+      }
+     ],
+     "sec": 163.21
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.69,
+       "prompt_tokens": 556,
+       "output_tokens": 7634
+      },
+      {
+       "sec": 42.22,
+       "prompt_tokens": 725,
+       "output_tokens": 7465
+      },
+      {
+       "sec": 40.93,
+       "prompt_tokens": 941,
+       "output_tokens": 7251
+      },
+      {
+       "sec": 38.64,
+       "prompt_tokens": 1206,
+       "output_tokens": 6983
+      }
+     ],
+     "sec": 166.87
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.4,
+       "prompt_tokens": 556,
+       "output_tokens": 7635
+      },
+      {
+       "sec": 40.89,
+       "prompt_tokens": 725,
+       "output_tokens": 7464
+      },
+      {
+       "sec": 40.53,
+       "prompt_tokens": 941,
+       "output_tokens": 7250
+      },
+      {
+       "sec": 39.4,
+       "prompt_tokens": 1206,
+       "output_tokens": 6985
+      }
+     ],
+     "sec": 165.66
+    }
+   ]
+  },
+  {
+   "id": "R020",
+   "variant": "fabricated",
+   "question": "중성화 수술도 수술비로 나오나요?",
+   "answer": "중성화 수술은 수술비 보장 대상이며 1회당 최대 50만원까지 지급됩니다.",
+   "context_chars": 405,
+   "runs": [
+    {
+     "statements": [
+      "중성화 수술은 수술비 보장 대상입니다.",
+      "중성화 수술은 1회당 최대 50만원까지 지급됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "중성화 수술은 수술비 보장 대상입니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that surgeries for sterilization/neutering purposes (피임목적의 수술) are excluded from the definition of surgery in this contract."
+      },
+      {
+       "statement": "중성화 수술은 1회당 최대 50만원까지 지급됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention any specific payment amounts, and it explicitly excludes sterilization/neutering surgeries from the definition of surgery."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 3.44,
+       "prompt_tokens": 400,
+       "output_tokens": 563
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.26,
+       "prompt_tokens": 1149,
+       "output_tokens": 799
+      }
+     ],
+     "sec": 11.09
+    },
+    {
+     "statements": [
+      "중성화 수술은 수술비 보장 대상입니다.",
+      "중성화 수술은 1회당 최대 50만원까지 지급됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "중성화 수술은 수술비 보장 대상입니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that surgeries for sterilization/neutering purposes (피임목적의 수술) are excluded from the definition of surgery in this contract."
+      },
+      {
+       "statement": "중성화 수술은 1회당 최대 50만원까지 지급됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention any specific payment amounts, and it explicitly excludes sterilization/neutering surgeries from the definition of surgery."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 3.41,
+       "prompt_tokens": 400,
+       "output_tokens": 556
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.34,
+       "prompt_tokens": 1149,
+       "output_tokens": 799
+      }
+     ],
+     "sec": 11.18
+    },
+    {
+     "statements": [
+      "중성화 수술은 수술비 보장 대상입니다.",
+      "중성화 수술은 1회당 최대 50만원까지 지급됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "중성화 수술은 수술비 보장 대상입니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that surgeries for sterilization/neutering purposes (피임목적의 수술) are excluded from the definition of surgery in this contract."
+      },
+      {
+       "statement": "중성화 수술은 1회당 최대 50만원까지 지급됩니다.",
+       "verdict": 0,
+       "reason": "The context does not mention any specific payment amounts, and it explicitly excludes sterilization/neutering surgeries from the definition of surgery."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 3.49,
+       "prompt_tokens": 400,
+       "output_tokens": 556
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.3,
+       "prompt_tokens": 1149,
+       "output_tokens": 799
+      }
+     ],
+     "sec": 11.21
+    }
+   ]
+  },
+  {
+   "id": "R027",
+   "variant": "grounded_ft",
+   "question": "실속형 Ⅱ 통원 하루 한도가 얼마예요?",
+   "answer": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 경우, 1일당 10만원이 지급 한도입니다.",
+   "context_chars": 759,
+   "runs": [
+    {
+     "statements": [
+      "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다.",
+       "verdict": 1,
+       "reason": "The context explicitly provides a table for '실속형' (Silsook-type) outpatient medical expenses. In the row for '통원 중 수술을 하지 않은 날의 경우' (days without surgery during outpatient treatment), the '지급 한도' (payment limit) is clearly listed as '1일당 10만원' (100,000 won per day)."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 12.38,
+       "prompt_tokens": 407,
+       "output_tokens": 2151
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 4.82,
+       "prompt_tokens": 1335,
+       "output_tokens": 683
+      }
+     ],
+     "sec": 19.6
+    },
+    {
+     "statements": [
+      "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in the table that for '통원 중 수술을 하지 않은 날의 경우' (days without surgery during outpatient treatment), the '지급 한도' (payment limit) is '1일당 10만원' (100,000 KRW per day)."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 11.74,
+       "prompt_tokens": 407,
+       "output_tokens": 1997
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 4.55,
+       "prompt_tokens": 1335,
+       "output_tokens": 686
+      }
+     ],
+     "sec": 18.67
+    },
+    {
+     "statements": [
+      "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 지급 한도는 1일당 10만원입니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states in the table that for '통원 중 수술을 하지 않은 날의 경우' (days without surgery during outpatient treatment), the '지급 한도' (payment limit) is '1일당 10만원' (100,000 KRW per day)."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 12.78,
+       "prompt_tokens": 407,
+       "output_tokens": 2194
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 4.51,
+       "prompt_tokens": 1335,
+       "output_tokens": 683
+      }
+     ],
+     "sec": 20.12
+    }
+   ]
+  },
+  {
+   "id": "R027",
+   "variant": "grounded_base",
+   "question": "실속형 Ⅱ 통원 하루 한도가 얼마예요?",
+   "answer": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 경우, 하루 한도는 10만원입니다. 통원 중 수술을 한 날의 경우, 수술 당일에는 200만원이 한도입니다. [발췌 1]에 명시된 내용에 따라 이 금액이 한도로 적용됩니다.",
+   "context_chars": 759,
+   "runs": [
+    {
+     "statements": [
+      "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 하루 한도는 10만원입니다.",
+      "통원 중 수술을 한 날의 수술 당일 한도는 200만원입니다.",
+      "발췌 1에 명시된 내용에 따라 해당 금액이 한도로 적용됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 하루 한도는 10만원입니다.",
+       "verdict": 1,
+       "reason": "The table in the context explicitly states that for days without surgery during outpatient treatment (통원 중 수술을 하지 않은 날의 경우), the payment limit (지급 한도) is 100,000 won per day (1일당 10만원)."
+      },
+      {
+       "statement": "통원 중 수술을 한 날의 수술 당일 한도는 200만원입니다.",
+       "verdict": 1,
+       "reason": "The table in the context explicitly states that for days with surgery during outpatient treatment (통원 중 수술을 한 날의 경우), the payment limit (지급 한도) is 2,000,000 won for the surgery day (수술당일에 한하여 1일당 200만원)."
+      },
+      {
+       "statement": "발췌 1에 명시된 내용에 따라 해당 금액이 한도로 적용됩니다.",
+       "verdict": 0,
+       "reason": "The provided context does not contain any section or reference labeled '발췌 1' (Excerpt 1). Therefore, this statement cannot be directly inferred from the text."
+      }
+     ],
+     "score": 0.6666666666666666,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 30.14,
+       "prompt_tokens": 449,
+       "output_tokens": 5414
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 7.58,
+       "prompt_tokens": 1378,
+       "output_tokens": 1229
+      }
+     ],
+     "sec": 40.12
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.87,
+       "prompt_tokens": 449,
+       "output_tokens": 7742
+      },
+      {
+       "sec": 41.95,
+       "prompt_tokens": 614,
+       "output_tokens": 7575
+      },
+      {
+       "sec": 43.02,
+       "prompt_tokens": 824,
+       "output_tokens": 7367
+      },
+      {
+       "sec": 13.4,
+       "prompt_tokens": 1077,
+       "output_tokens": 2246
+      }
+     ],
+     "sec": 146.23
+    },
+    {
+     "statements": [
+      "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 하루 한도는 10만원입니다.",
+      "통원 중 수술을 한 날의 수술 당일 한도는 200만원입니다.",
+      "발췌 1에 명시된 내용에 따라 해당 금액이 한도로 적용됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원 중 수술을 하지 않은 날의 하루 한도는 10만원입니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that for days without surgery during outpatient treatment, the payment limit is 100,000 KRW per day (1일당 10만원)."
+      },
+      {
+       "statement": "통원 중 수술을 한 날의 수술 당일 한도는 200만원입니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that for days with surgery during outpatient treatment, the payment limit is 2,000,000 KRW per day, limited to the day of surgery (수술당일에 한하여 1일당 200만원)."
+      },
+      {
+       "statement": "발췌 1에 명시된 내용에 따라 해당 금액이 한도로 적용됩니다.",
+       "verdict": 0,
+       "reason": "The provided context does not contain any section or reference labeled '발췌 1' (Excerpt 1)."
+      }
+     ],
+     "score": 0.6666666666666666,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 23.86,
+       "prompt_tokens": 449,
+       "output_tokens": 4242
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 7.13,
+       "prompt_tokens": 1378,
+       "output_tokens": 1177
+      }
+     ],
+     "sec": 33.44
+    }
+   ]
+  },
+  {
+   "id": "R027",
+   "variant": "fabricated",
+   "question": "실속형 Ⅱ 통원 하루 한도가 얼마예요?",
+   "answer": "실속형 Ⅱ 통원은 하루 한도가 50만원이고 자기부담금은 없습니다.",
+   "context_chars": 759,
+   "runs": [
+    {
+     "statements": [
+      "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+      "실속형 Ⅱ 통원의 자기부담금은 없습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+       "verdict": 0,
+       "reason": "The context specifies the payment limits (지급 한도) as 100,000 KRW per day for outpatient visits without surgery and 2,000,000 KRW for outpatient visits with surgery. There is no mention of a 500,000 KRW limit."
+      },
+      {
+       "statement": "실속형 Ⅱ 통원의 자기부담금은 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that there is a deductible (자기부담금) of either 30,000 KRW or 50,000 KRW, depending on what is stated in the insurance policy."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 4.29,
+       "prompt_tokens": 398,
+       "output_tokens": 706
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 7.26,
+       "prompt_tokens": 1340,
+       "output_tokens": 1194
+      }
+     ],
+     "sec": 15.31
+    },
+    {
+     "statements": [
+      "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+      "실속형 Ⅱ 통원의 자기부담금은 없습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+       "verdict": 0,
+       "reason": "The context states that the daily limit for days without surgery is 100,000 KRW and the limit for days with surgery is 2,000,000 KRW. There is no mention of a 500,000 KRW limit."
+      },
+      {
+       "statement": "실속형 Ⅱ 통원의 자기부담금은 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly mentions a deductible (자기부담금) of either 30,000 KRW or 50,000 KRW depending on the insurance policy."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 4.18,
+       "prompt_tokens": 398,
+       "output_tokens": 706
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.66,
+       "prompt_tokens": 1340,
+       "output_tokens": 1097
+      }
+     ],
+     "sec": 15.63
+    },
+    {
+     "statements": [
+      "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+      "실속형 Ⅱ 통원의 자기부담금은 없습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 Ⅱ 통원의 하루 한도는 50만원입니다.",
+       "verdict": 0,
+       "reason": "The context states that the daily limit for days without surgery is 100,000 KRW and the limit for days with surgery is 2,000,000 KRW. There is no mention of a 500,000 KRW limit."
+      },
+      {
+       "statement": "실속형 Ⅱ 통원의 자기부담금은 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly mentions a deductible (자기부담금) of either 30,000 KRW or 50,000 KRW depending on the insurance policy."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 4.32,
+       "prompt_tokens": 398,
+       "output_tokens": 706
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.66,
+       "prompt_tokens": 1340,
+       "output_tokens": 1098
+      }
+     ],
+     "sec": 13.44
+    }
+   ]
+  },
+  {
+   "id": "R030",
+   "variant": "grounded_ft",
+   "question": "법률비용 보장에서 항소심까지 소송으로 쳐 주나요?",
+   "answer": "네, 이 특별약관에서 '소송'은 1심 소송, 항소심, 그리고 상고심까지 모두 포함합니다. 따라서 보험기간 내에 제기된 항소심도 보장 대상에 포함됩니다.",
+   "context_chars": 140,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.79,
+       "prompt_tokens": 431,
+       "output_tokens": 7760
+      },
+      {
+       "sec": 43.51,
+       "prompt_tokens": 596,
+       "output_tokens": 7593
+      },
+      {
+       "sec": 42.18,
+       "prompt_tokens": 806,
+       "output_tokens": 7383
+      },
+      {
+       "sec": 41.33,
+       "prompt_tokens": 1059,
+       "output_tokens": 7131
+      }
+     ],
+     "sec": 172.26
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.29,
+       "prompt_tokens": 431,
+       "output_tokens": 7760
+      },
+      {
+       "sec": 42.52,
+       "prompt_tokens": 596,
+       "output_tokens": 7596
+      },
+      {
+       "sec": 42.31,
+       "prompt_tokens": 806,
+       "output_tokens": 7386
+      },
+      {
+       "sec": 41.12,
+       "prompt_tokens": 1059,
+       "output_tokens": 7131
+      }
+     ],
+     "sec": 171.64
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.4,
+       "prompt_tokens": 431,
+       "output_tokens": 7759
+      },
+      {
+       "sec": 41.97,
+       "prompt_tokens": 596,
+       "output_tokens": 7596
+      },
+      {
+       "sec": 41.82,
+       "prompt_tokens": 806,
+       "output_tokens": 7386
+      },
+      {
+       "sec": 41.17,
+       "prompt_tokens": 1059,
+       "output_tokens": 7133
+      }
+     ],
+     "sec": 173.84
+    }
+   ]
+  },
+  {
+   "id": "R030",
+   "variant": "grounded_base",
+   "question": "법률비용 보장에서 항소심까지 소송으로 쳐 주나요?",
+   "answer": "네, [발췌 1]에 따르면 민사소송법률비용Ⅱ보장 특별약관에서 \"소송\"은 1심 소송, 항소심, 그리고 상고심 각각을 포함한다고 명시되어 있습니다. 따라서 이 특별약관에 따라 보험기간 내에 제기된 항소심도 \"소송\"으로 간주되어 보장 대상이 됩니다. 다만, 보장 범위와 보험금은 약관에서 정한 계산 예시에 따라 결정되며, 실제 보험금 지급은 약관의 세부 조건과 보장 범위에 따라 달라질 수 있습니다.",
+   "context_chars": 140,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.38,
+       "prompt_tokens": 509,
+       "output_tokens": 7683
+      },
+      {
+       "sec": 40.69,
+       "prompt_tokens": 678,
+       "output_tokens": 7512
+      },
+      {
+       "sec": 41.09,
+       "prompt_tokens": 892,
+       "output_tokens": 7300
+      },
+      {
+       "sec": 39.88,
+       "prompt_tokens": 1153,
+       "output_tokens": 7039
+      }
+     ],
+     "sec": 167.52
+    },
+    {
+     "statements": [
+      "[발췌 1]에 따르면 민사소송법률비용Ⅱ보장 특별약관에서 \"소송\"은 1심 소송, 항소심, 그리고 상고심 각각을 포함합니다.",
+      "보험기간 내에 제기된 항소심은 민사소송법률비용Ⅱ보장 특별약관에 따라 \"소송\"으로 간주됩니다.",
+      "보험기간 내에 제기된 항소심은 보장 대상이 됩니다.",
+      "보장 범위와 보험금은 약관에서 정한 계산 예시에 따라 결정됩니다.",
+      "실제 보험금 지급은 약관의 세부 조건과 보장 범위에 따라 달라질 수 있습니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 27.8,
+       "prompt_tokens": 509,
+       "output_tokens": 4904
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 41.98,
+       "prompt_tokens": 1092,
+       "output_tokens": 7097
+      },
+      {
+       "sec": 39.04,
+       "prompt_tokens": 1310,
+       "output_tokens": 6880
+      },
+      {
+       "sec": 39.1,
+       "prompt_tokens": 1648,
+       "output_tokens": 6541
+      },
+      {
+       "sec": 37.87,
+       "prompt_tokens": 2049,
+       "output_tokens": 6141
+      }
+     ],
+     "sec": 193.66
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.79,
+       "prompt_tokens": 509,
+       "output_tokens": 7682
+      },
+      {
+       "sec": 39.58,
+       "prompt_tokens": 678,
+       "output_tokens": 7234
+      },
+      {
+       "sec": 39.23,
+       "prompt_tokens": 1098,
+       "output_tokens": 7092
+      },
+      {
+       "sec": 37.78,
+       "prompt_tokens": 1372,
+       "output_tokens": 6817
+      }
+     ],
+     "sec": 163.63
+    }
+   ]
+  },
+  {
+   "id": "R030",
+   "variant": "fabricated",
+   "question": "법률비용 보장에서 항소심까지 소송으로 쳐 주나요?",
+   "answer": "법률비용 보장은 1심 소송만 해당하고 항소심과 상고심은 보장하지 않습니다.",
+   "context_chars": 140,
+   "runs": [
+    {
+     "statements": [
+      "법률비용 보장은 1심 소송만 해당합니다.",
+      "법률비용 보장은 항소심과 상고심을 보장하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "법률비용 보장은 1심 소송만 해당합니다.",
+       "verdict": 0,
+       "reason": "The context defines \"litigation\" as including the first instance litigation, the appellate litigation, and the final litigation. Therefore, the coverage is not limited to only the first instance."
+      },
+      {
+       "statement": "법률비용 보장은 항소심과 상고심을 보장하지 않습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that \"litigation\" includes the appellate litigation and the final litigation against the appellate litigation. Therefore, it is incorrect to say they are not covered."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 29.83,
+       "prompt_tokens": 408,
+       "output_tokens": 5204
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.68,
+       "prompt_tokens": 976,
+       "output_tokens": 1059
+      }
+     ],
+     "sec": 42.61
+    },
+    {
+     "statements": [
+      "법률비용 보장은 1심 소송만 해당합니다.",
+      "법률비용 보장은 항소심과 상고심을 보장하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "법률비용 보장은 1심 소송만 해당합니다.",
+       "verdict": 0,
+       "reason": "The context defines \"litigation\" as including the first instance litigation, the appellate litigation, and the final litigation. Therefore, it is not limited only to the first instance litigation."
+      },
+      {
+       "statement": "법률비용 보장은 항소심과 상고심을 보장하지 않습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that \"litigation\" includes the appellate litigation and the final litigation against the appellate litigation, meaning they are covered under the definition of litigation in this special clause."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 28.46,
+       "prompt_tokens": 408,
+       "output_tokens": 4928
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.32,
+       "prompt_tokens": 976,
+       "output_tokens": 1012
+      }
+     ],
+     "sec": 37.2
+    },
+    {
+     "statements": [
+      "법률비용 보장은 1심 소송에만 해당합니다.",
+      "법률비용 보장은 항소심과 상고심을 보장하지 않습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "법률비용 보장은 1심 소송에만 해당합니다.",
+       "verdict": 0,
+       "reason": "The context defines \"litigation\" as including the first instance litigation, the appellate litigation, and the final litigation. Therefore, the coverage is not limited to only the first instance."
+      },
+      {
+       "statement": "법률비용 보장은 항소심과 상고심을 보장하지 않습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that \"litigation\" includes the first instance litigation, the appellate litigation, and the final litigation. Therefore, it does cover appellate and final litigation."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 38.78,
+       "prompt_tokens": 408,
+       "output_tokens": 6683
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.25,
+       "prompt_tokens": 977,
+       "output_tokens": 981
+      }
+     ],
+     "sec": 47.42
+    }
+   ]
+  },
+  {
+   "id": "R037",
+   "variant": "grounded_ft",
+   "question": "제가 아파서 직접 청구를 못 하면 대신 청구할 사람을 정해 둘 수 있나요?",
+   "answer": "네, 계약자는 보통약관 또는 특별약관에서 정한 보험금을 직접 청구할 수 없는 특별한 사정이 있을 경우를 대비하여 계약을 체결할 때 또는 계약체결 이후 지정대리청구인을 지정할 수 있습니다.",
+   "context_chars": 1364,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.19,
+       "prompt_tokens": 438,
+       "output_tokens": 7751
+      },
+      {
+       "sec": 42.74,
+       "prompt_tokens": 603,
+       "output_tokens": 7588
+      },
+      {
+       "sec": 41.71,
+       "prompt_tokens": 813,
+       "output_tokens": 7378
+      },
+      {
+       "sec": 40.73,
+       "prompt_tokens": 1066,
+       "output_tokens": 7125
+      }
+     ],
+     "sec": 174.34
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.52,
+       "prompt_tokens": 438,
+       "output_tokens": 7754
+      },
+      {
+       "sec": 38.96,
+       "prompt_tokens": 603,
+       "output_tokens": 6861
+      },
+      {
+       "sec": 40.94,
+       "prompt_tokens": 943,
+       "output_tokens": 7247
+      },
+      {
+       "sec": 40.8,
+       "prompt_tokens": 1204,
+       "output_tokens": 6985
+      }
+     ],
+     "sec": 165.89
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.02,
+       "prompt_tokens": 438,
+       "output_tokens": 7752
+      },
+      {
+       "sec": 42.13,
+       "prompt_tokens": 603,
+       "output_tokens": 7586
+      },
+      {
+       "sec": 42.14,
+       "prompt_tokens": 813,
+       "output_tokens": 7376
+      },
+      {
+       "sec": 41.25,
+       "prompt_tokens": 1066,
+       "output_tokens": 7126
+      }
+     ],
+     "sec": 169.99
+    }
+   ]
+  },
+  {
+   "id": "R037",
+   "variant": "grounded_base",
+   "question": "제가 아파서 직접 청구를 못 하면 대신 청구할 사람을 정해 둘 수 있나요?",
+   "answer": "네, 직접 청구를 할 수 없는 특별한 사정이 있을 경우, [발췌 1]에 따라 지정대리청구인을 지정할 수 있습니다. 지정 가능한 대리인은 피보험자의 가족관계등록부상 배우자 또는 3촌 이내의 친족입니다. 기명으로 지정할 수도 있고, 무기명으로 지정할 수도 있습니다. 예를 들어, 가족관계등록부 상 배우자를 지정하는 것이 가능합니다. 다만, 무기명 지정의 경우 보험금 청구 시점에 가족관계등록부 상 배우자가 누구인지에 따라 결정됩니다.\n\n보험금을 청구할 때는 [발췌 1]에서 명시된 서류(청구서, 사고증명서, 신분증, 가족관계등록부 및 주민등록등본 등)를 제출해야 합니다. 보험금은 [발췌]에 명시된 계산 예시만 기준으로 하며, 직접 계산하지 않습니다.\n\n따라서, 직접 청구가 어려운 경우, 계약 시 또는 이후에 지정대리청구인을 지정하여 보험금을 청구할 수 있습니다.",
+   "context_chars": 1364,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.3,
+       "prompt_tokens": 613,
+       "output_tokens": 7578
+      },
+      {
+       "sec": 41.27,
+       "prompt_tokens": 778,
+       "output_tokens": 7412
+      },
+      {
+       "sec": 39.56,
+       "prompt_tokens": 990,
+       "output_tokens": 7202
+      },
+      {
+       "sec": 39.12,
+       "prompt_tokens": 1247,
+       "output_tokens": 6942
+      }
+     ],
+     "sec": 167.4
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.52,
+       "prompt_tokens": 613,
+       "output_tokens": 7579
+      },
+      {
+       "sec": 40.7,
+       "prompt_tokens": 778,
+       "output_tokens": 7414
+      },
+      {
+       "sec": 39.39,
+       "prompt_tokens": 990,
+       "output_tokens": 7199
+      },
+      {
+       "sec": 38.49,
+       "prompt_tokens": 1247,
+       "output_tokens": 6945
+      }
+     ],
+     "sec": 163.55
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.22,
+       "prompt_tokens": 613,
+       "output_tokens": 7576
+      },
+      {
+       "sec": 40.4,
+       "prompt_tokens": 778,
+       "output_tokens": 7414
+      },
+      {
+       "sec": 39.39,
+       "prompt_tokens": 990,
+       "output_tokens": 7202
+      },
+      {
+       "sec": 38.27,
+       "prompt_tokens": 1247,
+       "output_tokens": 6943
+      }
+     ],
+     "sec": 163.76
+    }
+   ]
+  },
+  {
+   "id": "R037",
+   "variant": "fabricated",
+   "question": "제가 아파서 직접 청구를 못 하면 대신 청구할 사람을 정해 둘 수 있나요?",
+   "answer": "대리 청구인은 지정할 수 없고, 반드시 계약자 본인이 동물병원에 직접 방문해 청구해야 합니다.",
+   "context_chars": 1364,
+   "runs": [
+    {
+     "statements": [
+      "대리 청구인은 지정할 수 없습니다.",
+      "계약자는 반드시 동물병원에 직접 방문하여 청구해야 합니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "대리 청구인은 지정할 수 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that a contractor can designate a proxy claimant (지정대리청구인) if they are unable to claim the insurance money directly due to special circumstances."
+      },
+      {
+       "statement": "계약자는 반드시 동물병원에 직접 방문하여 청구해야 합니다.",
+       "verdict": 0,
+       "reason": "The context does not mention animal hospitals. It specifies that accident certificates must be issued by medical institutions (hospitals or clinics) and allows for proxy claims if the contractor cannot claim directly."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 10.17,
+       "prompt_tokens": 411,
+       "output_tokens": 1739
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.28,
+       "prompt_tokens": 1753,
+       "output_tokens": 901
+      }
+     ],
+     "sec": 19.32
+    },
+    {
+     "statements": [
+      "대리 청구인은 지정할 수 없습니다.",
+      "계약자 본인이 동물병원에 직접 방문하여 청구해야 합니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "대리 청구인은 지정할 수 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that a contractor can designate a proxy claimant (지정대리청구인) if they have special circumstances that prevent them from claiming the insurance money directly."
+      },
+      {
+       "statement": "계약자 본인이 동물병원에 직접 방문하여 청구해야 합니다.",
+       "verdict": 0,
+       "reason": "The context does not mention animal hospitals (동물병원) at all. Furthermore, the context describes a service that allows for proxy claims, which contradicts the statement that the contractor must visit in person."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 6.56,
+       "prompt_tokens": 411,
+       "output_tokens": 1086
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.61,
+       "prompt_tokens": 1754,
+       "output_tokens": 787
+      }
+     ],
+     "sec": 15.27
+    },
+    {
+     "statements": [
+      "대리 청구인은 지정할 수 없습니다.",
+      "계약자 본인이 동물병원에 직접 방문하여 청구해야 합니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "대리 청구인은 지정할 수 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly states that a contractor can designate a proxy claimant (지정대리청구인) at the time of contract or after the contract is signed."
+      },
+      {
+       "statement": "계약자 본인이 동물병원에 직접 방문하여 청구해야 합니다.",
+       "verdict": 0,
+       "reason": "The context does not mention animal hospitals (동물병원). Furthermore, the entire purpose of the 'Designated Proxy Claim Service' described in the text is to allow someone else to claim the insurance money when the contractor cannot do so personally."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 5.81,
+       "prompt_tokens": 411,
+       "output_tokens": 1002
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.03,
+       "prompt_tokens": 1754,
+       "output_tokens": 870
+      }
+     ],
+     "sec": 14.24
+    }
+   ]
+  },
+  {
+   "id": "R042",
+   "variant": "grounded_ft",
+   "question": "장해에서 '영구적'이라는 건 어떤 상태를 말해요?",
+   "answer": "'영구적'은 원칙적으로 치유하는 때 장래 회복할 가망이 없는 상태로서 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다. 이는 일시적인 증상이 아닌 지속적인 손상을 의미합니다.",
+   "context_chars": 690,
+   "runs": [
+    {
+     "statements": [
+      "영구적은 원칙적으로 치유하는 때 장래 회복할 가망이 없는 상태를 말합니다.",
+      "영구적은 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다.",
+      "영구적은 일시적인 증상이 아닌 지속적인 손상을 의미합니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "영구적은 원칙적으로 치유하는 때 장래 회복할 가망이 없는 상태를 말합니다.",
+       "verdict": 1,
+       "reason": "The context explicitly defines '영구적' (permanent) as a state where there is no prospect of future recovery at the time of healing (원칙적으로 치유하는 때 장래 회복할 가망이 없는 상태)."
+      },
+      {
+       "statement": "영구적은 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다.",
+       "verdict": 1,
+       "reason": "The context explicitly defines '영구적' (permanent) as a case where the state of mental or physical damage is medically recognized (정신적 또는 육체적 훼손 상태임이 의학적으로 인정되는 경우)."
+      },
+      {
+       "statement": "영구적은 일시적인 증상이 아닌 지속적인 손상을 의미합니다.",
+       "verdict": 1,
+       "reason": "The context defines '장해' (disability) as a 'permanent damage state' (영구적인 ... 훼손상태) and explicitly excludes 'temporary symptoms' (일시적으로 나타나는 증상) from the definition of '장해'. This implies that '영구적' (permanent) refers to permanent/continuous damage rather than temporary symptoms."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 36.02,
+       "prompt_tokens": 437,
+       "output_tokens": 6268
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 35.96,
+       "prompt_tokens": 1355,
+       "output_tokens": 6147
+      }
+     ],
+     "sec": 74.41
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.98,
+       "prompt_tokens": 437,
+       "output_tokens": 7754
+      },
+      {
+       "sec": 43.2,
+       "prompt_tokens": 603,
+       "output_tokens": 7589
+      },
+      {
+       "sec": 43.07,
+       "prompt_tokens": 813,
+       "output_tokens": 7376
+      },
+      {
+       "sec": 40.43,
+       "prompt_tokens": 1066,
+       "output_tokens": 7125
+      }
+     ],
+     "sec": 171.13
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.94,
+       "prompt_tokens": 437,
+       "output_tokens": 7755
+      },
+      {
+       "sec": 42.81,
+       "prompt_tokens": 603,
+       "output_tokens": 7465
+      },
+      {
+       "sec": 41.78,
+       "prompt_tokens": 913,
+       "output_tokens": 7279
+      },
+      {
+       "sec": 39.77,
+       "prompt_tokens": 1173,
+       "output_tokens": 7019
+      }
+     ],
+     "sec": 168.75
+    }
+   ]
+  },
+  {
+   "id": "R042",
+   "variant": "grounded_base",
+   "question": "장해에서 '영구적'이라는 건 어떤 상태를 말해요?",
+   "answer": "[발췌 1]에 따르면, \"영구적\"이라는 것은 원칙적으로 치유된 후에 장래 회복할 가망이 없는 상태로서, 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다. 이는 일시적인 증상이 아닌, 영구적으로 남아있는 상태를 의미합니다.",
+   "context_chars": 690,
+   "runs": [
+    {
+     "statements": [
+      "[발췌 1]에 따르면, \"영구적\"이라는 것은 원칙적으로 치유된 후에 장래 회복할 가망이 없는 상태를 의미합니다.",
+      "\"영구적\"이라는 것은 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다.",
+      "\"영구적\"이라는 것은 일시적인 증상이 아닌 영구적으로 남아있는 상태를 의미합니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 11.55,
+       "prompt_tokens": 452,
+       "output_tokens": 2096
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 39.61,
+       "prompt_tokens": 1375,
+       "output_tokens": 6815
+      },
+      {
+       "sec": 40.27,
+       "prompt_tokens": 1591,
+       "output_tokens": 6598
+      },
+      {
+       "sec": 36.94,
+       "prompt_tokens": 1932,
+       "output_tokens": 6257
+      },
+      {
+       "sec": 35.16,
+       "prompt_tokens": 2354,
+       "output_tokens": 5835
+      }
+     ],
+     "sec": 167.2
+    },
+    {
+     "statements": [
+      "[발췌 1]에 따르면, \"영구적\"이라는 것은 원칙적으로 치유된 후에 장래 회복할 가망이 없는 상태를 의미합니다.",
+      "\"영구적\"이라는 것은 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다.",
+      "\"영구적\"이라는 것은 일시적인 증상이 아닌 영구적으로 남아있는 상태를 의미합니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 12.49,
+       "prompt_tokens": 452,
+       "output_tokens": 2219
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 40.42,
+       "prompt_tokens": 1375,
+       "output_tokens": 6814
+      },
+      {
+       "sec": 39.32,
+       "prompt_tokens": 1591,
+       "output_tokens": 6601
+      },
+      {
+       "sec": 38.15,
+       "prompt_tokens": 1932,
+       "output_tokens": 6260
+      },
+      {
+       "sec": 34.33,
+       "prompt_tokens": 2354,
+       "output_tokens": 5836
+      }
+     ],
+     "sec": 169.41
+    },
+    {
+     "statements": [
+      "[발췌 1]에 따르면, \"영구적\"이라는 것은 원칙적으로 치유된 후에 장래 회복할 가망이 없는 상태를 의미합니다.",
+      "\"영구적\"이라는 것은 정신적 또는 육체적 훼손 상태가 의학적으로 인정되는 경우를 말합니다.",
+      "\"영구적\"이라는 것은 일시적인 증상이 아닌 영구적으로 남아있는 상태를 의미합니다."
+     ],
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_split": [
+      {
+       "sec": 12.42,
+       "prompt_tokens": 452,
+       "output_tokens": 2219
+      }
+     ],
+     "calls_failed": [
+      {
+       "sec": 40.93,
+       "prompt_tokens": 1375,
+       "output_tokens": 6816
+      },
+      {
+       "sec": 39.3,
+       "prompt_tokens": 1591,
+       "output_tokens": 6599
+      },
+      {
+       "sec": 37.77,
+       "prompt_tokens": 1932,
+       "output_tokens": 6257
+      },
+      {
+       "sec": 34.26,
+       "prompt_tokens": 2354,
+       "output_tokens": 5838
+      }
+     ],
+     "sec": 168.57
+    }
+   ]
+  },
+  {
+   "id": "R042",
+   "variant": "fabricated",
+   "question": "장해에서 '영구적'이라는 건 어떤 상태를 말해요?",
+   "answer": "'영구적'은 6개월 이상 치료가 필요한 상태를 말하며, 회복 가능성과는 관계없습니다.",
+   "context_chars": 690,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 46.36,
+       "prompt_tokens": 405,
+       "output_tokens": 7784
+      },
+      {
+       "sec": 43.78,
+       "prompt_tokens": 571,
+       "output_tokens": 7619
+      },
+      {
+       "sec": 42.76,
+       "prompt_tokens": 781,
+       "output_tokens": 7409
+      },
+      {
+       "sec": 39.95,
+       "prompt_tokens": 1034,
+       "output_tokens": 7156
+      }
+     ],
+     "sec": 175.57
+    },
+    {
+     "statements": [
+      "영구적은 6개월 이상 치료가 필요한 상태를 의미합니다.",
+      "영구적은 회복 가능성과 관계가 없습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "영구적은 6개월 이상 치료가 필요한 상태를 의미합니다.",
+       "verdict": 0,
+       "reason": "The context defines \"영구적\" (permanent) as a state where there is no prospect of future recovery at the time of healing, and it does not mention any specific time frame such as \"6 months\" for treatment."
+      },
+      {
+       "statement": "영구적은 회복 가능성과 관계가 없습니다.",
+       "verdict": 0,
+       "reason": "The context explicitly defines \"영구적\" (permanent) as a state where there is \"no prospect of future recovery\" (장래 회복할 가망이 없는 상태), which means it is directly related to the possibility of recovery."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 11.62,
+       "prompt_tokens": 405,
+       "output_tokens": 1939
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 9.62,
+       "prompt_tokens": 1313,
+       "output_tokens": 1547
+      }
+     ],
+     "sec": 24.29
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 44.07,
+       "prompt_tokens": 405,
+       "output_tokens": 7784
+      },
+      {
+       "sec": 43.64,
+       "prompt_tokens": 571,
+       "output_tokens": 7619
+      },
+      {
+       "sec": 40.6,
+       "prompt_tokens": 781,
+       "output_tokens": 7409
+      },
+      {
+       "sec": 41.46,
+       "prompt_tokens": 1034,
+       "output_tokens": 7156
+      }
+     ],
+     "sec": 172.3
+    }
+   ]
+  },
+  {
+   "id": "R052",
+   "variant": "grounded_ft",
+   "question": "어린 자녀가 남한테 피해를 주면 아이한테 배상 책임이 있나요?",
+   "answer": "미성년자가 타인에게 손해를 가한 경우, 그 행위의 책임을 변식할 지능이 없으면 배상의 책임이 없습니다. 즉, 책임능력이 없는 경우에는 배상 책임이 없습니다.",
+   "context_chars": 97,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.52,
+       "prompt_tokens": 430,
+       "output_tokens": 7759
+      },
+      {
+       "sec": 43.38,
+       "prompt_tokens": 595,
+       "output_tokens": 7594
+      },
+      {
+       "sec": 39.72,
+       "prompt_tokens": 805,
+       "output_tokens": 7387
+      },
+      {
+       "sec": 39.81,
+       "prompt_tokens": 1058,
+       "output_tokens": 7133
+      }
+     ],
+     "sec": 170.27
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.01,
+       "prompt_tokens": 430,
+       "output_tokens": 7761
+      },
+      {
+       "sec": 43.49,
+       "prompt_tokens": 595,
+       "output_tokens": 7595
+      },
+      {
+       "sec": 42.28,
+       "prompt_tokens": 805,
+       "output_tokens": 7387
+      },
+      {
+       "sec": 40.55,
+       "prompt_tokens": 1058,
+       "output_tokens": 7132
+      }
+     ],
+     "sec": 170.72
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.91,
+       "prompt_tokens": 430,
+       "output_tokens": 7760
+      },
+      {
+       "sec": 43.17,
+       "prompt_tokens": 595,
+       "output_tokens": 7594
+      },
+      {
+       "sec": 43.03,
+       "prompt_tokens": 805,
+       "output_tokens": 7386
+      },
+      {
+       "sec": 39.14,
+       "prompt_tokens": 1058,
+       "output_tokens": 7134
+      }
+     ],
+     "sec": 170.76
+    }
+   ]
+  },
+  {
+   "id": "R052",
+   "variant": "grounded_base",
+   "question": "어린 자녀가 남한테 피해를 주면 아이한테 배상 책임이 있나요?",
+   "answer": "[발췌 1] 민법 제753조에 따르면, 미성년자가 타인에게 손해를 가한 경우 그 행위의 책임을 변식할 지능이 없는 때에는 배상의 책임이 없다고 명시되어 있습니다. 이는 미성년자의 책임능력을 기준으로 하며, 어린 자녀가 타인에게 피해를 주었을 때 배상 책임이 있는지 여부는 그 자녀의 책임능력을 판단해야 합니다.\n\n따라서, 어린 자녀가 남한테 피해를 주었을 때 아이 본인에게 배상 책임이 있는지 여부는 해당 자녀의 책임능력을 기준으로 판단해야 합니다. 만약 그 자녀가 책임능력을 변식할 지능이 없다고 판단되면, 배상의 책임이 없다고 볼 수 있습니다.\n\n이 답변은 [발췌 1]에 근거한 것이며, 실제 법적 판단은 구체적인 상황과 관련 법규의 해석에 따라 달라질 수 있습니다.",
+   "context_chars": 97,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.47,
+       "prompt_tokens": 591,
+       "output_tokens": 7599
+      },
+      {
+       "sec": 40.33,
+       "prompt_tokens": 757,
+       "output_tokens": 7435
+      },
+      {
+       "sec": 40.6,
+       "prompt_tokens": 969,
+       "output_tokens": 7221
+      },
+      {
+       "sec": 39.23,
+       "prompt_tokens": 1226,
+       "output_tokens": 6963
+      }
+     ],
+     "sec": 163.26
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.38,
+       "prompt_tokens": 591,
+       "output_tokens": 7598
+      },
+      {
+       "sec": 41.53,
+       "prompt_tokens": 757,
+       "output_tokens": 7432
+      },
+      {
+       "sec": 39.94,
+       "prompt_tokens": 969,
+       "output_tokens": 7222
+      },
+      {
+       "sec": 40.11,
+       "prompt_tokens": 1226,
+       "output_tokens": 6963
+      }
+     ],
+     "sec": 165.33
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 41.05,
+       "prompt_tokens": 591,
+       "output_tokens": 7600
+      },
+      {
+       "sec": 39.52,
+       "prompt_tokens": 757,
+       "output_tokens": 7435
+      },
+      {
+       "sec": 39.39,
+       "prompt_tokens": 969,
+       "output_tokens": 7220
+      },
+      {
+       "sec": 38.71,
+       "prompt_tokens": 1226,
+       "output_tokens": 6966
+      }
+     ],
+     "sec": 162.52
+    }
+   ]
+  },
+  {
+   "id": "R052",
+   "variant": "fabricated",
+   "question": "어린 자녀가 남한테 피해를 주면 아이한테 배상 책임이 있나요?",
+   "answer": "자녀가 남에게 피해를 주면 나이와 관계없이 아이 본인이 전액 배상해야 하고 부모는 책임이 없습니다.",
+   "context_chars": 97,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.37,
+       "prompt_tokens": 413,
+       "output_tokens": 7778
+      },
+      {
+       "sec": 18.25,
+       "prompt_tokens": 578,
+       "output_tokens": 3163
+      },
+      {
+       "sec": 42.43,
+       "prompt_tokens": 865,
+       "output_tokens": 7326
+      },
+      {
+       "sec": 40.46,
+       "prompt_tokens": 1125,
+       "output_tokens": 7067
+      }
+     ],
+     "sec": 147.3
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 42.34,
+       "prompt_tokens": 413,
+       "output_tokens": 7776
+      },
+      {
+       "sec": 44.25,
+       "prompt_tokens": 578,
+       "output_tokens": 7613
+      },
+      {
+       "sec": 42.95,
+       "prompt_tokens": 788,
+       "output_tokens": 7403
+      },
+      {
+       "sec": 10.46,
+       "prompt_tokens": 1041,
+       "output_tokens": 1734
+      }
+     ],
+     "sec": 142.51
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 43.31,
+       "prompt_tokens": 413,
+       "output_tokens": 7777
+      },
+      {
+       "sec": 44.22,
+       "prompt_tokens": 578,
+       "output_tokens": 7614
+      },
+      {
+       "sec": 43.17,
+       "prompt_tokens": 788,
+       "output_tokens": 7403
+      },
+      {
+       "sec": 40.35,
+       "prompt_tokens": 1041,
+       "output_tokens": 7151
+      }
+     ],
+     "sec": 175.24
+    }
+   ]
+  },
+  {
+   "id": "R059",
+   "variant": "grounded_ft",
+   "question": "실속형 가입했는데 청약 철회는 며칠 안에 해야 돼요?",
+   "answer": "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다. 다만, 건강상태 진단 지원 계약, 보험기간 90일 이내 계약 또는 전문금융소비자가 체결한 계약은 제외됩니다.",
+   "context_chars": 1018,
+   "runs": [
+    {
+     "statements": [
+      "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+      "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+      "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+      "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that general financial consumers can withdraw their subscription within 15 days from the date they receive the insurance policy."
+      },
+      {
+       "statement": "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context specifies that contracts where the company supports health status diagnosis are excluded from the right to withdraw the subscription."
+      },
+      {
+       "statement": "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context explicitly mentions that contracts with an insurance period of 90 days or less cannot be withdrawn."
+      },
+      {
+       "statement": "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context states that contracts concluded by professional financial consumers are excluded from the right to withdraw the subscription."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 13.7,
+       "prompt_tokens": 441,
+       "output_tokens": 2469
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.41,
+       "prompt_tokens": 1563,
+       "output_tokens": 1033
+      }
+     ],
+     "sec": 23.02
+    },
+    {
+     "statements": [
+      "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+      "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+      "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+      "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that general financial consumers can withdraw their subscription within 15 days from the date they receive the insurance policy."
+      },
+      {
+       "statement": "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context specifies that contracts where the company supports health status diagnosis are excluded from the right to withdraw the subscription."
+      },
+      {
+       "statement": "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context states that contracts with an insurance period of 90 days or less are excluded from the right to withdraw the subscription."
+      },
+      {
+       "statement": "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context explicitly mentions that contracts concluded by professional financial consumers cannot be withdrawn."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 13.61,
+       "prompt_tokens": 441,
+       "output_tokens": 2469
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.92,
+       "prompt_tokens": 1563,
+       "output_tokens": 1031
+      }
+     ],
+     "sec": 21.92
+    },
+    {
+     "statements": [
+      "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+      "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+      "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+      "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "일반금융소비자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다.",
+       "verdict": 1,
+       "reason": "The context explicitly states that general financial consumers can withdraw their subscription within 15 days from the date they receive the insurance policy."
+      },
+      {
+       "statement": "건강상태 진단 지원 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context specifies that contracts where the company supports health status diagnosis are excluded from the right to withdraw the subscription."
+      },
+      {
+       "statement": "보험기간 90일 이내 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context states that contracts with an insurance period of 90 days or less are excluded from the right to withdraw the subscription."
+      },
+      {
+       "statement": "전문금융소비자가 체결한 계약은 청약 철회 대상에서 제외됩니다.",
+       "verdict": 1,
+       "reason": "The context explicitly mentions that contracts concluded by professional financial consumers cannot be withdrawn."
+      }
+     ],
+     "score": 1.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 13.56,
+       "prompt_tokens": 441,
+       "output_tokens": 2469
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.0,
+       "prompt_tokens": 1563,
+       "output_tokens": 1031
+      }
+     ],
+     "sec": 21.96
+    }
+   ]
+  },
+  {
+   "id": "R059",
+   "variant": "grounded_base",
+   "question": "실속형 가입했는데 청약 철회는 며칠 안에 해야 돼요?",
+   "answer": "메리츠 펫보험의 보통약관 제20조에 따르면, 일반금융소비자인 계약자는 보험증권을 받은 날부터 15일 이내에 청약을 철회할 수 있습니다. 다만, 건강상태 진단을 지원하는 계약, 보험기간이 90일 이내인 계약, 또는 전문금융소비자가 체결한 계약은 청약을 철회할 수 없습니다.\n\n질문자께서 \"실속형 가입\"하셨다고 하셨는데, 이 정보가 일반금융소비자에 해당하는지, 아니면 전문금융소비자에 해당하는지에 따라 청약 철회 가능 기간이 달라질 수 있습니다. 만약 실속형 가입이 일반금융소비자에 해당한다면 15일 이내에 청약 철회가 가능합니다. 그러나 전문금융소비자의 경우, 청약 철회가 제한될 수 있으므로 해당 약관의 전문을 확인하시는 것이 중요합니다.\n\n발췌된 내용만으로는 실속형 가입이 일반금융소비자에 해당하는지, 전문금융소비자에 해당하는지 명확히 알 수 없습니다. 따라서, 귀하의 가입 유형이 일반금융소비자에 해당하는지 전문금융소비자에 해당하는지를 확인하신 후, 해당 유형에 맞는 청약 철회 가능 기간을 적용하셔야 합니다.\n\n만약 귀하의 가입이 일반금융소비자에 해당한다면 15일 이내에 청약 철회가 가능합니다. 전문금융소비자의 경우, 청약 철회가 제한될 수 있으므로 약관을 다시 확인하시기 바랍니다.\n\n**주의사항:**\n- 이 답변은 [발췌 1]에 근거한 일반적인 설명입니다.\n- 실제 청약 철회 가능 여부는 귀하의 계약 조건과 약관의 세부 내용에 따라 달라질 수 있습니다.\n- 정확한 사항은 메리츠",
+   "context_chars": 1018,
+   "runs": [
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.76,
+       "prompt_tokens": 786,
+       "output_tokens": 7404
+      },
+      {
+       "sec": 40.21,
+       "prompt_tokens": 952,
+       "output_tokens": 7238
+      },
+      {
+       "sec": 39.01,
+       "prompt_tokens": 1171,
+       "output_tokens": 7021
+      },
+      {
+       "sec": 37.99,
+       "prompt_tokens": 1439,
+       "output_tokens": 6752
+      }
+     ],
+     "sec": 160.34
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.67,
+       "prompt_tokens": 786,
+       "output_tokens": 7403
+      },
+      {
+       "sec": 39.63,
+       "prompt_tokens": 952,
+       "output_tokens": 7237
+      },
+      {
+       "sec": 38.2,
+       "prompt_tokens": 1171,
+       "output_tokens": 7018
+      },
+      {
+       "sec": 38.86,
+       "prompt_tokens": 1439,
+       "output_tokens": 6752
+      }
+     ],
+     "sec": 160.61
+    },
+    {
+     "statements": null,
+     "verdicts": null,
+     "score": null,
+     "error": "RagasOutputParserException: The output parser failed to parse the output including retries.",
+     "calls_failed": [
+      {
+       "sec": 40.25,
+       "prompt_tokens": 786,
+       "output_tokens": 7406
+      },
+      {
+       "sec": 39.74,
+       "prompt_tokens": 952,
+       "output_tokens": 7240
+      },
+      {
+       "sec": 38.36,
+       "prompt_tokens": 1171,
+       "output_tokens": 7020
+      },
+      {
+       "sec": 37.84,
+       "prompt_tokens": 1439,
+       "output_tokens": 6751
+      }
+     ],
+     "sec": 159.93
+    }
+   ]
+  },
+  {
+   "id": "R059",
+   "variant": "fabricated",
+   "question": "실속형 가입했는데 청약 철회는 며칠 안에 해야 돼요?",
+   "answer": "실속형은 청약 철회가 불가능하며, 가입 후 1년이 지나야 해지할 수 있습니다.",
+   "context_chars": 1018,
+   "runs": [
+    {
+     "statements": [
+      "실속형 상품은 청약 철회가 불가능합니다.",
+      "실속형 상품은 가입 후 1년이 지나야 해지할 수 있습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형 상품은 청약 철회가 불가능합니다.",
+       "verdict": 0,
+       "reason": "The context does not mention '실속형 상품' (practical/value-type products) or any specific rules regarding their withdrawal eligibility."
+      },
+      {
+       "statement": "실속형 상품은 가입 후 1년이 지나야 해지할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context does not mention '실속형 상품' or any requirement regarding a 1-year period for cancellation."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 6.01,
+       "prompt_tokens": 408,
+       "output_tokens": 1000
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.61,
+       "prompt_tokens": 1507,
+       "output_tokens": 855
+      }
+     ],
+     "sec": 14.17
+    },
+    {
+     "statements": [
+      "실속형은 청약 철회가 불가능합니다.",
+      "실속형은 가입 후 1년이 지나야 해지할 수 있습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형은 청약 철회가 불가능합니다.",
+       "verdict": 0,
+       "reason": "The term '실속형' (Practical type) is not mentioned anywhere in the provided context. Therefore, it is impossible to determine if subscription withdrawal is impossible for this specific type."
+      },
+      {
+       "statement": "실속형은 가입 후 1년이 지나야 해지할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context does not mention '실속형' nor does it provide any information regarding a 1-year period for cancellation or termination."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 5.72,
+       "prompt_tokens": 408,
+       "output_tokens": 946
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 5.09,
+       "prompt_tokens": 1505,
+       "output_tokens": 771
+      }
+     ],
+     "sec": 13.66
+    },
+    {
+     "statements": [
+      "실속형은 청약 철회가 불가능합니다.",
+      "실속형은 가입 후 1년이 지나야 해지할 수 있습니다."
+     ],
+     "verdicts": [
+      {
+       "statement": "실속형은 청약 철회가 불가능합니다.",
+       "verdict": 0,
+       "reason": "The term '실속형' (practical/value-type) is not mentioned anywhere in the provided context. Therefore, it is impossible to determine the withdrawal rules for this specific type."
+      },
+      {
+       "statement": "실속형은 가입 후 1년이 지나야 해지할 수 있습니다.",
+       "verdict": 0,
+       "reason": "The context does not mention '실속형' nor does it provide any information regarding a 1-year period for cancellation or termination."
+      }
+     ],
+     "score": 0.0,
+     "error": null,
+     "calls_split": [
+      {
+       "sec": 5.66,
+       "prompt_tokens": 408,
+       "output_tokens": 946
+      }
+     ],
+     "calls_verify": [
+      {
+       "sec": 6.08,
+       "prompt_tokens": 1505,
+       "output_tokens": 951
+      }
+     ],
+     "sec": 14.14
+    }
+   ]
+  }
+ ]
+}
