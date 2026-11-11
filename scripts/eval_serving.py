@@ -31,7 +31,7 @@ from websockets.exceptions import ConnectionClosed
 from app.schemas import Pet
 from app.services import payout
 from data import prompts
-from scripts.verify_cases import REFUSAL_PHRASES
+from data import refusal
 from scripts.verify_modes import AGENT_HEADER, calc_field
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -144,8 +144,8 @@ async def run_script(http: httpx.AsyncClient, base_ws: str, headers: dict, case:
 
 # ----- 판정 -----
 def refused(answer: str) -> bool:
-    a = norm(answer)
-    return any(norm(p) in a for p in REFUSAL_PHRASES) or norm(prompts.NO_ANSWER_TEXT)[:12] in a
+    """거절 판정 — 운영 turns.refused와 같은 함수(data/refusal.py)"""
+    return refusal.refused(answer)
 
 
 def screen_match(text: str, pet: Pet) -> list[str]:

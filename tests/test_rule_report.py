@@ -27,6 +27,15 @@ class RefusalTest(unittest.TestCase):
     def test_same_phrases_as_eval(self):
         self.assertEqual(rule_report.REFUSAL_PHRASES, REFUSAL_PHRASES)
 
+    def test_same_function_as_eval(self):
+        """평가 · 운영 집계 · 턴 로그(turns.refused)가 한 함수를 쓴다 — 어긋날 자리가 없다(data/refusal.py)"""
+        from data import refusal
+        from scripts import eval_serving
+        self.assertIs(rule_report.refused, refusal.refused)
+        self.assertIs(REFUSAL_PHRASES, refusal.REFUSAL_PHRASES)
+        for a in (REFUSE, "인사부서에 문의해 주세요.", "통원 1일 한도는 15만 원입니다.", "약관에  없는 내용", ""):
+            self.assertEqual(eval_serving.refused(a), refusal.refused(a), a)
+
     def test_refused(self):
         self.assertTrue(rule_report.refused(REFUSE))
         self.assertTrue(rule_report.refused("인사부서에 문의해 주세요."))
