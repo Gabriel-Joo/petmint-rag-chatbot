@@ -5,7 +5,9 @@
 | 파일 | 무엇 |
 |---|---|
 | `host/milvus/docker-compose.yml` · `user.yaml` | Milvus standalone + 외부 etcd(2026-11-02 embedded에서 옮김 — 재시작 때 `leader changed` panic). `docker compose -f deploy/host/milvus/docker-compose.yml up -d --wait` |
-| `host/petmint-search.service` | search-service systemd 유닛(재부팅해도 뜬다). 설치 명령은 파일 머리말 |
+| `host/petmint-search.service` | search-service systemd 유닛(재부팅해도 뜬다). 설치 명령은 파일 머리말. 2026-11-11부터 model-service 뒤에 뜬다 — 순서 `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search` |
+
+검색 모델(KURE · 리랭커)은 공용 model-service(systemd `model-service`, 192.168.122.1:8200)에 있다. 그 유닛 원본은 이 리포가 아니라 model-service 저장소(`~/AI_programming/model-service`)에 있다(14번 1-26절).
 
 Milvus는 `127.0.0.1`·`192.168.122.1`(파드)에만, etcd는 호스트에 열지 않는다. 데이터는 `~/volumes/milvus`, `~/volumes/milvus-etcd`.
 

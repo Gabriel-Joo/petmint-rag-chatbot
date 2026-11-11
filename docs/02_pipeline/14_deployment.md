@@ -1,5 +1,5 @@
 > 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-25절). 남은 것은 4절의 한계.
-> search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다.
+> search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다. 검색 모델(KURE · 리랭커)은 2026-11-11부터 공용 model-service(192.168.122.1:8200)에 있다(1-26절).
 
 #### 0. 한 줄 요약
 
@@ -14,7 +14,8 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | 프로세스 | 위치 | 이유 |
 | --- | --- | --- |
 | Ollama | GPU 호스트 | 모델 추론에 GPU |
-| search-service | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✓ 호스트 systemd `petmint-search`(192.168.122.1:8100, 2026-11-02부터 유닛). 코드는 `search_service/` |
+| model-service(공용) | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✓ 호스트 systemd `model-service`(192.168.122.1:8200, 2026-11-11부터). 런슈즈 챗봇도 같이 쓴다. 저장소 `~/AI_programming/model-service`(1-26절) |
+| search-service | 호스트 | BM25 · Milvus 조회 · 정렬. 모델은 model-service를 부른다 — 2026-11-11부터 GPU를 쓰지 않는다. ✓ 호스트 systemd `petmint-search`(192.168.122.1:8100, 2026-11-02부터 유닛). 코드는 `search_service/` |
 | Milvus | 호스트 도커 → Pod 가능 | GPU를 쓰지 않는다. search-service와 함께 판단한다  |
 | MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 |
 | FastAPI + React 빌드물 | Pod | GPU를 쓰지 않는다 |
@@ -474,6 +475,29 @@ petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → 
 | cloudflared | **수동으로 둔다(2026-11-11 사용자 결정).** 클러스터 터널 하나가 공개 주소 7개(petmint · runshoes · argocd · harbor · jenkins · grafana · prometheus)를 모두 낸다. 터널이 깨지면 서비스만 멈추는 게 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)도 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 사람 손을 거치지 않고 그 상태를 만들지 않게, 사람이 Sync를 누르고 롤링을 지켜본다(13번 2-2절, ronanlab-infra `apps/cloudflared/README.md`) |
 | 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` |
 
+#### 1-26. 검색 모델을 공용 model-service로 (2026-11-11, 0e31e94)
+
+KURE-v1 · bge-reranker-v2-m3를 search-service에서 떼어 공용 model-service로 옮겼다(사용자 결정). 런슈즈 챗봇도 같은 model-service를 쓴다. 모델 셋은 그대로이고 도는 자리만 바뀌었다.
+
+| 항목 | 값 |
+| --- | --- |
+| model-service | 독립 저장소 `~/AI_programming/model-service`(28717bc, 원격 없음), systemd `model-service`, 192.168.122.1:8200에만 bind. 유닛 원본은 그 저장소에 있다. 모델 판은 HF 캐시 스냅숏으로 고정(KURE `8b418a58…`, 리랭커 `953dc6f6…`), 유닛에 `HF_HUB_OFFLINE=1` |
+| search-service | `PETMINT_MODEL_URL`이 있으면 model-service를 부르고(`data/model_client.py`), 없으면 예전처럼 로컬에 모델을 올린다(노트북 · 오프라인 스크립트 · 되돌리기). `/health`의 `models`는 model-service 장치를 옮기고 `"model_service"` 키가 붙는다. 전환 뒤 GPU를 쓰지 않는다 |
+| 전환 | model-service 등록 17:34:19 → petmint-search 재시작 17:38:24 정지 · 17:38:25 시작. 원격 모드라 모델을 올리지 않아 끊긴 시간은 약 6초(import 5.3초 + 청크 · BM25 0.1초) |
+| 전후 대조 | `scripts/search_parity.py`, 전환 전 운영(8100) ↔ 전환 뒤 391건 다름 0 — `/search` 258건(회귀 세트 약관 103 + 인사규정 26 × 운영 설정 · 기본 설정, top_k 200이라 리랭커 후보 전부) + `/embed` 133건. 값으로 비교한다(순서 · 필드 · float ==). Milvus가 청크 필드 키 순서를 호출마다 바꿔 바이트 비교는 쓸 수 없다 |
+| 검색 회귀 | 전후 같다(문항별 순위 · 상위 결과가 다른 문항 0). 약관 103: hit@1 80 · hit@3 97 · hit@5 97 · MRR 0.897 · 범위 위반 0. 인사규정 26: 25 · 26 · 26 · 0.981 · 0 |
+| GPU(nvidia-smi) | 전환 전 search-service 6,216MiB. 전환 직후 model-service 3,498MiB 하나(전체 3,537MiB), 대조 부하 뒤 6,408MiB(늘어난 몫은 PyTorch 추론 캐시). 모델 무게는 KURE-v1 fp32 2.12GB · 리랭커 fp16 1.06GB |
+| 되돌리기 | 분리 전 유닛 판은 46454fe의 `deploy/host/petmint-search.service`. 런북은 model-service 저장소 `docs/runbook-cutover.md` |
+
+**재부팅 순서가 한 단계 늘었다.**
+
+- 전: `network → docker · libvirtd → Milvus 대기 → petmint-search`
+- 후: `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search`
+
+model-service는 `After=libvirtd`이고 `ExecStartPost`가 `/health` 200을 기다린다 — "시작됨"이 곧 모델이 올라온 때다. petmint-search는 `After`/`Wants=model-service`(Requires가 아니라 model-service를 재시작해도 따라 내려가지 않는다)이고, `ExecStartPre`가 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다. `TimeoutStartSec=540`.
+
+**실제 재부팅 시험은 하지 않았다(2026-11-11 사용자).** 다음 재부팅 때 확인할 것: 두 유닛이 순서대로 뜨는지, model-service가 늦게 뜨거나 Restart될 때 petmint-search가 기다리는지, virbr0가 늦을 때 bind 실패 뒤 Restart로 회복하는지. 볼 명령은 model-service 런북 8절.
+
 #### 2. 왜 이렇게 했나
 
 #### 2-1. GPU를 쓰는 것은 호스트에 남긴다
@@ -570,7 +594,9 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 #### 4. 남은 한계
 
 - [ ]  **단일 클러스터, 단일 환경이다.** 개발·스테이징·운영을 나누지 않았다. 네임스페이스로 가를 수 있지만 VM 합 36GB(2026-11-10 증설 뒤) 한 대에 다 올리는 것은 무리다
-- [ ]  **GPU 호스트가 단일 장애점이다.** Ollama·search-service·Milvus가 모두 한 대에 있다. 그 머신이 죽으면 Pod가 멀쩡해도 서비스가 안 된다
+- [ ]  **GPU 호스트가 단일 장애점이다.** Ollama·model-service·search-service·Milvus가 모두 한 대에 있다. 그 머신이 죽으면 Pod가 멀쩡해도 서비스가 안 된다
+- [ ]  **model-service가 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다. 전에는 펫퍼민트만 멈췄다(2026-11-11 분리 뒤).** 이때 search-service는 `/search` · `/embed` · `/health`가 503(models "unreachable")이 되고 앱은 `search_unavailable`을 낸다. model-service 없이 search-service를 띄우면 기동이 실패하고 systemd Restart가 다시 시도한다(시험에서 확인)
+- [ ]  **재부팅 순서가 한 단계 늘었는데 실제 재부팅 시험은 하지 않았다(2026-11-11 사용자).** 확인할 것은 1-26절
 - [ ]  **Milvus는 아직 호스트 도커다.** GPU를 쓰지 않으므로 Pod로 옮길 수 있으나, standalone이라도 etcd와 MinIO가 따라붙어 자원을 더 먹는다. search-service와 함께 옮길지 판단한다.
 - [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다
 - [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다
