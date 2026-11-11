@@ -1,4 +1,4 @@
-> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. 남은 것은 ArgoCD 자동 Sync(petmint는 수동, 1-5절)와 4절의 한계.
+> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-25절). 남은 것은 4절의 한계.
 > search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다.
 
 #### 0. 한 줄 요약
@@ -95,7 +95,7 @@ Harbor           이미지를 당겨 Pod 교체
 
 **이미지 태그에 버전을 박는다.** `latest`를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다(10번 8절).
 
-push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋**까지 자동으로 가고, 클러스터 반영은 ArgoCD에서 Sync를 눌러 한다. 매니페스트가 의도대로 들어갔는지 확인한 뒤 자동(`automated`)으로 바꾼다.
+push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋 → 클러스터 반영**까지 자동으로 간다. 반영은 2026-11-10까지 ArgoCD에서 Sync를 눌러 했고, 매니페스트가 의도대로 들어가는 것을 확인한 뒤 2026-11-11 자동(`automated`)으로 바꿨다(1-25절).
 
 ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containerd가 Harbor에서 직접 당기고, 경로는 `/etc/hosts`에 박은 `192.168.122.240`(MetalLB VIP)이다.
 
@@ -181,7 +181,7 @@ ronanlab-infra/
 
 | 항목 | 값 |
 | --- | --- |
-| Sync 방식 | 수동. prune 꺼두고 finalizer 없음 |
+| Sync 방식 | 자동(2026-11-11~, 그 전 수동 — 1-25절). prune·selfHeal 꺼두고 finalizer 없음 |
 | Namespace | ArgoCD 관리에서 제외. CreateNamespace=false |
 | 인증 | deploy key 둘 — argocd-read(읽기), jenkins-write(쓰기) |
 | 매니페스트 수신 | Jenkinsfile 에서 `sh 'git clone'` 으로 받는다 |
@@ -200,7 +200,7 @@ ronanlab-infra/
 
 | 루트 설정 | 값 · 이유 |
 | --- | --- |
-| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared · petmint 수동, runshoes 자동) |
+| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared 수동, runshoes · petmint 자동 — petmint는 2026-11-11부터) |
 | Sync | 자동, prune 끔(폴더를 지워도 Application 이 남는다), selfHeal 끔, finalizer 없음(루트를 지워도 자식 · 리소스가 남는다) |
 | 자식 syncPolicy | 덮지 않는다(ignoreDifferences + RespectIgnoreDifferences) — 자동 Sync 켜고 끄기는 지금처럼 클러스터에서 patch 가 스위치다. 그러지 않으면 Jenkins 태그 커밋 하나에 루트가 다시 Sync 해 스키마 배포 중 꺼 둔 자동 Sync 를 도로 켠다 |
 | monitoring | app.yaml 자리만. 루트 `exclude: 'monitoring/app.yaml'` 한 줄을 지우면 만들어진다 |
@@ -459,6 +459,19 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
 
 - 펫퍼민트 Sync를 두 번 했다(Replica 추가 72d0716, 배치 고정 684774a) — 사람 대신 인프라 세션이 했고, 그 Sync마다 초기화 Job이 다시 돌았다(멱등)
 
+
+#### 1-25. 자동 Sync (2026-11-11)
+
+petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → Jenkins 빌드 → 태그 커밋까지 오면 ArgoCD가 Sync를 누르지 않아도 반영한다. 2026-10-16부터 11-10까지는 수동으로 두고 반영 결과를 눈으로 확인했다.
+
+| 항목 | 값 |
+| --- | --- |
+| 설정 | `automated: {prune: false, selfHeal: false}` — runshoes와 같다. git에서 지운 리소스는 남고, kubectl로 바꾼 것을 되돌리지 않는다 |
+| 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-10절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 |
+| 켠 때 | 켜기 전 Synced(git 최신 `cd4ee1f`과 같음) — 켜는 순간 반영될 것이 없었다. 켠 뒤 Synced · Healthy, 앱 Pod 재시작 없음 |
+| 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(4절 해결 항목) 배포가 일어나지 않는다 |
+| 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` |
+
 #### 2. 왜 이렇게 했나
 
 #### 2-1. GPU를 쓰는 것은 호스트에 남긴다
@@ -525,7 +538,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 **deploy key 를 읽기·쓰기로 나눈다.** 토큰(fine-grained PAT)은 만료일이 있어 만료되면 배포가 **조용히 멈춘다** — 2-4절의 "조용한 실패를 만들지 않는다"와 어긋난다. 읽기와 쓰기를 나누는 것은 Harbor robot 을 pull 전용과 push 용으로 나눈 것과 같은 논리다. ArgoCD 키가 새도 저장소를 고칠 수 없다.
 
-**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다. 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절).
+**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다(2026-11-11 바꿨다, 1-25절). 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절).
 
 넘겨받는 순간은 안전했다. 처음 상태는 OutOfSync 였고, 14개 리소스의 diff 가 모두 ArgoCD 추적 라벨 하나뿐이었다. Sync 뒤에도 앱 Pod 와 mysql-0 의 UID 가 같아 교체되지 않았다.
 
