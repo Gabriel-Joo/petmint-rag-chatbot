@@ -3,7 +3,8 @@
 > - 앱 `/metrics`가 없어 HTTP 요청 수 · 에러율은 **ingress-nginx 메트릭**(같은 날 켬)에서, 질문 · 답 지표는 **턴 로그(DB Replica)**를 Grafana MySQL 데이터소스로 읽는다.
 >   읽기 계정 `grafana_ro`는 컬럼 단위 SELECT만 — turns(분류 · 시간 · 상태) · sessions(mode) · feedback(rating). 질문 · 답 · 코멘트는 권한이 없다(시험: ERROR 1143)
 > - 대시보드 `petmint — 운영`: Pod · 재시작 · 요청 · 에러율 / 모드별 · 시간대별 질문 / code_rule · 코드 답 vs 모델 답 · 👍👎 · 응답 시간 p50 · p90 / GPU · VRAM · Ollama 모델
-> - **거절률 · 검색 지연은 데이터가 없다** — 턴 로그에 칸이 없다(앱 계측 필요, 대시보드에 그렇게 적었다). GPU exporter(호스트 컨테이너)는 아직 띄우지 않았다. Milvus 9091은 그대로 닿지 않는다(4절)
+> - **거절률 · 검색 지연**은 2026-11-11 앱이 턴마다 `turns.refused` · `turns.search_ms`를 적게 했다(마이그레이션 0009, 12번 1-1절). 거절 판정은 평가와 같은 함수(`data/refusal.py`). 그 전 턴은 NULL이라 패널에 나오지 않는다. GPU exporter(호스트 컨테이너)는 아직 띄우지 않았다
+> - **Milvus 9091**: 2026-11-11 호스트 compose에서 `192.168.122.1:9091`에도 게시(19530과 같은 방식, 컨테이너 재생성 8초) → Prometheus `up{job="milvus"}` = 1. etcd 2379는 그대로 닫혀 있다
 > - Ollama 응답은 json-exporter가 `/api/ps`를 읽는 것으로 본다(blackbox-exporter 대신 — 올라간 모델까지 보인다)
 
 ### 0. 목표
@@ -115,6 +116,8 @@ ronanlab-infra/
 - [ ]  Ollama·search-service 응답 여부는 blackbox-exporter가 없어 보지 못한다
 - [ ]  앱 지표가 없다 — petmint `/metrics`부터 붙여야 1절 앱 항목이 들어온다
 - [ ]  알림이 없다 — Alertmanager는 알림 설계 뒤
+- [ ]  **Milvus 9091에 인증 없는 운영용 경로가 있다.** 지표(`/metrics`)·`/healthz` 말고도 `/debug/pprof`(프로파일)·`/log/level`(로그 수준 조회·변경)이 응답한다(2026-11-11 확인, 200). 지표를 긁으려고 VM 사설망(192.168.122.0/24)에도 열었으므로 클러스터 Pod에서 닿는다. 19530(벡터 조회·쓰기)이 이미 같은 망에 인증 없이 열려 있어 새로 생기는 위험은 작다고 판단했다(사용자 동의 2026-11-11). LAN에는 열지 않는다. 좁히려면 호스트에서 지표 경로만 넘기는 프록시를 두거나 NetworkPolicy로 Prometheus만 나가게 한다
+- [ ]  거절률은 문구 판정이다 — 거절 문구 없이 얼버무린 답은 거절로 세지 않고, 거절 문구가 들어간 부분 답은 거절로 센다(평가와 같은 한계)
 
 ---
 
@@ -131,7 +134,7 @@ ronanlab-infra/
 - [ ]  Pod 전부 Running·Ready: prometheus-0, grafana, kube-state-metrics, node-exporter ×4(m-k8s 포함)
 - [ ]  PVC `data-prometheus-0`가 Bound(local-path)
 - [ ]  Prometheus Status → Targets: node-exporter 4/4, kubelet-cadvisor 4/4, kube-state-metrics 1/1, prometheus 1/1 모두 UP
-- [ ]  milvus 대상이 UP(호스트 :9091에 닿는가)
+- [x]  milvus 대상이 UP(호스트 :9091에 닿는가) — 2026-11-11, 게시 주소를 192.168.122.1로 더한 뒤
 - [ ]  Grafana가 뜨고(port-forward 3000) admin으로 로그인되는가
 - [ ]  Grafana 데이터소스 Prometheus가 연결 성공(Save & test)
 
