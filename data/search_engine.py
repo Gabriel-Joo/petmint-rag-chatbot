@@ -12,7 +12,7 @@ import torch
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
 
-from data import query_expansion
+from data import model_client, query_expansion
 from data.milvus_conn import ResilientMilvusClient
 from data.search_scope import SearchScope
 
@@ -73,12 +73,21 @@ def build_embedding_text(c: dict) -> str:
 class SearchEngine:
     """한 번만 초기화해서(모델 로드), 여러 번 검색에 재사용하는 엔진 객체"""
 
-    def __init__(self):
-        print("임베딩 모델 로드 중...")
-        self.embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-        print("리랭커 로드 중...")
-        self.reranker = CrossEncoder(RERANKER_MODEL_NAME, max_length=RERANKER_MAX_LENGTH,
-                                     model_kwargs={"torch_dtype": torch.float16})
+    def __init__(self, models_url: str | None = None):
+        """models_url이 없으면 두 모델을 이 프로세스의 GPU에 올린다(노트북 · 오프라인 스크립트 · 되돌리기 경로).
+        있으면 model-service(공용 임베딩 · 리랭커, data/model_client.py)를 부른다 — search_service가 PETMINT_MODEL_URL로 넘긴다.
+        어느 쪽이든 search()는 같다(encode · predict 두 자리만 모델을 부른다)."""
+        self.models_url = models_url
+        if models_url:
+            self._check_remote(models_url)
+            self.embedding_model = model_client.RemoteEmbedder(models_url)
+            self.reranker = model_client.RemoteReranker(models_url)
+        else:
+            print("임베딩 모델 로드 중...")
+            self.embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+            print("리랭커 로드 중...")
+            self.reranker = CrossEncoder(RERANKER_MODEL_NAME, max_length=RERANKER_MAX_LENGTH,
+                                         model_kwargs={"torch_dtype": torch.float16})
         self.client = ResilientMilvusClient(MILVUS_URI)   # 연결이 끊겨도 멈추지 않고 다시 붙는다(data/milvus_conn.py)
 
         self.chunks = {}
@@ -91,6 +100,18 @@ class SearchEngine:
             self.chunks[species] = chunks
             self.bm25_index[species] = self._build_bm25(chunks)
         print("검색 엔진 초기화 완료")
+
+    @staticmethod
+    def _check_remote(models_url: str):
+        """model-service가 이 파일의 상수와 같은 모델 · 정밀도로 떠 있는지 — 다르면 검색 결과가 달라지므로 뜨지 않는다.
+        닿지 않으면 ModelServiceError(기동 실패 → systemd Restart가 다시 띄운다)"""
+        h = model_client.health(models_url)
+        emb, rr = h["models"]["embedding"], h["models"]["reranker"]
+        want = {"embedding": (EMBEDDING_MODEL_NAME, "float32"), "reranker": (RERANKER_MODEL_NAME, "float16")}
+        got = {"embedding": (emb["name"], emb["dtype"]), "reranker": (rr["name"], rr["dtype"])}
+        if got != want or rr.get("max_length") != RERANKER_MAX_LENGTH:
+            raise RuntimeError(f"model-service 모델이 다르다: {got} max_length={rr.get('max_length')} — 기대 {want} {RERANKER_MAX_LENGTH}")
+        print(f"model-service 사용 — {models_url} (ok={h['ok']})")
 
     def _load_chunks(self, species: str, variant: str | None = None) -> list[dict]:
         with open(chunk_file(species, variant), "r", encoding="utf-8") as f:
