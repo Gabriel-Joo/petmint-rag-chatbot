@@ -198,11 +198,11 @@ CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cro
 **복구 절차** — 운영 DB 전체를 백업 시점으로 되돌린다. 아래 `$K`는 위와 같다.
 
 1. **고를 파일을 확인한다.** `cd ~/backup/mysql/petmint && sha256sum -c petmint-<시각>.sql.gz.sha256`, `zcat petmint-<시각>.sql.gz | tail -1`이 `-- Dump completed`
-2. **앱을 멈춘다.** `$K 'kubectl -n petmint scale deploy/petmint-app --replicas=0'`. 복구 중에 앱이 쓰면 테이블이 섞인다. ArgoCD가 OutOfSync로 잡는 것은 정상이다 — 6에서 Sync하면 git 값(2)으로 돌아온다
+2. **자동 Sync를 끄고 앱을 멈춘다.** 자동 Sync(2026-11-11~)가 켜져 있으면 복구 중에 들어온 커밋이 앱을 다시 띄우고 초기화 Job을 돌린다. 끄는 명령은 ronanlab-infra `apps/petmint/README.md`. 그다음 `$K 'kubectl -n petmint scale deploy/petmint-app --replicas=0'`. 복구 중에 앱이 쓰면 테이블이 섞인다. ArgoCD가 OutOfSync로 잡는 것은 정상이다 — 6에서 Sync하면 git 값(2)으로 돌아온다
 3. **지금 상태를 먼저 뜬다.** 위 "수동으로 뜨기"를 그대로 한다(파일 이름에 `-before-restore`를 붙여 두면 보존 정리에서 헷갈리지 않는다). 복구를 되돌릴 유일한 길이다
 4. **두 데이터베이스를 지운다.** `$K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" mysql -uroot -e \"DROP DATABASE petmint; DROP DATABASE insurance_core\""'`. 덤프는 테이블마다 `DROP TABLE IF EXISTS`만 하므로, 지우지 않으면 백업 뒤에 생긴 테이블이 남고 `schema_migrations`와 어긋난다. 계정 권한(`mysql` DB)은 데이터베이스를 지워도 남는다
 5. **넣는다.** `zcat petmint-<시각>.sql.gz | $K 'kubectl -n petmint exec -i mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" exec mysql -uroot"'`
-6. **ArgoCD에서 petmint를 Sync한다.** 초기화 Job이 돈다 — `db.bootstrap`이 계정·권한을 맞추고, `db.migrate`가 백업 뒤에 생긴 마이그레이션만 적용하고, 시드는 비어 있지 않으므로 건너뛴다. Deployment가 replicas 2로 돌아온다
+6. **ArgoCD에서 petmint를 Sync한다.** 초기화 Job이 돈다 — `db.bootstrap`이 계정·권한을 맞추고, `db.migrate`가 백업 뒤에 생긴 마이그레이션만 적용하고, 시드는 비어 있지 않으므로 건너뛴다. Deployment가 replicas 2로 돌아온다. 확인(7)이 끝나면 자동 Sync를 다시 켠다
 7. **확인한다.** 테이블별 행 수가 백업 시점과 같은지(아래 복구 시험과 같은 방법), 화면에서 지난 대화·고객 조회가 열리는지, 로그인이 되는지
 
 **로컬 개발 DB(호스트 도커 `mysql`, 127.0.0.1:3306)는 주 1회 뜬다.** 클러스터에서 닿지 않으므로 CronJob이 아니라 호스트 사용자 crontab이 `deploy/host/dev-mysql-backup.sh`를 일요일 05:00에 돌린다(FOREMAN 백업 04:30과 겹치지 않게). 같은 두 데이터베이스, 같은 옵션이고, `~/backup/mysql/petmint-dev/`에 최신 4개를 남긴다(로그 `backup.log`). 평가·측정 기록이 쌓여 운영보다 크다 — `petmint` 198MB, 백업 22MB, 4초(2026-11-10). 운영 백업과 디렉터리를 나눈 것은 CronJob의 보존 정리가 `petmint-*.sql.gz`를 지우기 때문이다. 복구는 위 4·5를 `docker exec -i mysql …`로 한다(앱을 멈추고, 지금 상태를 먼저 뜬다).
@@ -303,5 +303,5 @@ CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cro
 - [ ]  취소된 턴이 `status`로 구분되어 08 평가 입력에서 빠지는가
 - [ ]  약관 개정 후에도 과거 턴의 계산 카드가 당시 금액으로 보이는가
 - [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19)
-- [ ]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가(호스트 NFS 설정·Sync 뒤)
+- [x]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가 — 2026-11-11 03:30:00 KST `petmint-20261111-033000.sql.gz`(135,942바이트, 3초). sha256 OK, 끝 줄 `Dump completed`, 소유자 uid 1000(all_squash), 권한 640
 - [ ]  복구 절차 1~7을 운영 DB에 그대로 해 본 적이 있는가(지금은 임시 컨테이너 시험만)
