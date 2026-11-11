@@ -1,4 +1,4 @@
-> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 그 뒤 0005 후속 판별·0006 로그인·0007 상담원 이메일 옮기기·0008 code_rule. 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료.
+> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 그 뒤 0005 후속 판별·0006 로그인·0007 상담원 이메일 옮기기·0008 code_rule·0009 refused·search_ms(2026-11-11). 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료.
 > 검색 결과·계산 카드·되묻기를 턴 로그에 쓰는 경로는 search-service 연결(2026-10-21) 뒤 운영에서 돈다.
 > 
 
@@ -50,7 +50,9 @@ sessions (상담 1건)
 | clarified | 되묻기가 발동했는지(09번 4절) — 등급 되묻기, 그리고 코드가 되물은 턴(금액·병명 되묻기, 날짜별 금액 칸) |
 | code_rule | 답한 코드 규칙(`code_rules.Rule.key` 14개 또는 `hr_personal`). NULL이면 모델이 답했다. 2026-10-29 `0008_turn_code_rule` — 그 전 턴도 NULL이라 규칙별 집계(`db.rule_report`, 16번 5절)는 적용 시각 이후만 본다 |
 | model / prompt_version / index_version | 재현에 필요한 버전 |
+| refused | 답이 거절 문구인가(0/1). 판정은 `data/refusal.refused` — 평가(`scripts/eval_serving`·`verify_modes`)와 운영 집계(`db.rule_report`)가 같은 함수를 쓴다. `status=ok` 턴만 채우고 cancelled·error는 NULL. 코드 답 턴도 판정한다. 2026-11-11 `0009_turn_refused_search_ms` — 그 전 턴은 NULL이고 다시 채우지 않는다. Grafana 「거절률」이 읽는다(15번) |
 | first_token_ms / latency_ms / created_at | 첫 토큰까지의 시간, 전체 지연 시간, 시각. `first_token_ms`는 모델 스왑 지연 측정에 쓴다(09번 7-3절) |
+| search_ms | 그 턴에서 search-service(`/search`·`/embed`)를 기다린 시간 합(ms). 부르지 않은 턴(일반 모드, 사내규정 개인화)은 NULL. **업무특화 코드 답 턴도 값이 있다** — 코드 답 규칙은 검색 결과를 받은 뒤에 돈다(`answer._generate`). 실패한 호출도 기다린 시간은 더한다. 턴마다 `answer.TimedRetriever`가 공용 리트리버를 감싸 다른 턴과 섞이지 않는다. 2026-11-11 `0009`, Grafana 「검색 지연」이 읽는다 |
 | status | `ok` / `cancelled` / `error`. 08 평가가 미완성 턴을 걸러낼 수 있어야 한다 |
 | payout | 계산 카드 결과(JSON, `CalcResult` — 의료비·법률비용·한도·날짜별 입력). 카드가 없는 턴은 NULL |
 

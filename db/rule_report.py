@@ -26,22 +26,13 @@ from app.db import make_engine
 from app.services import hr_personal
 from app.services.lexicon import (AMOUNT_UPSELL, COVERAGE_Q_STRICT, EVENT_HAPPENED, EXEMPT_FACT, INJURY,
                                   NO_NAME_FILLER)
-from data import prompts
+from data import refusal
 from db.conn import app_settings
 
 MIGRATION = "0008_turn_code_rule.sql"
-# scripts/verify_cases.REFUSAL_PHRASES와 같아야 한다(tests/test_rule_report가 확인) — scripts/는 이미지에 없어 옮겨 적는다
-REFUSAL_PHRASES = ("확인되지 않", "확인되지않", "명시되어 있지 않", "명시되어있지않", "나와 있지 않", "규정에 없", "약관에 없",
-                   "찾을 수 없", "포함되어 있지 않", "언급되어 있지 않", "인사부서에 확인", "인사부서에 문의")
-
-
-def _norm(t: str | None) -> str:
-    return re.sub(r"[\s,]", "", t or "")
-
-
-def refused(answer: str | None) -> bool:
-    a = _norm(answer)
-    return any(_norm(p) in a for p in REFUSAL_PHRASES) or _norm(prompts.NO_ANSWER_TEXT)[:12] in a
+# 거절 판정은 평가와 같은 함수(data/refusal.py — scripts/verify_cases · eval_serving도 이것을 쓴다)
+REFUSAL_PHRASES = refusal.REFUSAL_PHRASES
+refused = refusal.refused
 
 
 def biz_miss(question: str, pet_name: str | None) -> str | None:

@@ -6,7 +6,7 @@
 #
 # - etcd를 따로 띄우고, Milvus는 etcd /health가 true(리더 있음)일 때까지 기다린 뒤 시작한다(command의 until 루프).
 #   도커는 데몬 재시작(재부팅) 때 depends_on을 따르지 않고 한꺼번에 띄우므로 순서는 이 루프가 보장한다.
-# - etcd 포트는 호스트에 열지 않는다(인증 없음). Milvus는 호스트 쪽 두 주소에만 연다:
+# - etcd 포트는 호스트에 열지 않는다(인증 없음, 클러스터가 쓸 일도 없다). Milvus(19530 · 지표 9091)는 호스트 쪽 두 주소에만 연다:
 #     127.0.0.1      search-service(호스트) · 노트북 · 로컬 개발
 #     192.168.122.1  클러스터 파드(VM 사설망의 게이트웨이, ronanlab-infra apps/petmint/app/configmap.yaml PETMINT_MILVUS_URL)
 #   LAN(192.168.0.x)에는 열지 않는다.
@@ -69,6 +69,7 @@ services:
       - 127.0.0.1:${MILVUS_PORT:-19530}:19530
       - ${MILVUS_VM_BIND:-192.168.122.1}:${MILVUS_PORT:-19530}:19530
       - 127.0.0.1:${MILVUS_METRICS_PORT:-9091}:9091
+      - ${MILVUS_VM_BIND:-192.168.122.1}:${MILVUS_METRICS_PORT:-9091}:9091   # 클러스터 Prometheus(ronanlab-infra apps/monitoring, job milvus) — 2026-11-11
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9091/healthz"]
       interval: 30s
