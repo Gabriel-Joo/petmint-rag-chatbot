@@ -470,7 +470,8 @@ petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → 
 | 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-10절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 |
 | 켠 때 | 켜기 전 Synced(git 최신 `cd4ee1f`과 같음) — 켜는 순간 반영될 것이 없었다. 켠 뒤 Synced · Healthy, 앱 Pod 재시작 없음 |
 | 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(4절 해결 항목) 배포가 일어나지 않는다 |
-| monitoring | 같은 날 같은 설정으로 자동 Sync를 켰다 — petmint가 자동인데 대시보드만 수동인 것은 맞지 않고, 대시보드는 깨져도 서비스에 영향이 없고 되돌리기 쉽다. 켤 때 밀려 있던 대시보드 ConfigMap 하나가 바로 반영됐다. cloudflared만 수동으로 남는다 |
+| monitoring | 같은 날 같은 설정으로 자동 Sync를 켰다 — petmint가 자동인데 대시보드만 수동인 것은 맞지 않고, 대시보드는 깨져도 서비스에 영향이 없고 되돌리기 쉽다. 켤 때 밀려 있던 대시보드 ConfigMap 하나가 바로 반영됐다 |
+| cloudflared | **수동으로 둔다(2026-11-11 사용자 결정).** 클러스터 터널 하나가 공개 주소 7개(petmint · runshoes · argocd · harbor · jenkins · grafana · prometheus)를 모두 낸다. 터널이 깨지면 서비스만 멈추는 게 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)도 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 사람 손을 거치지 않고 그 상태를 만들지 않게, 사람이 Sync를 누르고 롤링을 지켜본다(13번 2-2절, ronanlab-infra `apps/cloudflared/README.md`) |
 | 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` |
 
 #### 2. 왜 이렇게 했나
