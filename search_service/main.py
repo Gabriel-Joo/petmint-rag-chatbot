@@ -9,10 +9,14 @@ search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 7
   POST /embed   {texts} → {vectors} — KURE 문장 임베딩(정규화). 앱의 금액 되묻기 판별(app/services/intent.py)이 쓴다
   GET  /health  모델이 올라왔는지(장치), Milvus에 닿는지, 코퍼스별 컬렉션이 있는지
 
-기동할 때 KURE·리랭커를 올려 상주시킨다(요청마다 올리면 느리다). 16GB 하나를 Ollama와 나눠 쓰므로
-추론은 락으로 한 번에 하나씩만 한다 — worker도 1개(모델이 프로세스 안에 있다).
+모델 — PETMINT_MODEL_URL이 있으면 공용 model-service(~/AI_programming/model-service, 192.168.122.1:8200)를 부르고
+이 프로세스는 GPU를 쓰지 않는다. 런슈즈 챗봇도 같은 model-service를 쓴다(모델은 GPU에 한 벌). /health의 models는
+model-service가 알려 준 장치를 옮긴다. model-service에 닿지 않으면 /search · /embed는 503, 기동은 실패(systemd Restart).
+없으면 예전처럼 KURE·리랭커를 이 프로세스에 올려 상주시킨다 — 되돌리기 경로다.
+16GB 하나를 Ollama와 나눠 쓰므로 추론은 락으로 한 번에 하나씩만 한다 — worker도 1개.
 
 실행(리포 루트, llm_env): python -m search_service.main
+  PETMINT_MODEL_URL(없으면 모델을 이 프로세스에 올린다)
   PETMINT_SEARCH_HOST(기본 192.168.122.1 — VM 사설망의 호스트 쪽 주소, 14번 1-4절) / PETMINT_SEARCH_PORT(기본 8100)
 """
 
@@ -27,18 +31,21 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from pymilvus.exceptions import MilvusException
 
+from data import model_client
+from data.model_client import ModelServiceError
 from data.search_engine import COLLECTION_NAMES, SearchEngine
 from data.search_scope import SearchScope
 
 HOST = os.environ.get("PETMINT_SEARCH_HOST", "192.168.122.1")
 PORT = int(os.environ.get("PETMINT_SEARCH_PORT", "8100"))
+MODEL_URL = os.environ.get("PETMINT_MODEL_URL") or None
 
 _gpu_lock = threading.Lock()   # 임베딩·리랭커 추론을 한 번에 하나씩. 핸들러가 동기라 스레드풀에서 돈다 → threading.Lock
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.engine = SearchEngine()   # 모델 로드·청크·BM25 — 끝나야 포트를 연다
+    app.state.engine = SearchEngine(models_url=MODEL_URL)   # 모델(로컬 로드 또는 model-service 확인)·청크·BM25 — 끝나야 포트를 연다
     yield
 
 
@@ -71,6 +78,8 @@ def search(req: SearchRequest) -> list[dict]:
                                  variant=req.variant, pool_k=req.pool_k, expand_dict=req.expand_dict)
     except MilvusException as e:                     # Milvus가 내려갔거나 컬렉션이 없다(색인 전 코퍼스)
         raise HTTPException(503, f"Milvus: {e}")
+    except ModelServiceError as e:                   # model-service가 내려갔다(원격 모드)
+        raise HTTPException(503, f"model-service: {e}")
     except FileNotFoundError as e:                   # 없는 variant
         raise HTTPException(422, f"청크 묶음 없음: {e}")
 
@@ -83,15 +92,25 @@ class EmbedRequest(BaseModel):
 def embed(req: EmbedRequest) -> dict:
     """문장 임베딩(KURE, 정규화) — 검색과 같은 모델. 질문끼리 비교할 때 쓴다(청크 머리말을 붙이지 않은 원문)"""
     engine: SearchEngine = app.state.engine
-    with _gpu_lock:
-        vectors = engine.embedding_model.encode(req.texts, normalize_embeddings=True)
+    try:
+        with _gpu_lock:
+            vectors = engine.embedding_model.encode(req.texts, normalize_embeddings=True)
+    except ModelServiceError as e:
+        raise HTTPException(503, f"model-service: {e}")
     return {"vectors": [v.tolist() for v in vectors]}
 
 
 @app.get("/health")
 def health():
     engine: SearchEngine = app.state.engine
-    models = {"embedding": str(engine.embedding_model.device), "reranker": str(engine.reranker.device)}
+    if engine.models_url:                            # 원격 — 모델 상태는 model-service만 안다. 그 응답의 장치를 옮긴다
+        try:
+            m = model_client.health(engine.models_url)["models"]
+            models = {"embedding": m["embedding"]["device"], "reranker": m["reranker"]["device"]}
+        except (ModelServiceError, KeyError, TypeError):
+            models = {"embedding": "unreachable", "reranker": "unreachable"}
+    else:
+        models = {"embedding": str(engine.embedding_model.device), "reranker": str(engine.reranker.device)}
     try:
         collections = set(engine.client.list_collections())
         milvus = True
@@ -100,7 +119,8 @@ def health():
     corpora = {species: COLLECTION_NAMES[species] in collections for species in engine.chunks}
     # 장치가 cpu면 GPU에 못 올라간 것(지연이 크게 는다) — 실패로 본다. 색인 전 코퍼스(인사규정)는 corpora에만 드러낸다
     ok = milvus and all(d.startswith("cuda") for d in models.values())
-    return JSONResponse({"ok": ok, "models": models, "milvus": milvus, "corpora": corpora},
+    return JSONResponse({"ok": ok, "models": models, "milvus": milvus, "corpora": corpora}
+                        | ({"model_service": engine.models_url} if engine.models_url else {}),
                         status_code=200 if ok else 503)
 
 

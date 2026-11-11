@@ -1,4 +1,7 @@
-# search-service — GPU 호스트에서 KURE·리랭커·Milvus 검색을 HTTP로 낸다(search_service/main.py, 192.168.122.1:8100).
+# search-service — GPU 호스트에서 하이브리드 검색(BM25 · Milvus · 리랭커 정렬)을 HTTP로 낸다(search_service/main.py, 192.168.122.1:8100).
+# 모델(KURE · 리랭커)은 공용 model-service(~/AI_programming/model-service, 192.168.122.1:8200 — 런슈즈와 함께 쓴다)를 부른다.
+# 이 프로세스는 GPU를 쓰지 않는다. 되돌리기: 분리 전 판(커밋 46454fe의 이 파일)을 cp — PETMINT_MODEL_URL이 없으면 예전처럼
+# 두 모델을 이 프로세스에 올린다. 줄만 지우면 model-service 대기(ExecStartPre)가 남아 model-service가 죽었을 때 뜨지 못한다.
 # 2026-11-02까지는 손으로 띄운 프로세스라 재부팅하면 사라졌다. 시스템 유닛으로 둔다.
 #
 # 설치(sudo):
@@ -6,15 +9,18 @@
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now petmint-search
 #
-# 순서: docker(milvus·ollama 컨테이너)와 libvirtd(192.168.122.1을 가진 virbr0) 뒤에 뜬다.
+# 순서: network → docker(milvus·ollama 컨테이너) · libvirtd(192.168.122.1을 가진 virbr0) → model-service → Milvus 대기 → 이 유닛.
+# After=model-service.service — model-service는 ExecStartPost로 /health 200을 기다리므로 "시작됨"이 곧 모델이 올라온 때다.
+# Wants(Requires 아님) — model-service를 재시작해도 이 유닛은 내려가지 않는다(그동안 /search는 503).
+# model-service가 실패 상태로 남아 있으면 After가 기다려 주지 않는다 → ExecStartPre 첫 줄이 /health를 최대 240초 기다린다.
 # After=docker.service는 dockerd가 준비된 시점까지만 기다리고 컨테이너는 보지 않는다 — ExecStartPre가 Milvus
 # healthz(127.0.0.1:9091)를 최대 240초 기다린다. 넘으면 실패로 끝나고 Restart가 15초 뒤 다시 시도한다(무한 대기 없음).
 # 기다린 뒤에도 virbr0가 늦거나 Milvus 연결이 실패하면 기동이 실패로 끝나고 같은 Restart가 다시 띄운다.
 
 [Unit]
-Description=petmint search-service (KURE + reranker + Milvus, :8100)
-After=network-online.target docker.service libvirtd.service
-Wants=network-online.target docker.service libvirtd.service
+Description=petmint search-service (BM25 + Milvus + rerank via model-service, :8100)
+After=network-online.target docker.service libvirtd.service model-service.service
+Wants=network-online.target docker.service libvirtd.service model-service.service
 
 [Service]
 Type=simple
@@ -24,6 +30,9 @@ WorkingDirectory=/home/kopo17/AI_programming/petmint-rag-chatbot
 Environment=VIRTUAL_ENV=/home/kopo17/llm_env
 Environment=PATH=/home/kopo17/llm_env/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=PYTHONUNBUFFERED=1
+Environment=PETMINT_MODEL_URL=http://192.168.122.1:8200
+# model-service가 두 모델을 올렸을 때까지 기다린다(보통은 After로 이미 떠 있어 바로 지나간다)
+ExecStartPre=/usr/bin/timeout 240 /bin/sh -c 'until /usr/bin/curl -sf -m 2 -o /dev/null http://192.168.122.1:8200/health; do sleep 2; done'
 # Milvus가 뜰 때까지 기다린다(deploy/host/milvus — etcd 리더를 기다린 뒤 Milvus가 뜨므로 healthz면 둘 다 준비됨)
 ExecStartPre=/usr/bin/timeout 240 /bin/sh -c 'until /usr/bin/curl -sf -m 2 -o /dev/null http://127.0.0.1:9091/healthz; do sleep 2; done'
 ExecStart=/home/kopo17/llm_env/bin/python -m search_service.main
@@ -31,8 +40,9 @@ StandardOutput=append:/home/kopo17/AI_programming/petmint-rag-chatbot/logs/searc
 StandardError=append:/home/kopo17/AI_programming/petmint-rag-chatbot/logs/search_service.log
 Restart=on-failure
 RestartSec=15
-# ExecStartPre(Milvus 대기 최대 240초) + 모델 두 개를 GPU에 올리는 30초 안팎 — 넉넉히
-TimeoutStartSec=360
+# ExecStartPre(model-service 대기 최대 240초 + Milvus 대기 최대 240초) + 청크 · BM25 몇 초 — 넉넉히
+# (되돌리기로 모델을 이 프로세스에 올리면 30초 안팎이 더 든다)
+TimeoutStartSec=540
 
 [Install]
 WantedBy=multi-user.target
