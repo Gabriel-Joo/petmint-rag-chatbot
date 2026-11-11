@@ -56,6 +56,7 @@
 | Milvus | 호스트 `192.168.122.1:9091/metrics`를 긁어 `up`만 남긴다(내부 지표는 버림) | △ 설정만. 2026-11-02부터 9091은 `127.0.0.1`에만 열려 있어 지금 설정으로는 닿지 않는다 — 적용 전에 게시 주소를 정한다 |
 | Ollama | `/metrics`가 없다 — blackbox-exporter로 `GET /api/version` 프로브가 필요하다 | △ 구성 없음 |
 | search-service | `GET /health`(ok 필드) — blackbox-exporter 또는 search-service에 `/metrics` 추가 | △ 구성 없음(search-service는 호스트 `petmint-search`로 돈다) |
+| model-service(공용) | `GET http://192.168.122.1:8200/health` — blackbox-exporter. 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다(14번 4절). search-service `/health`도 model-service에 닿지 않으면 503이라 간접으로는 보인다 | △ 구성 없음(2026-11-11 분리 뒤, search-service와 같은 상태) |
 
 ---
 
@@ -114,7 +115,7 @@ ronanlab-infra/
 
 - [ ]  Grafana 대시보드가 emptyDir에 있다 — 대시보드 ConfigMap을 만들기 전까지 UI에서 만든 것은 재시작하면 사라진다
 - [ ]  Prometheus가 한 대다 — PV가 묶인 노드를 비우면(drain) Prometheus도 그동안 멈춘다
-- [ ]  Ollama·search-service 응답 여부는 blackbox-exporter가 없어 보지 못한다
+- [ ]  Ollama·search-service·model-service 응답 여부는 blackbox-exporter가 없어 보지 못한다
 - [ ]  앱 지표가 없다 — petmint `/metrics`부터 붙여야 1절 앱 항목이 들어온다
 - [ ]  알림이 없다 — Alertmanager는 알림 설계 뒤
 - [ ]  **Milvus 9091에 인증 없는 운영용 경로가 있다.** 지표(`/metrics`)·`/healthz` 말고도 `/debug/pprof`(프로파일)·`/log/level`(로그 수준 조회·변경)이 응답한다(2026-11-11 확인, 200). 지표를 긁으려고 VM 사설망(192.168.122.0/24)에도 열었으므로 클러스터 Pod에서 닿는다. 19530(벡터 조회·쓰기)이 이미 같은 망에 인증 없이 열려 있어 새로 생기는 위험은 작다고 판단했다(사용자 동의 2026-11-11). LAN에는 열지 않는다. 좁히려면 호스트에서 지표 경로만 넘기는 프록시를 두거나 NetworkPolicy로 Prometheus만 나가게 한다

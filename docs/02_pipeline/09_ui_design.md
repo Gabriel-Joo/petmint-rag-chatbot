@@ -638,7 +638,9 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 ```
 [GPU 호스트]
   Ollama           :11434   생성
-  search-service            KURE + bge-reranker + Milvus 조회
+  model-service    :8200    KURE + bge-reranker (공용 — 런슈즈도 쓴다, 2026-11-11부터)
+       ↑ 네트워크 호출
+  search-service   :8100    BM25 + Milvus 조회 + 정렬 (GPU 미사용)
        ↑ 네트워크 호출
 [K8s Pod]
   FastAPI 앱              세션·필터·계산·조립 (GPU 미사용)
@@ -656,8 +658,8 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 | 모델 | 상주 여부 |
 | --- | --- |
-| KURE 임베딩 | 상시 (search-service). 정밀도를 지정하지 않아 현재 fp32로 올라간다 — 빠듯하면 fp16으로 내릴 수 있다 |
-| bge-reranker-v2-m3 (fp16, 1024) | 상시 (search-service) |
+| KURE 임베딩 | 상시 (model-service). fp32, 2.12GB(`torch.cuda.memory_allocated`) — 빠듯하면 fp16으로 내릴 수 있다 |
+| bge-reranker-v2-m3 (fp16, 1024) | 상시 (model-service). 1.06GB |
 | Tri-7B 원본 (Q4_K_M) | 일반·사내규정 모드, 재작성기 |
 | Tri-7B 파인튜닝 (Q4_K_M) | 업무특화 모드 |
 
@@ -665,9 +667,9 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 **둘이 함께 올라갈 수 있는지는 모드 전환 때만의 문제가 아니다.** 업무특화는 재작성을 하지 않지만(5절) 병명 되묻기 판정(`name_check`, `PETMINT_ASK_DISEASE_LLM`)에서 같은 턴에 베이스 모델을 부른다. 둘 다 상주가 가능하면 `OLLAMA_MAX_LOADED_MODELS=2`로 두고, 불가능하면 갈아 끼우는 지연을 `first_token_ms`로 측정한다.
 
-실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, search-service 기동 직후와 Ollama 생성 중을 나눠 측정한다.
+실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, model-service 기동 직후와 Ollama 생성 중을 나눠 측정한다. 검색 모델 몫은 2026-11-11 실측(`nvidia-smi`)으로 model-service 기동 직후 3,498MiB, 검색 부하 뒤 6,408MiB다(늘어난 몫은 PyTorch 추론 캐시). 분리 전 search-service는 6,216MiB였다(14번 1-26절). Ollama 생성 중과 겹친 값은 아직 재지 않았다.
 
-**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02).
+**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02). 2026-11-11부터는 그 앞에 model-service가 선다 — 순서는 `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search`이고, petmint-search는 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다(`TimeoutStartSec=540`). 실제 재부팅 시험은 아직 하지 않았다(14번 1-26절).
 
 K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
 
@@ -699,7 +701,7 @@ data/                 노트북 01~08이 import하는 순수 로직. 웹 의존�
   rag_context.py      컨텍스트 조립
   limit_table.py      한도표
 
-search_service/       호스트에서 띄우는 별도 프로세스 (GPU 사용) — ✓ 운영(10-21 연결, 11-02부터 systemd 유닛)
+search_service/       호스트에서 띄우는 별도 프로세스 (GPU 미사용 — 모델은 model-service, 2026-11-11부터) — ✓ 운영(10-21 연결, 11-02부터 systemd 유닛)
   main.py             data/search_engine.py를 감싸는 얇은 HTTP 래퍼.
                       검색 로직을 재구현하지 않고 호출만 한다.
                       GPU 직렬화(한 번에 하나씩)는 여기 안에서 처리한다

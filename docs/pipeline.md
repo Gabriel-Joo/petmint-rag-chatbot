@@ -59,7 +59,8 @@ flowchart TD
     B["Cloudflare Tunnel + Access"]
     C["K8s Pod: FastAPI + React 빌드물"]
     M["MySQL StatefulSet + PVC<br/>petmint: sessions / turns / turn_scope / retrieved / feedback<br/>insurance_core: customers / pets / policies"]
-    S["호스트 search-service<br/>KURE-v1 + bge-reranker"]
+    S["호스트 search-service<br/>BM25 + Milvus 조회 + 정렬"]
+    MS["호스트 model-service(공용)<br/>KURE-v1 + bge-reranker"]
     I["조항 참조 관계(그래프)"]
     P["Pod: 발췌 조립<br/>청크 + 참조 조문 + 길이 예산"]
     E["호스트 Ollama: Tri-7B 원본"]
@@ -76,6 +77,7 @@ flowchart TD
     C --> M
     C -->|일반: 검색 없음| E
     C -->|사내규정 · 업무특화| S
+    S -->|임베딩 · 재정렬| MS
     S --> MV
     S -->|청크 top-k| P
     I --> P
@@ -84,11 +86,11 @@ flowchart TD
     C -.조항 원문.-> MV
 ```
 
-**GPU를 쓰는 것은 전부 호스트에 둔다.** Ollama와 검색(KURE + bge-reranker) 둘 다 호스트에 상주하고, Pod는 HTTP로 부른다. 그래서 Pod를 롤링해도 모델이 다시 올라갈 일이 없고, uvicorn worker를 1개로 제한할 이유도 사라졌다(09번 7-3절).
+**GPU를 쓰는 것은 전부 호스트에 둔다.** Ollama와 검색 모델(KURE + bge-reranker) 둘 다 호스트에 상주하고, Pod는 HTTP로 부른다. 검색 모델은 2026-11-11부터 런슈즈 챗봇과 같이 쓰는 model-service(`~/AI_programming/model-service`, systemd `model-service`, 192.168.122.1:8200)에 있고, search-service는 BM25 · Milvus 조회 · 정렬만 하며 GPU를 쓰지 않는다. 그래서 Pod를 롤링해도 모델이 다시 올라갈 일이 없고, uvicorn worker를 1개로 제한할 이유도 사라졌다(09번 7-3절).
 
 **search-service는 청크 top-k만 돌려주고, 발췌 조립은 Pod가 한다.** 그래프를 따라 참조 조문을 붙이고 길이 예산에 맞춰 자르는 일은 GPU가 필요 없고, 그 규칙은 자주 바뀌는 부분이라 Pod에 두어야 앱만 롤링하면 된다. 그래프는 모델이 쓰는 것이 아니라 코드가 발췌를 조립할 때 쓴다(4-1절 "근거는 코드가 조립한다"). 근거 패널에서 조항을 눌렀을 때 보여주는 원문도 Pod가 Milvus에서 바로 읽어 온다 — Milvus를 검색만 보는 것이 아니다.
 
-**search-service는 호스트에서 돈다.** `search_service/main.py`를 systemd 유닛(`deploy/host/petmint-search.service`, 192.168.122.1:8100)으로 띄우고, `/health`의 corpora는 강아지·고양이·인사규정 모두 true다. 배포 설정의 주소는 `http://192.168.122.1:8100`, 업무특화 모델은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`다(2026-11-09 확인).
+**search-service는 호스트에서 돈다.** `search_service/main.py`를 systemd 유닛(`deploy/host/petmint-search.service`, 192.168.122.1:8100)으로 띄우고, `PETMINT_MODEL_URL`로 model-service를 부른다(2026-11-11 전환, 14번 1-26절). model-service가 죽으면 search-service도 503이 된다(14번 4절).  `/health`의 corpora는 강아지·고양이·인사규정 모두 true다. 배포 설정의 주소는 `http://192.168.122.1:8100`, 업무특화 모델은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`다(2026-11-09 확인).
 
 ---
 

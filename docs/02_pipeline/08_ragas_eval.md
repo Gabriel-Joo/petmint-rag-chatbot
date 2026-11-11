@@ -130,7 +130,7 @@ python -m data.ragas_pilot prepare                        # llm_env — Milvus �
 ### 8. 정하지 않은 것
 
 - partial·flawed 처리(7절)
-- answer_relevancy 임베딩 — KURE-v1을 쓰려면 ~/ragas_env에 sentence-transformers·torch를 더 넣거나(무겁다), search-service에 임베딩 엔드포인트를 붙이거나, Ollama 임베딩 모델을 새로 받는다
+- answer_relevancy 임베딩 — KURE-v1을 쓰려면 ~/ragas_env에 sentence-transformers·torch를 더 넣거나(무겁다), 공용 model-service의 `/embed`(192.168.122.1:8200, 2026-11-11부터)를 부르거나, Ollama 임베딩 모델을 새로 받는다
 - 생성 온도 — 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가를 재현하려면 0으로 고정할지
 - RAG 없음 조합의 입력 — 질문만 보낼지(일반 모드와 같음), `build_messages(question, [])`로 "(검색된 발췌 없음)"을 넣을지
 - RAG 조합의 발췌 조립 — 서비스와 answer_eval `--search`(2026-10-21부터) 모두 `build_full_context`(참조 조문 포함). 예전 경로(`search_with_graph`, 참조 없음)는 `--search-legacy`로만 남았다
