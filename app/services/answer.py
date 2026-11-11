@@ -30,7 +30,7 @@ from typing import AsyncIterator
 
 import httpx
 
-from data import prompts
+from data import prompts, refusal
 from data.rag_context import (ContextBuilder, build_full_context, graph_key, human_article_adjust,
                               infer_type_from_section_name, used_references)
 from data.search_scope import MEDICAL_SECTIONS, SearchScope
@@ -151,6 +151,33 @@ class TurnContext:
     first_token_ms: int | None = None
     log: TurnLog | None = None                                # 끝나면(ok·error·cancelled) 채운다 — chat_ws가 done 전에 쓴다
     code_rule: str | None = None                              # 답한 코드 규칙(code_rules.Rule.key) — 운영 로그로 규칙별 발동을 세려고
+    search_s: float | None = None                             # search-service를 기다린 시간 합(초) — turns.search_ms. 안 불렀으면 None
+
+
+class TimedRetriever:
+    """턴 하나 동안 search-service 호출(/search · /embed) 시간을 ctx.search_s에 더한다(turns.search_ms, 0009).
+    리트리버는 앱 전체가 함께 쓰므로 턴마다 이 껍데기를 씌운다 — 다른 턴의 호출이 섞이지 않는다.
+    업무특화는 코드 답 규칙도 검색 결과(results)를 받고 나서 돈다 — 코드가 답한 턴도 검색했으면 시간이 남는다.
+    실패한 호출도 기다린 시간은 더한다(search_unavailable 턴의 지연도 보이게)."""
+
+    def __init__(self, inner: Retriever, ctx: "TurnContext"):
+        self.inner, self.ctx = inner, ctx
+
+    def _timed(self, fn, *a, **k):
+        t0 = time.monotonic()
+        try:
+            return fn(*a, **k)
+        finally:
+            self.ctx.search_s = (self.ctx.search_s or 0.0) + (time.monotonic() - t0)
+
+    def search(self, *a, **k):
+        return self._timed(self.inner.search, *a, **k)
+
+    def embed(self, *a, **k):
+        return self._timed(self.inner.embed, *a, **k)
+
+    def __getattr__(self, name):               # health · expand 등 나머지는 그대로
+        return getattr(self.inner, name)
 
 
 def scope_of(mode: Mode, pet: Pet | None) -> SearchScope | None:
@@ -194,7 +221,7 @@ async def run_turn(ctx: TurnContext, deps: TurnDeps) -> AsyncIterator[ServerMess
             try:
                 adjust = (human_article_adjust(config.HUMAN_DEMOTE, config.TWIN_ARTICLE)
                           if ctx.session.mode == "업무특화" else None)
-                ctx.results = await asyncio.to_thread(build_full_context, deps.retriever, deps.builder,
+                ctx.results = await asyncio.to_thread(build_full_context, TimedRetriever(deps.retriever, ctx), deps.builder,
                                                       _r(ctx).retrieval_query, ctx.scope, SEARCH_TOP_K, adjust)
             except httpx.HTTPError as e:        # search-service가 없거나 실패 — Milvus(조립) 오류는 아래 internal
                 yield _fail(ctx, e, "search_unavailable")
@@ -304,7 +331,7 @@ async def _generate(ctx: TurnContext, deps: TurnDeps, results: list[dict],
     # 되묻기 답 이어받기 → 미가입 특약 → 올해 받은·남은 → 금액 되묻기 → 카드(가정 등급 → 법률비용 → 치료비 질문 → 한도표)
     # → 가입 나이 → 부담보 → 면책 단서 → 상해 후속 → 병명 되묻기. 업무특화 후속은 기준 질문까지 읽는다(card = r.card_text)
     inp = code_rules.Inputs(mode=mode, question=ctx.question, card=r.card_text, pet=ctx.pet, resolved=r, results=results,
-                            chosen=chosen, embed=deps.retriever.embed)
+                            chosen=chosen, embed=TimedRetriever(deps.retriever, ctx).embed)
     for rule in code_rules.RULES:
         if not rule.enabled(inp):
             continue
@@ -518,8 +545,11 @@ def _turn_log(ctx: TurnContext, status: str, references: list[ReferenceItem], gr
                    context_turns=len(r.history) // 2 if r.kind == "history" else None, chosen_section=ctx.chosen,
                    payout=ctx.calc.model_dump(mode="json") if ctx.calc else None, **pet_snapshot(ctx.pet),
                    clarified=ctx.clarified, code_rule=ctx.code_rule, scope=scope_rows(ctx.pet),
+                   refused=refusal.refused(ctx.answer) if status == "ok" else None,
                    retrieved=retrieved_rows(ctx.sources, references, corpus=corpus, graph_refs=graph_refs,
                                             used_graph=used_graph),
                    model=model_of(ctx.session.mode), prompt_version=config.PROMPT_VERSION,
                    index_version=config.INDEX_VERSION, first_token_ms=ctx.first_token_ms,
-                   latency_ms=int((time.monotonic() - ctx.started) * 1000), status=status, created_at=utc(now()))
+                   latency_ms=int((time.monotonic() - ctx.started) * 1000),
+                   search_ms=None if ctx.search_s is None else round(ctx.search_s * 1000),
+                   status=status, created_at=utc(now()))

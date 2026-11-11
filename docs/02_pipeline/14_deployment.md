@@ -1,4 +1,4 @@
-> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. 남은 것은 ArgoCD 자동 Sync(petmint는 수동, 1-5절)와 4절의 한계.
+> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-25절). 남은 것은 4절의 한계.
 > search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다.
 
 #### 0. 한 줄 요약
@@ -95,7 +95,7 @@ Harbor           이미지를 당겨 Pod 교체
 
 **이미지 태그에 버전을 박는다.** `latest`를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다(10번 8절).
 
-push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋**까지 자동으로 가고, 클러스터 반영은 ArgoCD에서 Sync를 눌러 한다. 매니페스트가 의도대로 들어갔는지 확인한 뒤 자동(`automated`)으로 바꾼다.
+push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋 → 클러스터 반영**까지 자동으로 간다. 반영은 2026-11-10까지 ArgoCD에서 Sync를 눌러 했고, 매니페스트가 의도대로 들어가는 것을 확인한 뒤 2026-11-11 자동(`automated`)으로 바꿨다(1-25절).
 
 ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containerd가 Harbor에서 직접 당기고, 경로는 `/etc/hosts`에 박은 `192.168.122.240`(MetalLB VIP)이다.
 
@@ -181,7 +181,7 @@ ronanlab-infra/
 
 | 항목 | 값 |
 | --- | --- |
-| Sync 방식 | 수동. prune 꺼두고 finalizer 없음 |
+| Sync 방식 | 자동(2026-11-11~, 그 전 수동 — 1-25절). prune·selfHeal 꺼두고 finalizer 없음 |
 | Namespace | ArgoCD 관리에서 제외. CreateNamespace=false |
 | 인증 | deploy key 둘 — argocd-read(읽기), jenkins-write(쓰기) |
 | 매니페스트 수신 | Jenkinsfile 에서 `sh 'git clone'` 으로 받는다 |
@@ -200,7 +200,7 @@ ronanlab-infra/
 
 | 루트 설정 | 값 · 이유 |
 | --- | --- |
-| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared · petmint 수동, runshoes 자동) |
+| 읽는 것 | `apps/` recurse, include `*/app.yaml` — Application 객체만. 앱 리소스의 Sync 방식은 각 app.yaml 이 정한다(cloudflared 수동, runshoes · petmint · monitoring 자동 — 뒤 둘은 2026-11-11부터) |
 | Sync | 자동, prune 끔(폴더를 지워도 Application 이 남는다), selfHeal 끔, finalizer 없음(루트를 지워도 자식 · 리소스가 남는다) |
 | 자식 syncPolicy | 덮지 않는다(ignoreDifferences + RespectIgnoreDifferences) — 자동 Sync 켜고 끄기는 지금처럼 클러스터에서 patch 가 스위치다. 그러지 않으면 Jenkins 태그 커밋 하나에 루트가 다시 Sync 해 스키마 배포 중 꺼 둔 자동 Sync 를 도로 켠다 |
 | monitoring | app.yaml 자리만. 루트 `exclude: 'monitoring/app.yaml'` 한 줄을 지우면 만들어진다 |
@@ -429,6 +429,51 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 - **되돌리기:** 고정한 뒤로는 `helm rollback <이전 rev>` 가 플러그인 버전까지 되돌린다(overwritePlugins). 고정 전(rev6)으로 되돌리면 다시 `--latest true` 라 그때의 최신으로 오른다 — rev6 때 파일 그대로가 필요하면 호스트 `~/k8s-cluster/backup/2026-11-03-jenkins-pin/` 의 `JENKINS_HOME/plugins` 묶음(ROLLBACK.md)
 - 플러그인을 올릴 때: 올릴 것과 그 의존을 목록에서 같이 고치고 helm upgrade. 재시작마다 73개를 업데이트 센터에서 다시 받는다(전에도 ref 는 emptyDir 이라 매번 받았다)
 
+#### 1-24. 가용성 — 워커 4대 · 8GB, 노드가 하나 죽으면 (2026-11-10)
+
+인프라 가용성 묶음 1(사용자 2026-11-10). 상세 원본은 ronanlab-infra `docs/02_availability.md` — 여기는 펫퍼민트에 닿는 것만 둔다.
+
+```
+m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   — VM 합 16 → 36GB
+```
+
+| 바뀐 것 | 펫퍼민트에 |
+| --- | --- |
+| 워커 3 → 4대 | 앱 Pod 둘(required anti-affinity)의 롤링 2+1이 워커 하나가 빠진 동안에도 된다 — 전에는 Pending에 멈췄다(4절) |
+| 워커 4 → 8GB | 노드 메모리 여유(앱 limits 1Gi × 롤링 3개 · MySQL)가 생겼다 |
+| Harbor DB 백업(infra `apps/harbor-backup/`, 매일 03:45 KST) | Harbor가 망가져도 프로젝트 · robot 계정(`robot$petmint+pull`)이 돌아온다. 이미지 레이어는 백업하지 않는다 — 다시 빌드한다 |
+
+- **이미 있던 것 그대로**: replicas 2 · required anti-affinity · PDB minAvailable 1 — 매니페스트와 클러스터를 Sync 없이 읽어 같음을 확인했다. 런슈즈도 같은 구성으로 맞췄다
+- **증설 중 확인(호스트 → VIP, 1초마다)**: w2 · w3 정비 동안 `/` 실패 0. 앱 Pod는 Harbor가 살아 있을 때 먼저 옮겼다(w3 → w2, w1 → w4).
+  w1 정비 때 MySQL(`mysql-0`, PV가 w1)이 19:35:15~19:36:55 KST 약 1분 40초 멈췄다 — `/`는 200이었지만 DB를 쓰는 API는 실패(사용자가 받아들인 중단).
+  그 전 19:27:20~31 약 12초는 ingress-nginx 등을 재시작할 때 모든 호스트가 응답하지 않았다(원인 미확인, infra 문서 4절)
+- **정비 중에는 Sync하지 않는다**(사용자) — 워커가 하나 빠진 동안이다. 이번 증설 중 펫퍼민트 Sync는 없었다(08:54 UTC 사람이 한 Sync가 마지막)
+- **묶음 2(같은 날 저녁)** — 노드마다 역할을 고정했다. 상세는 infra `docs/02_availability.md` 1절 · `docs/runbooks/mysql-replica.md`
+
+| 바뀐 것 | 펫퍼민트에 |
+| --- | --- |
+| 앱은 app 노드(w1 · w2)에만(nodeSelector) | app 노드가 둘이라 롤링을 **옛 Pod 하나 먼저 내리고 새 Pod**로 바꿨다(maxSurge 0 · maxUnavailable 1, 10번 8절의 maxSurge 1 · maxUnavailable 0 에서). 롤링 동안 잠깐 Pod 하나 — 1초 탐침 실패 0, `rollout restart` 23초 |
+| MySQL Replica `mysql-replica-0`(w2) | binlog 복제(파일 · 위치, GTID 꺼짐 — Primary 재시작 없이). 자동 전환은 없다 — 사람이 승격(SQL 0.2초 · Service 전환 0.1초, 시험은 runshoes로). 복제 계정 Secret `mysql-repl` |
+| Harbor · Jenkins · ArgoCD는 w3, 모니터링은 w4 | 배포 · 빌드는 w3가, 모니터링은 w4가 죽어도 상담은 돈다 |
+| 모니터링(15번) | Grafana가 턴 로그를 **Replica에서** 읽는다 — 계정 `grafana_ro`는 컬럼 단위 SELECT만(질문 · 답 · 코멘트 · 고객 · 상담원 컬럼 권한 없음) |
+
+- 펫퍼민트 Sync를 두 번 했다(Replica 추가 72d0716, 배치 고정 684774a) — 사람 대신 인프라 세션이 했고, 그 Sync마다 초기화 Job이 다시 돌았다(멱등)
+
+
+#### 1-25. 자동 Sync (2026-11-11)
+
+petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → Jenkins 빌드 → 태그 커밋까지 오면 ArgoCD가 Sync를 누르지 않아도 반영한다. 2026-10-16부터 11-10까지는 수동으로 두고 반영 결과를 눈으로 확인했다.
+
+| 항목 | 값 |
+| --- | --- |
+| 설정 | `automated: {prune: false, selfHeal: false}` — runshoes와 같다. git에서 지운 리소스는 남고, kubectl로 바꾼 것을 되돌리지 않는다 |
+| 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-10절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 |
+| 켠 때 | 켜기 전 Synced(git 최신 `cd4ee1f`과 같음) — 켜는 순간 반영될 것이 없었다. 켠 뒤 Synced · Healthy, 앱 Pod 재시작 없음 |
+| 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(4절 해결 항목) 배포가 일어나지 않는다 |
+| monitoring | 같은 날 같은 설정으로 자동 Sync를 켰다 — petmint가 자동인데 대시보드만 수동인 것은 맞지 않고, 대시보드는 깨져도 서비스에 영향이 없고 되돌리기 쉽다. 켤 때 밀려 있던 대시보드 ConfigMap 하나가 바로 반영됐다 |
+| cloudflared | **수동으로 둔다(2026-11-11 사용자 결정).** 클러스터 터널 하나가 공개 주소 7개(petmint · runshoes · argocd · harbor · jenkins · grafana · prometheus)를 모두 낸다. 터널이 깨지면 서비스만 멈추는 게 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)도 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 사람 손을 거치지 않고 그 상태를 만들지 않게, 사람이 Sync를 누르고 롤링을 지켜본다(13번 2-2절, ronanlab-infra `apps/cloudflared/README.md`) |
+| 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` |
+
 #### 2. 왜 이렇게 했나
 
 #### 2-1. GPU를 쓰는 것은 호스트에 남긴다
@@ -495,7 +540,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 **deploy key 를 읽기·쓰기로 나눈다.** 토큰(fine-grained PAT)은 만료일이 있어 만료되면 배포가 **조용히 멈춘다** — 2-4절의 "조용한 실패를 만들지 않는다"와 어긋난다. 읽기와 쓰기를 나누는 것은 Harbor robot 을 pull 전용과 push 용으로 나눈 것과 같은 논리다. ArgoCD 키가 새도 저장소를 고칠 수 없다.
 
-**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다. 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절).
+**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다(2026-11-11 바꿨다, 1-25절). 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절).
 
 넘겨받는 순간은 안전했다. 처음 상태는 OutOfSync 였고, 14개 리소스의 diff 가 모두 ArgoCD 추적 라벨 하나뿐이었다. Sync 뒤에도 앱 Pod 와 mysql-0 의 UID 가 같아 교체되지 않았다.
 
@@ -524,7 +569,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 #### 4. 남은 한계
 
-- [ ]  **단일 클러스터, 단일 환경이다.** 개발·스테이징·운영을 나누지 않았다. 네임스페이스로 가를 수 있지만 16GB 한 대에 다 올리는 것은 무리다
+- [ ]  **단일 클러스터, 단일 환경이다.** 개발·스테이징·운영을 나누지 않았다. 네임스페이스로 가를 수 있지만 VM 합 36GB(2026-11-10 증설 뒤) 한 대에 다 올리는 것은 무리다
 - [ ]  **GPU 호스트가 단일 장애점이다.** Ollama·search-service·Milvus가 모두 한 대에 있다. 그 머신이 죽으면 Pod가 멀쩡해도 서비스가 안 된다
 - [ ]  **Milvus는 아직 호스트 도커다.** GPU를 쓰지 않으므로 Pod로 옮길 수 있으나, standalone이라도 etcd와 MinIO가 따라붙어 자원을 더 먹는다. search-service와 함께 옮길지 판단한다.
 - [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다
@@ -535,11 +580,14 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다
 - [ ]  **약관을 바꾸면 앱 재시작이 필요하다.** 파일은 Pod에서 바로 보이지만 앱이 기동할 때 메모리에 올린다. 재색인 뒤에는 `rollout restart`가 필요하다
 - [ ]  **클러스터 DB는 픽스처 시드로 새로 시작했다.** 로컬 도커 MySQL의 개발 데이터는 옮기지 않았다
-- [ ]  **롤링에 워커 3대가 다 필요하다.** 같은 노드에 두 Pod를 두지 않으므로, 롤링 중 잠깐 생기는 세 번째 Pod가 남은 워커에 떠야 한다. 워커 하나가 빠진 동안 롤링하면 새 Pod가 Pending에 멈춘다
+- [ ]  **app 노드가 둘이다(2026-11-10 배치 고정).** 롤링은 옛 Pod 하나를 먼저 내리고 새 Pod를 띄운다 — 롤링 동안 잠깐 Pod 하나. app 노드 하나가 빠지면 두 번째 Pod는 Pending이고 롤링도 멈춘다(남은 하나가 받는다). 그 전(워커 3대, 2+1 롤링)에는 워커 하나만 빠져도 롤링이 멈췄다
 - [x]  ~~앱 리포의 어떤 푸시에도 빌드가 돈다. docs만 고쳐도 새 이미지와 배포 커밋이 생긴다.~~ 2026-11-09 해결 — 바뀐 파일(직전 성공 빌드의 커밋 → 이번 커밋)이 모두 `docs/`·`data/review/`·루트 `*.md`이면 빌드는 SUCCESS로 끝나되 이미지 빌드·태그 커밋을 건너뛴다(빌드 설명 "건너뜀 — 문서만", FOREMAN 끝 알림 `"skipped": true`). 손으로 누른 빌드, 직전 성공 커밋이 없거나 못 찾을 때는 늘 빌드한다. 이 경로들은 Dockerfile이 COPY하지 않고 `.dockerignore`로도 뺀다(`Jenkinsfile` 머리 주석)
 - [x]  ~~ArgoCD 초기 admin 비밀번호 Secret이 남아 있다.~~ 지워졌다(2026-11-09 확인 — 없음)
 - [x]  ~~**`PETMINT_TITLE_LLM`이 0이다.**~~ 지금 1이다(일반·사내규정은 LLM 제목, 업무특화는 첫 질문 첫 줄)
-- [ ]  단일 장애점이 노드마다 흩어져 있다. MySQL은 w1, harbor-registry는 w2, Jenkins는 w3의 local-path에 묶여 있다. 노드 하나가 죽으면 그 서비스가 멈춘다
+- [ ]  단일 장애점이 노드마다 흩어져 있다. MySQL · harbor-redis는 w1, harbor-registry는 w2, harbor-database · Jenkins는 w3의 local-path에 묶여 있다(2026-11-10 확인). 노드 하나가 죽으면 그 서비스가 멈춘다 — 배치 고정은 인프라 묶음 2
+- [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica(w2, 2026-11-10) + 수동 승격을 택했다. w1이 죽으면 사람이 런북(infra `docs/runbooks/mysql-replica.md`)대로 승격한다 — 기계 쪽 약 2분, 나머지는 알아채고 판단하는 시간. 앱 트래픽까지 옮기는 전환은 아직 해 보지 않았다. Replica는 백업이 아니다(지운 것은 Replica에서도 지워진다)
+- [ ]  **백업이 운영 DB와 같은 물리 디스크에 있다.** 백업 NFS(`~/backup/mysql/petmint`)와 MySQL PV(VM 디스크)가 같은 호스트 · 같은 NVMe다(12번 1-5절)
+- [ ]  **VM이 모두 같은 물리 서버에 있다.** 노드 분산은 VM · kubelet 장애만 막는다 — 서버 자체가 죽으면 전부 멈춘다(위 GPU 호스트 단일 장애점과 같은 머신)
 
 ---
 

@@ -1,5 +1,12 @@
-> 상태: △ 매니페스트 작성(2026-10-18, ronanlab-infra `apps/monitoring/`, 2026-11-02 `platform/monitoring/`에서 옮김) — 적용·Sync 전. VM 메모리를 4096 → 8192로 올린 뒤 적용한다.
-> 아무것도 돌려보지 않았다. 앱(petmint) 지표와 Ollama·search-service 응답 여부는 계측이 없어 설계만 있다.
+> 상태: ✓ 설치(2026-11-10, 인프라 가용성 묶음 2 — 전부 w4). 원본은 ronanlab-infra `apps/monitoring/README.md`. 아래 2절 이후는 처음 설계(2026-10-18)이고, 설치하며 바뀐 것은 이 상자에만 적는다:
+> - 보존 Prometheus **15일**(10Gi, 9GB) · Loki **7일**(서버 로그만 — 대화 기록은 넣지 않는다. runshoes 챗봇의 질문 원문 줄과 Jenkins 빌드 Pod 로그는 수집기 Alloy가 버린다)
+> - 앱 `/metrics`가 없어 HTTP 요청 수 · 에러율은 **ingress-nginx 메트릭**(같은 날 켬)에서, 질문 · 답 지표는 **턴 로그(DB Replica)**를 Grafana MySQL 데이터소스로 읽는다.
+>   읽기 계정 `grafana_ro`는 컬럼 단위 SELECT만 — turns(분류 · 시간 · 상태) · sessions(mode) · feedback(rating). 질문 · 답 · 코멘트는 권한이 없다(시험: ERROR 1143)
+> - 대시보드 `petmint — 운영`: 서버 상태 · 접속량 / 질문량 / 답변 품질 · 속도(확인 불가 응답 비율 · 답변 실패 · 중단 비율 · 규칙별 답 · 답한 방식 · 상담원 평가 · 답변 시간 · 조항 검색 시간) / AI 서버(GPU).
+>   2026-11-11 비개발자가 보는 전제로 패널 이름 · 호버 설명을 바꿨다 — 이름은 무엇을 세는지, 설명은 무엇이 섞였나 · 높거나 낮으면 무슨 뜻인가 · 언제부터인가. 칸 이름은 설명 끝 「출처」에만. 같은 날 「답변 실패 · 중단 비율」(turns.status — 답 생성 실패가 어디에도 안 보이던 구멍)을 더하고, 규칙 이름을 한글로(code_rules.RULES 이름) 바꿨다
+> - **거절률 · 검색 지연**은 2026-11-11 앱이 턴마다 `turns.refused` · `turns.search_ms`를 적게 했다(마이그레이션 0009, 12번 1-1절). 거절 판정은 평가와 같은 함수(`data/refusal.py`). 그 전 턴은 NULL이라 패널에 나오지 않는다. GPU exporter(호스트 컨테이너)는 아직 띄우지 않았다
+> - **Milvus 9091**: 2026-11-11 호스트 compose에서 `192.168.122.1:9091`에도 게시(19530과 같은 방식, 컨테이너 재생성 8초) → Prometheus `up{job="milvus"}` = 1. etcd 2379는 그대로 닫혀 있다
+> - Ollama 응답은 json-exporter가 `/api/ps`를 읽는 것으로 본다(blackbox-exporter 대신 — 올라간 모델까지 보인다)
 
 ### 0. 목표
 
@@ -65,7 +72,7 @@ ronanlab-infra/
     grafana/                 Deployment·Service·데이터소스 ConfigMap
     node-exporter/           DaemonSet(hostNetwork :9100)·headless Service
     kube-state-metrics/      ServiceAccount·RBAC·Deployment·Service
-    app.yaml                 Application(수동 Sync·prune 없음·finalizer 없음) — 루트(bootstrap/root-app.yaml)가 만든다
+    app.yaml                 Application(자동 Sync 2026-11-11~·prune·selfHeal 없음·finalizer 없음) — 루트(bootstrap/root-app.yaml)가 만든다
 ```
 
 | 항목 | 값 |
@@ -110,6 +117,8 @@ ronanlab-infra/
 - [ ]  Ollama·search-service 응답 여부는 blackbox-exporter가 없어 보지 못한다
 - [ ]  앱 지표가 없다 — petmint `/metrics`부터 붙여야 1절 앱 항목이 들어온다
 - [ ]  알림이 없다 — Alertmanager는 알림 설계 뒤
+- [ ]  **Milvus 9091에 인증 없는 운영용 경로가 있다.** 지표(`/metrics`)·`/healthz` 말고도 `/debug/pprof`(프로파일)·`/log/level`(로그 수준 조회·변경)이 응답한다(2026-11-11 확인, 200). 지표를 긁으려고 VM 사설망(192.168.122.0/24)에도 열었으므로 클러스터 Pod에서 닿는다. 19530(벡터 조회·쓰기)이 이미 같은 망에 인증 없이 열려 있어 새로 생기는 위험은 작다고 판단했다(사용자 동의 2026-11-11). LAN에는 열지 않는다. 좁히려면 호스트에서 지표 경로만 넘기는 프록시를 두거나 NetworkPolicy로 Prometheus만 나가게 한다
+- [ ]  거절률은 문구 판정이다 — 거절 문구 없이 얼버무린 답은 거절로 세지 않고, 거절 문구가 들어간 부분 답은 거절로 센다(평가와 같은 한계)
 
 ---
 
@@ -126,7 +135,7 @@ ronanlab-infra/
 - [ ]  Pod 전부 Running·Ready: prometheus-0, grafana, kube-state-metrics, node-exporter ×4(m-k8s 포함)
 - [ ]  PVC `data-prometheus-0`가 Bound(local-path)
 - [ ]  Prometheus Status → Targets: node-exporter 4/4, kubelet-cadvisor 4/4, kube-state-metrics 1/1, prometheus 1/1 모두 UP
-- [ ]  milvus 대상이 UP(호스트 :9091에 닿는가)
+- [x]  milvus 대상이 UP(호스트 :9091에 닿는가) — 2026-11-11, 게시 주소를 192.168.122.1로 더한 뒤
 - [ ]  Grafana가 뜨고(port-forward 3000) admin으로 로그인되는가
 - [ ]  Grafana 데이터소스 Prometheus가 연결 성공(Save & test)
 
