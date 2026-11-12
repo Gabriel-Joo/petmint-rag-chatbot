@@ -545,7 +545,8 @@ def _turn_log(ctx: TurnContext, status: str, references: list[ReferenceItem], gr
                    context_turns=len(r.history) // 2 if r.kind == "history" else None, chosen_section=ctx.chosen,
                    payout=ctx.calc.model_dump(mode="json") if ctx.calc else None, **pet_snapshot(ctx.pet),
                    clarified=ctx.clarified, code_rule=ctx.code_rule, scope=scope_rows(ctx.pet),
-                   refused=refusal.refused(ctx.answer) if status == "ok" else None,
+                   # 거절 판정은 모델 답만(2026-11-12 C안, data/refusal.py) — 코드 답은 거절하지 않으므로 0. 분모(정상으로 끝난 답)는 그대로
+                   refused=(False if ctx.code_rule else refusal.refused(ctx.answer)) if status == "ok" else None,
                    retrieved=retrieved_rows(ctx.sources, references, corpus=corpus, graph_refs=graph_refs,
                                             used_graph=used_graph),
                    model=model_of(ctx.session.mode), prompt_version=config.PROMPT_VERSION,

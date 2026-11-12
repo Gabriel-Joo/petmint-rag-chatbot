@@ -143,9 +143,12 @@ async def run_script(http: httpx.AsyncClient, base_ws: str, headers: dict, case:
 
 
 # ----- 판정 -----
+REFUSAL_JUDGE = refusal.refused          # --refusal v1이면 2026-11-12 이전 판정(과거 수치 재현)
+
+
 def refused(answer: str) -> bool:
-    """거절 판정 — 운영 turns.refused와 같은 함수(data/refusal.py)"""
-    return refusal.refused(answer)
+    """거절 판정 — 운영 turns.refused와 같은 함수(data/refusal.py). 2026-11-12부터 C안"""
+    return REFUSAL_JUDGE(answer)
 
 
 def screen_match(text: str, pet: Pet) -> list[str]:
@@ -342,6 +345,7 @@ def summarize(report: dict) -> str:
 
 
 def main():
+    global REFUSAL_JUDGE
     ap = argparse.ArgumentParser(description="평가 세트를 실제 서버(서빙 경로)로 잰다")
     ap.add_argument("--tag", required=True, help="결과 이름(예: rebuild4, base)")
     ap.add_argument("--base", default="http://localhost:8000")
@@ -353,8 +357,13 @@ def main():
     ap.add_argument("--first-timeout", type=float, default=600)
     ap.add_argument("--timeout", type=float, default=180)
     ap.add_argument("--out", default=str(ROOT / "data" / "eval" / "results"))
+    ap.add_argument("--refusal", choices=["current", "v1"], default="current",
+                    help="거절 판정 — current(2026-11-12 C안) / v1(그 전, 과거 수치 재현)")
     args = ap.parse_args()
+    if args.refusal == "v1":
+        REFUSAL_JUDGE = refusal.refused_v1
     report = asyncio.run(main_async(args))
+    report["refusal_judge"] = args.refusal
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
     out = Path(args.out) / f"eval_serving_{stamp}_{args.tag}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
