@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, getAdminSession, listAdminAgents, listAdminEmployees, listAdminSessions } from "../api/client";
 import type { AdminAgent, AdminEmployee, AdminSession, AdminSessionDetail, AdminSessionList } from "../api/types";
+import { ModeBadge, RoleBadge } from "../components/Badges";
 import { matchExclusions } from "../components/ExclusionBanner";
 import { TurnView } from "../components/TurnView";
 import { turnFromOut } from "../hooks/useChatSocket";
@@ -26,8 +27,6 @@ function addDays(day: string, n: number): string {
 function spanDays(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000) + 1;
 }
-/** 화면에는 권한(관리자 · 상담원)만 쓴다 — 직급과 권한은 따로다(13번 2-5절). 앱 계정이 없어도 고객상담팀 상담원이다 */
-const roleLabel = (role: string | null) => (role === "관리자" ? "관리자" : "상담원");
 const errText = (e: unknown) => (e instanceof ApiError ? e.detail : String(e));
 
 type Tab = "sessions" | "staff";
@@ -38,12 +37,10 @@ export function Admin() {
     <div className={`chat-text ${s.page}`}>
       <div className={s.head}>
         <h1 className={s.title}>관리자 화면</h1>
-        <p className={s.intro}>
-          상담원마다 고른 기간에 나눈 업무특화 · 사내규정 상담을 열어, 상담원이 무엇을 물었고 챗봇이 무엇을 답했는지,
-          답이 기댄 근거 조항, 챗봇이 답하지 못한 턴(거절), 상담원이 남긴 👍👎 평가를 그대로 봅니다.
-          일반 모드 대화는 개인적인 질문이라 보이지 않습니다. 직원 탭은 인사 원장의 직원 목록을 보여 줍니다.
-          이 화면에서는 아무것도 바꾸지 않으며, 상담을 열어 본 기록은 남습니다. 전체 추세(질문 수 · 거절률 · 응답 시간)는 Grafana에서 봅니다.
-        </p>
+        <div className={s.intro}>
+          <p>모든 상담원의 업무특화 상담 내역과 사내규정 대화 기록을 봅니다. 일반 모드 대화는 개인적인 내용이라 보이지 않습니다.</p>
+          <p>직원 탭은 인사 원장을 그대로 보여 줍니다. 직원 추가나 정보 수정은 인사 시스템에서 합니다.</p>
+        </div>
       </div>
       <nav className={s.tabs} aria-label="관리자 화면">
         <button type="button" className={`btn ${s.tab} ${tab === "sessions" ? "selected" : ""}`} aria-current={tab === "sessions" || undefined}
@@ -110,7 +107,7 @@ function Sessions() {
                   <button type="button" data-agent={a.employee_id} className={`${s.item} ${a.employee_id === agentId ? "selected" : ""}`}
                           aria-current={a.employee_id === agentId || undefined} onClick={() => setAgentId(a.employee_id)}>
                     <span className={s.itemTitle}>
-                      {a.name} <span className={s.dim}>{roleLabel(a.role)}</span>
+                      {a.name} <span className={s.dim}>{a.grade}</span> <RoleBadge role={a.role} />
                       {a.retired && <span className={s.tag}>퇴직</span>}
                     </span>
                     <span className={s.itemMeta}>
@@ -160,7 +157,7 @@ function AgentSessions({ agent, from, to, multiDay, onBack }:
     <>
       <div className={s.listHead}>
         <button type="button" className={`btn ${s.back}`} onClick={onBack}>← 상담원</button>
-        <h2 className={s.subTitle}>{agent.name} {roleLabel(agent.role)}</h2>
+        <h2 className={s.subTitle}>{agent.name} <span className={s.dim}>{agent.grade}</span> <RoleBadge role={agent.role} /></h2>
         {list && <span className={s.itemMeta}>{list.total > list.items.length ? `${list.total}건 중 최신 ${list.items.length}건` : `${list.total}건`}</span>}
       </div>
       {error && <p className={s.err}>{error}</p>}
@@ -197,15 +194,14 @@ function hhmm(iso: string, withDate: boolean): string {
 }
 
 function SessionRow({ it, multiDay }: { it: AdminSession; multiDay: boolean }) {
-  const who = it.mode === "업무특화"
-    ? `${it.customer_name ?? "고객"}${it.pet_names.length ? ` / ${it.pet_names.join(", ")}` : ""}`
-    : "(사내규정)";
+  // 모드는 배지로(업무특화 · 사내규정 같은 모양 — 모드 탭의 캐릭터 아이콘). 업무특화만 고객 / 반려동물이 붙는다
+  const who = it.mode === "업무특화" ? `${it.customer_name ?? "고객"}${it.pet_names.length ? ` / ${it.pet_names.join(", ")}` : ""}` : null;
   return (
     <>
       <span className={s.row}>
         <time className={s.time} dateTime={it.started_at}>{hhmm(it.started_at, multiDay)}</time>
-        <span className={s.who}>{who}</span>
-        {it.mode === "업무특화" && <span className={s.tag}>업무특화</span>}
+        <ModeBadge mode={it.mode} />
+        {who && <span className={s.who}>{who}</span>}
         <span className={s.turns}>{it.turns}턴</span>
       </span>
       <span className={s.itemMeta}>

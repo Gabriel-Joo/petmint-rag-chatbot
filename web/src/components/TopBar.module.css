@@ -133,14 +133,17 @@
    팀은 쓰지 않는다(상담원 전용 도구라 팀이 하나). 아바타 원은 쓰지 않는다(11번) */
 .user { display: flex; align-items: center; gap: 0.6em; font-size: var(--font-xs); white-space: nowrap; }
 .userName { font-weight: var(--font-weight-label); }
+/* 휴대폰 — "이름 직급 [권한] [체험 계정]"이 360px에서 제목과 2px 사이로 붙었다(2026-11-12). 칸 사이만 좁힌다 */
+@media (max-width: 400px) { .user { gap: 0.3em; } }
 .user .logout { padding: 0.15em 0.45em; line-height: 1.2; }
 .user .logout:hover:not(:disabled) { background: var(--card); border-color: var(--primary); color: var(--primary); }
 /* 체험 로그인(13번 2-4절) — 이름 옆 작은 표시. 화면을 캡처해도 체험 계정임이 보인다 */
 .demoBadge { padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); font-weight: var(--font-weight-label); white-space: nowrap; }
 /* 관리자 화면(13번 2-5절) — 이름 옆 「관리」(로그아웃과 같은 모양). 열려 있으면 선택된 모드 탭과 같은 표시.
-   819px 이하는 ☰ 안 — 체험 계정 표시 · 관리자 화면 · 로그아웃이 다 붙으면 760~800px 첫 줄에서 제목과 맞닿았다(2026-11-12. 「관리」일 때는 720~739px라 759px였다) */
+   889px 이하는 ☰ 안 — 체험 계정 표시 · 관리자 화면 · 로그아웃이 다 붙으면 제목과 맞닿았다. 「관리」 720~739px(→ 759) → 「관리자 화면」 760~800px(→ 819)
+   → 이름 뒤 직급 + 권한 배지(2026-11-12) 820~865px(→ 889) */
 .menuAdmin { display: none; }
-@media (max-width: 819px) {
+@media (max-width: 889px) {
   .user .adminBtn { display: none; }
   .call .menuAdmin { display: inline-block; }
 }
