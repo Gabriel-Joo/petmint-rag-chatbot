@@ -320,7 +320,7 @@ class StoreTest(unittest.TestCase):
             self.assertEqual(e.exception.status, 403)
         finally:
             with self.engine.begin() as c:
-                c.execute(self.text("UPDATE accounts SET must_change_password = TRUE WHERE employee_id = 'E2015044'"))
+                c.execute(self.text("DELETE FROM accounts WHERE employee_id = 'E2015044'"))   # 퇴직자는 계정 없음(0012)
 
 
     # ----- 체험 로그인(2026-11-12, 13번 2-4절)
@@ -363,14 +363,16 @@ class StoreTest(unittest.TestCase):
             c.execute(self.text("UPDATE accounts SET disabled_at = NOW() WHERE employee_id = :e"), dict(e=self.EID))
         self.assertNotIn(self.EID, [e.employee_id for e, _ in self.store.demo_pool()])
 
-    def test_demo_login_creates_passwordless_account(self):
+    def test_demo_login_needs_account(self):
+        """0012부터 체험 로그인은 계정을 만들지 않는다 — 계정이 없으면 풀 밖(400), 계정도 그대로 없다"""
         with self.engine.begin() as c:
             c.execute(self.text("DELETE FROM accounts WHERE employee_id = :e"), dict(e=self.EID))
-        token, me = self.store.demo_login(self.EID, None, None)
-        self.assertEqual(me.role, "상담원")
-        with self.assertRaises(AuthError) as e:                  # 비밀번호 없는 계정 — 사번 · 비밀번호로는 못 들어온다
-            self.store.login(self.EID, "", None, None)
-        self.assertEqual(e.exception.status, 401)
+        self.assertNotIn(self.EID, [e.employee_id for e, _ in self.store.demo_pool()])
+        with self.assertRaises(AuthError) as e:
+            self.store.demo_login(self.EID, None, None)
+        self.assertEqual(e.exception.status, 400)
+        with self.engine.connect() as c:
+            self.assertIsNone(c.execute(self.text("SELECT 1 FROM accounts WHERE employee_id = :e"), dict(e=self.EID)).first())
 
     def test_demo_ip_limit(self):
         with mock.patch.object(config, "DEMO_LOGIN_PER_IP", 3):

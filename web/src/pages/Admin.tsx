@@ -26,6 +26,8 @@ function addDays(day: string, n: number): string {
 function spanDays(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000) + 1;
 }
+/** 화면에는 권한(관리자 · 상담원)만 쓴다 — 직급과 권한은 따로다(13번 2-5절). 앱 계정이 없어도 고객상담팀 상담원이다 */
+const roleLabel = (role: string | null) => (role === "관리자" ? "관리자" : "상담원");
 const errText = (e: unknown) => (e instanceof ApiError ? e.detail : String(e));
 
 type Tab = "sessions" | "staff";
@@ -35,15 +37,20 @@ export function Admin() {
   return (
     <div className={`chat-text ${s.page}`}>
       <div className={s.head}>
-        <h1 className={s.title}>관리</h1>
-        <nav className={s.tabs} aria-label="관리 화면">
-          <button type="button" className={`btn ${s.tab} ${tab === "sessions" ? "selected" : ""}`} aria-current={tab === "sessions" || undefined}
-                  onClick={() => setTab("sessions")}>상담 조회</button>
-          <button type="button" className={`btn ${s.tab} ${tab === "staff" ? "selected" : ""}`} aria-current={tab === "staff" || undefined}
-                  onClick={() => setTab("staff")}>직원</button>
-        </nav>
-        <span className={s.note}>읽기만 합니다. 일반 모드 대화는 보이지 않습니다.</span>
+        <h1 className={s.title}>관리자 화면</h1>
+        <p className={s.intro}>
+          상담원마다 고른 기간에 나눈 업무특화 · 사내규정 상담을 열어, 상담원이 무엇을 물었고 챗봇이 무엇을 답했는지,
+          답이 기댄 근거 조항, 챗봇이 답하지 못한 턴(거절), 상담원이 남긴 👍👎 평가를 그대로 봅니다.
+          일반 모드 대화는 개인적인 질문이라 보이지 않습니다. 직원 탭은 인사 원장의 직원 목록을 보여 줍니다.
+          이 화면에서는 아무것도 바꾸지 않으며, 상담을 열어 본 기록은 남습니다. 전체 추세(질문 수 · 거절률 · 응답 시간)는 Grafana에서 봅니다.
+        </p>
       </div>
+      <nav className={s.tabs} aria-label="관리자 화면">
+        <button type="button" className={`btn ${s.tab} ${tab === "sessions" ? "selected" : ""}`} aria-current={tab === "sessions" || undefined}
+                onClick={() => setTab("sessions")}>상담 조회</button>
+        <button type="button" className={`btn ${s.tab} ${tab === "staff" ? "selected" : ""}`} aria-current={tab === "staff" || undefined}
+                onClick={() => setTab("staff")}>직원</button>
+      </nav>
       {tab === "sessions" ? <Sessions /> : <Staff />}
     </div>
   );
@@ -103,7 +110,7 @@ function Sessions() {
                   <button type="button" data-agent={a.employee_id} className={`${s.item} ${a.employee_id === agentId ? "selected" : ""}`}
                           aria-current={a.employee_id === agentId || undefined} onClick={() => setAgentId(a.employee_id)}>
                     <span className={s.itemTitle}>
-                      {a.name} <span className={s.dim}>{a.role ?? a.grade}</span>
+                      {a.name} <span className={s.dim}>{roleLabel(a.role)}</span>
                       {a.retired && <span className={s.tag}>퇴직</span>}
                     </span>
                     <span className={s.itemMeta}>
@@ -153,7 +160,7 @@ function AgentSessions({ agent, from, to, multiDay, onBack }:
     <>
       <div className={s.listHead}>
         <button type="button" className={`btn ${s.back}`} onClick={onBack}>← 상담원</button>
-        <h2 className={s.subTitle}>{agent.name} {agent.role ?? agent.grade}</h2>
+        <h2 className={s.subTitle}>{agent.name} {roleLabel(agent.role)}</h2>
         {list && <span className={s.itemMeta}>{list.total > list.items.length ? `${list.total}건 중 최신 ${list.items.length}건` : `${list.total}건`}</span>}
       </div>
       {error && <p className={s.err}>{error}</p>}
@@ -238,29 +245,98 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
   );
 }
 
-// ----- 직원 목록 — 인사 원장 그대로(읽기만). 급여 · 평가 · 휴가는 없다
+// ----- 직원 목록 — 인사 원장 그대로(읽기만). 급여 · 평가 · 휴가는 없다. 표 머리를 눌러 정렬, 위에 필터 셋
+
+const GRADE_ORDER: Record<string, number> = { 부장: 5, 차장: 4, 과장: 3, 대리: 2, 사원: 1 };   // 직급 순서(가나다순이 아니다)
+
+type SortKey = "employee_id" | "name" | "grade" | "employment_type" | "hire_date" | "tenure" | "status" | "account";
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: "employee_id", label: "사번" }, { key: "name", label: "이름" }, { key: "grade", label: "직급" },
+  { key: "employment_type", label: "고용" }, { key: "hire_date", label: "입사일" }, { key: "tenure", label: "근속" },
+  { key: "status", label: "재직" }, { key: "account", label: "앱 계정" },
+];
+const accountText = (r: AdminEmployee) => (r.role ? `${r.role}${r.disabled ? " 중지" : ""}` : "없음");
+
+function sortValue(r: AdminEmployee, k: SortKey): string | number {
+  switch (k) {
+    case "grade": return GRADE_ORDER[r.grade] ?? 0;
+    case "tenure": return r.tenure_years * 12 + r.tenure_months;
+    case "status": return r.retired_on ? `1 ${r.retired_on}` : "0";
+    case "account": return accountText(r);
+    default: return r[k];
+  }
+}
+
+type Filter = { status: "all" | "active" | "retired"; type: string; account: "all" | "yes" | "no" };
+
+function Chips<T extends string>({ label, value, options, onChange }:
+                                 { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
+  return (
+    <span className={s.filter} role="group" aria-label={label}>
+      <span className={s.dateLabel}>{label}</span>
+      {options.map(([v, t]) => (
+        <button key={v} type="button" className={`btn ${s.chip} ${value === v ? "selected" : ""}`} aria-pressed={value === v}
+                onClick={() => onChange(v)}>{t}</button>
+      ))}
+    </span>
+  );
+}
 
 function Staff() {
   const [rows, setRows] = useState<AdminEmployee[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: "employee_id", asc: true });
+  const [filter, setFilter] = useState<Filter>({ status: "all", type: "all", account: "all" });
   useEffect(() => {
     let alive = true;
     listAdminEmployees().then((x) => { if (alive) setRows(x); }, (e) => { if (alive) setError(errText(e)); });
     return () => { alive = false; };
   }, []);
+
+  const types = rows ? [...new Set(rows.map((r) => r.employment_type))] : [];
+  const shown = (rows ?? [])
+    .filter((r) => filter.status === "all" || (filter.status === "retired") === (r.retired_on !== null))
+    .filter((r) => filter.type === "all" || r.employment_type === filter.type)
+    .filter((r) => filter.account === "all" || (filter.account === "yes") === (r.role !== null))
+    .sort((a, b) => {
+      const x = sortValue(a, sort.key), y = sortValue(b, sort.key);
+      const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "ko");
+      return (sort.asc ? c : -c) || a.employee_id.localeCompare(b.employee_id);
+    });
+  const toggle = (key: SortKey) => setSort((p) => (p.key === key ? { key, asc: !p.asc } : { key, asc: true }));
+
   return (
     <section className={`raised ${s.staff}`} aria-label="직원 목록">
-      <p className={s.staffNote}>인사 원장(기간계)을 그대로 보여 줍니다. 직원 추가 · 계정 중지 · 비밀번호 초기화는 <code>python -m db.employees</code>로 합니다.</p>
+      <p className={s.staffNote}>인사 원장(기간계)을 그대로 보여 줍니다. 직원 추가, 계정 중지, 비밀번호 초기화는 인사 시스템에서 처리합니다.</p>
+      {rows && (
+        <div className={s.filters}>
+          <Chips label="재직" value={filter.status} onChange={(v) => setFilter((f) => ({ ...f, status: v }))}
+                 options={[["all", "전체"], ["active", "재직"], ["retired", "퇴직"]]} />
+          <Chips label="고용" value={filter.type} onChange={(v) => setFilter((f) => ({ ...f, type: v }))}
+                 options={[["all", "전체"], ...types.map((t): [string, string] => [t, t])]} />
+          <Chips label="앱 계정" value={filter.account} onChange={(v) => setFilter((f) => ({ ...f, account: v }))}
+                 options={[["all", "전체"], ["yes", "있음"], ["no", "없음"]]} />
+          <span className={s.count}>{shown.length}명</span>
+        </div>
+      )}
       {error && <p className={s.err}>{error}</p>}
       {!error && !rows && <p className={s.empty}>불러오는 중…</p>}
       {rows && (
         <div className={s.tableWrap}>
           <table className={s.table}>
             <thead>
-              <tr><th>사번</th><th>이름</th><th>직급</th><th>고용</th><th>입사일</th><th>근속</th><th>재직</th><th>앱 계정</th></tr>
+              <tr>
+                {COLUMNS.map((c) => (
+                  <th key={c.key} aria-sort={sort.key === c.key ? (sort.asc ? "ascending" : "descending") : "none"}>
+                    <button type="button" className={s.sortBtn} onClick={() => toggle(c.key)}>
+                      {c.label}<span className={s.sortMark} aria-hidden>{sort.key === c.key ? (sort.asc ? "▲" : "▼") : ""}</span>
+                    </button>
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {shown.map((r) => (
                 <tr key={r.employee_id}>
                   <td className={s.mono}>{r.employee_id}</td>
                   <td><b>{r.name}</b></td>
@@ -272,6 +348,7 @@ function Staff() {
                   <td>{r.role ? <>{r.role}{r.disabled && <span className={s.tag}>중지</span>}</> : <span className={s.dim}>없음</span>}</td>
                 </tr>
               ))}
+              {shown.length === 0 && <tr><td colSpan={COLUMNS.length} className={s.dim}>조건에 맞는 직원이 없습니다.</td></tr>}
             </tbody>
           </table>
         </div>
