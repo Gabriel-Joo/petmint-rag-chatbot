@@ -20,7 +20,10 @@ export function CallAlert({ ringing, notice, onAccept, onReject }: Props) {
     <div className={`raised chat-text ${s.wrap}`} role="alertdialog" aria-label="전화 수신">
       <div className={s.phone} aria-hidden>
         <span className={s.ring} /><span className={s.ring} /><span className={s.ring} />
-        <span className={s.icon}>📞</span>
+        {/* 수화기 — 이모지(📞)는 글꼴 색이라 빨갛게 나와 원 바탕(--call)에 묻혔다. 흰 선 아이콘으로(2026-11-12 사용자) */}
+        <svg className={s.icon} viewBox="0 0 24 24" width="1.3em" height="1.3em" fill="currentColor" aria-hidden focusable="false">
+          <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8z" />
+        </svg>
       </div>
       <div className={s.body}>
         <div className={s.head}>

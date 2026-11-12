@@ -1,0 +1,12 @@
+/* 흐르는 카드 줄(FlowCarousel) — 로그인 체험 카드 · 홈 모드 카드(1023px 이하)가 같이 쓴다. docs 11번 「흐르는 카드」 */
+.carousel { display: flex; justify-content: center; }
+/* 카드가 띄움 그림자(.raised)와 호버 들림(.lift)을 쓰므로 칸 위아래에 여유를 둔다 — 그러지 않으면 overflow에 잘린다 */
+.viewport { flex: 0 0 auto; max-width: 100%; overflow: hidden; user-select: none; padding: 8px 0 14px; }
+.flows { cursor: grab; touch-action: pan-y;   /* 가로 끌기는 우리가, 세로 스크롤은 브라우저가 */
+  /* 흐르는 동안 양 끝에서 카드가 걸쳐 지나간다 — 끝을 흐리게 해 잘린 것이 아니라 흘러가는 것으로 보이게 */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%); }
+.dragging { cursor: grabbing; }
+.track { display: grid; grid-auto-flow: column; width: max-content; will-change: transform; }
+.cell { display: flex; min-width: 0; }
+.cell > * { flex: 1; min-width: 0; }

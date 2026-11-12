@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   padding: 40px 48px 48px;
+  container-type: inline-size;   /* 아래 .grid 높이 상한이 이 칸의 폭(cqw)으로 카드 폭을 계산한다 */
 }
 /* 헤더 로고와 같은 글꼴(완주대둔산체)·같은 크기(--font-brand). 배율 토큰이라 좁은 화면에서 함께 줄어든다.
    이 글꼴은 Bold(700) 한 벌뿐이라 굵기는 로고처럼 700으로 부른다 */
@@ -18,8 +19,14 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(360px, 1fr) auto auto;
+  grid-template-rows: minmax(min(360px, var(--card-inner) * 2400 / 1792), 1fr) auto auto;   /* 최소도 그림 높이까지만 — 1024px에서 360px가 그림(약 300px)보다 커 위가 32px 비었다 */
   column-gap: 32px;
+  /* 높이 상한(2026-11-12) — 캐릭터 칸은 남는 높이를 채우지만(1fr), 그림 높이는 카드 폭으로 정해진다(아래 기준).
+     세로로 긴 창에서 칸만 길어져 캐릭터 위가 하얗게 비었다(사용자). 칸이 그림 높이(카드 안쪽 폭 × 2400/1792)를 넘지 않게
+     격자 전체 높이를 묶는다 — 아래 이름 · 대사 · 카드 안쪽 여백 몫(--below)은 실제보다 조금 작게 잡아, 넘치면 그림이 살짝 줄 뿐 위가 비지 않게 */
+  --card-inner: calc((100cqw - 64px) / 3 - 64px);
+  --below: 180px;
+  max-height: calc(var(--card-inner) * 2400 / 1792 + var(--below));
 }
 .card {
   grid-row: span 3;
@@ -198,14 +205,15 @@
   .introVisual, .introReverse .introVisual { justify-content: center; }
   .bubble::after, .introReverse .bubble::after { top: auto; right: auto; bottom: -10px; left: 40px; transform: rotate(135deg); }
   .introFrame { width: min(100%, 420px); max-height: 60vh; }
-  .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 32px; }
-  .card { grid-row: auto; grid-template-rows: auto auto auto; }
-  .media { height: min(60vh, 640px); }
+  /* 모드 카드는 세로로 쌓지 않고 한 줄로 흐른다(2026-11-12 사용자 — FlowCarousel, ModeSelect.tsx FLOW_CARD 260px).
+     카드는 격자(subgrid) 밖이라 제 줄 셋(캐릭터 / 이름 / 대사)을 가지고, 캐릭터 칸 높이는 카드 폭에서 그림 비율로 */
+  .hero { justify-content: center; }
+  .title { margin-bottom: 16px; }
+  .flow .card { grid-row: auto; grid-template-rows: auto auto 1fr; height: 100%; padding: 16px 16px 20px; row-gap: 8px; }
+  .flow .media { height: auto; aspect-ratio: 1792 / 2400; }
 }
 @media (max-width: 640px) {
   .about { padding: 48px 16px; gap: 64px; }
   .introFrame { padding: 16px; }
   .hero { padding: 24px 16px 32px; }
-  .grid { gap: 20px; }
-  .card { padding: 16px 16px 24px; }
 }
