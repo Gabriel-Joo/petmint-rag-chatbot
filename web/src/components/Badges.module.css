@@ -1,0 +1,11 @@
+/* 작은 배지 — 거절 표시(.markRefused · Admin .refused)와 같은 크기 · 모양. 색만 다르다. 새 토큰 없음 */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.25em; vertical-align: 0.1em;
+  padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--card);
+  font-size: var(--font-2xs); font-weight: var(--font-weight-label); line-height: 1.4; white-space: nowrap;
+}
+.admin { border-color: var(--primary); color: var(--primary); }
+.agent { border-color: var(--text-dim); color: var(--text-dim); }
+.mode { color: var(--text); }
+/* 모드 아이콘은 탭보다 작게 — 배지 글씨에 맞춘다(탭은 1.5em) */
+.mode img { width: 1.2em; height: 1.2em; top: 0; }

@@ -2,10 +2,11 @@
    목록은 지난 상담 창(PastConsultations)과 같은 줄 모양, 대화는 지난 상담 창과 같은 --font-md, 표는 --font-xs */
 .page { max-width: 1600px; margin: 0 auto; padding: 16px 24px 32px; display: flex; flex-direction: column; gap: 12px; font-size: var(--font-sm); }
 
-.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
-.title { margin: 0; font-size: var(--font-lg); white-space: nowrap; }
-/* 제목 옆 설명 — 무엇을 볼 수 있는지. 좁으면 제목 아래로 내려간다 */
-.intro { margin: 0; flex: 1 1 32em; min-width: 0; max-width: 72em; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); line-height: 1.6; word-break: keep-all; }
+.head { display: flex; flex-direction: column; gap: 6px; }
+.title { margin: 0; font-size: var(--font-lg); }
+/* 제목 아래 설명 — 두 문단, 사이 한 줄(2026-11-12 사용자) */
+.intro { display: flex; flex-direction: column; gap: 1.6em; max-width: 60em; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); line-height: 1.6; word-break: keep-all; }
+.intro p { margin: 0; }
 .tabs, .quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .tab { font-size: var(--font-sm); padding: 4px 12px; white-space: nowrap; }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { IS_FAKE_API } from "../api/client";
 import type { MeOut, Mode } from "../api/types";
+import { RoleBadge } from "./Badges";
 import { ModeIcon } from "./ModeIcon";
 import s from "./TopBar.module.css";
 
@@ -19,7 +20,7 @@ interface Props {
   me: MeOut;
   /** 앱 로그인일 때만 — 있으면 오른쪽 끝에 직원 이름·팀과 로그아웃 */
   onLogout: (() => void) | null;
-  /** 관리자 화면(13번 2-5절) — 관리자 계정일 때만. 이름 옆 「관리자 화면」, 819px 이하는 ☰ 안 */
+  /** 관리자 화면(13번 2-5절) — 관리자 계정일 때만. 이름 옆 「관리자 화면」, 889px 이하는 ☰ 안 */
   onAdmin: (() => void) | null;
   adminOn: boolean;
 }
@@ -37,8 +38,8 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
     return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
 
-  // 상담원 표기 — 모두 상담원이라 팀은 쓰지 않는다. 관리자 계정은 역할을 그대로 붙인다("○○○ 관리자")
-  const who = me.name ? `${me.name} ${me.role === "관리자" ? "관리자" : "상담원"}` : me.email;
+  // 상담원 표기 — "이름 직급 [권한]"(2026-11-12 사용자 — 직급과 권한은 따로다. 권한은 배지). 팀은 쓰지 않는다(팀이 하나)
+  const who = me.name ? `${me.name}${me.grade ? ` ${me.grade}` : ""}` : me.email;
 
   return (
     <header className={s.bar}>
@@ -103,6 +104,7 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
         {onLogout && (
           <div className={s.user}>
             <span className={s.userName} title={me.email}>{who}</span>
+            {me.name && <RoleBadge role={me.role} />}
             {me.is_demo && <span className={s.demoBadge} title="비밀번호 없이 들어온 체험 계정 — 다른 방문자와 함께 씁니다">체험 계정</span>}
             {onAdmin && (
               <button className={`btn ${s.logout} ${s.adminBtn} ${adminOn ? s.adminOn : ""}`} onClick={onAdmin} disabled={locked}
