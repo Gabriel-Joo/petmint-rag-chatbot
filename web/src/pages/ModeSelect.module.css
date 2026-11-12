@@ -60,8 +60,9 @@
 .hidden { visibility: hidden; }
 
 /* 모드 이름도 로고 글꼴(완주대둔산체) — 짧은 단어라 읽기 부담이 없다. Bold(700) 한 벌뿐이라 700으로 부른다 */
-.name { font-family: var(--font-logo); font-size: var(--font-xl); font-weight: var(--font-weight-label); }
-.intro { font-size: var(--font-lead); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
+/* 2026-11-12 홈 글씨를 로그인 화면 계단(제목 52 · 섹션 40 · 묶음 30 · 본문 26 · 보조 24px)에 맞춰 한두 단계 낮췄다 — docs 11번 「홈 글씨」 */
+.name { font-family: var(--font-logo); font-size: var(--font-lg); font-weight: var(--font-weight-label); }
+.intro { font-size: var(--font-sm); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
 
 /* 프로젝트 소개 — 카드 아래로 이어진다. 바탕은 옅은 --surface로 첫 화면과 구획을 나눈다.
    모드 소개 세 줄은 글·영상을 좌우 번갈아(지그재그) 놓고, 끝에 기술 구성 */
@@ -88,7 +89,7 @@
 
 /* 한글은 어절 단위로 줄바꿈 — 기본값은 "습니/다."처럼 글자 사이에서 끊는다 */
 .introText { display: flex; flex-direction: column; gap: 20px; word-break: keep-all; overflow-wrap: anywhere; }
-.eyebrow { margin: 0; line-height: 1.2; font-family: var(--font-logo); font-size: var(--font-lg); font-weight: var(--font-weight-label); color: var(--primary); }
+.eyebrow { margin: 0; line-height: 1.2; font-family: var(--font-logo); font-size: var(--font-lead); font-weight: var(--font-weight-label); color: var(--primary); }
 /* 모델 구성 배지 — 라벨보다 작고 흐리게. 알약 사이에 + */
 .stack { list-style: none; margin: -8px 0 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .pill {
@@ -102,7 +103,7 @@
   white-space: nowrap;
 }
 .stackPlus { font-size: var(--font-2xs); color: var(--text-faint); }
-.introBody { margin: 0; font-size: var(--font-lead); color: var(--text-dim); line-height: 1.7; }
+.introBody { margin: 0; font-size: var(--font-sm); color: var(--text-dim); line-height: 1.7; }
 
 /* 섹션 제목 = 캐릭터가 하는 말. 흰 말풍선, 꼬리는 영상(캐릭터) 쪽 — 글이 왼쪽이면 오른쪽, 글이 오른쪽이면 왼쪽,
    세로로 쌓이면 아래(영상이 아래에 온다). 꼬리는 위·오른쪽 테두리만 있는 정사각형을 돌려 만든다 */
@@ -115,7 +116,7 @@
   border: 1px solid var(--line);
   border-radius: 20px;
   box-shadow: var(--shadow-1);
-  font-size: var(--font-xl);
+  font-size: var(--font-lead);
   font-weight: var(--font-weight-title);
   line-height: 1.35;
 }
@@ -134,7 +135,7 @@
 .introReverse .bubble::after { right: auto; left: -10px; transform: translateY(-50%) rotate(-135deg); }
 
 /* 사양 표 — 왼쪽 항목 이름(좁게), 오른쪽 값. 줄마다 옅은 선 */
-.spec { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 8px 0 0; font-size: var(--font-md); }
+.spec { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 8px 0 0; font-size: var(--font-xs); }
 .specRow { display: contents; }
 .specRow dt, .specRow dd { padding: 10px 0; border-top: 1px solid var(--line); }
 .specRow:last-child dt, .specRow:last-child dd { border-bottom: 1px solid var(--line); }
@@ -157,14 +158,14 @@
 
 /* 기술 구성 — 제목, 카드 8장, 구성도, 아코디언이 위에서 아래로 */
 .tech { display: flex; flex-direction: column; gap: 56px; }
-.techHeading { margin: 0; text-align: center; font-family: var(--font-logo); font-size: var(--font-2xl); font-weight: var(--font-weight-label); }
+.techHeading { margin: 0; text-align: center; font-family: var(--font-logo); font-size: var(--font-xl); font-weight: var(--font-weight-label); }
 /* 넓은 화면 4×2, 1279px 이하 2열, 640px 이하 1열 — 카드 글씨가 커서(2배) 1024px에서 4열이면 제목이 세 줄로 꺾인다 */
 .techGrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
 @media (max-width: 1279px) { .techGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .techGrid { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
 .techCard { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 28px; word-break: keep-all; }
-.techName { font-size: var(--font-base); font-weight: var(--font-weight-label); color: var(--primary); }
-.techDesc { font-size: var(--font-sm); color: var(--text-dim); line-height: 1.6; }
+.techName { font-size: var(--font-sm); font-weight: var(--font-weight-label); color: var(--primary); }
+.techDesc { font-size: var(--font-xs); color: var(--text-dim); line-height: 1.6; }
 
 /* 아코디언 — 기본 접힘, 여러 개 동시에 펼침(<details>). 줄마다 옅은 선, 오른쪽 + 가 펼치면 − 로 */
 .accordion { width: 100%; max-width: 1000px; margin: 0 auto; border-top: 1px solid var(--line); }
@@ -175,7 +176,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px 4px;
-  font-size: var(--font-base);
+  font-size: var(--font-sm);
   font-weight: var(--font-weight-label);
   cursor: pointer;
   list-style: none;
@@ -184,7 +185,7 @@
 .accSummary::after { content: "+"; font-size: 1.2em; line-height: 1; color: var(--primary); font-weight: var(--font-weight-body); }
 .acc[open] > .accSummary::after { content: "−"; }
 .accSummary:hover { color: var(--primary); }
-.accBody { margin: 0 4px 24px; font-size: var(--font-md); color: var(--text-dim); line-height: 1.7; word-break: keep-all; }
+.accBody { margin: 0 4px 24px; font-size: var(--font-xs); color: var(--text-dim); line-height: 1.7; word-break: keep-all; }
 
 @media (max-width: 1023px) {
   /* 소개는 세로로 쌓는다 — 글 위, 영상 아래(번갈아 놓던 순서도 풀어 늘 같은 순서) */

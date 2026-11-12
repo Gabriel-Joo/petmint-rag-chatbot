@@ -21,7 +21,7 @@
 .arrowHead { fill: var(--text-dim); }
 .edgeLabel { fill: var(--text-dim); font-weight: var(--font-weight-body); }
 
-.caption { font-size: var(--font-sm); color: var(--text-dim); text-align: center; word-break: keep-all; }
+.caption { font-size: var(--font-xs); color: var(--text-dim); text-align: center; word-break: keep-all; }
 
 /* 쿠버네티스 묶음 — 호스트(점선·연보라)와 구분되게 옅은 실선만 */
 .k8sGroup { fill: none; stroke: var(--line); stroke-width: 1.5; }
