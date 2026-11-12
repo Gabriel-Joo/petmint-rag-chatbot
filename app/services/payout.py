@@ -621,8 +621,29 @@ def needs_amount(question: str, pet: Pet | None, embed: "intent.Embed | None" = 
     if (treatment_cost(question) is not None or _LIMIT_WORD.search(question) or _NOT_MEDICAL.search(question)
             or OTHER_MONEY.search(question) or ANNUAL_ASK.search(question)):
         return False
+    if _payout_yesno(question, pet):
+        return True
     asks = intent.asks_amount(question, embed)
     return bool(_ASK_MONEY.search(question)) if asks is None else asks
+
+
+def _payout_yesno(question: str, pet: Pet) -> bool:
+    """「초코 입원했는데 보험금 나와요?」 — 얼마 없이 보험금이 나오는지 묻고, 병명 · 부담보 · 상해 · 면책 사실이 없다(2026-11-12).
+    병명 되묻기는 '보험금'을 금액 질문으로 보고 빠지므로(AMOUNT_UPSELL) 여기서 받는다 — 평가 L01("…보험금이 나올까요?")의 기대도 입원일수 되묻기다.
+    병명 등이 있으면 그 규칙 · 모델로(부담보 답이 금액 되묻기에 가려지지 않게)"""
+    from app.services.lexicon import EXEMPT_FACT, INJURY, NO_NAME_FILLER, PAYOUT_YESNO
+    from app.services.named_cover import terms_in
+    if not PAYOUT_YESNO.search(question):
+        return False
+    if terms_in(question, pet.species) or matched_exclusions(question, pet) or INJURY.search(question) or EXEMPT_FACT.search(question):
+        return False
+    # 병명 되묻기와 같은 '이름이 남는가' — 반려동물 이름 · 이 말 · 채움말을 지우고 한글이 남으면 병명 · 치료 이름이 있다("슬개골 수술도 …")
+    rest = PAYOUT_YESNO.sub(" ", re.sub(re.escape(pet.name) + r"(?:이|가|는|은|를|을|도|의)?", " ", question))
+    rest = _YESNO_FILLER.sub(" ", NO_NAME_FILLER.sub(" ", rest))
+    return not re.search(r"[가-힣]", rest)
+
+
+_YESNO_FILLER = re.compile(r"네|해서|했어|요")      # 되묻는 말투("네? 입원해서 …나오냐고요") — 병명 되묻기 채움말에 없는 것만
 
 
 
