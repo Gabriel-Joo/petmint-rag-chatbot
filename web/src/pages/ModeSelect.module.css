@@ -62,7 +62,10 @@
 /* 모드 이름도 로고 글꼴(완주대둔산체) — 짧은 단어라 읽기 부담이 없다. Bold(700) 한 벌뿐이라 700으로 부른다 */
 /* 2026-11-12 홈 글씨를 로그인 화면 계단(제목 52 · 섹션 40 · 묶음 30 · 본문 26 · 보조 24px)에 맞춰 한두 단계 낮췄다 — docs 11번 「홈 글씨」 */
 .name { font-family: var(--font-logo); font-size: var(--font-lg); font-weight: var(--font-weight-label); }
-.intro { font-size: var(--font-sm); font-weight: var(--font-weight-body); color: var(--primary); } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
+.intro { font-size: var(--font-sm); font-weight: var(--font-weight-body); color: var(--primary);
+  /* 대사는 문장마다 줄을 나눠 두고(ModeSelect.tsx intro) 좁은 카드(1024~1279px, 세 장이 한 줄)에서는 낱말 단위로만 끊고 줄 길이를 고르게 —
+     기본값이면 한글을 글자 단위로 끊어 "전문이에 / 요."가 됐다(2026-11-12 사용자) */
+  word-break: keep-all; text-wrap: balance; } /* 대사는 읽는 글 — 버튼 안이라 본문 무게로 되돌린다 */
 
 /* 프로젝트 소개 — 카드 아래로 이어진다. 바탕은 옅은 --surface로 첫 화면과 구획을 나눈다.
    모드 소개 세 줄은 글·영상을 좌우 번갈아(지그재그) 놓고, 끝에 기술 구성 */
