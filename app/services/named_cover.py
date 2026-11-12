@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from app.schemas import Pet
 from app.services import payout
-from app.services.lexicon import (AMOUNT_UPSELL, ASKED_MARK, COVERAGE_Q_STRICT, EXEMPT_FACT, INJURY)
+from app.services.lexicon import (AMOUNT_UPSELL, ASKED_MARK, COVERAGE_Q_STRICT, EXEMPT_FACT, INJURY, PAYOUT_YESNO)
 
 
 @dataclass(frozen=True)
@@ -121,12 +121,15 @@ def fires(question: str, prior_answer: str | None, pet: Pet | None) -> Term | No
     hits = terms_in(question, pet.species)
     if len({t.key for t in hits}) != 1:
         return None
-    if AMOUNT_UPSELL.search(question) or EXEMPT_FACT.search(question) or INJURY.search(question) or _NOT_HERE.search(question):
+    # 「감기로 입원했는데 보험금 나와요?」 — 얼마 없이 보험금이 나오는지는 금액이 아니라 보장 질문이다(2026-11-12, 16번 3-3).
+    # 그 말만 지우고 금액 낱말을 본다 — 얼마 · 금액 · 숫자가 있으면 전처럼 금액 되묻기로
+    amount_part = PAYOUT_YESNO.sub(" ", question)
+    if AMOUNT_UPSELL.search(amount_part) or EXEMPT_FACT.search(question) or INJURY.search(question) or _NOT_HERE.search(question):
         return None
     if payout.matched_exclusions(question, pet):
         return None
     reply = bool(prior_answer and ASKED_MARK in prior_answer) and len(re.sub(r"\s", "", question)) <= REPLY_MAX
-    if not (reply or COVERAGE_Q_STRICT.search(question) or _COVER_SHORT.search(question)):
+    if not (reply or COVERAGE_Q_STRICT.search(question) or _COVER_SHORT.search(question) or PAYOUT_YESNO.search(question)):
         return None
     return hits[0]
 

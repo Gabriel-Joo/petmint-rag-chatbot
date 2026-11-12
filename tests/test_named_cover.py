@@ -113,6 +113,23 @@ class Fires(unittest.TestCase):
         key, _ = run("치료비는 50만원이에요", card=f"{q0} 치료비는 50만원이에요", prior=ask, follow_up="금액만")
         self.assertNotEqual(key, "named_cover")
 
+    def test_payout_yesno_with_name(self, _):
+        """「감기로 입원했는데 보험금 나와요?」 — 얼마 없이 보험금이 나오는지는 보장 질문(2026-11-12, 16번 3-3). 병명이 있으면 ⑪′가 받는다"""
+        for q in ("감기로 입원했는데 보험금 나와요?", "초코 장염으로 통원했는데 보험금 나오나요?", "기침 때문에 병원 다녀왔는데 보험금 받을 수 있나요?"):
+            key, text = run(q)
+            self.assertEqual(key, "named_cover", q)
+            self.assertIn("면책 목록에 없어", text)
+        key, text = run("콩이 중성화 수술했는데 보험금 나와요?", "P005")
+        self.assertEqual(key, "named_cover")
+        self.assertIn("보상하지 않습니다", text)                        # 면책 — 금액부터 묻지 않는다
+        # 되묻지 말아야(⑪′가 아닌 쪽): 얼마 · 숫자는 금액 되묻기 · 카드, 면책 사실 · 상해 · 부담보는 그 규칙 · 모델
+        self.assertEqual(run("감기로 입원했는데 보험금 얼마 나와요?")[0], "needs_amount")
+        for q in ("감기로 3일 입원했는데 보험금 나와요?", "해외에서 감기 걸렸는데 보험금 나와요?", "다리를 다쳤는데 보험금 나와요?",
+                  "슬개골 탈구로 입원했는데 보험금 나와요?", "감기 보험금 언제 나와요?"):
+            self.assertNotEqual(run(q)[0], "named_cover", q)
+        self.assertEqual(run("슬개골 탈구로 입원했는데 보험금 나와요?")[0], "exclusion")   # 초코 부담보
+        self.assertEqual(run("초코 입원했는데 보험금 나와요?")[0], "needs_amount")          # 병명 없음 — 지난번 고침 그대로
+
     def test_off_by_default(self, _):
         with mock.patch.object(config, "NAMED_COVER", False):
             q0 = "초코가 입원했는데 보험금 얼마나 나와요?"
