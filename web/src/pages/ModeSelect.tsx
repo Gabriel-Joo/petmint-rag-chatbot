@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type PointerEvent } from "react";
 import type { Mode } from "../api/types";
 import domainMp4 from "../assets/characters/domain.mp4";
 import domainPng from "../assets/characters/domain.png";
@@ -10,15 +10,12 @@ import hrMp4 from "../assets/characters/hr.mp4";
 import hrPng from "../assets/characters/hr.png";
 import hrWebm from "../assets/characters/hr.webm";
 import { ArchDiagram } from "../components/ArchDiagram";
-import { FlowCarousel } from "../components/FlowCarousel";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import s from "./ModeSelect.module.css";
 
 // 09 2-1. 캐릭터는 평소 정지 이미지, 카드에 마우스를 올리면 영상(10-6). 파일명은 모드 키(general, hr, domain)
 // 배경은 투명하다 — 세 이미지·영상의 배경색이 제각각(253~255)이고 비네팅·발밑 그림자가 있어 어떤 --card 값으로도 다 맞출 수 없었다.
 //   png: 배경 투명(RGBA). 영상: webm(VP9, 알파) 먼저, 알파를 못 쓰는 브라우저(Safari)는 mp4 — 배경을 --card 색으로 채운 판이다
-const FLOW_CARD = 260;       // 좁은 화면 흐르는 모드 카드 폭(px) — ModeSelect.module.css .flow .card와 같다
-
 /** intro: 대사. 줄마다 한 줄 — 줄바꿈 위치를 정해 둔다 */
 interface Character { mode: Mode; still: string; webm: string; mp4: string; intro: string[] }
 
@@ -29,7 +26,7 @@ const CHARACTERS: Character[] = [
   { mode: "사내규정", still: hrPng, webm: hrWebm, mp4: hrMp4, intro: ["인사, 복무 규정은 제가 알아요."] },
 ];
 
-/** 좁은 화면(1023px 이하)인가 — 모드 카드를 세로로 쌓지 않고 한 줄로 흐르게 한다(2026-11-12 사용자) */
+/** 좁은 화면(1023px 이하)인가 — 모드 카드를 세로로 쌓지 않고 한 장씩 넘긴다(CardSlider, 2026-11-12 사용자) */
 const NARROW = "(max-width: 1023px)";
 function useNarrow(): boolean {
   const [narrow, setNarrow] = useState(() => window.matchMedia(NARROW).matches);
@@ -42,7 +39,7 @@ function useNarrow(): boolean {
   return narrow;
 }
 
-/** copy: 흐르는 줄 뒤에 이어 붙인 복제(탭 순서에서 뺀다). clickable: 끌기 끝의 클릭이 아닌가(FlowCarousel) */
+/** copy: 지금 보이지 않는 카드(탭 순서 · 화면 읽기에서 뺀다). clickable: 끌기 끝의 클릭이 아닌가(CardSlider) */
 function CharacterCard({ c, onSelect, copy = false, clickable }: {
   c: Character; onSelect: (m: Mode) => void; copy?: boolean; clickable?: () => boolean;
 }) {
@@ -249,6 +246,71 @@ function TechStack() {
   );
 }
 
+/** 좁은 화면(1023px 이하) 모드 카드 — 한 장씩(2026-11-12 사용자). 처음엔 업무특화, 양옆 동그란 화살표로 넘기고 손으로 끌어서도 넘긴다.
+ *  폭의 20% 넘게 끌면 넘어가고 아니면 제자리. 5px 넘게 끈 클릭은 모드로 들어가지 않는다. 처음 · 끝에서는 그쪽 화살표를 막는다(순환하지 않는다 — 세 장) */
+function CardSlider({ onSelect }: { onSelect: (m: Mode) => void }) {
+  const [index, setIndex] = useState(1);
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef({ active: false, x: 0, moved: 0, width: 1 });
+  const viewport = useRef<HTMLDivElement>(null);
+  const last = CHARACTERS.length - 1;
+  const go = (i: number) => setIndex(Math.max(0, Math.min(last, i)));
+
+  const onDown = (e: PointerEvent<HTMLDivElement>) => {
+    drag.current = { active: true, x: e.clientX, moved: 0, width: viewport.current?.clientWidth || 1 };
+  };
+  const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d.active) return;
+    const m = e.clientX - d.x;
+    d.moved = Math.max(d.moved, Math.abs(m));
+    if (d.moved > 5) {
+      if (!e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.setPointerCapture(e.pointerId);
+      setDragging(true);
+    }
+    const edge = (index === 0 && m > 0) || (index === last && m < 0);   // 끝에서는 바깥쪽으로 덜 끌린다(고무줄)
+    setDx(edge ? m / 3 : m);
+  };
+  const onUp = () => {
+    const d = drag.current;
+    if (!d.active) return;
+    d.active = false;
+    setDragging(false);
+    if (Math.abs(dx) > d.width * 0.2) go(index + (dx < 0 ? 1 : -1));
+    setDx(0);
+  };
+
+  return (
+    <div className={s.slider} role="region" aria-roledescription="carousel" aria-label="모드">
+      <button type="button" className={`${s.arrow} ${s.arrowPrev}`} onClick={() => go(index - 1)} disabled={index === 0}
+              aria-label="이전 모드"><Chevron dir="left" /></button>
+      <div className={s.sliderViewport} ref={viewport} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
+           onPointerCancel={onUp} onLostPointerCapture={(e) => e.target === e.currentTarget && onUp()}>
+        <div className={`${s.sliderTrack} ${dragging ? s.sliderDragging : ""}`}
+             style={{ transform: `translate3d(calc(${-index * 100}% + ${dx}px), 0, 0)` }}>
+          {CHARACTERS.map((c, i) => (
+            <div key={c.mode} className={s.slide} aria-roledescription="slide" aria-label={`${i + 1} / ${CHARACTERS.length}`}>
+              <CharacterCard c={c} onSelect={onSelect} copy={i !== index} clickable={() => drag.current.moved <= 5} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <button type="button" className={`${s.arrow} ${s.arrowNext}`} onClick={() => go(index + 1)} disabled={index === last}
+              aria-label="다음 모드"><Chevron dir="right" /></button>
+    </div>
+  );
+}
+
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden focusable="false" fill="none" stroke="currentColor"
+         strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
+    </svg>
+  );
+}
+
 export function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
   const narrow = useNarrow();
   return (
@@ -256,13 +318,7 @@ export function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
       <section className={s.hero}>
         <h1 className={s.title}>누구와 이야기할까요?</h1>
         {narrow ? (
-          // 좁은 화면 — 세 카드를 한 줄로 흐르게(로그인 체험 카드와 같은 FlowCarousel). 끌어서 넘기고, 다 들어가면 가운데 선다
-          <div className={s.flow}>
-            <FlowCarousel items={CHARACTERS} keyOf={(c) => c.mode} card={FLOW_CARD} gap={20} rows={1} maxColumns={3} label="모드"
-                          render={(c, { copy, clickable }) => (
-                            <CharacterCard c={c} onSelect={onSelect} copy={copy} clickable={clickable} />
-                          )} />
-          </div>
+          <CardSlider onSelect={onSelect} />
         ) : (
           <div className={s.grid}>
             {CHARACTERS.map((c) => <CharacterCard key={c.mode} c={c} onSelect={onSelect} />)}

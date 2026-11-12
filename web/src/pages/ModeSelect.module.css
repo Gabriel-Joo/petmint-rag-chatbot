@@ -1,9 +1,8 @@
 /* 10-4: 모드 선택은 여백을 넉넉하게 — 캐릭터와 카드가 살아나게. 그림자·누름 효과는 global.css의 .raised .lift
-   첫 화면(.hero)은 본문 높이를 꽉 채운다 — 세 카드가 가로를 채우고 남은 높이를 아래까지 차지한다. 좁은 화면에서는 세로로 쌓는다.
-   스크롤하면 그 아래에 프로젝트 소개(.about)가 나온다 */
+   첫 화면(.hero)은 카드 높이만큼만 — 아래 여백(48px) 뒤 바로 프로젝트 소개(.about)가 이어진다(2026-11-12 사용자).
+   전에는 본문 높이를 꽉 채워(min-height 100%) 창이 커도 소개는 늘 스크롤해야 나왔다. 좁은 화면(1023px 이하)은 한 장씩 넘긴다(CardSlider) */
 .page { height: 100%; }
 .hero {
-  min-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 40px 48px 48px;
@@ -16,17 +15,16 @@
 /* 세 카드가 같은 줄(캐릭터 / 모드 이름 / 대사)을 나눠 쓴다(subgrid). 캐릭터 자리 높이가 세 카드에서 같고,
    대사 줄 수가 달라도(사내규정 1줄, 나머지 2줄) 모드 이름이 같은 높이에 온다 */
 .grid {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(min(360px, var(--card-inner) * 2400 / 1792), 1fr) auto auto;   /* 최소도 그림 높이까지만 — 1024px에서 360px가 그림(약 300px)보다 커 위가 32px 비었다 */
-  column-gap: 32px;
-  /* 높이 상한(2026-11-12) — 캐릭터 칸은 남는 높이를 채우지만(1fr), 그림 높이는 카드 폭으로 정해진다(아래 기준).
-     세로로 긴 창에서 칸만 길어져 캐릭터 위가 하얗게 비었다(사용자). 칸이 그림 높이(카드 안쪽 폭 × 2400/1792)를 넘지 않게
-     격자 전체 높이를 묶는다 — 아래 이름 · 대사 · 카드 안쪽 여백 몫(--below)은 실제보다 조금 작게 잡아, 넘치면 그림이 살짝 줄 뿐 위가 비지 않게 */
+  /* 캐릭터 칸 높이(2026-11-12) — 그림 높이(카드 안쪽 폭 × 2400/1792)가 기준. 창이 짧으면 카드가 창 안에 들어오게 줄이되(--fit:
+     창 높이에서 상단바 · 제목 · 이름 · 대사 · 여백 몫 470px를 뺀 것) 280px(그림이 더 작으면 그림)보다는 줄이지 않는다.
+     칸이 그림보다 길어지지 않으니 세로로 긴 창에서도 캐릭터 위가 비지 않는다(전에는 남는 높이를 채워(1fr) 위가 하얗게 비었다) */
   --card-inner: calc((100cqw - 64px) / 3 - 64px);
-  --below: 180px;
-  max-height: calc(var(--card-inner) * 2400 / 1792 + var(--below));
+  --img: calc(var(--card-inner) * 2400 / 1792);
+  --fit: calc(100dvh - 470px);
+  grid-template-rows: max(min(var(--img), var(--fit)), min(280px, var(--img))) auto auto;
+  column-gap: 32px;
 }
 .card {
   grid-row: span 3;
@@ -205,15 +203,34 @@
   .introVisual, .introReverse .introVisual { justify-content: center; }
   .bubble::after, .introReverse .bubble::after { top: auto; right: auto; bottom: -10px; left: 40px; transform: rotate(135deg); }
   .introFrame { width: min(100%, 420px); max-height: 60vh; }
-  /* 모드 카드는 세로로 쌓지 않고 한 줄로 흐른다(2026-11-12 사용자 — FlowCarousel, ModeSelect.tsx FLOW_CARD 260px).
-     카드는 격자(subgrid) 밖이라 제 줄 셋(캐릭터 / 이름 / 대사)을 가지고, 캐릭터 칸 높이는 카드 폭에서 그림 비율로 */
-  .hero { justify-content: center; }
+  /* 모드 카드는 한 장씩 넘긴다(CardSlider, 2026-11-12 사용자) — 카드는 격자(subgrid) 밖이라 제 줄 셋(캐릭터 / 이름 / 대사)을 갖고,
+     캐릭터 칸 높이는 카드 폭에서 그림 비율로. 화살표는 카드 양옆 세로 가운데 */
   .title { margin-bottom: 16px; }
-  .flow .card { grid-row: auto; grid-template-rows: auto auto 1fr; height: 100%; padding: 16px 16px 20px; row-gap: 8px; }
-  .flow .media { height: auto; aspect-ratio: 1792 / 2400; }
+  .slide .card { grid-row: auto; grid-template-rows: auto auto 1fr; width: 100%; height: 100%; padding: 16px 16px 20px; row-gap: 8px; }
+  .slide .media { height: auto; aspect-ratio: 1792 / 2400; }
 }
 @media (max-width: 640px) {
   .about { padding: 48px 16px; gap: 64px; }
   .introFrame { padding: 16px; }
   .hero { padding: 24px 16px 32px; }
 }
+
+/* 좁은 화면 카드 넘기기(CardSlider, 2026-11-12) — 카드 한 장 폭 = min(340px, 칸 − 양옆 화살표 자리). 화살표는 카드 밖 양옆 세로 가운데.
+   끌기 중에는 transition을 끄고 손을 따라오고, 놓으면 0.3초에 붙는다. 그림자 · 호버 들림이 잘리지 않게 칸 위아래에 여유 */
+.slider { position: relative; width: min(340px, 100% - 112px); margin: 0 auto; }
+.sliderViewport { overflow: hidden; touch-action: pan-y; user-select: none; padding: 8px 0 14px; }
+.sliderTrack { display: flex; transition: transform 300ms ease; }
+.sliderDragging { transition: none; cursor: grabbing; }
+.slide { flex: 0 0 100%; display: flex; padding: 0 6px; }
+.arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
+  width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--card); color: var(--primary); box-shadow: var(--shadow-2);
+  font-size: 22px; cursor: pointer; padding: 0;
+}
+.arrow:hover:not(:disabled) { box-shadow: var(--shadow-3); }
+.arrow:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+.arrow:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.arrowPrev { left: -56px; }
+.arrowNext { right: -56px; }
+@media (prefers-reduced-motion: reduce) { .sliderTrack { transition: none; } }
