@@ -91,9 +91,9 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
   return (
     <main className={s.page}>
       <form className={`raised ${s.card}`} method="post" onSubmit={(e) => void submit(e)} noValidate>
-        {/* 로고는 상단바 로고(TopBar .brandTitle)와 같은 토큰 — 본문 배율 그대로(.chat-text 밖). 그 아래 글씨는 대화 화면 토큰(.chat-text) */}
+        {/* 로그인 카드 · 체험 제목은 로그인 뒤 홈과 같은 본문 배율 토큰. 로고는 상단바 로고(TopBar .brandTitle)와 같은 규칙 */}
         <h1 className={s.brand}>펫퍼민트 상담</h1>
-        <div className={`chat-text ${s.body}`}>
+        <div className={s.body}>
         <p className={s.sub}>
           {changeFor ? `${changeFor.name ?? changeFor.employee_id}님, 처음 로그인하셨습니다. 비밀번호를 바꿔 주세요.` : "사번과 비밀번호로 로그인하세요."}
         </p>
@@ -138,7 +138,7 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
       {/* 체험 — 상담원 · 관리자를 나눈다(2026-11-12 사용자, 런슈즈 로그인과 같은 나눔). 상담원은 2줄로 가로로 흐르고(DemoCards),
           관리자는 그 아래 한 장(점선). 칩은 이 계정으로 볼 수 있는 것 — 무엇을 물어볼지 알게 다 싣는다 */}
       {!changeFor && demo.length > 0 && (
-        <section className={`chat-text ${s.demo}`} aria-label="체험 계정">
+        <section className={s.demo} aria-label="체험 계정">
           <h2 className={s.demoHead}>사번 없이 체험하기</h2>
           <p className={s.demoNote}>
             누구나 함께 쓰는 체험 계정이라 남긴 상담은 다른 방문자도 볼 수 있어요. 고객 · 직원 정보는 모두 가상입니다.<br />
