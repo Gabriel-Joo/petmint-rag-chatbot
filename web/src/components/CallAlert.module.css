@@ -34,7 +34,7 @@
   place-items: center;
   font-size: 1em;
 }
-.icon { font-size: 1.3em; line-height: 1; position: relative; }
+.icon { position: relative; display: block; color: var(--card); }   /* 흰 수화기(SVG, currentColor) — 링 위에 */
 .ring {
   position: absolute;
   inset: 0;

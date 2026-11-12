@@ -10,12 +10,15 @@ import hrMp4 from "../assets/characters/hr.mp4";
 import hrPng from "../assets/characters/hr.png";
 import hrWebm from "../assets/characters/hr.webm";
 import { ArchDiagram } from "../components/ArchDiagram";
+import { FlowCarousel } from "../components/FlowCarousel";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import s from "./ModeSelect.module.css";
 
 // 09 2-1. 캐릭터는 평소 정지 이미지, 카드에 마우스를 올리면 영상(10-6). 파일명은 모드 키(general, hr, domain)
 // 배경은 투명하다 — 세 이미지·영상의 배경색이 제각각(253~255)이고 비네팅·발밑 그림자가 있어 어떤 --card 값으로도 다 맞출 수 없었다.
 //   png: 배경 투명(RGBA). 영상: webm(VP9, 알파) 먼저, 알파를 못 쓰는 브라우저(Safari)는 mp4 — 배경을 --card 색으로 채운 판이다
+const FLOW_CARD = 260;       // 좁은 화면 흐르는 모드 카드 폭(px) — ModeSelect.module.css .flow .card와 같다
+
 /** intro: 대사. 줄마다 한 줄 — 줄바꿈 위치를 정해 둔다 */
 interface Character { mode: Mode; still: string; webm: string; mp4: string; intro: string[] }
 
@@ -26,7 +29,23 @@ const CHARACTERS: Character[] = [
   { mode: "사내규정", still: hrPng, webm: hrWebm, mp4: hrMp4, intro: ["인사, 복무 규정은 제가 알아요."] },
 ];
 
-function CharacterCard({ c, onSelect }: { c: Character; onSelect: (m: Mode) => void }) {
+/** 좁은 화면(1023px 이하)인가 — 모드 카드를 세로로 쌓지 않고 한 줄로 흐르게 한다(2026-11-12 사용자) */
+const NARROW = "(max-width: 1023px)";
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => window.matchMedia(NARROW).matches);
+  useEffect(() => {
+    const m = window.matchMedia(NARROW);
+    const on = () => setNarrow(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return narrow;
+}
+
+/** copy: 흐르는 줄 뒤에 이어 붙인 복제(탭 순서에서 뺀다). clickable: 끌기 끝의 클릭이 아닌가(FlowCarousel) */
+function CharacterCard({ c, onSelect, copy = false, clickable }: {
+  c: Character; onSelect: (m: Mode) => void; copy?: boolean; clickable?: () => boolean;
+}) {
   const reduced = useReducedMotion();
   const video = useRef<HTMLVideoElement>(null);
   const hover = useRef(0); // 들어오고 나갈 때마다 오른다 — 늦게 온 재생 알림이 이미 끝난 호버의 것인지 가린다
@@ -60,7 +79,8 @@ function CharacterCard({ c, onSelect }: { c: Character; onSelect: (m: Mode) => v
   };
 
   return (
-    <button className={`raised lift ${s.card}`} onClick={() => onSelect(c.mode)} onMouseEnter={start} onMouseLeave={stop}>
+    <button className={`raised lift ${s.card}`} onClick={() => (clickable?.() ?? true) && onSelect(c.mode)}
+            onMouseEnter={start} onMouseLeave={stop} tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <span className={s.media} aria-hidden>
         <span className={s.frame}>
           <img className={`${s.still} ${showVideo ? s.hidden : ""}`} src={c.still} alt="" draggable={false} />
@@ -230,13 +250,24 @@ function TechStack() {
 }
 
 export function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
+  const narrow = useNarrow();
   return (
     <main className={s.page}>
       <section className={s.hero}>
         <h1 className={s.title}>누구와 이야기할까요?</h1>
-        <div className={s.grid}>
-          {CHARACTERS.map((c) => <CharacterCard key={c.mode} c={c} onSelect={onSelect} />)}
-        </div>
+        {narrow ? (
+          // 좁은 화면 — 세 카드를 한 줄로 흐르게(로그인 체험 카드와 같은 FlowCarousel). 끌어서 넘기고, 다 들어가면 가운데 선다
+          <div className={s.flow}>
+            <FlowCarousel items={CHARACTERS} keyOf={(c) => c.mode} card={FLOW_CARD} gap={20} rows={1} maxColumns={3} label="모드"
+                          render={(c, { copy, clickable }) => (
+                            <CharacterCard c={c} onSelect={onSelect} copy={copy} clickable={clickable} />
+                          )} />
+          </div>
+        ) : (
+          <div className={s.grid}>
+            {CHARACTERS.map((c) => <CharacterCard key={c.mode} c={c} onSelect={onSelect} />)}
+          </div>
+        )}
       </section>
       {/* 프로젝트 소개 — 스크롤하면 나온다. 모드마다 글·영상을 좌우 번갈아(지그재그), 끝에 기술 구성 */}
       <div className={s.about} aria-label="프로젝트 소개" role="region">
