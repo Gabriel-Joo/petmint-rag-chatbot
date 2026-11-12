@@ -3,8 +3,9 @@ seed_consultations.py
 관리자 화면 시드 상담(2026-11-12, docs/13 2-5절) — db/fixtures/seed_consultations.json의 질문을 **챗봇에 실제로 물어** 상담을 만든다.
 답 · 발췌(retrieved) · 근거 조항(references) · 계산 카드는 운영 경로 그대로 남는다. 시각만 나중에 SQL로 흩는다.
 
-  python scripts/seed_consultations.py run https://petmint.ronanlab.dev  out.json   # 1) 묻기 — 체험 로그인으로 직원마다 들어간다
-  python scripts/seed_consultations.py retime out.json > retime.sql                  # 2) 시각 흩기 SQL(평일 09~18시 KST, 2주)
+  python scripts/seed_consultations.py run https://petmint.ronanlab.dev out.json [batch]   # 1) 묻기 — 체험 로그인으로 직원마다 들어간다
+  python scripts/seed_consultations.py retime out.json [오늘 씨앗 몫] > retime.sql          # 2) 시각 흩기 SQL(평일 09~17:30 KST, 2주)
+  # 2026-11-12: batch 1 = retime 기본값(씨앗 20261112, 7에 하나 오늘), batch 2 = 씨앗 20261113, 10에 하나 오늘
   # 3) 운영: zcat 없이 retime.sql을 mysql에 넣는다(docs/12 1-5절의 $K)
 
 - 체험 로그인(POST /api/auth/demo)을 쓰므로 PETMINT_DEMO_LOGIN=1이고 그 직원의 앱 계정이 있어야 한다(0012).
@@ -53,8 +54,8 @@ async def ask(ws, text: str, pet: str | None) -> dict:
             return out
 
 
-async def run(base: str, out_path: str, limit: int | None = None) -> None:
-    seed = json.loads(FIXTURE.read_text())["sessions"][:limit]
+async def run(base: str, out_path: str, batch: int | None = None) -> None:
+    seed = [s for s in json.loads(FIXTURE.read_text())["sessions"] if batch is None or s.get("batch", 1) == batch]
     ws_base = base.replace("https://", "wss://").replace("http://", "ws://")
     hdr = {"Origin": base}
     results = []
@@ -91,11 +92,11 @@ async def run(base: str, out_path: str, limit: int | None = None) -> None:
           f"{sum('error' in t for r in results for t in r['turns'])}")
 
 
-def retime(out_path: str, today: date) -> str:
+def retime(out_path: str, today: date, seed: int = 20261112, today_every: int = 7) -> str:
     """세션마다 평일 09:00~17:30 KST 시각을 준다(직원마다 겹치지 않게, 최근 2주). 오늘에도 몇 건. 턴은 1~3분 간격.
     결정적이다(같은 입력이면 같은 시각). DB는 UTC naive라 9시간을 뺀다"""
     rows = json.loads(Path(out_path).read_text())
-    rnd = random.Random(20261112)
+    rnd = random.Random(seed)
     days = [today - timedelta(days=i) for i in range(0, 17) if (today - timedelta(days=i)).weekday() < 5]
     now_kst = datetime.now(KST).replace(tzinfo=None)
     used: set[tuple[str, date]] = set()
@@ -103,7 +104,7 @@ def retime(out_path: str, today: date) -> str:
     utc = lambda d: (d - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     for i, r in enumerate(rows):
         while True:
-            day = days[0] if i % 7 == 0 else rnd.choice(days[1:])     # 일곱에 하나는 오늘(관리자 화면 기본이 오늘이다)
+            day = days[0] if i % today_every == 0 else rnd.choice(days[1:])     # 몇에 하나는 오늘(관리자 화면 기본이 오늘이다)
             if (r["emp"], day) not in used or len(used) > 200:
                 break
         used.add((r["emp"], day))
@@ -126,6 +127,7 @@ def retime(out_path: str, today: date) -> str:
 
 if __name__ == "__main__":
     if sys.argv[1] == "run":
-        asyncio.run(run(sys.argv[2].rstrip("/"), sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else None))   # 넷째 인자: 앞 N개만(시험)
+        asyncio.run(run(sys.argv[2].rstrip("/"), sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else None))   # 넷째 인자: 그 batch만
     elif sys.argv[1] == "retime":
-        print(retime(sys.argv[2], date.fromisoformat(sys.argv[3]) if len(sys.argv) > 3 else datetime.now(KST).date()), end="")
+        print(retime(sys.argv[2], date.fromisoformat(sys.argv[3]) if len(sys.argv) > 3 else datetime.now(KST).date(),
+                     *(int(x) for x in sys.argv[4:6])), end="")   # 다섯째 · 여섯째 인자: 난수 씨앗, 오늘 몫(몇에 하나)
