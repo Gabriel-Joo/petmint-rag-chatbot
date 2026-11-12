@@ -575,6 +575,22 @@ class LoginIn(_Model):
     password: str = Field(min_length=1, max_length=256)
 
 
+class DemoLoginIn(_Model):
+    """체험 로그인 — 사번만. 비밀번호는 없다(서버가 체험 풀 안의 사번만 받는다, 13번 2-4절)"""
+    employee_id: str = Field(min_length=1, max_length=16)
+
+
+class DemoAccountOut(_Model):
+    """체험 카드 한 장 — summary는 "권태호 부장 · 근속 25년 8개월 · 연차 14일 남음", tags는 이 계정으로 볼 수 있는 것"""
+    employee_id: str
+    name: str
+    grade: str
+    team: str | None = None
+    role: Role
+    summary: str
+    tags: list[str] = Field(default_factory=list)
+
+
 class PasswordIn(_Model):
     current: str = Field(min_length=1, max_length=256)
     new: str = Field(min_length=1, max_length=256)
@@ -590,6 +606,7 @@ class MeOut(_Model):
     grade: str | None = None
     role: Role | None = None
     must_change_password: bool = False
+    is_demo: bool = False                          # 체험 로그인 세션 — 화면에 "체험 계정"을 붙인다(13번 2-4절)
 
 
 # ----- 사내규정 본인 정보 블록(2026-10-28) — 급여·평균임금·수당 금액·평가는 싣지 않는다(옆에서 볼 수 있다. 물을 때만 답에 나온다)

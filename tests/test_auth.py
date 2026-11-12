@@ -142,6 +142,94 @@ class WsTest(unittest.TestCase):
         self.assertEqual(self.ws_close_code(store, cookie="tok"), config.WS_CLOSE_SESSION_NOT_FOUND)
 
 
+
+class DemoRouteTest(unittest.TestCase):
+    """체험 로그인 라우터(2026-11-12, 13번 2-4절) — 꺼지면 404, 켜면 카드 · 쿠키, IP는 CF-Connecting-IP"""
+
+    def setUp(self):
+        self.patches = [mock.patch.object(config, "AUTH", "app"), mock.patch.object(config, "DEMO_LOGIN", True)]
+        for p in self.patches:
+            p.start()
+        from app.services.auth import Employee
+        self.store = mock.Mock()
+        self.store.resolve.return_value = None
+        self.store.demo_pool.return_value = [(Employee("E2001003", "권태호", "kwon@petmint.example", "고객상담팀", "부장", False), "관리자")]
+        self.demo_me = Me("E2001003", "권태호", "kwon@petmint.example", "고객상담팀", "부장", "관리자", False, True)
+        self.store.demo_login.return_value = ("tok", self.demo_me)
+        app_ = make_app(self.store)
+        app_.state.employees = mock.Mock()
+        app_.state.employees.load.return_value = None
+        self.c = TestClient(app_)
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+
+    def test_off_is_404(self):
+        with mock.patch.object(config, "DEMO_LOGIN", False):
+            self.assertEqual(self.c.get("/api/auth/demo-accounts").status_code, 404)
+            self.assertEqual(self.c.post("/api/auth/demo", json={"employee_id": "E2001003"}).status_code, 404)
+        self.store.demo_login.assert_not_called()
+
+    def test_access_mode_is_404(self):
+        with mock.patch.object(config, "AUTH", "access"):
+            self.assertEqual(self.c.get("/api/auth/demo-accounts").status_code, 404)
+
+    def test_cards(self):
+        r = self.c.get("/api/auth/demo-accounts")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()[0]["role"], "관리자")
+        self.assertNotIn("password", r.text.lower())
+
+    def test_demo_login_sets_cookie_and_flag(self):
+        r = self.c.post("/api/auth/demo", json={"employee_id": "E2001003"}, headers={"CF-Connecting-IP": "203.0.113.7"})
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["is_demo"])
+        self.assertIn("httponly", r.headers["set-cookie"].lower())
+        self.assertEqual(self.store.demo_login.call_args.args[:2], ("E2001003", "203.0.113.7"))
+
+    def test_demo_login_errors_pass_through(self):
+        self.store.demo_login.side_effect = AuthError(400, "체험할 수 없는 계정입니다.")
+        self.assertEqual(self.c.post("/api/auth/demo", json={"employee_id": "E9999999"}).status_code, 400)
+
+    def test_demo_post_cross_site_rejected(self):
+        r = self.c.post("/api/auth/demo", json={"employee_id": "E2001003"}, headers={"Origin": "https://evil.example"})
+        self.assertEqual(r.status_code, 403)
+
+
+class RateLimitTest(unittest.TestCase):
+    def test_sliding_window(self):
+        from app.services.rate_limit import SlidingWindow
+        t = [0.0]
+        w = SlidingWindow(10, 60, clock=lambda: t[0])
+        self.assertTrue(all(w.allow("a") for _ in range(10)))
+        self.assertFalse(w.allow("a"))
+        self.assertTrue(w.allow("b"))                     # 방문자마다 따로
+        t[0] = 60.5
+        self.assertTrue(w.allow("a"))                     # 창이 지나면 다시
+
+
+class DemoCardTest(unittest.TestCase):
+    def test_card_text(self):
+        from datetime import date
+
+        from app.services import demo
+        from app.services.auth import Employee
+        from app.services.hr_personal import Facts
+        f = Facts("E1", "류채원", "고객상담팀", "사원", date(2026, 9, 1), "정규직", date(2026, 9, 1), date(2001, 1, 1), None)
+        c = demo.card(Employee("E1", "류채원", "r@x", "고객상담팀", "사원", False), "상담원", f, date(2026, 11, 12))
+        self.assertEqual(c.summary, "류채원 사원 · 근속 2개월 · 연차 2일 남음")
+        self.assertIn("수습 중(11-30까지)", c.tags)
+        self.assertIn("1년 미만(퇴직금 없음)", c.tags)
+
+    def test_card_without_ledger(self):
+        from datetime import date
+
+        from app.services import demo
+        from app.services.auth import Employee
+        c = demo.card(Employee("E1", "가", "a@x", None, "사원", False), "상담원", None, date(2026, 11, 12))
+        self.assertEqual((c.summary, c.tags), ("가 사원", []))
+
 @unittest.skipUnless(os.environ.get("PETMINT_DB_TESTS") == "1", "로컬 MySQL 필요(PETMINT_DB_TESTS=1)")
 class StoreTest(unittest.TestCase):
     EID = "E2025112"
@@ -234,6 +322,65 @@ class StoreTest(unittest.TestCase):
             with self.engine.begin() as c:
                 c.execute(self.text("UPDATE accounts SET must_change_password = TRUE WHERE employee_id = 'E2015044'"))
 
+
+    # ----- 체험 로그인(2026-11-12, 13번 2-4절)
+
+    def _demo_sessions(self):
+        with self.engine.begin() as c:
+            return c.execute(self.text("SELECT COUNT(*) FROM auth_sessions WHERE employee_id = :e AND demo"), dict(e=self.EID)).scalar()
+
+    def test_demo_login_is_marked_and_skips_password_change(self):
+        token, me = self.store.demo_login(self.EID, None, "test")
+        self.assertTrue(me.demo)
+        self.assertFalse(me.must_change_password)               # 계정은 첫 로그인 변경 대기지만 체험은 묻지 않는다
+        r = self.store.resolve(token)
+        self.assertTrue(r.demo)
+        self.assertFalse(r.must_change_password)
+        with self.assertRaises(AuthError) as e:
+            self.store.change_password(r, token, "first-pass-123", "second-pass-456")
+        self.assertEqual(e.exception.status, 403)
+        _, normal = self.store.login(self.EID, "first-pass-123", None, None)   # 같은 직원의 비밀번호 로그인은 체험이 아니다
+        self.assertFalse(normal.demo)
+
+    def test_demo_login_ignores_and_keeps_lock(self):
+        for _ in range(5):
+            with self.assertRaises(AuthError):
+                self.store.login(self.EID, "wrong-password", None, None)
+        token, _ = self.store.demo_login(self.EID, None, None)  # 누가 잠가도 체험은 막히지 않는다
+        self.assertIsNotNone(self.store.resolve(token))
+        with self.assertRaises(AuthError) as e:                  # 잠금은 그대로 남는다
+            self.store.login(self.EID, "first-pass-123", None, None)
+        self.assertEqual(e.exception.status, 429)
+
+    def test_demo_pool_excludes_retired_and_disabled(self):
+        ids = [e.employee_id for e, _ in self.store.demo_pool()]
+        self.assertIn(self.EID, ids)
+        self.assertNotIn("E2015044", ids)                        # 퇴직
+        with self.assertRaises(AuthError) as e:
+            self.store.demo_login("E2015044", None, None)
+        self.assertEqual(e.exception.status, 400)
+        with self.engine.begin() as c:
+            c.execute(self.text("UPDATE accounts SET disabled_at = NOW() WHERE employee_id = :e"), dict(e=self.EID))
+        self.assertNotIn(self.EID, [e.employee_id for e, _ in self.store.demo_pool()])
+
+    def test_demo_login_creates_passwordless_account(self):
+        with self.engine.begin() as c:
+            c.execute(self.text("DELETE FROM accounts WHERE employee_id = :e"), dict(e=self.EID))
+        token, me = self.store.demo_login(self.EID, None, None)
+        self.assertEqual(me.role, "상담원")
+        with self.assertRaises(AuthError) as e:                  # 비밀번호 없는 계정 — 사번 · 비밀번호로는 못 들어온다
+            self.store.login(self.EID, "", None, None)
+        self.assertEqual(e.exception.status, 401)
+
+    def test_demo_ip_limit(self):
+        with mock.patch.object(config, "DEMO_LOGIN_PER_IP", 3):
+            for _ in range(3):
+                self.store.demo_login(self.EID, "203.0.113.9", None)
+            with self.assertRaises(AuthError) as e:
+                self.store.demo_login(self.EID, "203.0.113.9", None)
+            self.assertEqual(e.exception.status, 429)
+            self.store.demo_login(self.EID, "203.0.113.10", None)   # 다른 IP는 된다
+        self.assertEqual(self._demo_sessions(), 4)
 
 if __name__ == "__main__":
     unittest.main()

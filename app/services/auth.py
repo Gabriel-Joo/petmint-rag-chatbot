@@ -6,6 +6,8 @@ auth.py
   petmint.accounts·auth_sessions에 있다. 다른 데이터베이스라 조인하지 않고 두 번 읽는다.
 - 쿠키에는 32바이트 난수 토큰, DB에는 그 SHA-256만 둔다. JWT를 쓰지 않는다 — 퇴직·비밀번호 변경·로그아웃 때 즉시 끊어야 한다.
 - 실패 문구는 하나다(사번이 없는지 비밀번호가 틀렸는지 알려 주지 않는다). 없는 사번도 같은 시간이 걸리게 가짜 해시를 검증한다.
+- 체험 로그인(2026-11-12, 13번 2-4절): 비밀번호 없이 체험 풀(퇴직 · 중지 아닌 가상 직원) 안의 사번으로 들어온다. 세션에 demo를 찍는다 —
+  비밀번호 변경 403, 첫 로그인 비밀번호 변경 없음, 잠금(실패 횟수)을 보지도 바꾸지도 않는다. 계정이 없는 직원은 비밀번호 없는 계정을 만든다.
 """
 
 import hashlib
@@ -17,6 +19,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from sqlalchemy import Engine, text
 
+from app import config
 from app.db import now
 
 IDLE = timedelta(hours=2)            # 마지막 요청 후 이만큼 지나면 만료
@@ -28,6 +31,9 @@ MIN_PASSWORD = 10
 
 FAIL_MESSAGE = "사번 또는 비밀번호가 올바르지 않습니다."
 LOCK_MESSAGE = "로그인 실패가 반복되어 잠시 잠겼습니다. 15분 뒤에 다시 시도하세요."
+DEMO_WINDOW = timedelta(minutes=15)  # 체험 로그인 IP 제한 창
+DEMO_LIMIT_MESSAGE = "체험 로그인이 너무 잦습니다. 15분 뒤에 다시 시도하세요."
+DEMO_PASSWORD_MESSAGE = "체험 계정은 비밀번호를 바꿀 수 없습니다."
 
 _hasher = PasswordHasher()
 _DUMMY = _hasher.hash("dummy-password-for-timing")
@@ -58,6 +64,7 @@ class Me:
     grade: str
     role: str
     must_change_password: bool
+    demo: bool = False                 # 체험 로그인 세션(auth_sessions.demo)
 
 
 def hash_password(password: str) -> str:
@@ -84,6 +91,20 @@ class AuthStore:
             r = c.execute(text("SELECT employee_id, name, email, team, grade, retired_on FROM employees WHERE employee_id = :e"),
                           dict(e=employee_id)).first()
         return None if r is None else Employee(r[0], r[1], r[2].lower(), r[3], r[4], r[5] is not None and r[5] <= now().date())
+
+    def demo_pool(self) -> list[tuple[Employee, str]]:
+        """체험 풀 — 퇴직하지 않은 가상 직원 전부와 그 역할(계정이 없으면 상담원). 앱에서 중지된 계정은 뺀다"""
+        with self.core.connect() as c:
+            ids = [r[0] for r in c.execute(text("SELECT employee_id FROM employees ORDER BY employee_id"))]
+        with self.engine.connect() as c:
+            acc = {r[0]: (r[1], r[2]) for r in c.execute(text("SELECT employee_id, role, disabled_at FROM accounts"))}
+        out = []
+        for eid in ids:
+            emp = self.employee(eid)
+            role, disabled = acc.get(eid, ("상담원", None))
+            if emp is not None and not emp.retired and disabled is None:
+                out.append((emp, role))
+        return out
 
     def employee_by_email(self, email: str) -> Employee | None:
         with self.core.connect() as c:
@@ -130,18 +151,39 @@ class AuthStore:
             raise fail
         return token, Me(emp.employee_id, emp.name, emp.email, emp.team, emp.grade, role, bool(must_change))
 
+    def demo_login(self, employee_id: str, ip: str | None, user_agent: str | None) -> tuple[str, Me]:
+        """체험 로그인 — 비밀번호 없이 체험 풀 안의 사번으로 세션을 연다. 풀 밖은 400, 같은 IP 15분 DEMO_LOGIN_PER_IP번 넘으면 429.
+        계정이 없으면 비밀번호 없는 계정(사번 · 비밀번호로는 못 들어온다)을 만든다. 잠금 · 실패 횟수 · 비밀번호는 건드리지 않는다"""
+        pool = {emp.employee_id: (emp, role) for emp, role in self.demo_pool()}
+        if employee_id not in pool:
+            raise AuthError(400, "체험할 수 없는 계정입니다.")
+        emp, role = pool[employee_id]
+        t, token = now(), secrets.token_urlsafe(32)
+        with self.engine.begin() as c:
+            if ip is not None:
+                n = c.execute(text("SELECT COUNT(*) FROM auth_sessions WHERE demo AND ip = :ip AND created_at > :since"),
+                              dict(ip=ip, since=t - DEMO_WINDOW)).scalar()
+                if n >= config.DEMO_LOGIN_PER_IP:
+                    raise AuthError(429, DEMO_LIMIT_MESSAGE)
+            c.execute(text("INSERT IGNORE INTO accounts (employee_id, role, password_hash, must_change_password, created_at)"
+                           " VALUES (:e, '상담원', NULL, TRUE, :t)"), dict(e=employee_id, t=t))
+            c.execute(text("INSERT INTO auth_sessions (token_hash, employee_id, created_at, last_seen_at, expires_at, ip,"
+                           " user_agent, demo) VALUES (:h, :e, :t, :t, :x, :ip, :ua, TRUE)"),
+                      dict(h=_token_hash(token), e=employee_id, t=t, x=t + ABSOLUTE, ip=ip, ua=(user_agent or "")[:255] or None))
+        return token, Me(emp.employee_id, emp.name, emp.email, emp.team, emp.grade, role, False, True)
+
     def resolve(self, token: str | None) -> Me | None:
         """쿠키 토큰 → 지금 직원. 없음·만료·중지·퇴직이면 None(만료된 행은 지운다)"""
         if not token:
             return None
         t, h = now(), _token_hash(token)
         with self.engine.begin() as c:
-            r = c.execute(text("SELECT s.employee_id, s.last_seen_at, s.expires_at, a.role, a.must_change_password, a.disabled_at"
-                               " FROM auth_sessions s JOIN accounts a USING (employee_id) WHERE s.token_hash = :h"),
+            r = c.execute(text("SELECT s.employee_id, s.last_seen_at, s.expires_at, a.role, a.must_change_password, a.disabled_at,"
+                               " s.demo FROM auth_sessions s JOIN accounts a USING (employee_id) WHERE s.token_hash = :h"),
                           dict(h=h)).first()
             if r is None:
                 return None
-            employee_id, seen, expires, role, must_change, disabled_at = r
+            employee_id, seen, expires, role, must_change, disabled_at, demo = r
             if expires <= t or seen + IDLE <= t or disabled_at is not None:
                 c.execute(text("DELETE FROM auth_sessions WHERE token_hash = :h"), dict(h=h))
                 return None
@@ -151,7 +193,8 @@ class AuthStore:
         if emp is None or emp.retired:
             self.logout(token)
             return None
-        return Me(emp.employee_id, emp.name, emp.email, emp.team, emp.grade, role, bool(must_change))
+        demo = bool(demo)
+        return Me(emp.employee_id, emp.name, emp.email, emp.team, emp.grade, role, bool(must_change) and not demo, demo)
 
     def logout(self, token: str | None) -> None:
         if token:
@@ -159,7 +202,9 @@ class AuthStore:
                 c.execute(text("DELETE FROM auth_sessions WHERE token_hash = :h"), dict(h=_token_hash(token)))
 
     def change_password(self, me: Me, token: str, current: str, new: str) -> None:
-        """현재 비밀번호를 확인하고 바꾼다. 이 세션만 남기고 그 직원의 다른 세션을 모두 끊는다"""
+        """현재 비밀번호를 확인하고 바꾼다. 이 세션만 남기고 그 직원의 다른 세션을 모두 끊는다. 체험 세션은 403"""
+        if me.demo:
+            raise AuthError(403, DEMO_PASSWORD_MESSAGE)
         check_password_rule(new)
         if new == current:
             raise AuthError(422, "새 비밀번호가 지금 비밀번호와 같습니다.")

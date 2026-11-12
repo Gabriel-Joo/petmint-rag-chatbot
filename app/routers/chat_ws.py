@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from app import config
 from app.deps import header_agent, origin_ok, session_me
 from app.schemas import CancelMsg, ClarifyAnswerMsg, DoneMsg, ErrorMsg, QuestionMsg, ServerMessage, client_message_adapter
-from app.services import answer, context, customer_facts, dayparse, hr_personal, payout, titles
+from app.services import answer, context, customer_facts, dayparse, hr_personal, payout, rate_limit, titles
 from app.services.answer import TurnContext, TurnDeps
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
 from app.services.followup import follow_up_reason
@@ -34,6 +34,10 @@ from app.services.turn_log import TurnLogStore
 
 router = APIRouter()
 log = logging.getLogger(__name__)
+
+# 체험 세션의 질문 수(13번 2-4절) — 방문자(로그인 쿠키)마다 1분에 PETMINT_DEMO_TURNS_PER_MIN번. GPU 한 장을 학교 PC · 런슈즈와 함께 쓴다
+DEMO_TURNS = rate_limit.SlidingWindow(config.DEMO_TURNS_PER_MIN, 60)
+DEMO_RATE_MESSAGE = f"체험 계정은 1분에 {config.DEMO_TURNS_PER_MIN}번까지 물을 수 있습니다. 잠시 뒤 다시 물어 주세요."
 
 
 async def _send(ws: WebSocket, msg) -> None:
@@ -114,6 +118,9 @@ async def chat(ws: WebSocket, session_id: str):
 
             if isinstance(msg, QuestionMsg):
                 turn_id = str(uuid.uuid4())
+                if me is not None and me.demo and not DEMO_TURNS.allow(rate_limit.key_of(ws.cookies.get(config.AUTH_COOKIE))):
+                    await _send(ws, ErrorMsg(turn_id=turn_id, code="rate_limited", message=DEMO_RATE_MESSAGE))
+                    continue
                 pet = None
                 if session.mode == "업무특화":
                     try:                                    # 원장을 턴마다 읽는다 — 이 값이 그 턴의 스냅샷

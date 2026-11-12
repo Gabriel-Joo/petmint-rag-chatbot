@@ -7,7 +7,7 @@
 // ============================================================================
 
 import type {
-  ArticleOut, EmployeeProfile, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
+  ArticleOut, DemoAccount, EmployeeProfile, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
   SessionCreate, SessionDetail, SessionOut, SessionPatch, SessionSummary, TurnOut,
 } from "./types";
 
@@ -72,6 +72,21 @@ export function getMe(): Promise<MeOut> {
 
 export function login(body: LoginIn): Promise<MeOut> {
   return request("POST", "/api/auth/login", body);
+}
+
+/** 체험 카드(13번 2-4절). 서버가 꺼 두면(PETMINT_DEMO_LOGIN) 404 — 빈 목록으로 받아 체험 영역을 그리지 않는다 */
+export async function getDemoAccounts(): Promise<DemoAccount[]> {
+  try {
+    return await request<DemoAccount[]>("GET", "/api/auth/demo-accounts");
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return [];
+    throw e;
+  }
+}
+
+/** 체험 로그인 — 사번만 보낸다. 비밀번호는 화면에도 요청에도 없다(서버가 체험 풀 안의 사번만 받는다) */
+export function demoLogin(employee_id: string): Promise<MeOut> {
+  return request("POST", "/api/auth/demo", { employee_id });
 }
 
 export function logout(): Promise<void> {

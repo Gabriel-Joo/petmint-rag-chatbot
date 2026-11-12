@@ -7,6 +7,9 @@ import type { CalcResult, ReferenceItem, ServerMessage, SourceItem, TableItem, T
 
 export type TurnStatus = "searching" | "clarify" | "streaming" | "done" | "error";
 
+/** 코드 없이 문구만 보이는 오류 — 사람에게 보일 안내 문장을 서버가 이미 썼다 */
+const PLAIN_ERRORS = new Set(["customer_data", "rate_limited"]);
+
 export interface Turn {
   key: string;                 // 화면 키. turn_id는 서버 첫 메시지가 와야 정해진다
   turn_id: string | null;
@@ -95,9 +98,9 @@ function apply(state: ChatState, msg: ServerMessage): ChatState {
       return { ...state, turns: patchTurn(turns, idx, {
         status: t.status === "error" ? "error" : "done", latency_ms: msg.latency_ms, first_token_ms: msg.first_token_ms }) };
     case "error":
-      // 원장 오류(customer_data)는 상담원에게 보일 안내 문구 그대로 — 코드는 상담원에게 의미가 없다
+      // 원장 오류(customer_data) · 체험 질문 수 제한(rate_limited)은 안내 문구 그대로 — 코드는 상담원 · 방문자에게 의미가 없다
       return { ...state, turns: patchTurn(turns, idx, {
-        error: msg.code === "customer_data" ? msg.message : `${msg.code}: ${msg.message}`, status: "error" }) };
+        error: PLAIN_ERRORS.has(msg.code) ? msg.message : `${msg.code}: ${msg.message}`, status: "error" }) };
   }
 }
 

@@ -47,6 +47,13 @@ def origin_ok(conn: Request | WebSocket) -> bool:
     return not origin or origin in config.ALLOWED_ORIGINS or urlsplit(origin).netloc == conn.headers.get("host")
 
 
+def client_ip(conn: Request | WebSocket) -> str | None:
+    """방문자 IP — 운영은 Cloudflare 터널 → ingress를 거쳐 request.client가 클러스터 Pod 주소다(2026-11-12 auth_sessions.ip가
+    모두 10.244.x였다). Cloudflare가 붙이는 CF-Connecting-IP를 먼저 본다. 엣지를 거치지 않는 사설망 요청만 이 값을 바꿔 보낼 수 있다"""
+    cf = (conn.headers.get("cf-connecting-ip") or "").strip()
+    return cf[:45] or (conn.client.host if conn.client else None)
+
+
 def session_me(conn: Request | WebSocket) -> Me | None:
     """PETMINT_AUTH=app — 로그인 쿠키 → 직원. 없거나 만료면 None"""
     return conn.app.state.auth.resolve(conn.cookies.get(config.AUTH_COOKIE))
