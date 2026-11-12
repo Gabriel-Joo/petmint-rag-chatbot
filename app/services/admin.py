@@ -4,7 +4,7 @@ admin.py
 
 - Grafana(전체 추세)와 역할이 다르다 — 여기는 개별 상담을 연다. 숫자 · 그래프는 다시 그리지 않는다(상담원 목록의 건수만).
 - 일반 모드는 SQL에서 뺀다(개인적인 질문이라 관리자도 보지 않는다). 세션 id를 직접 넣어도 None → 404.
-- 상담원은 인사 원장(insurance_core.employees) 직원만 — 원장 밖 이메일(평가 스크립트 dev@local)은 목록에 없다.
+- 상담원은 인사 원장(insurance_core.employees) 직원 중 앱 계정이 있는 사람만 — 원장 밖 이메일(평가 스크립트 dev@local)과 계정 없는 직원은 목록에 없다.
 - 인사 원장은 기간계 소유라 SELECT만. 급여 · 평가 · 휴가 테이블은 쿼리에도 넣지 않는다. 근속 계산에 휴직(employee_absences)만 읽는다.
 - 열람 기록(admin_views)만 쓴다 — 누가 언제 어느 상담원의 목록 · 대화를 열었나.
 """
@@ -74,9 +74,10 @@ class AdminStore:
                 " AND EXISTS (SELECT 1 FROM turns t WHERE t.session_id = s.session_id)"
                 " GROUP BY s.agent_email"), dict(a=a, b=b))}
         roles = self._roles()
+        # 앱 계정이 있는 직원만(2026-11-12 사용자) — 계정이 없으면 상담이 생길 수 없다. 그 직원은 직원 탭에 「앱 계정 없음」으로 남는다
         out = [AdminAgent(employee_id=e.employee_id, name=e.name, grade=e.grade, role=roles.get(e.employee_id, (None,))[0],
                           retired=e.retired, sessions=counts.get(e.email, (0, 0))[0], customers=counts.get(e.email, (0, 0))[1])
-               for e in self._employees()]
+               for e in self._employees() if e.employee_id in roles]
         # 상담이 있는 사람 먼저(많은 순), 나머지는 사번 순. 퇴직자는 그 기간에 상담이 없으면 맨 뒤
         return sorted(out, key=lambda x: (-x.sessions, x.retired, x.employee_id))
 

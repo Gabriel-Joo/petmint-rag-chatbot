@@ -123,8 +123,8 @@ class SourceTest(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("PETMINT_DB_TESTS") == "1", "로컬 MySQL 필요(PETMINT_DB_TESTS=1)")
 class StoreTest(unittest.TestCase):
-    """가상 직원 E2025112(조현석)로 사내규정 · 일반 세션을 하나씩 만들었다 지운다"""
-    EMAIL = "cho.hyunseok@petmint.example"
+    """가상 직원 E2022071(신하늘 — 앱 계정 있음)로 사내규정 · 일반 세션을 하나씩 만들었다 지운다"""
+    EMAIL = "shin.haneul@petmint.example"
 
     @classmethod
     def setUpClass(cls):
@@ -168,7 +168,7 @@ class StoreTest(unittest.TestCase):
         today = payout.today()
         self.assertIsNone(self.store.session(self.ids["일반"]))
         d = self.store.session(self.ids["사내규정"])
-        self.assertEqual((d.agent_name, d.turns[0].refused, d.turns[0].rating), ("조현석", True, "down"))
+        self.assertEqual((d.agent_name, d.turns[0].refused, d.turns[0].rating), ("신하늘", True, "down"))
         lst = self.store.sessions(self.EMAIL, today - timedelta(days=1), today)
         got = {it.session_id for it in lst.items}
         self.assertIn(self.ids["사내규정"], got)
@@ -180,8 +180,10 @@ class StoreTest(unittest.TestCase):
         today = payout.today()
         agents = self.store.agents(today - timedelta(days=30), today)
         self.assertNotIn("dev@local", {a.employee_id for a in agents})
-        cho = next(a for a in agents if a.name == "조현석")
-        self.assertGreaterEqual(cho.sessions, 1)
+        names = {a.name for a in agents}
+        self.assertFalse({"조현석", "문태양", "류채원", "황재민"} & names)   # 앱 계정 없는 직원은 상담원 목록에 없다
+        shin = next(a for a in agents if a.name == "신하늘")
+        self.assertGreaterEqual(shin.sessions, 1)
 
     def test_employees_have_no_pay_fields(self):
         rows = self.store.employees(payout.today())
