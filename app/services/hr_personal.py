@@ -163,6 +163,13 @@ def tenure_days(f: Facts, today: date) -> tuple[int, int]:
     return (today - f.hire_date).days - excluded, excluded
 
 
+def tenure_ym(f: Facts, today: date) -> tuple[int, int, int]:
+    """근속 (년, 개월, 뺀 휴직 일수) — 뺀 휴직만큼 입사일을 미룬 날부터 센다. 본인 정보 블록 · 체험 카드 · 관리자 직원 목록이 같이 쓴다"""
+    _, excluded = tenure_days(f, today)
+    start = f.hire_date + timedelta(days=excluded)
+    return _years(start, today), _months(start, today) % 12, excluded
+
+
 PAY_DAY = 10                                 # 제25조 ① 2026-10-28 개정 — 산정기간(1일~말일)의 급여를 익월 10일에 지급
 
 
@@ -605,9 +612,7 @@ def sources(articles: list[int], hr_chunks: list[dict]) -> list[SourceItem]:
 
 def profile(f: Facts, today: date) -> dict:
     """사내규정 본인 정보 블록(EmployeeProfile) — 답과 같은 계산을 쓴다. 급여·평균임금·수당 금액·평가는 넣지 않는다"""
-    days, excluded = tenure_days(f, today)
-    start = f.hire_date + timedelta(days=excluded)        # 뺀 휴직만큼 입사일을 미룬 날부터 센다
-    years, months = _years(start, today), _months(start, today) % 12
+    years, months, excluded = tenure_ym(f, today)
     regular = f.employment_type == "정규직"
     a = annual_leave(f, today) if regular else None
     p = promotion(f, today) if regular else None

@@ -637,3 +637,70 @@ class EmployeeProfile(_Model):
     promotion_eligible_on: date | None
     probation_end: date | None                    # 수습 중이면 끝나는 날(제7조)
     retirement_on: date | None                    # 정년퇴직일 — 만 60세가 되는 달의 말일(제43조)
+
+
+# ----- 관리자 화면(2026-11-12, 13번 2-5절) — 읽기만. 일반 모드는 싣지 않는다. 급여 · 평가 · 휴가는 싣지 않는다
+
+class AdminAgent(_Model):
+    """상담원 목록 한 줄 — 인사 원장 직원 + 고른 기간의 상담 수(업무특화 · 사내규정, 턴이 있는 것)"""
+    employee_id: str
+    name: str
+    grade: str
+    role: Role | None                              # 앱 계정이 없으면 None
+    retired: bool
+    sessions: int
+    customers: int                                 # 업무특화 고객 수(같은 고객은 한 번)
+
+
+class AdminSession(_Model):
+    """그 상담원의 상담 한 줄"""
+    session_id: str
+    mode: Literal["사내규정", "업무특화"]
+    title: str | None
+    customer_name: str | None                      # 업무특화만
+    pet_names: list[str]                           # 그 상담에서 이야기한 반려동물(턴 스냅샷)
+    turns: int
+    refused: int                                   # 모델이 거절한 턴 수(turns.refused) — 표시용
+    started_at: datetime
+    ended_at: datetime | None
+    hidden: bool                                   # 상담원이 지난 채팅 목록에서 지웠다(deleted_at). 로그는 남는다
+
+
+class AdminSessionList(_Model):
+    total: int                                     # 기간 안 전체 — items는 offset부터 최신순 LIMIT건
+    offset: int = 0
+    items: list[AdminSession]
+
+
+class AdminTurn(TurnOut):
+    """대화 한 턴 + 관리자에게만 보이는 표시"""
+    refused: bool | None                           # NULL = 기록 전 턴(0009 이전) · 코드 답
+    rating: Literal["up", "down"] | None
+    rating_comment: str | None
+
+
+class AdminSessionDetail(_Model):
+    session_id: str
+    mode: Literal["사내규정", "업무특화"]
+    title: str | None
+    agent_name: str | None
+    agent_email: str
+    customer_name: str | None
+    started_at: datetime
+    ended_at: datetime | None
+    hidden: bool
+    turns: list[AdminTurn]
+
+
+class AdminEmployee(_Model):
+    """직원 목록 한 줄 — 인사 원장 그대로(읽기만). 급여 · 평가 · 휴가는 싣지 않는다"""
+    employee_id: str
+    name: str
+    grade: str
+    employment_type: str
+    hire_date: date
+    tenure_years: int                              # 휴직(육아 · 병역 외)을 뺀 근속(제3조 5호) — 퇴직자는 퇴직일까지
+    tenure_months: int
+    retired_on: date | None
+    role: Role | None                              # 앱 계정 역할. 계정이 없으면 None
+    disabled: bool                                 # 앱 계정 중지(accounts.disabled_at)

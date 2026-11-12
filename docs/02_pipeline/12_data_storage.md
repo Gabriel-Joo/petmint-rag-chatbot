@@ -111,7 +111,8 @@ sessions (상담 1건)
 | 테이블 | 칼럼 |
 | --- | --- |
 | accounts | `employee_id`(PK) · `role`(상담원·관리자) · `password_hash`(argon2id, NULL이면 로그인 불가) · `must_change_password` · `failed_count` · `locked_until` · `disabled_at` · `password_changed_at` · `last_login_at` · `created_at` |
-| auth_sessions | `token_hash`(PK, 쿠키 토큰의 SHA-256) · `employee_id`(FK → accounts, CASCADE) · `created_at` · `last_seen_at` · `expires_at` · `ip` · `user_agent` |
+| auth_sessions | `token_hash`(PK, 쿠키 토큰의 SHA-256) · `employee_id`(FK → accounts, CASCADE) · `created_at` · `last_seen_at` · `expires_at` · `ip` · `user_agent` · `demo`(체험 로그인 세션, 0010) |
+| admin_views | `id`(PK) · `viewer_employee_id`(연 관리자) · `demo`(체험 로그인으로 열었나) · `kind`(sessions = 상담 목록 · session = 대화) · `target_agent_email`(그 상담원) · `session_id`(대화일 때) · `date_from` · `date_to`(목록일 때 고른 기간) · `ip` · `viewed_at` — 관리자 화면 열람 기록(0011, 1-6절) |
 
 **인사 원장 — insurance_core 0003(2026-10-28)**
 
@@ -208,6 +209,26 @@ CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cro
 **로컬 개발 DB(호스트 도커 `mysql`, 127.0.0.1:3306)는 주 1회 뜬다.** 클러스터에서 닿지 않으므로 CronJob이 아니라 호스트 사용자 crontab이 `deploy/host/dev-mysql-backup.sh`를 일요일 05:00에 돌린다(FOREMAN 백업 04:30과 겹치지 않게). 같은 두 데이터베이스, 같은 옵션이고, `~/backup/mysql/petmint-dev/`에 최신 4개를 남긴다(로그 `backup.log`). 평가·측정 기록이 쌓여 운영보다 크다 — `petmint` 198MB, 백업 22MB, 4초(2026-11-10). 운영 백업과 디렉터리를 나눈 것은 CronJob의 보존 정리가 `petmint-*.sql.gz`를 지우기 때문이다. 복구는 위 4·5를 `docker exec -i mysql …`로 한다(앱을 멈추고, 지금 상태를 먼저 뜬다).
 
 **복구 시험(2026-11-10).** 첫 수동 백업(`petmint-20261110-173427.sql.gz`)을 호스트의 빈 임시 컨테이너(`mysql:8.0.46`, 네트워크 없음)에 넣었다. 두 데이터베이스 19개 테이블의 행 수가 운영과 모두 같았다(sessions 169, turns 162, retrieved 464 등). CronJob 스크립트는 같은 이미지·uid 999로 돌려 보았다. 정상이면 파일과 `.sha256`이 생기고, 30일 지난 가짜 파일 10개 중 최신 7개만 남았으며, 비밀번호가 틀리면 exit 2로 실패하고 완성 파일을 만들지 않았다. 개발 DB 첫 백업도 같은 방법으로 19개 테이블 행 수가 같았다(sessions 21,473, turns 24,603, retrieved 87,394). 임시 컨테이너는 초기화 뒤 서버를 한 번 다시 띄우므로, 로그에 `ready for connections … port: 3306`이 찍힌 뒤에 넣는다 — 먼저 넣으면 `Lost connection`으로 끊긴다.
+
+#### 1-6. 관리자 화면 열람 기록 (2026-11-12)
+
+관리자 화면(13번 2-5절)은 다른 상담원의 상담을 연다. 상담 목록이나 대화를 열 때마다 `admin_views`에 한 줄 남긴다. **이 기록을 보는 화면은 만들지 않는다(사용자)** — 필요할 때 아래 SQL로 본다. 지우지 않는다(하루 수십 줄).
+
+```sql
+-- 최근 열람 — 누가 · 언제 · 누구의 무엇을(체험 로그인 여부 포함)
+SELECT viewed_at + INTERVAL 9 HOUR AS kst, viewer_employee_id, demo, kind, target_agent_email, session_id, date_from, date_to, ip
+FROM admin_views ORDER BY viewed_at DESC LIMIT 50;
+
+-- 한 상담원의 상담을 누가 봤나
+SELECT viewed_at + INTERVAL 9 HOUR AS kst, viewer_employee_id, demo, kind, session_id
+FROM admin_views WHERE target_agent_email = 'kwon.taeho@petmint.example' ORDER BY viewed_at DESC;
+
+-- 한 상담(대화)을 누가 열었나
+SELECT viewed_at + INTERVAL 9 HOUR AS kst, viewer_employee_id, demo, ip
+FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY viewed_at;
+```
+
+운영에서는 `$K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" mysql -uroot petmint -e \"…\""'`(1-5절의 `$K`)로 넣는다. 시각은 UTC로 저장하므로 9시간을 더해 읽는다.
 
 ---
 

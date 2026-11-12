@@ -7,7 +7,7 @@
 // ============================================================================
 
 import type {
-  ArticleOut, DemoAccount, EmployeeProfile, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
+  AdminAgent, AdminEmployee, AdminSessionDetail, AdminSessionList, ArticleOut, DemoAccount, EmployeeProfile, LoginIn, MeOut, PasswordIn, ClientMessage, Corpus, Customer, CustomerSessionSummary, FeedbackIn, FeedbackOut, Grade, RecentConsultation, ServerMessage,
   SessionCreate, SessionDetail, SessionOut, SessionPatch, SessionSummary, TurnOut,
 } from "./types";
 
@@ -161,6 +161,24 @@ export function getSession(sessionId: string): Promise<SessionDetail> {
 /** 지난 대화를 다시 열 때 화면에 그릴 턴(오래된 순). 서버 turns·retrieved에서 복원한다 */
 export async function getSessionTurns(sessionId: string): Promise<TurnOut[]> {
   return (await getSession(sessionId)).turns;
+}
+
+// ----- 관리자 화면(13번 2-5절) — 읽기만. 관리자가 아니면 서버가 404. 기간은 KST 날짜(YYYY-MM-DD), 최대 31일
+
+export function listAdminAgents(from: string, to: string): Promise<AdminAgent[]> {
+  return request("GET", `/api/admin/agents${qs({ from, to })}`);
+}
+
+export function listAdminSessions(employeeId: string, from: string, to: string, offset = 0): Promise<AdminSessionList> {
+  return request("GET", `/api/admin/agents/${encodeURIComponent(employeeId)}/sessions${qs({ from, to, offset: offset || null })}`);
+}
+
+export function getAdminSession(sessionId: string): Promise<AdminSessionDetail> {
+  return request("GET", `/api/admin/sessions/${encodeURIComponent(sessionId)}`);
+}
+
+export function listAdminEmployees(): Promise<AdminEmployee[]> {
+  return request("GET", "/api/admin/employees");
 }
 
 /** GET /api/articles/{species}/{section}/{section_name}/{article_num}?coverage_type=&paragraph_num= */

@@ -1,0 +1,87 @@
+/* 관리자 화면(2026-11-12, 13번 2-5절) — 대화 화면 배율(.chat-text) 안의 기존 토큰만 쓴다(11번 5절).
+   목록은 지난 상담 창(PastConsultations)과 같은 줄 모양, 대화는 지난 상담 창과 같은 --font-md, 표는 --font-xs */
+.page { max-width: 1600px; margin: 0 auto; padding: 16px 24px 32px; display: flex; flex-direction: column; gap: 12px; font-size: var(--font-sm); }
+
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.title { margin: 0; font-size: var(--font-lg); }
+.tabs, .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font-size: var(--font-sm); padding: 4px 12px; white-space: nowrap; }
+.note { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
+
+/* 기간 — 빠른 버튼(오늘 · 7일 · 30일) + 시작 · 끝 날짜 */
+.range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.date { display: inline-flex; align-items: center; gap: 6px; }
+.dateLabel { font-size: var(--font-xs); color: var(--text-dim); }
+.date input {
+  font: inherit; font-size: var(--font-sm); font-weight: var(--font-weight-body); color: var(--text);
+  padding: 3px 8px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--card);
+}
+.date input:focus { outline: none; border-color: var(--primary); }
+
+/* 두 칸(1024px~) — 상담원 | 상담 목록. 좁으면 한 칸씩(.picked면 상담 목록) */
+.split { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.agents { position: sticky; top: 0; max-height: calc(100vh - 220px); overflow-y: auto; }
+.sessions { min-width: 0; }
+.back { display: none; font-size: var(--font-sm); }
+@media (max-width: 1023px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .agents { position: static; max-height: none; }
+  .split:not(.picked) .sessions, .picked .agents { display: none; }
+  .back { display: inline-block; }
+}
+
+.list { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.item {
+  width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; color: var(--text);
+  padding: 10px 12px; border: 1px solid transparent; border-radius: var(--radius-control); background: none;
+}
+.item:hover { background: var(--primary-soft); }
+.item[aria-current="true"] { background: var(--primary-soft); color: var(--primary); }
+.openItem { border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); }
+.openItem > .item:hover { background: none; }
+.itemTitle { font-weight: var(--font-weight-label); }
+.itemMeta {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-width: 0;
+  font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim);
+}
+.itemMeta b { font-weight: var(--font-weight-label); color: var(--text); }
+.dim { font-weight: var(--font-weight-caption); color: var(--text-dim); }
+
+.listHead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 14px 18px 6px; border-bottom: 1px solid var(--line); }
+.moreRow { display: flex; justify-content: center; padding: 4px 8px 12px; }
+.subTitle { margin: 0; font-size: var(--font-md); }
+
+/* 상담 한 줄 — 시각 · 고객/반려동물(또는 사내규정) · 업무특화 · 턴 수 / 제목 · 거절 · 진행 중 · 목록에서 지움 */
+.row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
+.time { font-variant-numeric: tabular-nums; font-weight: var(--font-weight-label); }
+.who { font-weight: var(--font-weight-label); min-width: 0; overflow-wrap: anywhere; }
+.turns { font-size: var(--font-xs); color: var(--text-dim); font-weight: var(--font-weight-caption); }
+.titleText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.tag { margin-left: 4px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-size: var(--font-2xs); font-weight: var(--font-weight-label); color: var(--text-dim); white-space: nowrap; }
+.refused { padding: 0 6px; border-radius: 6px; border: 1px solid var(--warn); background: var(--warn-fill); color: var(--warn); font-weight: var(--font-weight-label); white-space: nowrap; }
+.live { color: var(--call); font-weight: var(--font-weight-label); }
+.readOnly { padding: 0 6px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); }
+
+/* 펼친 대화 — 지난 상담 창과 같은 글씨(--font-md) */
+.detail { display: flex; flex-direction: column; gap: 4px; padding: 4px 6px 10px; font-size: var(--font-md); }
+.detail > .itemMeta { padding: 0 12px 4px; }
+
+/* 직원 목록 — 표가 칸보다 넓으면 표만 가로로 민다(페이지는 넘치지 않는다) */
+.staff { padding: 14px 0 8px; min-width: 0; }
+.staffNote { margin: 0 18px 10px; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
+.staffNote code { font-family: var(--mono); }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--font-xs); }
+.table th, .table td { padding: 8px 12px; text-align: left; border-top: 1px solid var(--line); white-space: nowrap; }
+.table th { background: var(--primary-soft); font-weight: var(--font-weight-label); border-top: none; }
+.table td { font-weight: var(--font-weight-body); }
+.mono { font-family: var(--mono); }
+
+.empty { padding: 24px 18px; margin: 0; color: var(--text-dim); font-weight: var(--font-weight-caption); }
+.err { padding: 8px 18px; margin: 0; color: var(--warn); font-size: var(--font-xs); }
+
+@media (max-width: 640px) {
+  .page { padding: 12px 12px 24px; }
+  .list { padding: 4px; }
+  .item { padding: 8px; }
+}

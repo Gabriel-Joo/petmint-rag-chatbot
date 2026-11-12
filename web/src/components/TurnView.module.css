@@ -18,5 +18,8 @@
 .fb { background: none; border: 1px solid transparent; border-radius: 6px; padding: 0 4px; font-size: var(--font-sm); }
 .fb:hover:not(:disabled) { border-color: var(--line); }
 .fbOn { border-color: var(--primary-soft); background: var(--primary-soft); }
+/* 관리자 화면(13번 2-5절) — 거절은 부담보 경고와 같은 모양(주황 테두리 칩), 평가는 읽기만 */
+.markRefused { padding: 0 6px; border-radius: 6px; border: 1px solid var(--warn); background: var(--warn-fill); color: var(--warn); font-weight: var(--font-weight-label); }
+.markRating { color: var(--text-dim); }
 
 @media (min-width: 900px) { .mobileOnly { display: none; } }

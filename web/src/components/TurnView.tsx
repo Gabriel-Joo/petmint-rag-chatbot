@@ -22,11 +22,19 @@ interface Props {
   readOnly?: boolean;
   /** 날짜별 치료비 입력 카드를 채워 다음 질문으로 보낸다 — 진행 중 상담의 마지막 턴에만. 없으면 입력칸은 읽기 전용 */
   onAnswer?: (text: string) => void;
+  /** 관리자 화면(13번 2-5절) — 거절 표시와 상담원이 남긴 평가(읽기만). readOnly와 함께 쓴다 */
+  marks?: TurnMarks;
+}
+
+export interface TurnMarks {
+  refused: boolean | null;
+  rating: "up" | "down" | null;
+  comment: string | null;
 }
 
 const STATUS_TEXT: Partial<Record<Turn["status"], string>> = { searching: "검색 중…", clarify: "어느 쪽을 물으시나요?" };
 
-export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect, readOnly, onAnswer }: Props) {
+export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petLabel, selected, onSelect, readOnly, onAnswer, marks }: Props) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const streaming = turn.status === "streaming";
 
@@ -80,6 +88,13 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
           {petLabel && <span>{petLabel}</span>}
           {turn.first_token_ms !== null && <span>첫 글자 {turn.first_token_ms}ms</span>}
           {turn.latency_ms !== null && <span>전체 {turn.latency_ms}ms</span>}
+          {marks && <>
+            {marks.refused && <span className={s.markRefused}>거절</span>}
+            <span className={s.markRating} title={marks.comment ?? undefined}>
+              {marks.rating === "up" ? "👍" : marks.rating === "down" ? "👎" : "평가 없음"}
+              {marks.comment && <> {marks.comment}</>}
+            </span>
+          </>}
           {!readOnly && <>
             <button className={`${s.fb} ${rating === "up" ? s.fbOn : ""}`} onClick={() => rate("up")} aria-label="좋아요"
                     disabled={!turn.turn_id}>👍</button>
