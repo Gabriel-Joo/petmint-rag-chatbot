@@ -7,7 +7,7 @@ auth.py
 - 쿠키에는 32바이트 난수 토큰, DB에는 그 SHA-256만 둔다. JWT를 쓰지 않는다 — 퇴직·비밀번호 변경·로그아웃 때 즉시 끊어야 한다.
 - 실패 문구는 하나다(사번이 없는지 비밀번호가 틀렸는지 알려 주지 않는다). 없는 사번도 같은 시간이 걸리게 가짜 해시를 검증한다.
 - 체험 로그인(2026-11-12, 13번 2-4절): 비밀번호 없이 체험 풀(퇴직 · 중지 아닌 가상 직원) 안의 사번으로 들어온다. 세션에 demo를 찍는다 —
-  비밀번호 변경 403, 첫 로그인 비밀번호 변경 없음, 잠금(실패 횟수)을 보지도 바꾸지도 않는다. 계정이 없는 직원은 비밀번호 없는 계정을 만든다.
+  비밀번호 변경 403, 첫 로그인 비밀번호 변경 없음, 잠금(실패 횟수)을 보지도 바꾸지도 않는다. 계정은 만들지 않는다 — 미리 만든 계정만 쓴다(0012).
 """
 
 import hashlib
@@ -93,16 +93,15 @@ class AuthStore:
         return None if r is None else Employee(r[0], r[1], r[2].lower(), r[3], r[4], r[5] is not None and r[5] <= now().date())
 
     def demo_pool(self) -> list[tuple[Employee, str]]:
-        """체험 풀 — 퇴직하지 않은 가상 직원 전부와 그 역할(계정이 없으면 상담원). 앱에서 중지된 계정은 뺀다"""
-        with self.core.connect() as c:
-            ids = [r[0] for r in c.execute(text("SELECT employee_id FROM employees ORDER BY employee_id"))]
+        """체험 풀 — 앱 계정이 있는 가상 직원과 그 역할. 퇴직자 · 중지된 계정은 뺀다.
+        계정은 미리 만들어 둔다(petmint 0012, 2026-11-12) — 계정이 없는 직원(입사가 늦은 조현석 · 문태양 · 류채원, 퇴직자 황재민)은 체험 카드에 없다"""
         with self.engine.connect() as c:
-            acc = {r[0]: (r[1], r[2]) for r in c.execute(text("SELECT employee_id, role, disabled_at FROM accounts"))}
+            acc = [(r[0], r[1]) for r in c.execute(text(
+                "SELECT employee_id, role FROM accounts WHERE disabled_at IS NULL ORDER BY employee_id"))]
         out = []
-        for eid in ids:
+        for eid, role in acc:
             emp = self.employee(eid)
-            role, disabled = acc.get(eid, ("상담원", None))
-            if emp is not None and not emp.retired and disabled is None:
+            if emp is not None and not emp.retired:
                 out.append((emp, role))
         return out
 
@@ -153,7 +152,7 @@ class AuthStore:
 
     def demo_login(self, employee_id: str, ip: str | None, user_agent: str | None) -> tuple[str, Me]:
         """체험 로그인 — 비밀번호 없이 체험 풀 안의 사번으로 세션을 연다. 풀 밖은 400, 같은 IP 15분 DEMO_LOGIN_PER_IP번 넘으면 429.
-        계정이 없으면 비밀번호 없는 계정(사번 · 비밀번호로는 못 들어온다)을 만든다. 잠금 · 실패 횟수 · 비밀번호는 건드리지 않는다"""
+        계정은 만들지 않는다 — 있는 계정만 쓴다(0012부터). 잠금 · 실패 횟수 · 비밀번호는 건드리지 않는다"""
         pool = {emp.employee_id: (emp, role) for emp, role in self.demo_pool()}
         if employee_id not in pool:
             raise AuthError(400, "체험할 수 없는 계정입니다.")
@@ -165,8 +164,6 @@ class AuthStore:
                               dict(ip=ip, since=t - DEMO_WINDOW)).scalar()
                 if n >= config.DEMO_LOGIN_PER_IP:
                     raise AuthError(429, DEMO_LIMIT_MESSAGE)
-            c.execute(text("INSERT IGNORE INTO accounts (employee_id, role, password_hash, must_change_password, created_at)"
-                           " VALUES (:e, '상담원', NULL, TRUE, :t)"), dict(e=employee_id, t=t))
             c.execute(text("INSERT INTO auth_sessions (token_hash, employee_id, created_at, last_seen_at, expires_at, ip,"
                            " user_agent, demo) VALUES (:h, :e, :t, :t, :x, :ip, :ua, TRUE)"),
                       dict(h=_token_hash(token), e=employee_id, t=t, x=t + ABSOLUTE, ip=ip, ua=(user_agent or "")[:255] or None))

@@ -29,10 +29,11 @@
 .left { grid-area: tabs; min-width: 0; }
 .callWrap { grid-area: call; justify-self: end; white-space: nowrap; }
 .user { grid-area: user; justify-self: end; }
-/* 두 줄 경계 1859px(2026-11-12) — 한 줄에 탭이 꺾이지 않으려면 체험 계정 표시까지 1680px, 상담 중(🔒 약 150px)이면 더 필요하다.
-   관리자 「관리」(13번 2-5절)까지 붙으면 상담 중 체험 관리자가 1850px부터 한 줄에 들어간다(1845px는 🔒가 아랫줄로 꺾였다) → 1839에서 1859로.
+/* 두 줄 경계 1919px(2026-11-12) — 한 줄에 탭이 꺾이지 않으려면 체험 계정 표시까지 1680px, 상담 중(🔒 약 150px)이면 더 필요하다.
+   관리자 「관리자 화면」(13번 2-5절)까지 붙으면 상담 중 체험 관리자가 1918px부터 한 줄에 들어간다(1915px는 🔒가 아랫줄로 꺾였다) → 1839 → 1859(「관리」) → 1919.
+   1920px에서 여유는 2~4px다 — 글꼴이 조금 넓게 그려지는 브라우저에서는 그 경우만 🔒가 아랫줄로 내려간다(헤더 74 → 106px, 겹침은 없다)
    전에는 1599px라 1600~1679px에서 한 줄인데 탭이 두 줄로 꺾였다 */
-@media (max-width: 1859px) {
+@media (max-width: 1919px) {
   /* 첫 줄은 제목(왼쪽 끝)과 상담원(오른쪽 끝)이 줄 전체를 함께 쓴다 — 상담원 칸이 열 폭을 잡으면 둘째 줄 탭이 그만큼 좁아져
      「사내규정」이 셋째 줄로 밀렸다(800 · 400px). 오른쪽 열 폭은 둘째 줄 전화 묶음(☰)만으로 정해진다 */
   .bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand brand" "tabs call"; }
@@ -137,9 +138,9 @@
 /* 체험 로그인(13번 2-4절) — 이름 옆 작은 표시. 화면을 캡처해도 체험 계정임이 보인다 */
 .demoBadge { padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); font-weight: var(--font-weight-label); white-space: nowrap; }
 /* 관리자 화면(13번 2-5절) — 이름 옆 「관리」(로그아웃과 같은 모양). 열려 있으면 선택된 모드 탭과 같은 표시.
-   759px 이하는 ☰ 안 — 체험 계정 표시 · 관리 · 로그아웃이 다 붙으면 720~739px 첫 줄에서 제목과 맞닿았다(2026-11-12) */
+   819px 이하는 ☰ 안 — 체험 계정 표시 · 관리자 화면 · 로그아웃이 다 붙으면 760~800px 첫 줄에서 제목과 맞닿았다(2026-11-12. 「관리」일 때는 720~739px라 759px였다) */
 .menuAdmin { display: none; }
-@media (max-width: 759px) {
+@media (max-width: 819px) {
   .user .adminBtn { display: none; }
   .call .menuAdmin { display: inline-block; }
 }
