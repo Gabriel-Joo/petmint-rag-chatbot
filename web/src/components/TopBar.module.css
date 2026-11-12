@@ -123,3 +123,5 @@
 .userName { font-weight: var(--font-weight-label); }
 .user .logout { padding: 0.15em 0.45em; line-height: 1.2; }
 .user .logout:hover:not(:disabled) { background: var(--card); border-color: var(--primary); color: var(--primary); }
+/* 체험 로그인(13번 2-4절) — 이름 옆 작은 표시. 화면을 캡처해도 체험 계정임이 보인다 */
+.demoBadge { padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); font-weight: var(--font-weight-label); white-space: nowrap; }

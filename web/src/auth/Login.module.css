@@ -1,6 +1,6 @@
 /* 로그인·비밀번호 변경(2026-10-28) — 화면 가운데 카드 하나. 글씨는 본문 배율(--font-*)을 따르고, 제목은 상단바 제목과 같은 로고 글꼴.
    입력칸은 상담 화면 입력창(Composer)과 같은 테두리·모서리(--line · --radius-control) */
-.page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--primary-soft); }
+.page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px 16px; background: var(--primary-soft); }
 .card { width: 100%; max-width: 24em; display: flex; flex-direction: column; gap: 14px; padding: 28px 28px 24px; font-size: var(--font-sm); }
 @media (max-width: 640px) { .card { padding: 20px 16px; } }
 .brand { margin: 0; font-family: var(--font-logo); font-size: var(--font-brand); font-weight: var(--font-weight-label); text-align: center; }
@@ -20,3 +20,21 @@
 .remember input { width: 1em; height: 1em; margin: 0; accent-color: var(--primary); cursor: pointer; }
 .error { margin: 0; color: var(--warn); font-size: var(--font-xs); font-weight: var(--font-weight-label); }
 .submit { margin-top: 4px; padding: 0.5em; font-size: var(--font-sm); }
+/* 체험 카드(2026-11-12, 13번 2-4절) — 로그인 카드 아래. 카드 한 장 = 버튼 하나(요약 한 줄 + 볼 수 있는 것 태그). 넓으면 2열 */
+.demo { width: 100%; max-width: 44em; display: flex; flex-direction: column; gap: 10px; padding: 20px 24px; font-size: var(--font-sm); }
+@media (max-width: 640px) { .demo { padding: 16px; } }
+.demoHead { margin: 0; font-size: var(--font-sm); font-weight: var(--font-weight-label); text-align: center; }
+.demoNote { margin: 0; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); line-height: 1.5; }
+.demoGroup { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.demoTitle { margin: 0; font-size: var(--font-xs); font-weight: var(--font-weight-label); color: var(--primary); }
+.demoList { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(17em, 1fr)); gap: 8px; }
+.demoCard {
+  width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left;
+  font: inherit; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: var(--radius-control); background: var(--card); color: var(--text);
+  cursor: pointer;
+}
+.demoCard:hover:not(:disabled), .demoCard:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); outline: none; }
+.demoCard:disabled { opacity: 0.6; cursor: wait; }
+.demoSummary { font-size: var(--font-xs); font-weight: var(--font-weight-label); }
+.demoTags { display: flex; flex-wrap: wrap; gap: 4px; }
+.demoTag { padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); font-weight: var(--font-weight-caption); }

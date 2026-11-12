@@ -364,6 +364,19 @@ export interface MeOut {
   grade: string | null;
   role: "상담원" | "관리자" | null;
   must_change_password: boolean;
+  /** 체험 로그인 세션(13번 2-4절) — 상단에 "체험 계정"을 붙인다 */
+  is_demo?: boolean;
+}
+
+/** 체험 카드 한 장 — GET /api/auth/demo-accounts. summary는 "권태호 부장 · 근속 25년 8개월 · 연차 14일 남음" */
+export interface DemoAccount {
+  employee_id: string;
+  name: string;
+  grade: string;
+  team: string | null;
+  role: "상담원" | "관리자";
+  summary: string;
+  tags: string[];
 }
 
 export interface LoginIn { employee_id: string; password: string }

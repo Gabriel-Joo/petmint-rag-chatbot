@@ -93,6 +93,7 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
         {onLogout && (
           <div className={s.user}>
             <span className={s.userName} title={me.email}>{who}</span>
+            {me.is_demo && <span className={s.demoBadge} title="비밀번호 없이 들어온 체험 계정 — 다른 방문자와 함께 씁니다">체험 계정</span>}
             <button className={`btn ${s.logout}`} onClick={onLogout} disabled={locked}
                     title={locked ? "상담을 종료한 뒤 로그아웃할 수 있습니다" : undefined}>
               로그아웃

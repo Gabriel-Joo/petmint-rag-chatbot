@@ -91,6 +91,11 @@ if AUTH not in ("access", "app"):
     raise RuntimeError(f"PETMINT_AUTH는 access 또는 app: {AUTH!r}")
 AUTH_COOKIE = "petmint_session"
 COOKIE_SECURE = os.environ.get("PETMINT_COOKIE_SECURE", "1") == "1"   # 로컬 http 개발에서만 0
+# 2026-11-12 체험 로그인(13번 2-4절) — 포트폴리오 방문자가 사번 · 비밀번호 없이 가상 직원으로 들어온다. 기본 꺼짐(끄면 API 404 · 화면에 없다).
+# PETMINT_AUTH=app일 때만 뜻이 있다. 비밀번호는 어디에도 없다 — 서버가 체험 풀(퇴직 · 중지 아닌 가상 직원) 안의 사번만 받는다
+DEMO_LOGIN = os.environ.get("PETMINT_DEMO_LOGIN", "0") == "1"
+DEMO_LOGIN_PER_IP = int(os.environ.get("PETMINT_DEMO_LOGIN_PER_IP", "30"))    # 같은 IP의 체험 로그인 — 15분에 이만큼
+DEMO_TURNS_PER_MIN = int(os.environ.get("PETMINT_DEMO_TURNS_PER_MIN", "10"))  # 체험 세션의 질문 — 1분에 이만큼(GPU 한 장을 지킨다)
 # 상태를 바꾸는 요청·WS 연결의 Origin이 이 목록이나 요청 Host와 같아야 한다(쿠키 인증의 CSRF·WS 위조 방지). 개발 서버(vite)는
 # changeOrigin으로 Host를 바꾸므로 목록에 둔다
 ALLOWED_ORIGINS = [o.strip() for o in os.environ.get(
