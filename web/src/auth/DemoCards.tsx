@@ -30,7 +30,7 @@ export function DemoCard({ a, busy, onPick, copy = false, admin = false, moved }
   a: DemoAccount; busy: boolean; onPick: (a: DemoAccount) => void; copy?: boolean; admin?: boolean; moved?: () => number;
 }) {
   return (
-    <button type="button" className={`${s.demoCard} ${admin ? s.demoAdmin : ""}`} disabled={busy}
+    <button type="button" className={`raised lift chat-text ${s.demoCard} ${admin ? s.demoAdmin : ""}`} disabled={busy}
             onClick={() => (moved?.() ?? 0) <= 5 && onPick(a)} tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <strong className={s.demoName}>{a.name} {a.grade}</strong>
       <span className={s.demoDetail}>{detailOf(a)}</span>
