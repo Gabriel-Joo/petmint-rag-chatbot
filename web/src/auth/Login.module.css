@@ -1,8 +1,8 @@
 /* 로그인·비밀번호 변경(2026-10-28) — 화면 가운데 카드 하나. 글씨는 본문 배율(--font-*)을 따르고, 제목은 상단바 제목과 같은 로고 글꼴.
    입력칸은 상담 화면 입력창(Composer)과 같은 테두리·모서리(--line · --radius-control) */
-.page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px 16px; background: var(--primary-soft); }
-.card { width: 100%; max-width: 24em; display: flex; flex-direction: column; gap: 14px; padding: 28px 28px 24px; font-size: var(--font-sm); }
-@media (max-width: 640px) { .card { padding: 20px 16px; } }
+.page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 16px; padding: 24px 16px; background: var(--primary-soft); }
+.card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; padding: 24px 28px 20px; font-size: var(--font-md); }
+@media (max-width: 640px) { .page { padding: 16px 12px; gap: 12px; } .card { padding: 16px 16px 14px; gap: 10px; } }
 .brand { margin: 0; font-family: var(--font-logo); font-size: var(--font-brand); font-weight: var(--font-weight-label); text-align: center; }
 .sub { margin: 0 0 4px; text-align: center; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
 .notice { margin: 0; padding: 8px 12px; border-radius: var(--radius-control); background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); }
@@ -20,21 +20,35 @@
 .remember input { width: 1em; height: 1em; margin: 0; accent-color: var(--primary); cursor: pointer; }
 .error { margin: 0; color: var(--warn); font-size: var(--font-xs); font-weight: var(--font-weight-label); }
 .submit { margin-top: 4px; padding: 0.5em; font-size: var(--font-sm); }
-/* 체험 카드(2026-11-12, 13번 2-4절) — 로그인 카드 아래. 카드 한 장 = 버튼 하나(요약 한 줄 + 볼 수 있는 것 태그). 넓으면 2열 */
-.demo { width: 100%; max-width: 44em; display: flex; flex-direction: column; gap: 10px; padding: 20px 24px; font-size: var(--font-sm); }
-@media (max-width: 640px) { .demo { padding: 16px; } }
-.demoHead { margin: 0; font-size: var(--font-sm); font-weight: var(--font-weight-label); text-align: center; }
-.demoNote { margin: 0; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); line-height: 1.5; }
-.demoGroup { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-.demoTitle { margin: 0; font-size: var(--font-xs); font-weight: var(--font-weight-label); color: var(--primary); }
-.demoList { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(17em, 1fr)); gap: 8px; }
+/* 체험 카드(2026-11-12, 13번 2-4절) — 런슈즈 로그인 체험 영역과 같은 모양: 로그인 칸 아래 구분선, 가운데 제목, 상담원 2줄 가로 흐름(DemoCards),
+   관리자 한 장(점선). 글씨는 .base-text(1배) — 카드 이름 13 · 보조 12 · 칩 11px. 카드 폭 228(DemoCards CARD와 같다).
+   넓은 화면(900px~)은 상담원 흐름 옆에 관리자를 나란히 — 세로를 줄여 두 묶음이 한 화면에 보이게(2026-11-12 사용자). 좁으면 런슈즈처럼 아래로 */
+.demo { width: min(1240px, 100%); display: flex; flex-direction: column; gap: 6px; padding-top: 16px; border-top: 1px solid var(--line); }
+.demoHead { margin: 0; text-align: center; font-size: var(--font-lg); font-weight: var(--font-weight-title); }
+.demoNote { margin: 0; text-align: center; word-break: keep-all; font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); line-height: 1.5; }
+.demoGroups { display: flex; justify-content: center; align-items: flex-start; gap: 24px; margin-top: 6px; }
+@media (max-width: 899px) { .demoGroups { flex-direction: column; align-items: stretch; gap: 10px; } }
+.demoGroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.demoAgents { flex: 1 1 auto; }
+.demoAdmins { flex: 0 0 228px; align-items: stretch; }
+@media (max-width: 899px) { .demoAdmins { flex: none; align-items: center; } .demoAdmins .demoCard { width: 228px; } }
+.demoTitle { margin: 0; text-align: center; font-size: var(--font-sm); font-weight: var(--font-weight-label); color: var(--primary); }
+.demoCarousel { display: flex; justify-content: center; }
+.demoViewport { flex: 0 0 auto; max-width: 100%; overflow: hidden; user-select: none; }
+.demoFlows { cursor: grab; touch-action: pan-y; }   /* 가로 끌기는 우리가, 세로 스크롤은 브라우저가 */
+.demoDragging { cursor: grabbing; }
+.demoTrack { display: grid; grid-template-rows: repeat(2, auto); grid-auto-flow: column; grid-auto-columns: 228px; gap: 8px; width: max-content; will-change: transform; }
 .demoCard {
-  width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left;
-  font: inherit; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: var(--radius-control); background: var(--card); color: var(--text);
-  cursor: pointer;
+  width: 100%; height: 100%; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--card); color: var(--text);
+  cursor: pointer; overflow: hidden;
 }
-.demoCard:hover:not(:disabled), .demoCard:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); outline: none; }
+.demoCard:hover:not(:disabled), .demoCard:focus-visible { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px var(--primary-soft); }
 .demoCard:disabled { opacity: 0.6; cursor: wait; }
-.demoSummary { font-size: var(--font-xs); font-weight: var(--font-weight-label); }
-.demoTags { display: flex; flex-wrap: wrap; gap: 4px; }
-.demoTag { padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-xs); font-weight: var(--font-weight-caption); }
+.demoAdmin { border-style: dashed; }
+.demoName { font-size: var(--font-sm); font-weight: var(--font-weight-label); }
+.demoDetail { font-size: var(--font-xs); font-weight: var(--font-weight-caption); color: var(--text-dim); }
+.demoTags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.demoTag { padding: 0 6px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: var(--font-2xs); font-weight: var(--font-weight-caption); line-height: 1.6; white-space: nowrap; }
+/* 휴대폰 — 위 체험 규칙보다 뒤에 둬야 덮어쓴다. 관리자 카드까지 한 화면(400×850)에 들어오게 간격만 줄인다 */
+@media (max-width: 640px) { .demo { padding-top: 12px; gap: 4px; } .demoNote { line-height: 1.35; } .demoGroups { gap: 6px; } .demoGroup { gap: 4px; } }
