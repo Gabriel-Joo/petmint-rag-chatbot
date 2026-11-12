@@ -184,7 +184,7 @@ uvicorn app.main:app --port 8000          # 백엔드(리포 루트에서)
 cd web && npm ci && npm run dev           # 프론트 개발 서버(vite, 기본 5173)
 ```
 
-vite 개발 서버는 `/api`·`/ws`를 `http://localhost:8000`으로 넘긴다. 백엔드 주소를 바꾸려면 `PETMINT_API_URL`을 쓴다. 인증 기본값 `PETMINT_AUTH=access`에서는 로컬에 Access 헤더가 없어 상담원이 `dev@local`(`PETMINT_DEFAULT_AGENT`)로 잡힌다. 앱 로그인(`PETMINT_AUTH=app`)을 http로 시험할 때는 `PETMINT_COOKIE_SECURE=0`을 준다.
+vite 개발 서버는 `/api`·`/ws`를 `http://localhost:8000`으로 넘긴다. 백엔드 주소를 바꾸려면 `PETMINT_API_URL`을 쓴다. **서버 PC에서는 8000번을 FOREMAN 브리지가 쓴다** — 백엔드는 다른 포트(예: `--port 8766`)에 띄우고 vite에는 `PETMINT_API_URL=http://localhost:8766`을 준다. 인증 기본값 `PETMINT_AUTH=access`에서는 로컬에 Access 헤더가 없어 상담원이 `dev@local`(`PETMINT_DEFAULT_AGENT`)로 잡힌다. 앱 로그인(`PETMINT_AUTH=app`)을 http로 시험할 때는 `PETMINT_COOKIE_SECURE=0`을 준다. 로컬(개발 DB)과 운영 DB는 같은 사번이어도 비밀번호가 따로다. 로컬 비밀번호는 `python -m db.employees reset <사번>`으로 정하는데, 진짜 터미널에서만 된다 — Claude Code의 `!` 실행은 입력 단말이 없어 비밀번호를 묻는 데서 실패한다(getpass).
 
 **5. 배포**
 
