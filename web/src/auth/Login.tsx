@@ -4,6 +4,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, changePassword, demoLogin, getDemoAccounts, getMe, login } from "../api/client";
 import type { DemoAccount, MeOut } from "../api/types";
+import { DemoCard, DemoCards } from "./DemoCards";
 import s from "./Login.module.css";
 
 const MIN_PASSWORD = 10; // app/services/auth.py MIN_PASSWORD
@@ -88,7 +89,7 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
   };
 
   return (
-    <main className={s.page}>
+    <main className={`base-text ${s.page}`}>
       <form className={`raised ${s.card}`} method="post" onSubmit={(e) => void submit(e)} noValidate>
         <h1 className={s.brand}>펫퍼민트 상담</h1>
         <p className={s.sub}>
@@ -140,47 +141,33 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
         </button>
       </form>
 
-      {/* 체험 — 상담원 · 관리자를 나눈다(2026-11-12 사용자, 런슈즈 로그인과 같은 나눔). 직원마다 인사 데이터가 달라 카드에 무엇을 볼 수 있는지 적는다 */}
+      {/* 체험 — 상담원 · 관리자를 나눈다(2026-11-12 사용자, 런슈즈 로그인과 같은 나눔). 상담원은 2줄로 가로로 흐르고(DemoCards),
+          관리자는 그 아래 한 장(점선). 칩은 이 계정으로 볼 수 있는 것 — 무엇을 물어볼지 알게 다 싣는다 */}
       {!changeFor && demo.length > 0 && (
-        <section className={`raised ${s.demo}`} aria-label="체험 계정">
+        <section className={s.demo} aria-label="체험 계정">
           <h2 className={s.demoHead}>사번 없이 체험하기</h2>
           <p className={s.demoNote}>
-            누구나 함께 쓰는 체험 계정입니다. 남긴 상담은 다른 방문자도 볼 수 있어요. 고객 · 직원 정보는 모두 가상입니다.
+            누구나 함께 쓰는 체험 계정이라 남긴 상담은 다른 방문자도 볼 수 있어요. 고객 · 직원 정보는 모두 가상입니다.<br />
             사내규정 모드에서 "제 연차 며칠 남았어요?"처럼 물으면 고른 직원의 인사 기록으로 답합니다.
           </p>
           {demoError && <p className={s.error} role="alert">{demoError}</p>}
-          {agents.length > 0 && (
-            <div className={s.demoGroup}>
-              <h3 className={s.demoTitle}>상담원으로 체험하기</h3>
-              <ul className={s.demoList}>
-                {agents.map((a) => <DemoCard key={a.employee_id} a={a} busy={busy} onPick={tryDemo} />)}
-              </ul>
-            </div>
-          )}
-          {admins.length > 0 && (
-            <div className={s.demoGroup}>
-              <h3 className={s.demoTitle}>관리자로 체험하기</h3>
-              <p className={s.demoNote}>지금은 상담원과 같은 화면입니다. 관리자 화면은 준비 중이에요.</p>
-              <ul className={s.demoList}>
-                {admins.map((a) => <DemoCard key={a.employee_id} a={a} busy={busy} onPick={tryDemo} />)}
-              </ul>
-            </div>
-          )}
+          <div className={s.demoGroups}>
+            {agents.length > 0 && (
+              <div className={`${s.demoGroup} ${s.demoAgents}`}>
+                <h3 className={s.demoTitle}>상담원으로 체험하기</h3>
+                <DemoCards cards={agents} busy={busy} onPick={(a) => void tryDemo(a)} />
+              </div>
+            )}
+            {admins.length > 0 && (
+              <div className={`${s.demoGroup} ${s.demoAdmins}`}>
+                <h3 className={s.demoTitle}>관리자로 체험하기</h3>
+                {admins.map((a) => <DemoCard key={a.employee_id} a={a} busy={busy} onPick={(x) => void tryDemo(x)} admin />)}
+                <p className={s.demoNote}>지금은 상담원과 같은 화면이에요. 관리자 화면은 준비 중입니다.</p>
+              </div>
+            )}
+          </div>
         </section>
       )}
     </main>
-  );
-}
-
-function DemoCard({ a, busy, onPick }: { a: DemoAccount; busy: boolean; onPick: (a: DemoAccount) => void }) {
-  return (
-    <li>
-      <button type="button" className={s.demoCard} onClick={() => onPick(a)} disabled={busy}>
-        <strong className={s.demoSummary}>{a.summary}</strong>
-        {a.tags.length > 0 && (
-          <span className={s.demoTags}>{a.tags.map((t) => <span key={t} className={s.demoTag}>{t}</span>)}</span>
-        )}
-      </button>
-    </li>
   );
 }
