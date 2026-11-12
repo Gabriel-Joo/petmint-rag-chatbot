@@ -1,17 +1,17 @@
 // 체험 카드 흐름(2026-11-12, 13번 2-4절) — 런슈즈 로그인의 체험 카드(runshoes src/components/DemoCards.tsx)와 같은 동작.
 // 상담원 카드가 2줄로 천천히 한쪽으로 흐른다. 마우스를 올리면 멈추고, 끌면 손을 따라오고, 놓으면 관성으로 미끄러지다 멈춘 뒤 다시 흐른다.
 // 끝없이 이어지게 목록을 두 번 이어 붙인다(뒤의 것은 화면 읽기 · 탭 순서에서 뺀다). 움직임 줄이기 설정이면 스스로 흐르지 않는다(끌기는 된다).
-// 다른 점: 펫퍼민트 카드는 근속 · 연차와 칩(볼 수 있는 것)을 싣느라 폭이 넓다(CARD — 칩이 한 줄에 둘씩 들어가는 폭). 카드 수가 보이는 칸보다 적으면 흐르지 않고 가운데 선다.
+// 다른 점: 펫퍼민트 카드는 근속 · 연차와 칩(볼 수 있는 것)을 싣느라 폭이 넓다(CARD — 대화 화면 칩 크기에서 칩이 한 줄에 둘). 카드 수가 보이는 칸보다 적으면 흐르지 않고 가운데 선다.
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { DemoAccount } from "../api/types";
 import s from "./Login.module.css";
 
-const CARD = 228;            // 카드 폭 — Login.module.css .demoTrack grid-auto-columns와 같아야 끊김 없이 돈다
+const CARD = 300;            // 카드 폭 — Login.module.css .demoTrack grid-auto-columns와 같아야 끊김 없이 돈다
 const GAP = 8;
 const COLUMN = CARD + GAP;
 const ROWS = 2;
-const MAX_COLUMNS = 4;
+const MAX_COLUMNS = 6;      // 세로로 쌓아 흐름이 화면 전체 폭을 쓴다(2026-11-12) — 넓은 화면은 다 보이면 흐르지 않고 가운데 선다
 const MIN_COLUMNS = 1;       // 휴대폰 — 한 열만 들어가면 보이는 칸을 칸 전체 폭으로 넓혀 다음 카드가 살짝 보이게(옆으로 더 있다는 표시)
 const SPEED = 13;            // 스스로 흐르는 속도(초당 px) — 런슈즈와 같다
 const FRICTION = 3.2;
