@@ -16,10 +16,11 @@ import { Chat } from "./pages/Chat";
 import { Consultation, type ConsultState } from "./pages/Consultation";
 import { CustomerSelect } from "./pages/CustomerSelect";
 import { ModeSelect } from "./pages/ModeSelect";
+import { Admin } from "./pages/Admin";
 import s from "./App.module.css";
 
 type ChatMode = "일반" | "사내규정";
-type Screen = "mode" | ChatMode | "customers" | "consult";
+type Screen = "mode" | ChatMode | "customers" | "consult" | "admin";
 
 interface AppProps {
   /** 지금 상담원(AuthGate) */
@@ -70,6 +71,14 @@ export default function App({ me, onLogout }: AppProps) {
     leaveEndedConsult();
     setScreen("mode");
   };
+
+  /** 관리자 화면(13번 2-5절) — 관리자만. 상담 중에는 열지 않는다(로그아웃과 같다) */
+  const goAdmin = () => {
+    if (locked) return;
+    leaveEndedConsult();
+    setScreen("admin");
+  };
+  const isAdmin = onLogout !== null && me.role === "관리자";
 
   /** "새 대화" — 새 세션을 열 뿐 앞 세션은 닫지 않는다. 대화 상태도 버리지 않아 "지난 채팅"에서 바로 다시 열린다 */
   const newChat = (mode: ChatMode) => openChatSession(mode);
@@ -131,13 +140,14 @@ export default function App({ me, onLogout }: AppProps) {
   useScrollbarWidth(mainRef, screen === "mode");
 
   const currentMode: Mode | null =
-    screen === "mode" ? null : screen === "customers" || screen === "consult" ? "업무특화" : screen;
+    screen === "mode" || screen === "admin" ? null : screen === "customers" || screen === "consult" ? "업무특화" : screen;
 
   return (
     <div className={s.app}>
       <TopBar current={currentMode} locked={locked} onHome={goHome} onMode={goMode}
               autoRing={call.autoRing} onAutoRing={call.setAutoRing} onRing={() => void call.ring()}
-              me={me} onLogout={onLogout} />
+              me={me} onLogout={onLogout}
+              onAdmin={isAdmin ? goAdmin : null} adminOn={screen === "admin"} />
       {error && (
         <div className={s.error} role="alert">
           <span>{error}</span>
@@ -151,6 +161,7 @@ export default function App({ me, onLogout }: AppProps) {
                 onNewChat={() => void newChat(screen)} onOpenSession={(it) => openPastChat(screen, it)}
                 onSessionDeleted={(id) => { dropChat(id); void openChatSession(screen); }} onSessionLost={() => chatSessionLost(screen)} />
         )}
+        {screen === "admin" && isAdmin && <Admin />}
         {screen === "customers" && <CustomerSelect onStart={(c) => void startConsultation(c)} starting={starting} />}
         {screen === "consult" && consult && (
           <Consultation key={consult.session.session_id} consult={consult} onEnd={() => void endConsultation()}

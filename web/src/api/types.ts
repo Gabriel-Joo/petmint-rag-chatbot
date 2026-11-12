@@ -407,3 +407,70 @@ export interface EmployeeProfile {
   probation_end: string | null;
   retirement_on: string | null;
 }
+
+// ----- 관리자 화면(2026-11-12, 13번 2-5절) — 읽기만. 일반 모드 · 급여 · 평가 · 휴가는 없다
+
+export interface AdminAgent {
+  employee_id: string;
+  name: string;
+  grade: string;
+  role: "상담원" | "관리자" | null;
+  retired: boolean;
+  sessions: number;
+  /** 업무특화 고객 수(같은 고객은 한 번) */
+  customers: number;
+}
+
+export interface AdminSession {
+  session_id: string;
+  mode: "사내규정" | "업무특화";
+  title: string | null;
+  customer_name: string | null;
+  pet_names: string[];
+  turns: number;
+  /** 모델이 거절한 턴 수 — 표시만 */
+  refused: number;
+  started_at: string;
+  ended_at: string | null;
+  /** 상담원이 지난 채팅 목록에서 지웠다(로그는 남는다) */
+  hidden: boolean;
+}
+
+export interface AdminSessionList {
+  total: number;
+  offset: number;
+  items: AdminSession[];
+}
+
+export interface AdminTurn extends TurnOut {
+  /** null = 기록 전 턴 · 코드 답 */
+  refused: boolean | null;
+  rating: "up" | "down" | null;
+  rating_comment: string | null;
+}
+
+export interface AdminSessionDetail {
+  session_id: string;
+  mode: "사내규정" | "업무특화";
+  title: string | null;
+  agent_name: string | null;
+  agent_email: string;
+  customer_name: string | null;
+  started_at: string;
+  ended_at: string | null;
+  hidden: boolean;
+  turns: AdminTurn[];
+}
+
+export interface AdminEmployee {
+  employee_id: string;
+  name: string;
+  grade: string;
+  employment_type: string;
+  hire_date: string;
+  tenure_years: number;
+  tenure_months: number;
+  retired_on: string | null;
+  role: "상담원" | "관리자" | null;
+  disabled: boolean;
+}

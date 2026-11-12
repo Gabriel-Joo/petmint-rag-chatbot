@@ -22,8 +22,9 @@ from data.rag_context import ContextBuilder
 
 from app import config, deps
 from app.db import make_engine
-from app.routers import articles, auth, chat_ws, consultations, customers, feedback, me, sessions
+from app.routers import admin, articles, auth, chat_ws, consultations, customers, feedback, me, sessions
 from app.services import policy_data
+from app.services.admin import AdminStore
 from app.services.auth import AuthStore
 from app.services.hr_personal import EmployeeStore
 from app.services.customers import USER_MESSAGE, CustomerDataError, CustomerStore
@@ -53,6 +54,7 @@ async def lifespan(app: FastAPI):
     app.state.auth = AuthStore(engine, core)
     app.state.employees = EmployeeStore(core)                         # 사내규정 개인화(PETMINT_HR_PERSONAL) — 인사 원장, SELECT만                          # 로그인(PETMINT_AUTH=app). access 모드도 /api/auth/me가 쓴다
     app.state.turn_log = TurnLogStore(engine)
+    app.state.admin = AdminStore(engine, core, app.state.turn_log)        # 관리자 화면(13번 2-5절) — 읽기만, 열람 기록만 쓴다
     app.state.llm = OllamaClient(config.OLLAMA_URL)
     # 검색(GPU)은 호스트 search-service. 기동 때 닿는지 보지 않는다 — 아직 배포 전이고, 없으면 턴이 search_unavailable로 끝난다
     app.state.retriever = Retriever(config.SEARCH_SERVICE_URL, expand=config.SEARCH_EXPAND, variant=config.SEARCH_VARIANT, pool_k=config.SEARCH_POOL,
@@ -85,6 +87,7 @@ async def check_origin(request: Request, call_next):
 
 
 app.include_router(auth.router)
+app.include_router(admin.router)                                      # 관리자만(그 밖은 404) — 의존성이 로그인까지 본다
 # 보호 라우터 — access 모드에서 require_login은 아무것도 하지 않는다. WS는 핸들러가 직접 확인한다(4401)
 for r in (customers.router, consultations.router, sessions.router, articles.router, feedback.router, me.router):
     app.include_router(r, dependencies=[Depends(deps.require_login)])

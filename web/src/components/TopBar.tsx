@@ -19,9 +19,12 @@ interface Props {
   me: MeOut;
   /** 앱 로그인일 때만 — 있으면 오른쪽 끝에 직원 이름·팀과 로그아웃 */
   onLogout: (() => void) | null;
+  /** 관리자 화면(13번 2-5절) — 관리자 계정일 때만. 이름 옆 「관리」, 759px 이하는 ☰ 안 */
+  onAdmin: (() => void) | null;
+  adminOn: boolean;
 }
 
-export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing, me, onLogout }: Props) {
+export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, onRing, me, onLogout, onAdmin, adminOn }: Props) {
   // 1023px 이하에서만 전화 묶음을 햄버거 메뉴로 접는다. 넓은 화면에서는 버튼이 숨고 묶음이 늘 보인다
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -79,6 +82,13 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
                     title={locked ? "상담 중에는 전화가 울리지 않습니다" : undefined}>
               전화 울리기
             </button>
+            {onAdmin && (
+              <button className={`btn ${s.ringBtn} ${s.menuAdmin} ${adminOn ? s.adminOn : ""}`} onClick={() => { setMenuOpen(false); onAdmin(); }}
+                      disabled={locked} aria-current={adminOn || undefined}
+                      title={locked ? "상담을 종료한 뒤 열 수 있습니다" : undefined}>
+                관리
+              </button>
+            )}
             {/* 휴대폰 폭에서는 로그아웃이 이 메뉴 안으로 들어온다(상단 첫 줄 폭) — 넓은 화면에서는 숨는다 */}
             {onLogout && (
               <button className={`btn ${s.ringBtn} ${s.menuLogout}`} onClick={() => { setMenuOpen(false); onLogout(); }} disabled={locked}
@@ -94,6 +104,12 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
           <div className={s.user}>
             <span className={s.userName} title={me.email}>{who}</span>
             {me.is_demo && <span className={s.demoBadge} title="비밀번호 없이 들어온 체험 계정 — 다른 방문자와 함께 씁니다">체험 계정</span>}
+            {onAdmin && (
+              <button className={`btn ${s.logout} ${s.adminBtn} ${adminOn ? s.adminOn : ""}`} onClick={onAdmin} disabled={locked}
+                      aria-current={adminOn || undefined} title={locked ? "상담을 종료한 뒤 열 수 있습니다" : "관리자 화면 — 상담원별 상담 조회 · 직원 목록"}>
+                관리
+              </button>
+            )}
             <button className={`btn ${s.logout}`} onClick={onLogout} disabled={locked}
                     title={locked ? "상담을 종료한 뒤 로그아웃할 수 있습니다" : undefined}>
               로그아웃
