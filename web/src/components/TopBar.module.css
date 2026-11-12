@@ -7,11 +7,12 @@
   position: sticky;
   top: 0;
   z-index: 20; /* 본문 카드(누름 효과로 쌓임 맥락이 생김)보다 위, 전화 알림(50)보다 아래 */
-  /* 2026-10-28 두 칸 — 왼쪽(제목·탭·잠금, 좁으면 이 칸 안에서 줄바꿈) / 오른쪽(전화·상담원, 늘 첫 줄 오른쪽 끝).
-     한 줄로 흐르게 두면 상담원 표시가 상담 중 표시(🔒)에 밀려 둘째 줄로 내려갔다 */
+  /* 격자 칸 넷 — 제목(brand) · 탭(tabs, 🔒 포함) · 전화 묶음(call, ☰ 포함) · 상담원(user).
+     2026-10-28: 한 줄로 흐르게 두면 상담원 표시가 상담 중 표시(🔒)에 밀려 둘째 줄로 내려갔다 → 상담원은 늘 첫 줄 오른쪽 끝.
+     2026-11-12: 두 줄일 때 전화 묶음(또는 ☰)은 둘째 줄 오른쪽 끝(탭과 같은 줄) — 사용자 */
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: "brand tabs right";
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "brand tabs call user";
   align-items: center;
   gap: 8px 16px;
   padding: 8px 24px;
@@ -20,22 +21,31 @@
 }
 @media (max-width: 640px) { .bar { padding: 6px 16px; gap: 6px 12px; } }
 
-/* 왼쪽 칸은 상자가 아니다(display: contents) — 제목 블록과 탭이 각자 격자 칸(brand·tabs)에 들어간다.
-   넓으면 한 줄(제목 | 탭 | 전화·상담원), 한 줄에 안 들어가면 두 줄(제목 | 전화·상담원 / 탭 전체 폭). 어느 쪽이든 상담원은 첫 줄 오른쪽 끝 */
-.leftCol { display: contents; }
+/* 왼쪽 · 오른쪽 칸은 상자가 아니다(display: contents) — 제목 · 탭 · 전화 묶음 · 상담원이 각자 격자 칸에 들어간다.
+   넓으면(1600px~) 한 줄: 제목 | 탭 | 전화 | 상담원.
+   좁으면 두 줄: 제목 | 상담원 / 탭 | 전화(1023px 이하는 ☰). 상담원은 늘 첫 줄 오른쪽 끝, 전화는 늘 마지막 줄 오른쪽 끝 */
+.leftCol, .rightCol { display: contents; }
 .brandRow { grid-area: brand; }
 .left { grid-area: tabs; min-width: 0; }
-.rightCol { grid-area: right; display: flex; align-items: center; justify-content: flex-end; gap: 16px; white-space: nowrap; }
-@media (max-width: 1599px) {
-  .bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand right" "tabs tabs"; }
+.callWrap { grid-area: call; justify-self: end; white-space: nowrap; }
+.user { grid-area: user; justify-self: end; }
+/* 두 줄 경계 1839px(2026-11-12) — 한 줄에 탭이 꺾이지 않으려면 체험 계정 표시까지 1680px, 상담 중(🔒 약 150px)이면 더 필요하다.
+   전에는 1599px라 1600~1679px에서 한 줄인데 탭이 두 줄로 꺾였다 */
+@media (max-width: 1839px) {
+  /* 첫 줄은 제목(왼쪽 끝)과 상담원(오른쪽 끝)이 줄 전체를 함께 쓴다 — 상담원 칸이 열 폭을 잡으면 둘째 줄 탭이 그만큼 좁아져
+     「사내규정」이 셋째 줄로 밀렸다(800 · 400px). 오른쪽 열 폭은 둘째 줄 전화 묶음(☰)만으로 정해진다 */
+  .bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand brand" "tabs call"; }
+  .brandRow { justify-self: start; min-width: 0; }
+  .user { grid-area: 1 / 1 / 2 / -1; }
 }
-@media (max-width: 640px) {
-  .rightCol { gap: 8px; }
-  .brandSub { display: none; }               /* 휴대폰 폭 첫 줄 — 제목 · ☰ · 상담원 */
-  .user .logout { display: none; }           /* 로그아웃은 ☰ 메뉴 안으로(.menuLogout) */
+/* ☰ 폭(1023px 이하)은 부제를 숨긴다 — 첫 줄에 제목과 상담원이 함께 있어 820px 아래에서 맞닿았다(2026-11-12) */
+@media (max-width: 1023px) { .brandSub { display: none; } }
+/* 로그아웃은 719px 이하에서 ☰ 메뉴 안으로(.menuLogout) — 640px까지는 글씨가 2배라 641~700px 첫 줄에서 제목과 맞닿았다(2026-11-12) */
+@media (max-width: 719px) {
+  .user .logout { display: none; }
 }
 .menuLogout { display: none; }
-@media (max-width: 640px) { .call .menuLogout { display: inline-block; } }
+@media (max-width: 719px) { .call .menuLogout { display: inline-block; } }
 
 /* 제목과 부제를 가로로 — 글자 밑선(baseline)을 맞춘다. 가짜 API 표시는 그 옆 */
 .brandRow { display: flex; align-items: center; gap: 12px; flex: none; }
@@ -73,7 +83,7 @@
   .tab { padding: 0.25em 0.4em; }
 }
 
-.callWrap { position: relative; }
+.callWrap { position: relative; }   /* ☰ 메뉴(.call)가 이 아래에 뜬다 */
 /* 자동 전화와 전화 울리기 사이 — 글씨 크기에 비례(1.5em, 3배 배율에서 45px) */
 .call { display: flex; gap: 1.5em; align-items: center; font-size: var(--font-xs); color: var(--text); }
 .switch { display: inline-flex; gap: 0.3em; align-items: center; cursor: pointer; white-space: nowrap; }
