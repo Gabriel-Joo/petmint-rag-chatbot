@@ -70,6 +70,7 @@
 ## 문서 자리
 
 - `docs/README.md` — 문서 표와 이름 규칙. 설계 문서(`requirements.md` · `pipeline.md` · `02_pipeline/00~16`)는 **저장소가 원천, Notion은 사본**(2026-10-18~)
+- 진실의 원천 순서는 **코드 → docs → Notion**이다 — 코드와 docs가 다르면 코드가 맞고 docs를 고친다. Notion은 docs를 따라간다(2026-11-09 사용자, FOREMAN 교장 노트 510 · dispatch #91)
 - 설계 문서 20개는 push 30분 뒤 FOREMAN이 Notion에 옮긴다(2026-11-09~, `origin/main` 기준). 파일을 옮기거나 이름을 바꾸면 짝이 끊긴다 — `git mv` · 이름 변경은 FOREMAN과 먼저 맞춘다
 - `docs/TODO.md`(남은 일) · `docs/next_rebuild.md`(재학습 계획) · `docs/ops/`(배포기록 · 모드검증 · 저녁실행) · `docs/img/`
 - `data/review/` — 평가 · 검수 · 측정 기록(`answer_eval_<날짜>_<시각>_…md` 등). 추적하는 것과 원본 폴더에만 있는 것이 섞여 있다
