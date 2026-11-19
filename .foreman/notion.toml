@@ -1,0 +1,21 @@
+# Notion 게시 설정(저장소 몫). FOREMAN 게시기가 origin/main 에 push 된 판만 읽는다(FOREMAN bridge/notioncfg.py).
+# 이 파일이 있으면 저장소 몫 칸은 모두 이 파일 것을 쓰고 FOREMAN config/notion.toml [petmint-rag-chatbot] 의 같은 칸은 보지 않는다.
+# root, docs_page, portfolio_page, ref, github 은 FOREMAN 쪽에만 둔다.
+#
+# 2026-11-19 게시를 멈췄다(사용자). 원고 폴더를 notion/ 으로 바꿀 때까지 멈춘다.
+#   문서 정리 A단계에서 docs/ 에 머리 주석과 근거 표시를 달았는데, 게시기는 notion/ 아래 원고일 때만 그것을 떼고 올린다.
+#   지금처럼 docs/ 를 그대로 올리면 노션에 그대로 나가므로 manual 로 둔다. F단계에서 src 를 notion/ 으로 바꾸고 다시 켠다.
+# 아래 docs 밖의 칸은 FOREMAN [petmint-rag-chatbot] 의 값을 바꾸지 않고 옮겼다(그 칸들의 까닭은 FOREMAN 쪽 주석과 log/petmint_docsync_dryrun_20261109.md).
+
+docs = "manual"
+quiet_min = 30
+create = true
+archive = false
+headings = "md"
+new_parent = "folder"
+new_title = "numbered"
+title = "keep"
+order = "keep"
+header = "footer"
+keep_notion = ["inline_code", "image", "heading", "shape"]
+skip = ["docs/README.md", "docs/next_rebuild.md", "docs/ops/"]
