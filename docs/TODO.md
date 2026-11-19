@@ -149,3 +149,48 @@
 - **petmint-47** 노트북 01의 정규식이 두 셀에 다르게 정의됨 (2026-11-19)
   언제: 정하지 않음. 셀 3과 셀 5에 `ARTICLE_HEADER`, `find_article_headers`, `PARAGRAPH_MARKER`, `split_into_paragraphs`가 두 번 있고 정규식이 다르다. 지금 도는 것은 셀 5다 [c:12a4e2b]
   나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/01_preprocessing.md` 옛 4절
+- **petmint-48** 임베딩 모델 양자화 (2026-11-19)
+  언제: 정하지 않음. 임베딩 모델(KURE-v1)을 양자화할지 본다. 문서에 까닭이나 계획이 없다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/pipeline.md` 9절(vLLM 줄에 함께 있었다)
+- **petmint-49** 동시 접속 검증 (2026-11-19)
+  언제: 정하지 않음. 운영에서 세션 셋이 동시에 질문해도 수신이 막히지 않고 토큰이 섞이지 않는지 확인한다. 체크 항목은 09번 5절에 있다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/requirements.md` 상태 줄과 비기능 「동시성」 줄
+- **petmint-50** `OLLAMA_NUM_PARALLEL` 정하기 (2026-11-19)
+  언제: 정하지 않음. VRAM 예산을 재면서 GPU 추론 동시 처리 수를 정한다. 지금은 설정이 없어 Ollama 기본값을 따른다(2026-11-19 `docker inspect ollama`로 잼). petmint-26과 함께 본다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/requirements.md` 비기능 「동시성」 줄, `docs/02_pipeline/09_ui_design.md` 1-15절
+- **petmint-51** 계산 카드를 `calculate_payout`에서 하루 단위 계산으로 바꾼 까닭 찾아 적기 (2026-11-19)
+  언제: 정하지 않음. docs에서 까닭을 찾지 못해 07번에 적지 않았다
+  나온 곳: 문서 정리 B단계 사람 지시(2026-11-19), `docs/02_pipeline/07_finetuning.md`
+- **petmint-52** 단계 문서 0절 「한 줄 요약」 새로 쓰기 (2026-11-19)
+  언제: 정하지 않음. B단계에서 0절에 옛 「목표」, 「전제」, 「도메인 배경」 본문을 그대로 옮겼다. 요약 문장은 새로 쓰지 않았다
+  나온 곳: 문서 정리 B단계 사람 지시(2026-11-19)
+- **petmint-53** 참조 그래프 검증의 청크 수가 기록과 하나 다름 (2026-11-19)
+  언제: 정하지 않음. 지금 레코드를 세면 1,778(928 + 850), 검증 기록은 1,779다. 왜 다른지 모른다. 지금 레코드로 검증을 다시 돌려 차이 0건을 확인한다 [code:KNOWN_ISSUES.md:105]
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/03b_reference_graph.md` 1-1절
+- **petmint-54** 운영 DB 백업의 바깥 사본 만들기 (2026-11-19)
+  언제: 정하지 않음. 백업과 MySQL PVC가 같은 호스트 NVMe에 있어 디스크 고장에 못 버틴다. 같은 디스크에 있다는 것은 조건이고, 바깥 사본이 없다는 것은 할 일이다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/12_data_storage.md` 4절
+- **petmint-55** 웹훅 Bypass 경로를 WAF 규칙으로 좁히기 (2026-11-19)
+  언제: 정하지 않음. Cloudflare 경로 일치가 하위 경로를 포함하고 대소문자를 가리지 않으니 정확한 경로의 POST만 남긴다(선택, 미적용)
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/13_access_and_tunnel.md` 1-3절
+- **petmint-56** Ragas 평가: partial 10, flawed 2 문항 처리와 집계 방식 정하기 (2026-11-19)
+  언제: 08번 본 평가 전(petmint-46). 제안 A는 answerable 85문항으로 집계하고 partial과 flawed는 따로 표에 둔다(answer_eval, ckpt_select와 같은 처리). 제안 B는 97문항 전체로 집계하고 표시만 한다. 라벨은 `data/eval/answer_eval_labels.json` [code:data/ckpt_select.py:9]
+  나온 곳: 문서 정리 B단계 사람 지시(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1, 4-2절
+- **petmint-57** Ragas 평가: answer_relevancy 임베딩 정하기 (2026-11-19)
+  언제: 08번 본 평가 전. KURE-v1을 `~/ragas_env`에 sentence-transformers와 torch를 더해 쓸지(무겁다), 공용 model-service `/embed`를 부를지, Ollama 임베딩 모델을 새로 받을지 [code:data/model_client.py:3] [code:data/model_client.py:36]
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
+- **petmint-58** Ragas 평가: 생성 온도 정하기 (2026-11-19)
+  언제: 08번 본 평가 전. 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가 재현을 위해 0으로 고정할지 정한다 [c:3f49bb5]
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
+- **petmint-59** Ragas 평가: RAG 없음 조합의 입력 정하기 (2026-11-19)
+  언제: 08번 본 평가 전. 질문만 보낼지, `build_messages(question, [])`로 "(검색된 발췌 없음)"을 넣을지 정한다 [code:data/prompts.py:63]
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
+- **petmint-60** Ragas 평가: RAG 조합의 발췌 조립 정하기 (2026-11-19)
+  언제: 08번 본 평가 전. 서비스와 answer_eval `--search`는 `build_full_context`(참조 조문 포함)를 쓰고, 예전 `search_with_graph`(참조 없음)는 `--search-legacy`로만 남았다. 어느 쪽을 쓸지 정한다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
+- **petmint-61** Ragas 평가: 목표치 정하기 (2026-11-19)
+  언제: 08번 파일럿 뒤. faithfulness, answer_relevancy의 우리 목표(08번 1-1절 표)를 정한다
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
+- **petmint-62** Ragas 평가: no_answer 20문항을 생성 평가에 넣을지 정하기 (2026-11-19)
+  언제: 08번 본 평가 전. 넣으면 거절률 비교가 늘고 생성 횟수가 388회에서 468회가 된다 [code:data/answer_eval.py:30] [code:data/answer_eval.py:200]
+  나온 곳: 문서 정리 B단계(2026-11-19), `docs/02_pipeline/08_ragas_eval.md` 옛 4-1절
