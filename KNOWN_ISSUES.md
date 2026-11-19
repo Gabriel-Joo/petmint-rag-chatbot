@@ -335,7 +335,7 @@ citation을 위치 기준(원본 처음~조각 끝까지 읽어 맥락을 잇고
 - BM25는 범위 밖 청크를 먼저 거르고 나서 상위 k개를 고른다.
 - 백업: `backups/pre_search_scope_20261013/`
 
-**검증**(회귀 세트 `data/eval/search_regression.json` 93문항, 결과 `data/eval/results/search_regression_20261013_1637_*.json`)
+**검증**(회귀 세트 `data/eval/search_regression.json` 93문항, 결과 `data/review/eval_results_summary.md` 2절의 10-13 16:37 두 줄)
 - scope 일치: 대표 범위 14개에서 `allows()` 청크 수와 Milvus 필터 행 수가 모두 같았다(불일치 0).
 - 수정 전과 후(같은 모델·데이터, top5):
 
@@ -396,7 +396,7 @@ citation을 위치 기준(원본 처음~조각 끝까지 읽어 맥락을 잇고
   - 후보 20에서 hit@5가 같고 MRR은 +0.007이다(R094 통과, R064 실패). 의존성을 늘릴 만한 이득이 아니다.
   - 후보 50에서는 공백 BM25와 결과가 완전히 같다. **BM25가 최종 순위에 거의 기여하지 않는다는 뜻이다.** 후보를 결정하는 것은 dense다.
   - kiwipiepy는 llm_env에 설치된 채로 두었다.
-- 현재 설정의 기준 결과: `data/eval/results/search_regression_20261013_A_current.json`
+- 현재 설정의 기준 결과: `data/review/eval_results_summary.md` 2절의 10-13 17:12 줄(A_current)
 
 **남은 약점**(현재 설정에서 틀리는 9문항)
 - 후보 미포함(dense 31~66위): 가입 연령(R010·R091), 배상책임(R017·R018), 가입 전 질병(R022), 해외 사고(R024).

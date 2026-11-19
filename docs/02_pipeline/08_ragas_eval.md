@@ -16,7 +16,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | 검색 | 정답 조항이 상위 k개에 들어왔나 | 기존 `data/search_regression.py`의 hit@k·MRR | gold가 **any-of**다(정답 조항 중 하나만 찾으면 맞음). Ragas의 ID 기반 recall은 "정답 ID 중 몇 개를 찾았나"로 계산해 정의가 어긋난다. LLM 기반 context recall은 참조 정답 문장이 필요한데 없다 |
 | 생성 | 답이 근거에 붙어 있나, 질문에 맞나 | Ragas faithfulness · answer_relevancy | 둘 다 참조 정답이 필요 없다 — 97문항 정답 문장은 쓰지 않는다 |
 
-검색 지표의 2026-10-13 값: 103문항 세트 상위 5개 안 88/97, MRR 0.745(`data/eval/results/search_regression_20261013_A_current.json`). 그 뒤 청크 v3·질의 확장으로 검색이 바뀌어 지금 값은 다시 재야 한다. ✗ 검색 층에는 Ragas를 쓰지 않는다.
+검색 지표의 2026-10-13 값: 103문항 세트 상위 5개 안 88/97, MRR 0.745(`data/review/eval_results_summary.md` 2절의 10-13 17:12 줄). 그 뒤 청크 v3·질의 확장으로 검색이 바뀌어 지금 값은 다시 재야 한다. ✗ 검색 층에는 Ragas를 쓰지 않는다.
 
 ---
 
