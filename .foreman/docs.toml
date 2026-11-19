@@ -1,12 +1,13 @@
 # 문서 규칙(FOREMAN 문서 도구가 읽는다, tools/docs.py). 없는 칸은 FOREMAN 기본값. 본은 런슈즈 .foreman/docs.toml
 # 2026-11-19 펫퍼민트 문서 정리 A단계(현황과 근거 달기)에서 넣었다. 원고는 지금 docs/ 뿐이다(notion/, portfolio/ 는 D, E단계)
-records = ["log/", "docs/ops/"]       # 기록 폴더. log/ 는 점검 기록, docs/ops/ 는 배포기록, 모드검증, 저녁실행(운영 기록과 체크리스트, 노션 게시에서도 빠져 있다)
+records = ["log/", "docs/ops/", "backups/"]   # 기록 폴더. log/ 는 점검 기록, docs/ops/ 는 배포기록, 모드검증, 저녁실행(운영 기록과 체크리스트, 노션 게시에서도 빠져 있다), backups/ 는 되돌리기 안내(2026-11-19 문서가 인용해 올림)
 pair_numbers = false
 read_commit = "piece"                 # 읽은 커밋은 편마다 따로
 allowed_domains = ["ronanlab.dev"]
 # 바뀌어도 코드로 세지 않는 것: 글, 그림, 잠금 파일, 빌드와 도구 설정, 세션 설정, 평가와 검수 기록(data/review/, docs/README.md 「근거」)
 not_code = [".md", ".png", ".jpg", ".svg", ".lock", "*package-lock.json", "*package.json", "*tsconfig*.json", "*vite.config.ts",
-            ".gitignore", "*/.gitignore", ".claude/*", ".foreman/*", "data/review/*"]
+            ".gitignore", "*/.gitignore", ".claude/*", ".foreman/*", "data/review/*",
+            "models/gguf/Modelfile.*"]   # Ollama 모델 등록 설정(2026-11-19 문서가 인용해 올림). 원자료처럼 다루고 07번이 근거로 건다
 
 [sets]
 docs = "docs/"
