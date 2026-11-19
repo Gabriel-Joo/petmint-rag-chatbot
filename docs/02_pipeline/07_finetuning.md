@@ -414,18 +414,3 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 
 - 학습 발췌를 서빙과 맞추는 것만으로는 "정답이 있는데 거절"이 풀리지 않는다. 거절이 줄어든 만큼 틀림이 늘었다. 이 지표 하나만 목표로 삼지 않는다. 까닭: 3-10절 「C로 다시 만든 답 자체가 rebuild4의 05 답보다 학습 목표로 나쁘다」
 
----
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-2026-11-19 문서 정리 B단계에서 절을 옮겼다. 저장소 안 주석이 옛 번호를 가리키는 곳만 적는다.
-
-| 옛 절 | 지금 자리 | 옛 번호를 쓰는 곳 |
-| --- | --- | --- |
-| 9절 「06 심판은 무죄」 | docs/archive/07_finetuning_log.md 9절 | data/review/faq_build_summary.md:57 |
-| 10-7절 | docs/archive/07_finetuning_log.md 10-7절 | data/faq_rewrite.py:68 |
-| 11절 | 3-7~3-10절 | data/review/rebuild5_progress_20261021.md:348 |
-| 11-3절 | 3-9절 | data/review/eval_results_summary.md:139 |
-| 11-6절 | 1-5절 | data/review/eval_results_summary.md:186, data/review/judge_direct_answer.md:39 |
-| 11-7절 | 1-6절 | data/review/eval_results_summary.md:18 |
-| 11-8절 | 1-7절 | data/review/eval_results_summary.md:18, 139, 174 |

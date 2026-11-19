@@ -342,10 +342,10 @@ rebuild4, 평가 220 보이는 세트 3회 평균. 흔들림(실행 사이 SD): 
   전부 켬 + 사전 v2로 서버를 띄워 사내규정 2문항·일반 1문항 정상 확인
 
 ### 운영 반영 (2026-10-23) — 이미지 f7991c90f22e + ConfigMap(ronanlab-infra c824f60)
-- 플래그: 청크 v3 경로 · variant v3 · 부모 표시 · 질의 확장(사전 v2) · 답 아래 표. 모델 rebuild4 그대로. 기록 `docs/14_deployment.md` 1-11절
+- 플래그: 청크 v3 경로 · variant v3 · 부모 표시 · 질의 확장(사전 v2) · 답 아래 표. 모델 rebuild4 그대로. 기록 `docs/archive/14_deployment_log.md` 1-11절
 - 확인: Pod 2개 Running, 로그 오류 0. Pod 안 시험 스크립트로 업무특화 3 · 사내규정 1 · 일반 1 — 모두 정상, 업무특화 둘에 표(하나는 행 강조)
 - 반영 직후 운영 로그에서 사내규정 근거 조항 열기 422 발견(예전 버그 — 조항 원문 API가 강아지·고양이만 받음) → f0279c2로 고침, 다음 push에 반영
-- rebuild5·5b 실패 기록: `docs/07_finetuning.md` 11절
+- rebuild5·5b 실패 기록: `docs/02_pipeline/07_finetuning.md` 3-7절
 
 ## 2026-10-23 — 보장 여부 질문 개선 측정 (`scripts/coverage_chain.sh`, 표 `data/review/coverage_measure.md`)
 사용자 지시 순서: ① 평가 항목 → ② 1안 → ③ 3안(1안에서 틀림이 늘면 멈춤) → ④ 제2조 정리. rebuild4, 운영 설정(v3·부모 표시·확장 사전 v2·표),

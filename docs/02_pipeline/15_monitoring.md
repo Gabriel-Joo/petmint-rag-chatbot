@@ -87,7 +87,7 @@
 
 처음 설계(2026-10-18) 때는 이렇게 보았다.
 
-helm install로 넣지 않는다 — 설정이 클러스터 안에만 남아 Pod를 다시 만들면 무엇을 어떻게 했는지 모르게 된다(14번 1-9절의 Jenkins와 같은 이유). kube-prometheus-stack의 Operator·CRD 없이 Prometheus 설정 파일 하나로 긁는다 — 지표 출처가 넷뿐이라 Operator가 줄여 주는 일보다 늘리는 구성이 많다. [docs:02_pipeline/14_deployment.md:147] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/monitoring/README.md:4. 다름: 지표 출처는 넷이 아니라 지금 scrape 여덟(apps/monitoring/prometheus/configmap.yaml:16-113). 처음 설계 때 본 것이라 글은 그대로 둠 -->
+helm install로 넣지 않는다 — 설정이 클러스터 안에만 남아 Pod를 다시 만들면 무엇을 어떻게 했는지 모르게 된다(14번 1-8절의 Jenkins와 같은 이유). kube-prometheus-stack의 Operator·CRD 없이 Prometheus 설정 파일 하나로 긁는다 — 지표 출처가 넷뿐이라 Operator가 줄여 주는 일보다 늘리는 구성이 많다. [docs:02_pipeline/14_deployment.md:147] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/monitoring/README.md:4. 다름: 지표 출처는 넷이 아니라 지금 scrape 여덟(apps/monitoring/prometheus/configmap.yaml:16-113). 처음 설계 때 본 것이라 글은 그대로 둠 -->
 
 처음 설계의 구성, 대시보드, 적용 검증 항목은 docs/archive/15_monitoring_log.md 에 있다.
 

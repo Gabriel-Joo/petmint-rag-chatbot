@@ -44,7 +44,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | Ragas 설치 | △ 전용 venv `~/ragas_env`에 ragas 0.4.3(고정 목록 `data/eval/requirements-ragas.txt`), import·`pip check` 확인. 판정 실행 전 [code:data/eval/requirements-ragas.txt:1-4] [code:data/eval/requirements-ragas.txt:76] <!-- 2026-11-19 잼: ~/ragas_env/bin/pip show ragas 는 0.4.3, pip check 는 No broken requirements found. --> |
 | 파일럿(심판이 한국어를 제대로 판정하나) | △ 1회 실행(2026-10-18, `data/ragas_pilot.py` 1-5절) — 90회 중 55회 파싱 실패, 5절 확인 항목은 아직 채우지 않았다 [code:data/review/ragas_pilot_20261018_2243.json] [code:data/ragas_pilot.py:133-135] |
 | Ollama 생성 러너(네 조합 생성 → rows에 질문·답·contexts) | △ 코드 없음 — 파일럿 통과 뒤 |
-| LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 8절 절차, Ollama 등록, 운영 모델) [docs:02_pipeline/10_consultation_flow.md:164] [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.kabyul-tri-7b-rag1-rebuild4-ckpt462 --> <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 --> |
+| LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 1-9절 절차, Ollama 등록, 운영 모델) [docs:02_pipeline/10_consultation_flow.md:164] [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.kabyul-tri-7b-rag1-rebuild4-ckpt462 --> <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 --> |
 | answer_relevancy 임베딩 | △ 정하지 않았다(4-1절) |
 
 #### 1-4. 실행 절차와 예상 시간
@@ -145,12 +145,3 @@ python -m data.ragas_pilot prepare                        # llm_env — Milvus �
 
 **실패하면**: (1) Ragas 프롬프트를 한국어로 옮겨 `set_prompts`로 바꿔 끼운다 (2) 16GB에 들어가는 더 큰 로컬 심판을 찾는다 (3) 외부 API — 요구사항 "외부 API 호출 0건"의 예외로 둘지부터 정해야 한다. [docs:requirements.md:21]
 
----
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-2026-11-19 문서 정리 B단계에서 절을 옮겼다. 저장소 안 주석이 옛 번호를 가리키는 곳만 적는다.
-
-| 옛 절 | 지금 자리 | 옛 번호를 쓰는 곳 |
-| --- | --- | --- |
-| 6절(파일럿) | 1-5절, 확인 항목과 통과 기준은 5절 | data/ragas_pilot.py:3 |

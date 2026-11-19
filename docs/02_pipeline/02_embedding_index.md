@@ -52,7 +52,7 @@ content       4940 bytes  → 12000
 
 질문에 "기본형/고급형/실속형" 또는 "Ⅰ/Ⅱ/Ⅲ"가 명시돼 있으면 **Milvus 검색 시점에 메타데이터로 강제 필터링**하도록 추가했다. SearchScope가 의료비 특약 범위를 좁힌다. 등급이 비어 있는 청크는 통과시키고, 유형(type)으로는 거르지 않는다. 대신 검색 문장에서 등급 단어를 빼, 등급 때문에 엉뚱한 조항이 올라오는 것을 줄인다. [code:data/search_scope.py:21] [code:data/search_scope.py:84-88] [code:data/search_scope.py:156-176] [code:data/search_engine.py:159-162]
 
-- **등급·유형을 명시하지 않은 질문**에도 가입 정보로 범위가 정해진다(✓ 09번 3-3절 `SearchScope.for_policies`). 되묻기는 상위 결과가 서로 다른 (유형, 등급) 조합에 걸칠 때만 발동한다(09번 4절, ✓ 로컬·배포 서버 확인(2026-10-20·21, 검증 R3)). [code:data/search_scope.py:127-128] [docs:02_pipeline/09_ui_design.md]
+- **등급·유형을 명시하지 않은 질문**에도 가입 정보로 범위가 정해진다(✓ 09번 1-6절 `SearchScope.for_policies`). 되묻기는 상위 결과가 서로 다른 (유형, 등급) 조합에 걸칠 때만 발동한다(09번 1-8절, ✓ 로컬·배포 서버 확인(2026-10-20·21, 검증 R3)). [code:data/search_scope.py:127-128] [docs:02_pipeline/09_ui_design.md]
 
 #### 1-3. 바꾸지 않는 것
 
@@ -175,9 +175,9 @@ Milvus의 차별점:
 > 
 > 
 > 
-> 이 측정에 쓴 꼬리 질의 85개와 대조군 120개는 당시 임시로 만든 것이라 저장소에 남아 있지 않다. 이후 04번 9-1절의 회귀 세트가 그 역할을 대신한다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md]
+> 이 측정에 쓴 꼬리 질의 85개와 대조군 120개는 당시 임시로 만든 것이라 저장소에 남아 있지 않다. 이후 04번 2-6-1절의 회귀 세트가 그 역할을 대신한다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md]
 > 
-> 이 측정은 "512토큰 뒤쪽에서만 답할 수 있는 질의 85개"로 잰 것이다. 이후 04번 9절의 회귀 세트로 다시 재었을 때는 512 → 1024의 차이가 더 작았다(상위 5개 안 74 → 75, MRR 0.657 → 0.677). 세트 성격이 달라서다 — 회귀 세트는 꼬리 질의만 모은 게 아니다. fp16은 두 측정 모두에서 fp32와 순위가 같고 약 3배 빠르다. [docs:02_pipeline/04_rag_assembly.md] (2026-10-13 이후) [code:data/eval/search_regression.json:3] [code:KNOWN_ISSUES.md:368] [code:KNOWN_ISSUES.md:389]
+> 이 측정은 "512토큰 뒤쪽에서만 답할 수 있는 질의 85개"로 잰 것이다. 이후 04번 2-6절의 회귀 세트로 다시 재었을 때는 512 → 1024의 차이가 더 작았다(상위 5개 안 74 → 75, MRR 0.657 → 0.677). 세트 성격이 달라서다 — 회귀 세트는 꼬리 질의만 모은 게 아니다. fp16은 두 측정 모두에서 fp32와 순위가 같고 약 3배 빠르다. [docs:02_pipeline/04_rag_assembly.md] (2026-10-13 이후) [code:data/eval/search_regression.json:3] [code:KNOWN_ISSUES.md:368] [code:KNOWN_ISSUES.md:389]
 > 
 
 #### 3-7. 중복 제거 키가 서로 다른 청크를 덮어쓰던 문제
@@ -251,4 +251,4 @@ Dense 색인은 3-3의 메타데이터 헤더를 붙여 임베딩했는데, 리�
 
 ### 5. 검증 항목
 
-- **검증 쿼리 수가 적다**. 3-7·3-9는 10개 질문 × 2종으로 측정했다. 더 다양한 질문 패턴(복수 조건 조합, 등급+유형 동시 언급 등)에 대한 검증은 ✓ 04번 9-1절의 회귀 세트 103문항으로 한다. 생성 품질까지 포함한 정량 평가는 △ 08번(Ragas)에서 다룬다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [docs:02_pipeline/08_ragas_eval.md] (2026-10-13까지) [c:ba373fe]
+- **검증 쿼리 수가 적다**. 3-7·3-9는 10개 질문 × 2종으로 측정했다. 더 다양한 질문 패턴(복수 조건 조합, 등급+유형 동시 언급 등)에 대한 검증은 ✓ 04번 2-6-1절의 회귀 세트 103문항으로 한다. 생성 품질까지 포함한 정량 평가는 △ 08번(Ragas)에서 다룬다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [docs:02_pipeline/08_ragas_eval.md] (2026-10-13까지) [c:ba373fe]

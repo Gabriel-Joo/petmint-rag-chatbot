@@ -174,7 +174,7 @@ results = client.query(..., limit=3)
 
 ##### 2-6-2. 검색 문장에서 등급·유형을 뺐다
 
-필터가 등급을 책임지는데 검색 문장에도 등급이 남아 있으면, 그 단어가 강한 일치 신호가 되어 의료비 제1조를 상위로 끌어올린다. 02번 6-2절에서 임베딩 텍스트에 등급 헤더를 붙인 조치의 부작용이다. [code:data/search_scope.py:84-87] [code:data/search_engine.py:48-52] [docs:02_pipeline/02_embedding_index.md:134]
+필터가 등급을 책임지는데 검색 문장에도 등급이 남아 있으면, 그 단어가 강한 일치 신호가 되어 의료비 제1조를 상위로 끌어올린다. 02번 3-3절에서 임베딩 텍스트에 등급 헤더를 붙인 조치의 부작용이다. [code:data/search_scope.py:84-87] [code:data/search_engine.py:48-52] [docs:02_pipeline/02_embedding_index.md:134]
 
 | 검색 문장 | 상위 5개 안 | MRR | 등급 언급 (19) | 한도 (5) |
 | --- | --- | --- | --- | --- |

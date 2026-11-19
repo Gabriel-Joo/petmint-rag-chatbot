@@ -33,7 +33,7 @@
 
 | # | 규칙 (함수) | 플래그 | 발동 조건 | 답 | 만든 때·측정 |
 | --- | --- | --- | --- | --- | --- |
-| — | 등급 되묻기 (`clarify_options`) | — | 검색 결과에 가입 등급이 둘 이상 섞였다. 질문이 통원/입원을 말하거나(`named_section`) 등급과 상관없는 질문(`needs_grade`)이면 묻지 않는다. 앞 턴에서 고른 특약은 이어 쓴다(`carry_chosen`) | 어느 특약인지 선택지 | 09번 4절 [code:app/services/answer.py:294-323] [code:app/services/answer.py:239-258] [code:app/services/context.py:104] [docs:02_pipeline/09_ui_design.md:254] |
+| — | 등급 되묻기 (`clarify_options`) | — | 검색 결과에 가입 등급이 둘 이상 섞였다. 질문이 통원/입원을 말하거나(`named_section`) 등급과 상관없는 질문(`needs_grade`)이면 묻지 않는다. 앞 턴에서 고른 특약은 이어 쓴다(`carry_chosen`) | 어느 특약인지 선택지 | 09번 1-8절 [code:app/services/answer.py:294-323] [code:app/services/answer.py:239-258] [code:app/services/context.py:104] [docs:02_pipeline/09_ui_design.md:254] |
 | ① | 되묻기 답 이어받기 (`payout.reply_turn`) | (기본) | 앞 답이 코드의 금액 되묻기 문구(`ASKS`)이고, 이번 말이 금액·일수·"모르겠어요"다(`dayparse.is_reply`) | 의료비 계산 카드 + 답. 날짜별 금액이 필요하면 입력 칸 | 2026-10-21 [code:app/services/code_rules.py:70-72] [code:app/services/payout.py:861] [code:app/services/payout.py:586-594] [code:app/services/dayparse.py:140] |
 | ② | 미가입 특약 (`customer_facts.not_enrolled`) | CUSTOMER_FACTS | 질문이 가입하지 않은 특약(배상책임·법률비용, 통원/입원)을 가리킨다 | "○○는 그 특약에 가입하지 않아…" + 가입 특약 | 4d [code:app/services/code_rules.py:73] [code:app/services/customer_facts.py:65] |
 | ③ | 올해 받은·남은 (`annual_answer`) | CUSTOMER_FACTS | 올해·남은·받은 + 한도·보험금 | 청구 이력으로 올해 받은 금액·잔여 | 4d [code:app/services/code_rules.py:74] [code:app/services/customer_facts.py:87] |
@@ -177,7 +177,7 @@
 **운영 로그로 확인하는 방법 (2026-10-29 1·2단계 만듦, 3·4는 아직).** 운영 DB의 질문을 내가 직접 읽는 것은 개인정보로 막혔다(2026-10-28). 그래서 질문 글을 밖으로 내지 않고 세는 방식으로 한다. [c:82d86f0]
 
 1. **턴마다 답한 규칙을 남긴다.** 코드는 이미 `ctx.code_rule`(등록부 key, 사내규정은 `hr_personal`)을 채운다. `turns.code_rule VARCHAR(32) NULL` 칸 하나 — **만들었다**(`0008_turn_code_rule`, 턴 로그가 쓴다) [code:db/migrations/petmint/0008_turn_code_rule.sql:6] [code:app/services/answer.py:338] [code:app/services/answer.py:420] [code:app/services/turn_log.py:95]
-2. **클러스터 안에서 도는 집계 스크립트** — **만들었다**: `kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report [--since … --until … --json]`(scripts/는 이미지에 없어 db/에 둔다, 14번 1-20절). 질문 글 없이 숫자만 낸다(테스트가 결과에 질문·답·세션 id가 없는지 본다): [code:db/rule_report.py:7-8] [code:db/rule_report.py:155-157] [code:Dockerfile:34-36] [code:tests/test_rule_report.py:80] [docs:02_pipeline/14_deployment.md:375]
+2. **클러스터 안에서 도는 집계 스크립트** — **만들었다**: `kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report [--since … --until … --json]`(scripts/는 이미지에 없어 db/에 둔다, 14번 1-10절). 질문 글 없이 숫자만 낸다(테스트가 결과에 질문·답·세션 id가 없는지 본다): [code:db/rule_report.py:7-8] [code:db/rule_report.py:155-157] [code:Dockerfile:34-36] [code:tests/test_rule_report.py:80] [docs:02_pipeline/14_deployment.md:375]
    - 규칙별 발동 수
    - 모델 답 중 거절 비율, 코드 되묻기 뒤 다음 턴의 거절 비율 [code:db/rule_report.py:85] [code:db/rule_report.py:107]
    - 규칙별 👎 수(feedback 테이블) [code:db/rule_report.py:97] [code:db/rule_report.py:115]
@@ -188,14 +188,3 @@
 4. **운영 탐침**: 사용자가 표본에서 고른 질문을 가명 처리해 `data/eval/ops_probe.json`으로 넣는다. 그다음부터 규칙을 바꿀 때 내 탐침·gemma 세트와 함께 잰다
 
 순서는 1(칸 하나) → 2(집계만, 개인정보 없음) → 3·4(사용자가 표본을 본 뒤)다. 1을 하려면 마이그레이션 하나가 들어간다. [code:db/migrations/petmint/0008_turn_code_rule.sql]
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-2026-11-19 문서 정리 B단계에서 절을 옮겼다. 코드 주석은 고치지 않았으니 옛 번호로 찾아온 사람은 이 표를 본다.
-
-| 옛 절 | 새 절 | 옛 번호를 쓰는 코드 주석 |
-| --- | --- | --- |
-| 3-1절 | 4-1절 | `tests/test_rule_registry.py` 2행, 20행 |
-| 4절 A안 | 2-1절 | `app/services/code_rules.py` 3행, `app/services/lexicon.py` 3행 |
-| 5절(1단계, 2단계) | 5절 | `app/schemas.py` 181행, `db/migrations/petmint/0008_turn_code_rule.sql` 1행, `db/rule_report.py` 3행, `tests/test_rule_report.py` 3행 |
-| 5절(B안) | 3-2절 | `data/review/disease_ask_llm_measure.md` 48행(운영 로그는 5절 그대로) |

@@ -52,7 +52,7 @@
 └───────────────────────────────────┘
 
 ※ 전화 알림은 어느 화면에서든 나타나며, 받으면 2번을 건너뛰고 3번으로 간다.
-  상담 종료 후에도 3번에 머물며(읽기 전용), 떠나는 것은 상담원이 정한다. — 10번 1·4·5절
+  상담 종료 후에도 3번에 머물며(읽기 전용), 떠나는 것은 상담원이 정한다. — 10번 1-1, 1-5, 1-6절
 ```
 
 #### 1-2. 모드 선택 — 캐릭터
@@ -118,7 +118,7 @@
 
 **반려동물 선택**은 고객에게 반려동물이 둘 이상일 때 상단 고객 카드에 나타난다. 종이 아니라 **개체 이름**으로 고른다 — 강아지를 두 마리 기르는 고객은 종으로는 갈라지지 않는다. 개체를 고르면 그 개체의 종·특약·등급이 검색 범위를 정한다. 상담 중에도 다른 개체로 옮길 수 있다 — "초코는 그렇고 보리는요?" 같은 질문이 나온다. [code:web/src/components/SpeciesToggle.tsx:20] [code:app/routers/chat_ws.py:7] [code:app/services/customers.py:64-66]
 
-**계산 카드**: 치료비가 들어간 질문에는 `limit_table`로 계산한 예상 지급액을 답변 옆 카드로 보여준다. 모델은 계산에 손대지 않는다(07번 5절 참고). [code:app/services/payout.py:155] [code:data/limit_table.py:72-90] [code:web/src/components/CalcCard.tsx]
+**계산 카드**: 치료비가 들어간 질문에는 `limit_table`로 계산한 예상 지급액을 답변 옆 카드로 보여준다. 모델은 계산에 손대지 않는다(07번 1-4절 참고). [code:app/services/payout.py:155] [code:data/limit_table.py:72-90] [code:web/src/components/CalcCard.tsx]
 
 **여러 날 입원·여러 번 통원**(2026-10-21) — 약관의 모든 단위가 하루다(자기부담금 "1일당", 한도 "1일당", 수술한 날은 그날만 수술 한도). 그래서 계산 카드는 날마다 (그날 치료비 − 자기부담금) × 보상비율을 그날 한도까지 내고, 합계에 연간 남은 한도를 건다(`app/services/daycalc.py`). 총액을 하루치로 계산하면 입원은 적게(3일 70만원 → 30만원, 실제 30만~44.1만원), 하루 금액이 작은 통원은 많게(3번 45만원 → 29.4만원, 실제 25.2만~28만원) 안내했다. [code:app/services/daycalc.py:24-28] [code:tests/test_daycalc.py:38-50] [c:5ab0d3d]
 
@@ -145,7 +145,7 @@ or (가입한 의료비 특약 and (내 등급 or 등급 없음))
 
 `type`은 `section_name`이 이미 정하므로 따로 필터할 필요가 없다. 가입하지 않은 의료비 특약(예: 통원Ⅲ)은 통째로 빠진다. [code:data/search_scope.py:166-176]
 
-> "여섯 유형이 모두 검색된다"(02번 6-6절)는 전제는 **필터가 없는 코퍼스(인사규정)에서만** 성립한다. 약관 모드의 고객은 자기가 가입한 유형만 본다. [docs:02_pipeline/02_embedding_index.md] [code:data/search_scope.py:126-141]
+> "여섯 유형이 모두 검색된다"(02번 3-7절)는 전제는 **필터가 없는 코퍼스(인사규정)에서만** 성립한다. 약관 모드의 고객은 자기가 가입한 유형만 본다. [docs:02_pipeline/02_embedding_index.md] [code:data/search_scope.py:126-141]
 > 
 
 #### 1-6. SearchScope — 필터를 값 객체로
@@ -273,7 +273,7 @@ SearchScope    species, medical, excluded
 | 사내규정 | 베이스 모델이 앞 기준 질문 + 후속 → 독립 질문으로 재작성(실패하면 이어 붙이기) | 재작성된 질문 | 재작성된 질문 [code:app/services/context.py:148-156] |
 | 업무특화 | LLM 없이 앞 기준 질문과 이어 붙이기 | 기준 질문 + 후속 | 기준 질문 + 후속. 금액만 말한 후속은 후속만 [code:app/services/context.py:137-147] [code:app/services/context.py:8-9] |
 
-- **대화 이력을 업무특화 프롬프트에 넣지 않는다**는 원래 결정은 그대로다 — 학습 데이터가 2턴(`system`, `user`)이라 형식이 달라지면 재학습이 필요하다(07번 6절). 일반은 베이스 모델이라 이력을 넘긴다. [code:app/services/context.py:5] [docs:02_pipeline/07_finetuning.md]
+- **대화 이력을 업무특화 프롬프트에 넣지 않는다**는 원래 결정은 그대로다 — 학습 데이터가 2턴(`system`, `user`)이라 형식이 달라지면 재학습이 필요하다(07번 2-4절). 일반은 베이스 모델이라 이력을 넘긴다. [code:app/services/context.py:5] [docs:02_pipeline/07_finetuning.md]
 - **업무특화는 LLM 재작성을 하지 않는다.** 베이스로 재작성하면 GPU에 둘이 함께 못 올라가(각 8.7GB + 검색 서비스) 후속 턴마다 모델 교체로 약 5초 늦어진다. 이어 붙인 검색은 이상적 재작성과 같은 조항을 가져왔다(후속 4건). 베이스 재작성은 주제가 바뀐 질문을 앞 질문과 섞었고(3/3), 업무특화 모델로 재작성하면 재작성 대신 답을 했다(9건 중 2). (2026-10-21 기준) [code:data/review/multiturn_design_20261021.md:15-21] [code:app/services/context.py:8-9]
 - **기준 질문**: 단독 질문은 질문 자체, 후속은 앞 턴의 기준 질문(`turns.rewritten_question`). 후속에 통원/입원·등급·유형 낱말이 새로 나오면 기준 질문 속 같은 종류 낱말을 갈아 끼운다 — "고급형 통원 하루 한도는?" → "그럼 입원은요?" → "수술하면요?"에서 셋째 턴 검색어가 "고급형 입원 하루 한도는? 수술하면요?"가 된다(원래 질문과만 붙이면 '입원'이 사라졌다). 연쇄는 늘 기준 질문에 붙인다. [code:app/services/context.py:11-14] [code:app/services/context.py:92-101] [code:db/migrations/petmint/0005_turn_followup.sql:2-3]
 - **답변 모델에 넘기는 질문**(업무특화, 10회씩 다섯 사례): "그럼 입원은요?"를 후속만 넘기면 0/10(전부 거절), 기준+후속이면 10/10. "치료비는 35만원 나왔어요"는 반대로 기준+후속이면 10/10 거절, 후속만이면 답한다 — 그래서 금액만 말한 후속만 후속만 넘긴다. (2026-10-21 기준) [code:data/review/multiturn_design_20261021.md:50-58]
@@ -389,7 +389,7 @@ WS: 후속이면 `sources` 앞에 `{"type": "context", "kind": "rewrite|concat|h
 
 **세션 수명**: 초안은 메모리였고, 그래서 재시작하면 사라졌다. **로그를 MySQL로 옮기기로 했으므로 세션도 같은 DB에 둔다**(1-12절) — 재시작해도 남는다. WS 재연결 시 4404를 받으면, 업무특화는 고객 조회로 돌아가고 일반·사내규정은 그 모드의 빈 대화창에서 새 세션을 연다 — 고객 조회가 없는 모드라 돌아갈 곳이 없다. [code:app/services/sessions.py] [code:app/config.py:30] [code:web/src/pages/Consultation.tsx:27] [code:web/src/pages/Chat.tsx:22]
 
-> **모드마다 수명이 다르다 (10번 2절).** 세 모드의 세션이 동시에 존재할 수 있다.
+> **모드마다 수명이 다르다 (10번 1-2절).** 세 모드의 세션이 동시에 존재할 수 있다.
 > 
 
 **보존**: 세션 메모리(대화 문맥)는 종료 시 지운다. 로그는 남긴다. [code:db/migrations/petmint/0001_init.sql:5] [code:app/routers/sessions.py:67-68] 둘을 분리하면 "지운다/남긴다"가 충돌하지 않는다.
@@ -444,7 +444,7 @@ customer_id · agent_email · mode는 sessions에 있으므로 턴에 중복해 
 
 **인덱스는 화면이 정한다.** 상세는 12번 1-1절에 있다. 지난 대화 목록은 `(agent_email, mode, deleted_at, started_at)`, 최근 상담 탭은 `started_at`, 고객별 내역은 `customer_id`다. [code:db/migrations/petmint/0001_init.sql:17-20]
 
-**MySQL은 petmint 네임스페이스에 Primary(mysql)와 Replica(mysql-replica)를 둔다. 런슈즈는 자기 runshoes-mysql을 쓴다.** StatefulSet + PVC. 데이터베이스를 petmint · insurance_core · runshoes로 나누고(runshoes는 bootstrap에 자리만 있다), 계정도 셋으로 나눠 각자 자기 데이터베이스만 접근하게 한다. insurance_core는 고객 원장이고 petmint 계정은 SELECT만 가진다(12번 4절). Secret은 네임스페이스별로 둔다. [code:db/bootstrap.py:1-46] [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:7, apps/petmint/mysql/replica.yaml:26-30, apps/petmint/app/configmap.yaml:79, docs/runbooks/mysql-replica.md:7-9 -->
+**MySQL은 petmint 네임스페이스에 Primary(mysql)와 Replica(mysql-replica)를 둔다. 런슈즈는 자기 runshoes-mysql을 쓴다.** StatefulSet + PVC. 데이터베이스를 petmint · insurance_core · runshoes로 나누고(runshoes는 bootstrap에 자리만 있다), 계정도 셋으로 나눠 각자 자기 데이터베이스만 접근하게 한다. insurance_core는 고객 원장이고 petmint 계정은 SELECT만 가진다(12번 1-3절). Secret은 네임스페이스별로 둔다. [code:db/bootstrap.py:1-46] [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:7, apps/petmint/mysql/replica.yaml:26-30, apps/petmint/app/configmap.yaml:79, docs/runbooks/mysql-replica.md:7-9 -->
 
 **피드백**은 `feedback` 테이블에 `turn_id`를 키로 따로 쓴다. 원본 로그는 고치지 않는다. [code:db/migrations/petmint/0001_init.sql:82-90] [code:app/routers/feedback.py:10-16]
 
@@ -466,7 +466,7 @@ PATCH  /api/sessions/{id}          제목 변경·고정 — 일반·사내규�
 DELETE /api/sessions/{id}          상담 종료 / 목록에서 제거(deleted_at)
 GET    /api/consultations/recent   최근 상담 탭 — 고객 단위, 상담원으로 거르지 않는다
 GET    /api/articles/{species}/{section}/{section_name}/{article_num}
-                                   content는 원문 그대로, sections는 표시용 블록(약관만, 2026-10-28 — 10번 7절)
+                                   content는 원문 그대로, sections는 표시용 블록(약관만, 2026-10-28 — 10번 1-8절)
 POST   /api/turns/{turn_id}/feedback
 
 GET    /api/auth/me                지금 상담원(auth_mode·이름·팀·역할·must_change_password). app 모드 비로그인은 401
@@ -568,7 +568,7 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 **둘이 함께 올라갈 수 있는지는 모드 전환 때만의 문제가 아니다.** 업무특화는 재작성을 하지 않지만(1-9절) 병명 되묻기 판정(`name_check`, `PETMINT_ASK_DISEASE_LLM`)에서 같은 턴에 베이스 모델을 부른다. [code:app/services/name_check.py:1-5] [code:app/config.py:57-58]
 
-실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, model-service 기동 직후와 Ollama 생성 중을 나눠 측정한다. 검색 모델 몫은 2026-11-11 실측(`nvidia-smi`)으로 model-service 기동 직후 3,498MiB, 검색 부하 뒤 6,408MiB다(늘어난 몫은 PyTorch 추론 캐시). 분리 전 search-service는 6,216MiB였다(14번 1-26절). [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 2026-11-11 값은 지난 일이라 다시 잴 수 없음(2026-11-19 nvidia-smi로 잰 지금 값은 model-service 하나 6,424MiB) -->
+실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, model-service 기동 직후와 Ollama 생성 중을 나눠 측정한다. 검색 모델 몫은 2026-11-11 실측(`nvidia-smi`)으로 model-service 기동 직후 3,498MiB, 검색 부하 뒤 6,408MiB다(늘어난 몫은 PyTorch 추론 캐시). 분리 전 search-service는 6,216MiB였다(`docs/archive/14_deployment_log.md` 1-26절). [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 2026-11-11 값은 지난 일이라 다시 잴 수 없음(2026-11-19 nvidia-smi로 잰 지금 값은 model-service 하나 6,424MiB) -->
 
 **재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02). 2026-11-11부터는 그 앞에 model-service가 선다 — 순서는 `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search`이고, petmint-search는 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다(`TimeoutStartSec=540`). [code:deploy/host/petmint-search.service:12-17] [code:deploy/host/petmint-search.service:22-23] [code:deploy/host/petmint-search.service:35-37] [code:deploy/host/petmint-search.service:45] [c:56cb2aa] [c:6d1aeeb] [docs:02_pipeline/14_deployment.md] <!-- 2026-11-19 잼: docker inspect 재시작 정책(ollama, milvus-standalone, milvus-etcd 모두 unless-stopped)과 compose 라벨(deploy/host/milvus/docker-compose.yml), systemctl cat petmint-search와 저장소 유닛 파일 diff(같음) -->
 
@@ -706,7 +706,7 @@ web/                  React + TypeScript (Vite)
 > **2026-10-14 평가가 이 원칙을 역으로 확증했다.** 질문에 등급 어구가 들어가면 파인튜닝 모델의 거절률이 크게 오른다(등급 언급 문항 15/19 거절). 추론 단계에서 보정하려는 두 실험이 모두 실패했다 — 발췌에 공통 적용 표기를 추가(15건 중 1건 해소, 대조군이 오히려 7건 해소)해도, 질문에서 등급 어구를 제거(15건 중 3건 해소, 새 거절 2건)해도 풀리지 않았다. **등급이 프롬프트에 들어간 뒤에는 되돌릴 방법이 없다.** UI에서 애초에 들어가지 않게 하는 것이 유일하게 작동하는 설계다. [docs:02_pipeline/07_finetuning.md]
 > 
 
-> **2026-10-15 재구축에서 학습 데이터 쪽에서도 확인됐다.** 겹침 0.3 미만에서 거절된 33건 중 17건이 등급 어구 문항이고, 답한 36건에는 3건뿐이다. 추론 단계로는 되돌릴 수 없다는 것이 데이터 분포로도 설명된다 — 07번 10절 참고. [docs:02_pipeline/07_finetuning.md]
+> **2026-10-15 재구축에서 학습 데이터 쪽에서도 확인됐다.** 겹침 0.3 미만에서 거절된 33건 중 17건이 등급 어구 문항이고, 답한 36건에는 3건뿐이다. 추론 단계로는 되돌릴 수 없다는 것이 데이터 분포로도 설명된다 — `docs/archive/07_finetuning_log.md` 10절 참고. [docs:02_pipeline/07_finetuning.md]
 > 
 
 #### 2-2. 상담 업무 흐름을 그대로 반영한다
@@ -715,7 +715,7 @@ web/                  React + TypeScript (Vite)
 
 그래서 고객 정보가 2-1의 필터를 자동으로 채워준다. [code:app/services/customers.py:64-66] [code:app/services/answer.py:183-186]
 
-> **진입점은 둘이다 (10번 1·3절).** 상담원은 다른 일을 하다가 전화를 받는다 — 전화 알림은 어느 화면에서든 나타나고, 받으면 업무특화 모드로 곧바로 들어간다. 고객 조회 화면은 전화 없이 상담을 시작하는 두 번째 입구로 남는다. 둘 다 고객 하나를 정해 세션을 여는 같은 곳으로 수렴한다. [code:web/src/components/CallAlert.tsx] [code:web/src/hooks/useCallSimulator.ts] [code:web/src/pages/CustomerSelect.tsx] [docs:02_pipeline/10_consultation_flow.md]
+> **진입점은 둘이다 (10번 1-1, 1-4절).** 상담원은 다른 일을 하다가 전화를 받는다 — 전화 알림은 어느 화면에서든 나타나고, 받으면 업무특화 모드로 곧바로 들어간다. 고객 조회 화면은 전화 없이 상담을 시작하는 두 번째 입구로 남는다. 둘 다 고객 하나를 정해 세션을 여는 같은 곳으로 수렴한다. [code:web/src/components/CallAlert.tsx] [code:web/src/hooks/useCallSimulator.ts] [code:web/src/pages/CustomerSelect.tsx] [docs:02_pipeline/10_consultation_flow.md]
 > 
 
 #### 2-3. 상담 한 건 = 세션 하나
@@ -724,7 +724,7 @@ web/                  React + TypeScript (Vite)
 
 세션 단위로 로그가 묶이면 "이 상담에서 무엇을 물었고 어떻게 답했나"가 한 덩어리로 남아 품질 분석에 쓸 수 있다.
 
-> **이 원칙은 업무특화 모드에만 해당한다 (10번 2절).** 일반·사내규정은 상담원 개인의 작업 공간이라 "새 대화" 버튼으로 끊기 전까지 세션이 유지되고, 모드를 오가도 대화가 보존된다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다. [code:app/routers/sessions.py:21-33] [code:db/migrations/petmint/0001_init.sql:23-47] [docs:02_pipeline/10_consultation_flow.md]
+> **이 원칙은 업무특화 모드에만 해당한다 (10번 1-2절).** 일반·사내규정은 상담원 개인의 작업 공간이라 "새 대화" 버튼으로 끊기 전까지 세션이 유지되고, 모드를 오가도 대화가 보존된다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다. [code:app/routers/sessions.py:21-33] [code:db/migrations/petmint/0001_init.sql:23-47] [docs:02_pipeline/10_consultation_flow.md]
 > 
 
 상담 종료 후 화면 전환과 전화 알림은 10번 문서에서 정한다. [docs:02_pipeline/10_consultation_flow.md]
@@ -805,7 +805,7 @@ Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않�
 #### 3-7. 정하지 못한 것에서 풀린 것
 
 - **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번). <!-- 잰 날짜 모름 --> [code:data/hr_preprocess.py] [code:data/hr_index.py:1-8] [code:data/eval/search_regression_hr.json] [code:data/review/eval_results_summary.md:111] [docs:02_pipeline/02_embedding_index.md] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 2절 60줄(인사규정 청크 49), 5절 102줄(인사규정 6 노드 7 엣지) --> <!-- 확인 못 함: Milvus hr_regulation 행 수는 실행 상태라 요약 파일로 셀 수 없음 -->
-- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-4절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 (4d4328c 2026-10-21), 값을 바꾸면 Sync 뒤 rollout restart가 따른다(configmap.yaml:28) -->
+- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-4절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 3-7절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 (4d4328c 2026-10-21), 값을 바꾸면 Sync 뒤 rollout restart가 따른다(configmap.yaml:28) -->
 
 ---
 
@@ -828,26 +828,3 @@ Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않�
 - [ ]  상담 중 과거 상담 모달을 열고 닫았을 때 진행 중인 세션과 WS 연결이 그대로인지
 - [ ]  고객 등급을 바꾼 뒤 과거 상담을 열었을 때 당시 등급·자기부담금으로 보이는지
 - [ ]  로그 1턴으로 Ragas 입력(question/answer/contexts)을 만들 수 있는지
-
----
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-코드 주석은 「09번 2-2절」, 「09 7-3」처럼 2026-11-19 문서 정리 전의 절 번호를 쓴다. 옛 번호와 지금 번호의 짝이다.
-
-| 옛 번호 | 지금 번호 | 절 |
-| --- | --- | --- |
-| 1, 1-1, 1-2, 1-3 | 2, 2-1, 2-2, 2-3 | 설계 원칙(왜 이렇게 했나) |
-| 2 | 1-1 | 화면 흐름 |
-| 2-1 | 1-2 | 모드 선택 |
-| 2-2 | 1-3 | 고객 조회 |
-| 2-3 | 1-4 | 상담 화면 |
-| 3, 3-1 | 3-1, 3-2 | 검색 필터 결함 |
-| 3-2, 3-3, 3-4 | 1-5, 1-6, 1-7 | 필터 의미, SearchScope, 참조 조문 등급 힌트 |
-| 4 | 1-8 | 되묻기 |
-| 5 | 1-9 | 멀티턴 |
-| 6, 6-1, 6-2, 6-3 | 1-10, 1-10, 1-11, 1-12 | 데이터 스키마(고객, 세션, 로그) |
-| 7, 7-1, 7-2, 7-3, 7-4 | 1-13, 1-13, 1-14, 1-15, 1-16 | API(REST, WebSocket), 프로세스 모델, 인증 |
-| 8 | 1-17 | 코드 구조 |
-| 9 | 3-7 | 정하지 못한 것(풀린 것만 남김) |
-| 10 | 5 | 검증 항목 |

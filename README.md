@@ -119,7 +119,7 @@ GPU를 쓰는 것(Ollama, 검색 모델)은 모두 호스트에 둔다. Pod는 �
 ## 지금 상태
 
 - 세 모드 모두 운영 서버에서 답한다. 업무특화 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`, 학습 샘플 7,376개)다.
-- 재학습 rebuild5·5b는 미리 정한 채택 기준을 넘지 못해 쓰지 않았다(07번 11절).
+- 재학습 rebuild5·5b는 미리 정한 채택 기준을 넘지 못해 쓰지 않았다(07번 3-7절).
 - 아직 안 한 것:
   - 동시 접속 검증
   - ArgoCD 자동 Sync
@@ -141,7 +141,7 @@ GPU를 쓰는 것(Ollama, 검색 모델)은 모두 호스트에 둔다. Pod는 �
 docker compose -f deploy/host/milvus/docker-compose.yml up -d --wait
 ```
 
-- 업무특화 모델은 05~07(FAQ 생성 → 검증 → 학습)을 거쳐 만들고, GGUF로 변환해 Ollama에 등록한다(07번, 10번 8절). 전체 재구축의 진입점은 `data/rebuild.py`다.
+- 업무특화 모델은 05~07(FAQ 생성 → 검증 → 학습)을 거쳐 만들고, GGUF로 변환해 Ollama에 등록한다(07번, 10번 1-9절). 전체 재구축의 진입점은 `data/rebuild.py`다.
 
 **2. search-service (GPU 호스트)**
 

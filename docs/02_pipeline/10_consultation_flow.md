@@ -45,10 +45,10 @@
 
 **일반·사내규정은 상담원 개인의 작업 공간이다.** 모드를 오가도 대화가 보존되고, 지난 대화도 언제든 다시 열어 이어 쓴다. 업무특화는 고객 한 명과의 상담 한 건이므로 끝나면 닫는다 — 다음 전화는 다른 고객이라 이전 대화가 남아 있으면 섞인다. 끝난 상담은 읽기 전용이다. [code:web/src/App.tsx:34] [code:web/src/App.tsx:58-67] [code:app/services/sessions.py:64-67]
 
-> 09번 1-3절의 "상담 한 건 = 세션 하나"는 **업무특화에만** 해당한다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다. [docs:02_pipeline/09_ui_design.md:59] [code:app/services/sessions.py:128-143]
+> 09번 2-3절의 "상담 한 건 = 세션 하나"는 **업무특화에만** 해당한다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다. [docs:02_pipeline/09_ui_design.md:59] [code:app/services/sessions.py:128-143]
 > 
 
-**세션은 MySQL에 둔다**(09번 6-2·6-3절, 12번). 초안은 메모리여서 재시작하면 사라졌으나, 로그를 DB로 옮기면서 세션도 같이 넣었다. 일반·사내규정을 하루 종일 쓰는 구조라 서버 한 번 재시작에 대화가 다 날아가면 곤란하다. [code:app/services/sessions.py:1-3] [docs:02_pipeline/12_data_storage.md] [c:2c6ff32]
+**세션은 MySQL에 둔다**(09번 1-11, 1-12절, 12번). 초안은 메모리여서 재시작하면 사라졌으나, 로그를 DB로 옮기면서 세션도 같이 넣었다. 일반·사내규정을 하루 종일 쓰는 구조라 서버 한 번 재시작에 대화가 다 날아가면 곤란하다. [code:app/services/sessions.py:1-3] [docs:02_pipeline/12_data_storage.md] [c:2c6ff32]
 
 #### 1-3. 지난 대화 목록
 
@@ -78,9 +78,9 @@
 | 전화 받기 | 시스템이 고른다 | 실제 상담 흐름 [code:web/src/hooks/useCallSimulator.ts:25-31] [code:web/src/App.tsx:136] |
 | 고객 조회 | 상담원이 고른다 | 먼저 걸기, 개발·시연 시 지목 [code:web/src/App.tsx:165] |
 
-고객 조회 화면은 모드 선택에서 업무특화를 누를 때 나타난다. 탭은 둘이다 — 전체와 최근 상담(09번 2-2절). 종 조합으로 나누던 카드 3종은 폐기했다. [code:web/src/App.tsx:61-64] [code:web/src/pages/CustomerSelect.tsx:10-11] [docs:02_pipeline/09_ui_design.md:108]
+고객 조회 화면은 모드 선택에서 업무특화를 누를 때 나타난다. 탭은 둘이다 — 전체와 최근 상담(09번 1-3절). 종 조합으로 나누던 카드 3종은 폐기했다. [code:web/src/App.tsx:61-64] [code:web/src/pages/CustomerSelect.tsx:10-11] [docs:02_pipeline/09_ui_design.md:108]
 
-**지난 세션 읽기는 09번 2-2절에서 정했다.** 과거 상담 목록은 고객 하나에 딸린 컴포넌트 하나로, 고객 조회 화면의 고객 카드와 상담 화면 상단 고객 카드 두 곳에서 부른다. 열면 읽기 전용이고 거기서 이어 질문할 수는 없다. [code:web/src/components/PastConsultations.tsx:20-23] [code:web/src/pages/CustomerSelect.tsx:112] [code:web/src/pages/Consultation.tsx:62] [c:6368a99]
+**지난 세션 읽기는 09번 1-3절에서 정했다.** 과거 상담 목록은 고객 하나에 딸린 컴포넌트 하나로, 고객 조회 화면의 고객 카드와 상담 화면 상단 고객 카드 두 곳에서 부른다. 열면 읽기 전용이고 거기서 이어 질문할 수는 없다. [code:web/src/components/PastConsultations.tsx:20-23] [code:web/src/pages/CustomerSelect.tsx:112] [code:web/src/pages/Consultation.tsx:62] [c:6368a99]
 
 최근 상담 탭과 같은 데이터를 보지만 쓰임이 다르다 — 탭은 고객을 다시 고르는 것이고, 과거 상담 목록은 지난 대화를 읽는 것이다. 최근 상담 탭은 상담원으로 거르지 않는다 — 다른 상담원이 받은 고객도 다시 전화할 수 있다. [code:app/services/sessions.py:154-163] [code:app/services/sessions.py:145-152]
 
@@ -139,13 +139,13 @@
 
 반려동물이 둘 이상이면 **개체 선택으로 하나씩** 본다. 종이 아니라 이름으로 고른다 — 같은 종을 여러 마리 기를 수 있다. 둘을 동시에 펼치지 않는다. [code:web/src/components/SpeciesToggle.tsx:12-24] [code:web/src/pages/Consultation.tsx:33-34] [code:web/src/pages/Consultation.tsx:60-61]
 
-**부담보는 두 겹이다** — 카드에 상시 표시, 그리고 질문이 해당하면 답변 위 배너(09번 2-3절). [code:web/src/components/CustomerCard.tsx:39] [code:web/src/pages/Consultation.tsx:75-78] [docs:02_pipeline/09_ui_design.md:154]
+**부담보는 두 겹이다** — 카드에 상시 표시, 그리고 질문이 해당하면 답변 위 배너(09번 1-4절). [code:web/src/components/CustomerCard.tsx:39] [code:web/src/pages/Consultation.tsx:75-78] [docs:02_pipeline/09_ui_design.md:154]
 
 ---
 
 #### 1-8. 근거 조항 원문 — 패널 안에서 펼친다
 
-09번 2-3절의 배치(PC 2단, 모바일 접힘)는 그대로 간다. 조항을 클릭했을 때 **모달로 띄우지 않고 패널 안에서 펼친다.** [code:web/src/components/SourcePanel.tsx:28-59] [code:web/src/pages/Consultation.tsx:95-97] [docs:02_pipeline/09_ui_design.md:154]
+09번 1-4절의 배치(PC 2단, 모바일 접힘)는 그대로 간다. 조항을 클릭했을 때 **모달로 띄우지 않고 패널 안에서 펼친다.** [code:web/src/components/SourcePanel.tsx:28-59] [code:web/src/pages/Consultation.tsx:95-97] [docs:02_pipeline/09_ui_design.md:154]
 
 두 가지 이유다. 모달은 대화를 가리고, 조항 원문이 길 수 있다 — 보통약관 제2조 용어 정의처럼 표가 두 번 들어가는 청크도 있다.
 
@@ -158,7 +158,7 @@
 
 #### 1-9. 모델 교체와 배포
 
-파인튜닝 모델이 개선되면 무중단으로 교체할 수 있어야 한다. **Ollama가 호스트에 있고 Pod에는 모델이 없으므로**(09번 7-3절), Pod를 롤링해도 바뀌는 것은 "어느 모델 이름을 부를지"뿐이다. 교체는 두 단계다. [code:app/config.py:66] [code:app/config.py:70-71] [docs:02_pipeline/09_ui_design.md:632]
+파인튜닝 모델이 개선되면 무중단으로 교체할 수 있어야 한다. **Ollama가 호스트에 있고 Pod에는 모델이 없으므로**(09번 1-15절), Pod를 롤링해도 바뀌는 것은 "어느 모델 이름을 부를지"뿐이다. 교체는 두 단계다. [code:app/config.py:66] [code:app/config.py:70-71] [docs:02_pipeline/09_ui_design.md:632]
 
 | 단계 | 위치 | 할 일 |
 | --- | --- | --- |
@@ -169,7 +169,7 @@
 
 1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다. <!-- 2026-11-19 잼: docker exec ollama ollama list 로 업무특화 모델 셋(rebuild4, rebuild5, rebuild5b)과 tri-7b가 함께 등록된 것을 봄(Ollama 쪽만) -->
 
-**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 7-3절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17-23 --> <!-- 2026-11-19 잼: docker inspect ollama 환경변수에 OLLAMA_KEEP_ALIVE 없음 -->
+**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 1-15절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17-23 --> <!-- 2026-11-19 잼: docker inspect ollama 환경변수에 OLLAMA_KEEP_ALIVE 없음 -->
 
 ---
 
@@ -205,20 +205,11 @@
 
 ---
 
-#### 옛 절 번호 (코드 주석이 가리키는 것)
+#### 옛 절 번호 (코드가 아직 옛 번호로 가리키는 것)
 
-코드 주석(`app/`, `web/src/`)이 이 편의 옛 절 번호를 가리킨다. 2026-11-19 문서 정리 B단계에서 절을 옮겼고 코드는 고치지 않았다.
+2026-11-19 문서 정리 B단계에서 절 번호가 바뀌어 코드 주석을 새 번호로 고쳤다. 아래 둘은 이 편에 없던 번호를 가리켜 고치지 못했다.
 
-| 옛 절 | 새 자리 |
-|---|---|
-| 0 | 0 한 줄 요약, 2 왜 이렇게 했나(설계가 바뀐 지점) |
-| 1 | 1-1 |
-| 2 | 1-2, 3 시도했던 것들(30분 무활동 정리) |
-| 2-1 | 1-3 |
-| 3 | 1-4 |
-| 4 | 1-5 |
-| 5 | 1-6, 2 왜 이렇게 했나(모드 전환을 막는 이유) |
-| 6 | 1-7 |
-| 7 | 1-8, 4 남은 한계(인사규정 전처리) |
-| 8 | 1-9 |
-| 9 | 5 |
+| 코드 | 가리키는 옛 번호 | 상태 |
+|---|---|---|
+| `web/src/styles/tokens.css` 1행 | 「10번 10절 디자인 토큰」. 디자인 토큰은 지금 11편이 맡는다 | 아직 코드가 옛 번호로 가리킴, petmint-11 |
+| `web/src/pages/ModeSelect.tsx` 16행 | 「영상(10-6)」. 어느 편의 절인지 찾지 못했다 | 아직 코드가 옛 번호로 가리킴, petmint-15 |

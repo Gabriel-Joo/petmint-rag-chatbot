@@ -159,7 +159,7 @@
 | 고객 조회 | 촘촘하게 — 한 화면에 고객을 많이(1920px에서 6열, 10명 전부). 고객 카드와 전체/최근 상담 탭은 대화 배율(`.chat-text`) 안에서 상담 화면 고객 정보 블록과 같은 토큰을 쓴다 — 이름 `--font-sm`(제목 무게), 반려동물 이름 `--font-sm`(라벨 무게), 전화·품종·나이·부담보·과거 상담 `--font-xs`, 상담 시각 `--font-2xs`, 탭 `--font-sm`(제목 무게). "고객 조회" 제목과 설명문은 헤더 모드 탭과 같은 `--font-xs`(본문 배율 24px), 제목만 `--font-weight-heavy`. 열 최소 폭은 13em(글씨를 따라간다 — 1.3배에서 약 220px). 반려동물은 "🐶 이름" 아래 "품종 · 나이" 두 줄(단어 중간에서 꺾이지 않게), 640px 이하는 한 줄. 2026-10-23 글씨를 줄여 카드 높이 398 → 274px, 한 화면에 보이는 카드 1920·1440px 6 → 10, 1280px 5 → 10, 1024px 4 → 8, 800px 3 → 6, 400px 3 → 4(여섯 폭 넘침·겹침·줄바꿈 깨짐 0) 2026-10-23 B안: 카드 위쪽 5px 띠를 반려동물 수만큼 칸으로 나눠 각 칸을 그 반려동물의 가장 높은 등급 색으로(`--grade-*`), 고객(이름·전화)과 반려동물 사이 실선 구분선, 반려동물마다 품종 줄 아래 칩 줄 — 등급 칩은 테두리만(`--font-2xs`, 통원·입원 등급이 같으면 "Ⅱ 고급형" 하나, 다르면 "통원 고급형"·"입원 기본형" 둘, 한쪽만이면 "· 통원만", 유형 Ⅰ은 번호 생략), 배상책임·법률비용은 회색 칩, 부담보는 채운 주황 칩으로 **그 반려동물 줄에**(전에는 모든 반려동물의 부담보를 카드 맨 아래 한 줄에 모아 다른 반려동물 것처럼 보였다). 줄이는 규칙은 `web/src/policySummary.ts`. 칩 줄만큼 카드가 길어져 1440px에서 한 화면 카드가 10 → 6장(띠·칩으로 특약을 상담 화면에 들어가지 않고 본다) [code:web/src/pages/CustomerSelect.module.css:6-11] [code:web/src/pages/CustomerSelect.module.css:38] [code:web/src/pages/CustomerSelect.tsx:76] [code:web/src/pages/CustomerSelect.tsx:92] [code:web/src/policySummary.ts] [c:261ae45] (2026-10-23 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 --> |
 | 상담 화면 | 같은 색을 쓰되 밀도를 올린다. 관리자 화면에 가깝게. 고객 블록은 세 줄(이름·반려동물 / 특약 칩·부담보 / 상품·가입일). 첫 줄은 참조용이라 작게 — 이름·반려동물 `--font-sm`, 품종·나이·토글·과거 상담 `--font-xs`, 줄 간격 1.2. 칩·부담보 `--font-xs` [code:web/src/components/CustomerCard.module.css:8-24] |
 
-**계산 카드**(상담 화면, 그 턴의 답변과 같은 칸) — 금액은 서버가 약관 표(`data/limit_table.py`)로 계산하고 모델은 손대지 않는다. 아래 세 종류는 제목 아래에 "금액은 약관 표로 계산한 값" 배지(`--primary` 글자, `--primary-soft` 바탕, `--font-2xs`)를 붙인다 — 답변이 거절하거나 다른 금액을 말해도 카드의 출처가 보이게. 가정 등급 한도표는 배지 자리에 "실제 가입: …"을 쓴다. 이 밖에 2~5일 총액이면 날짜별 금액 입력 카드(09번 4절)가 뜬다 — 계산 전 입력 칸이라 배지가 없다. [code:data/limit_table.py] [code:web/src/components/CalcCard.tsx:7] [code:web/src/components/CalcCard.tsx:204] [code:web/src/components/CalcCard.module.css:7] [code:app/services/payout.py:14-19] [docs:02_pipeline/09_ui_design.md]
+**계산 카드**(상담 화면, 그 턴의 답변과 같은 칸) — 금액은 서버가 약관 표(`data/limit_table.py`)로 계산하고 모델은 손대지 않는다. 아래 세 종류는 제목 아래에 "금액은 약관 표로 계산한 값" 배지(`--primary` 글자, `--primary-soft` 바탕, `--font-2xs`)를 붙인다 — 답변이 거절하거나 다른 금액을 말해도 카드의 출처가 보이게. 가정 등급 한도표는 배지 자리에 "실제 가입: …"을 쓴다. 이 밖에 2~5일 총액이면 날짜별 금액 입력 카드(09번 1-8절)가 뜬다 — 계산 전 입력 칸이라 배지가 없다. [code:data/limit_table.py] [code:web/src/components/CalcCard.tsx:7] [code:web/src/components/CalcCard.tsx:204] [code:web/src/components/CalcCard.module.css:7] [code:app/services/payout.py:14-19] [docs:02_pipeline/09_ui_design.md]
 
 | 카드 | 뜨는 때 | 담는 것 |
 | --- | --- | --- |
@@ -274,25 +274,3 @@ UI를 바꾸면 1920 · 1440 · 1280 · 1024 · 800 · 400px 여섯 폭에서 �
 - [x]  호버할 때 영상이 바로 재생되고, 뗄 때 정지 이미지로 깔끔하게 돌아오는가 [code:web/src/pages/ModeSelect.tsx:46-88]
 - [x]  영상과 정지 이미지가 어긋나지 않는가 (전환할 때 덜컹거리지 않는가) [code:web/src/pages/ModeSelect.module.css:50-65]
 - [x]  움직임 줄이기 설정에서 영상이 재생되지 않는가 [code:web/src/pages/ModeSelect.tsx:46-52] [code:web/src/pages/ModeSelect.tsx:118] [code:web/src/hooks/useReducedMotion.ts]
-
----
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-코드 주석(`web/src/`)이 이 편의 옛 절 번호를 가리킨다. 2026-11-19 문서 정리 B단계에서 절을 옮겼고 코드는 고치지 않았다.
-
-| 옛 절 | 새 자리 |
-|---|---|
-| 0 | 0 |
-| 1 | 1-1, 3 시도했던 것들(다크 보라 그라데이션) |
-| 2 | 1-2, 3 시도했던 것들(그린 계열 바탕) |
-| 3 | 1-3, 2 왜 이렇게 했나(완주대둔산체를 쓴 이유) |
-| 4 | 1-4 |
-| 5 | 1-5 |
-| 6 | 1-6 |
-| 7 | 1-7 |
-| 8 | 1-8, 2 왜 이렇게 했나(색 배치의 이유) |
-| 9 | 1-9, 3 시도했던 것들(영상 단계에서 색과 옷) |
-| 10 | 1-10 |
-| 11 | 5 |
-| 12 | 3 시도했던 것들(소개 영역), 4 남은 한계(다크 모드) |

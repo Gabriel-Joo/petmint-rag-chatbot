@@ -2,7 +2,7 @@
 다루는 곳: notebooks/00_모델_준비.ipynb, deploy/host/milvus/docker-compose.yml
 읽은 커밋: 6710b83
 -->
-> 상태: 완료. Tri-7B 원본을 GGUF 변환·Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 파인튜닝 모델의 GGUF 변환은 10번 8절에서 다룬다. [code:notebooks/00_모델_준비.ipynb:563] [code:notebooks/00_모델_준비.ipynb:922] [code:notebooks/00_모델_준비.ipynb:1304] [code:app/config.py:70] [docs:02_pipeline/10_consultation_flow.md]
+> 상태: 완료. Tri-7B 원본을 GGUF 변환·Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 파인튜닝 모델의 GGUF 변환은 10번 1-9절에서 다룬다. [code:notebooks/00_모델_준비.ipynb:563] [code:notebooks/00_모델_준비.ipynb:922] [code:notebooks/00_모델_준비.ipynb:1304] [code:app/config.py:70] [docs:02_pipeline/10_consultation_flow.md]
 
 ### 0. 한 줄 요약
 

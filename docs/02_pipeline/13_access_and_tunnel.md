@@ -73,7 +73,7 @@
 
 앱은 `Cf-Access-Authenticated-User-Email` 헤더를 읽어 `sessions.agent_email`에 넣는다(12번). 로컬 개발에서는 그 헤더가 없으므로 기본값을 둔다. [code:app/config.py:84-85] [code:app/deps.py:39-41] [docs:02_pipeline/12_data_storage.md]
 
-**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH·DELETE·피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 7-1절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다** — 최근 상담 탭이 그 위에 서 있다. 따라서 **헤더가 위조되면 남의 상담을 바꾸거나 지울 수 있다** — 앱에 직접 닿는 경로를 막아 모든 요청이 엣지를 거치게 해야 한다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
+**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH·DELETE·피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 1-13절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다** — 최근 상담 탭이 그 위에 서 있다. 따라서 **헤더가 위조되면 남의 상담을 바꾸거나 지울 수 있다** — 앱에 직접 닿는 경로를 막아 모든 요청이 엣지를 거치게 해야 한다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
 
 > 다만 시연용 정책에서는 누구나 로그인할 수 있으므로 `agent_email`은 "그 브라우저로 로그인한 사람"을 뜻할 뿐이다. 상담원 명단으로 거르는 실무 정책에서만 이 구분이 본래 의미를 갖는다.
 > 
@@ -124,7 +124,7 @@
 
 RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한 흐름**이 되기도 한다.
 
-**터널 Application은 수동 Sync로 둔다(2026-11-11 결정, 다른 Application은 자동).** 터널이 깨지면 공개 주소 7개가 한꺼번에 안 보인다 — 상담원 화면뿐 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)까지 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 곧바로 그 상태를 만들지 않게 사람이 Sync를 누르고 롤링을 지켜본다. 새 설정이 깨지면 새 Pod가 Ready가 못 되어 롤링이 멈추고 옛 Pod 둘이 계속 받는다(14번 1-25절, ronanlab-infra `apps/cloudflared/README.md`). [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/app.yaml:4-8, apps/cloudflared/README.md:21-23, :44-45, 공개 주소 일곱은 apps/cloudflared/configmap.yaml:14-43 -->
+**터널 Application은 수동 Sync로 둔다(2026-11-11 결정, 다른 Application은 자동).** 터널이 깨지면 공개 주소 7개가 한꺼번에 안 보인다 — 상담원 화면뿐 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)까지 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 곧바로 그 상태를 만들지 않게 사람이 Sync를 누르고 롤링을 지켜본다. 새 설정이 깨지면 새 Pod가 Ready가 못 되어 롤링이 멈추고 옛 Pod 둘이 계속 받는다(14번 1-15절, ronanlab-infra `apps/cloudflared/README.md`). [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/app.yaml:4-8, apps/cloudflared/README.md:21-23, :44-45, 공개 주소 일곱은 apps/cloudflared/configmap.yaml:14-43 -->
 
 #### 2-3. 터널 설정은 클러스터 단위, Access는 프로젝트 단위
 
@@ -140,7 +140,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 | --- | --- |
 | 누구로 | **앱 계정이 있는** 가상 직원(퇴직 · 앱 중지 아닌 사람 — 지금 7명: 관리자 1 · 상담원 6). 2026-11-12 처음에는 퇴직자 말고 전부(10명)였고 누르면 계정이 생겼다 — 아래 「계정은 미리」. 계정이 없는 조현석 · 문태양 · 류채원(입사가 늦어 아직 계정이 없는 상황)과 퇴직자 황재민은 **카드에서 뺀다** — 카드는 그 계정으로 들어가는 단추라, 들어갈 수 없는 카드를 두고 누르면 안내하는 것보다 처음부터 없는 편이 헷갈리지 않는다. 사번을 직접 보내면 400. 전용 직원을 따로 만들지 않는다(사용자) — 전부 가상 데이터이고, 직원마다 인사 데이터가 달라(부장 25년 vs 수습 2개월, 휴직 · 자격증 · 계약직) 고르는 것 자체가 체험이다 [code:app/services/auth.py:95-106] [code:app/services/auth.py:156-158] [code:db/migrations/petmint/0012_accounts_precreated.sql:5-23] |
 | 나눔 | 「상담원으로 체험하기」 · 「관리자로 체험하기」(`accounts.role`). 관리자로 들어오면 헤더에 「관리」가 생겨 관리자 화면(2-5절)을 쓸 수 있다 [code:web/src/auth/Login.tsx] [code:app/routers/admin.py:21-29] |
-| 화면 | 런슈즈 체험 카드와 같은 동작(`web/src/auth/DemoCards.tsx` → 공용 `components/FlowCarousel`) — 상담원 카드가 2줄로 천천히 가로로 흐르고(초당 13px), 마우스를 올리면 멈추고, 끌면 따라오고 관성으로 미끄러진다. 움직임 줄이기 설정이면 흐르지 않는다. 관리자 카드(점선)는 폭과 상관없이 흐름 아래에 쌓는다. 휴대폰처럼 한 열만 들어가면 다음 카드가 살짝 보인다. 글씨는 새 크기 없이 있는 토큰만 쓴다 — 로그인 카드 · 체험 제목은 홈과 같은 본문 배율 토큰, 체험 카드는 업무특화 고객 카드와 같은 `.chat-text` 토큰(11번 5절 「로그인 화면 글씨」). 2026-11-12 여섯 폭(1920 · 1440 · 1280 · 1024 · 800 · 400)에서 페이지 가로 넘침 없음. 1440 · 1280 · 1024px은 관리자 카드가 한 화면 아래(스크롤) [code:web/src/auth/DemoCards.tsx:1-5] [code:web/src/auth/DemoCards.tsx:30-32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/auth/Login.module.css:40] [c:f613431] <!-- 확인 못 함: 여섯 폭 넘침은 그날 헤드리스 크롬으로 잰 값이고 그때 원자료가 남지 않음 --> |
+| 화면 | 런슈즈 체험 카드와 같은 동작(`web/src/auth/DemoCards.tsx` → 공용 `components/FlowCarousel`) — 상담원 카드가 2줄로 천천히 가로로 흐르고(초당 13px), 마우스를 올리면 멈추고, 끌면 따라오고 관성으로 미끄러진다. 움직임 줄이기 설정이면 흐르지 않는다. 관리자 카드(점선)는 폭과 상관없이 흐름 아래에 쌓는다. 휴대폰처럼 한 열만 들어가면 다음 카드가 살짝 보인다. 글씨는 새 크기 없이 있는 토큰만 쓴다 — 로그인 카드 · 체험 제목은 홈과 같은 본문 배율 토큰, 체험 카드는 업무특화 고객 카드와 같은 `.chat-text` 토큰(11번 1-5절 「로그인 화면 글씨」). 2026-11-12 여섯 폭(1920 · 1440 · 1280 · 1024 · 800 · 400)에서 페이지 가로 넘침 없음. 1440 · 1280 · 1024px은 관리자 카드가 한 화면 아래(스크롤) [code:web/src/auth/DemoCards.tsx:1-5] [code:web/src/auth/DemoCards.tsx:30-32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/auth/Login.module.css:40] [c:f613431] <!-- 확인 못 함: 여섯 폭 넘침은 그날 헤드리스 크롬으로 잰 값이고 그때 원자료가 남지 않음 --> |
 | 카드 | "권태호 부장 · 근속 25년 8개월 · 연차 14일 남음" + 이 계정으로 볼 수 있는 것(수습 중 · 계약직 · 경력 입사 · 1년 미만 · 휴직 이력 · 자격증 · 승진 대상). 숫자는 사내규정 개인화와 같은 계산(`hr_personal.profile`)이라 카드와 챗봇 답이 어긋나지 않는다. 급여 · 평가 등급은 싣지 않는다(본인 정보 블록과 같은 기준). `app/services/demo.py` [code:app/services/demo.py:1-8] [code:app/services/demo.py:27-53] [code:app/services/hr_personal.py:613] |
 | API | `GET /api/auth/demo-accounts`(카드) · `POST /api/auth/demo {employee_id}`(로그인과 같은 쿠키). 풀 밖 사번(퇴직 · 중지 · 없음) 400 [code:app/routers/auth.py:64-84] [code:app/services/auth.py:156-158] |
 | 비밀번호 | 화면 · 요청 · 코드 · git 어디에도 없다. 미리 만든 계정은 비밀번호가 없다(사번 · 비밀번호로는 들어올 수 없다. 사람이 쓰려면 `db.employees reset`) [code:db/migrations/petmint/0012_accounts_precreated.sql:5] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-19] [code:app/services/auth.py:124-126] |
@@ -156,7 +156,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 
 #### 2-5. 관리자 화면 (2026-11-12)
 
-관리자(`accounts.role = 관리자`)가 **상담원별 상담을 열어 보고, 직원 목록을 읽는** 화면이다. 헤더 이름 옆 「관리자 화면」으로 들어간다(화면 모양은 11번 5절). [code:app/routers/admin.py:21-29] [code:web/src/pages/Admin.tsx] [c:06536d3]
+관리자(`accounts.role = 관리자`)가 **상담원별 상담을 열어 보고, 직원 목록을 읽는** 화면이다. 헤더 이름 옆 「관리자 화면」으로 들어간다(화면 모양은 11번 1-5절). [code:app/routers/admin.py:21-29] [code:web/src/pages/Admin.tsx] [c:06536d3]
 
 **왜 Grafana와 따로 두나.** Grafana 「petmint 운영」 대시보드는 **전체 추세**를 본다 — 모드별 질문 수, 거절률, 응답 시간, 규칙별 발동 수(15번). 관리자 화면은 **개별 건**을 본다 — Grafana에서 이상한 숫자(거절률이 올랐다)를 보고, 관리자 화면에서 그 상담을 찾아 실제로 무엇을 물었고 무엇을 답했는지 확인하는 흐름이다. 그래서 숫자 · 그래프는 다시 그리지 않는다 — 겹치면 이 화면을 만들 이유가 없다. 숫자는 상담원 목록의 건수(「오늘 3건, 고객 2명」)뿐이고, 거절은 수치가 아니라 턴마다 붙는 **표시**다(표시가 없으면 답을 하나하나 읽어야 찾는다).
 
@@ -239,3 +239,13 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 - [x]  (관리자) 직원 표 정렬 — 직급 ▲ 사원 → 부장, ▼ 부장 → 사원, 근속 ▼ 권태호 25년 8개월부터. 필터 앱 계정 없음 → 황재민 · 문태양 · 조현석 · 류채원, + 재직 → 셋 — 로컬 헤드리스 크롬 1440px 2026-11-12
 - [x]  (시드 상담) 운영 챗봇으로 26세션 · 36턴 생성, 오류 0. 관리자 API로 상담 목록 · 대화(발췌 · 근거 조항 · 계산 카드 · 👎 의견 · 거절 표시)를 확인 — 2026-11-12
 - [x]  (정리 · 시드 2) 운영 업무특화 「진행 중」 0, 계정 없는 4명 기록 0(운영 · 개발), 상담원 목록에 그 4명 없음, 상담원 7명 8건씩(그날 기록, 2026-11-19 지금은 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30건) — 운영 SQL · 관리자 API 2026-11-12 <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 진행 중 0, 계정 없는 직원 세션 0, 계정 있는 7명 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, 직원이지만 앱 계정 없는 세션 0 -->
+
+---
+
+#### 옛 절 번호 (코드가 아직 옛 번호로 가리키는 것)
+
+2026-11-19 문서 정리 B단계에서 시드 상담 절을 기록 파일로 옮겼다. 코드 주석은 고쳤고, 아래 하나는 주석이 아니라 시드 데이터 값이라 고치지 않았다.
+
+| 코드 | 가리키는 옛 번호 | 지금 자리 | 상태 |
+|---|---|---|---|
+| `db/fixtures/seed_consultations.json` 2행 `note` | 「docs/13 2-5절」(시드 상담) | docs/archive/13_access_and_tunnel_log.md 시드 상담 절 | 아직 코드가 옛 번호로 가리킴, petmint-16 |

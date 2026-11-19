@@ -9,7 +9,7 @@
 - 상태: 2026-10-15 채택한 변경(2-1·2-4)은 rebuild2(docs/archive/next_rebuild_log.md 7절)·rebuild3(같은 파일 8절)에 들어갔다. 운영은 rebuild4, rebuild5·5b(C)는 불채택(07 11절). 9·10절이 다음 재구축에 남은 것이다. [docs:02_pipeline/07_finetuning.md:574] [c:12a4e2b]
 - 2026-10-15 당시 순서: **no_answer 판정 확인(3절 0단계) → (필요하면 판정 수정) → 2-4 검사 → 2-1 쌍 구성 → build**. [c:14ba033]
 - 근거 측정: `data/review/refusal_overlap_20261015.md` (스크립트 `data/review/refusal_overlap_20261015_probe{1,2}.py`) [code:data/review/refusal_overlap_20261015.md] [code:data/review/refusal_overlap_20261015_probe1.py] [code:data/review/refusal_overlap_20261015_probe2.py]
-- 관련: 09번 1-1절(등급이 프롬프트에 들어간 뒤에는 되돌릴 방법이 없다 — 추론 단계 실험 A·B 실패) [docs:02_pipeline/09_ui_design.md:32]
+- 관련: 09번 2-1절(등급이 프롬프트에 들어간 뒤에는 되돌릴 방법이 없다 — 추론 단계 실험 A·B 실패) [docs:02_pipeline/09_ui_design.md:32]
 
 ---
 
@@ -74,7 +74,7 @@
 
 **목표(제안)**: 138건 → 양성의 5% 이상(약 300건). no_answer의 등급 어구 질문(현재 30건)도 같은 비율로. [code:data/review/refusal_overlap_20261015.md:126] (2026-10-15 기준)
 
-**연결**: 09번 1-1절의 운영 원칙(등급은 UI에서 확정해 프롬프트에 넣지 않는다)은 그대로다. [docs:02_pipeline/09_ui_design.md:32] 이 변경은 고객이 말로 등급을 꺼낸 경우에 모델이 거절하지 않게 하는 보완이다.
+**연결**: 09번 2-1절의 운영 원칙(등급은 UI에서 확정해 프롬프트에 넣지 않는다)은 그대로다. [docs:02_pipeline/09_ui_design.md:32] 이 변경은 고객이 말로 등급을 꺼낸 경우에 모델이 거절하지 않게 하는 보완이다.
 
 #### 2-4. [필수] build 검사에 겹침 구간별 no_answer 비율을 넣는다
 
@@ -141,7 +141,7 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
   이번 재구축에서는 na_judge 기준을 질문 기준으로 바꾸고 확인 검사만 독립시킨다. [code:data/na_qjudge.py:93] [code:data/finetune_data.py:75] [c:7142395] 구조 정리는 이번 재구축 결과를 본 뒤에 한다 — 지금 바꾸면 효과 측정이 섞인다.
 
 - 질문 재작성을 되돌리지 않는다(1절).
-- 추론 프롬프트로 보정하지 않는다. 실험 A·B가 이미 실패했다(09번 1-1절). [docs:02_pipeline/09_ui_design.md:32]
+- 추론 프롬프트로 보정하지 않는다. 실험 A·B가 이미 실패했다(09번 2-1절). [docs:02_pipeline/09_ui_design.md:32]
 - 평가 97문항을 학습·few-shot·재작성 예시에 쓰지 않는다. [code:data/eval/search_regression.json]
 - 낮은 겹침 no_answer를 버려서 검사를 맞추지 않는다(2-4, 마지막 수단).
 
@@ -158,17 +158,11 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
 
 7절(2026-10-15 rebuild2 진행 기록)과 8절(rebuild3 B-1 사전 확인, 8-1 B-1′, 8-2 짧은 구어체 재작성 예측, 8-3 B-1″)은 docs/archive/next_rebuild_log.md 로 옮겼다(2026-11-19 문서 정리 B단계). 절 번호는 그 파일에서도 같다.
 
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-| 코드 주석 | 옛 절 | 지금 자리 |
-| --- | --- | --- |
-| `data/ckpt_select.py` 판정 기준 주석 | 8절 | docs/archive/next_rebuild_log.md 8-3절 끝 판정 기준 줄 [code:data/ckpt_select.py:155] |
-
 ---
 
 #### 9. 다음 재구축에 넣을 것 — 2026-10-28 추가 (지금 하지 않는다)
 
-**9-1. 도구 호출 학습 (docs/16 4절 C안).** 코드 답 규칙의 트리거(이 질문이 어느 계산을 원하는가)를 모델 안으로 옮긴다. 계산 함수는 지금 코드 그대로 도구로 노출한다 — 보험금 계산(payout), 부담보·면책 단서·대기기간 확인(customer_facts), 한도표, 연차·퇴직금·급여(hr_personal). [docs:02_pipeline/16_code_answers.md:136] [code:app/services/payout.py] [code:app/services/customer_facts.py] [code:data/limit_table.py] [code:app/services/hr_personal.py:431] [c:130b1d6]
+**9-1. 도구 호출 학습 (docs/16 2-1절 C안).** 코드 답 규칙의 트리거(이 질문이 어느 계산을 원하는가)를 모델 안으로 옮긴다. 계산 함수는 지금 코드 그대로 도구로 노출한다 — 보험금 계산(payout), 부담보·면책 단서·대기기간 확인(customer_facts), 한도표, 연차·퇴직금·급여(hr_personal). [docs:02_pipeline/16_code_answers.md:136] [code:app/services/payout.py] [code:app/services/customer_facts.py] [code:data/limit_table.py] [code:app/services/hr_personal.py:431] [c:130b1d6]
 - 학습 데이터: 지금 코드 답 규칙이 답한 턴을 "질문 → 도구 호출(인자) → 결과 → 답"으로 바꿔 넣는다(규칙이 정답 호출을 만든다). 규칙이 안 걸리는 말투는 gemma 생성(disease_ask_gemma 방식)으로 보탠다 [code:data/eval/disease_ask_gemma.json] [c:130b1d6]
 - 판정: 도구 선택 정확도·인자 정확도를 규칙과 같은 탐침(병명 되묻기·사내규정 개인화·면책 단서)과 평가 220으로 대조. 규칙보다 나쁘면 규칙을 남긴다(지금 등록부 `code_rules.py`가 그대로 대비책) [code:app/services/code_rules.py:69] [code:data/eval/disease_ask_probe.json] [code:data/eval/hr_personal.json] [code:data/eval/eval220.json]
 - 비용: 학습 데이터 생성 + 재학습 + 전면 재평가. 7B의 함수 호출 정확도가 관건이라 소규모 예비 학습으로 먼저 본다
@@ -181,8 +175,8 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
 
 재학습·재구축이 다시 열릴 때마다 나온 사용자 결정 중 문서에 없던 것(세션 압축으로 빠진 것을 원문에서 되살림). [c:1cf1479]
 
-- **모델 셋은 고정한다.** 생성 모델(Tri-7B + LoRA)·임베딩(KURE-v1)·리랭커(bge-reranker-v2-m3)는 교체하지 않는다(2026-10-21: "생성 모델 교체, 임베딩 교체, 리랭커 교체는 하지 않는다"). 8-1절의 qwen3:14b 재작성은 rebuild3 때의 실험 기록이고 기본값이 아니다 [code:data/search_engine.py:23-24] [code:app/config.py:70-71] [c:1cf1479] <!-- 확인 못 함: 사용자 결정 원문은 세션 대화 기록이라 저장소에 남지 않음 -->
+- **모델 셋은 고정한다.** 생성 모델(Tri-7B + LoRA)·임베딩(KURE-v1)·리랭커(bge-reranker-v2-m3)는 교체하지 않는다(2026-10-21: "생성 모델 교체, 임베딩 교체, 리랭커 교체는 하지 않는다"). docs/archive/next_rebuild_log.md 8-1절의 qwen3:14b 재작성은 rebuild3 때의 실험 기록이고 기본값이 아니다 [code:data/search_engine.py:23-24] [code:app/config.py:70-71] [c:1cf1479] <!-- 확인 못 함: 사용자 결정 원문은 세션 대화 기록이라 저장소에 남지 않음 -->
 - **구현 → 소규모 시험 → 본 실행 순서로 한다.** 시험(`--smoke`)에서 무엇을 확인할지 먼저 알리고, 시험이 실패하면 본 실행(전량 생성·학습) 전에 멈추고 보고한다(2026-10-16: "구현 → 소규모 시험 → 본 실행 순서로 진행해라. 소규모 시험에서 무엇을 확인할지 먼저 알려 달라") [code:data/rebuild.py:54] [code:data/rebuild.py:782] [c:1cf1479]
-- **체크포인트는 select가 고른 것을 쓴다.** 변동 폭 안의 차이를 보고 눈으로 뒤집지 않는다 — 고르는 방식은 docs/07 11-2절(평가 220 보이는 세트 점수)(2026-10-16: "눈으로 뒤집으면 select 단계를 만든 의미가 없다") [code:scripts/ckpt_select220.py:3-9] [docs:02_pipeline/07_finetuning.md:589] [c:1cf1479]
-- 판정 선은 rebuild4 체크포인트 표다(같은 114턴 정확 51 · 틀림 10 · 거절 31, docs/07 11-4절) — 거절만 줄이는 것으로는 채택하지 않는다 [docs:02_pipeline/07_finetuning.md:635-639] [c:1cf1479]
+- **체크포인트는 select가 고른 것을 쓴다.** 변동 폭 안의 차이를 보고 눈으로 뒤집지 않는다 — 고르는 방식은 docs/07 3-8절(평가 220 보이는 세트 점수)(2026-10-16: "눈으로 뒤집으면 select 단계를 만든 의미가 없다") [code:scripts/ckpt_select220.py:3-9] [docs:02_pipeline/07_finetuning.md:589] [c:1cf1479]
+- 판정 선은 rebuild4 체크포인트 표다(같은 114턴 정확 51 · 틀림 10 · 거절 31, docs/07 3-10절) — 거절만 줄이는 것으로는 채택하지 않는다 [docs:02_pipeline/07_finetuning.md:635-639] [c:1cf1479]
 

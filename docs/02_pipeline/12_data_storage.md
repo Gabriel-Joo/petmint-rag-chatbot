@@ -36,7 +36,7 @@ sessions (상담 1건)
 | agent_email | 상담원 신원 — 앱 로그인(`PETMINT_AUTH=app`, 운영 2026-10-28)이면 로그인한 직원의 이메일, `access`면 Cloudflare Access 헤더(13번). 헤더가 없으면 기본값(`PETMINT_DEFAULT_AGENT`) [code:db/migrations/petmint/0001_init.sql:11] [code:app/deps.py:39-41] [code:app/config.py:84-89] |
 | started_at | 상담 시작 |
 | ended_at | 업무특화만 채워진다. 일반·사내규정은 닫히지 않아 NULL로 남고, 그것이 곧 "이어 쓸 수 있다"는 표시다 [code:db/migrations/petmint/0001_init.sql:15] |
-| title | 지난 대화 목록과 과거 상담 목록에 보일 제목. 자동으로 한 번 넣는다 — 일반·사내규정은 첫 질문을 베이스 모델로 요약하고(실패하거나 늦으면 첫 줄), 업무특화는 늘 첫 질문 첫 줄이다(베이스로 지으면 모델 교체로 첫 답이 약 5초 늦어졌다, `app/services/titles.py` `uses_llm`). 그 뒤에는 상담원이 바꿀 수 있다(PATCH). **세 모드 모두 채운다** — 업무특화도 고객 조회의 과거 상담 목록에서 제목을 쓴다(09번 2-2절) [code:app/services/titles.py:38-56] [code:app/routers/sessions.py:48-57] [code:app/services/sessions.py:149-150] |
+| title | 지난 대화 목록과 과거 상담 목록에 보일 제목. 자동으로 한 번 넣는다 — 일반·사내규정은 첫 질문을 베이스 모델로 요약하고(실패하거나 늦으면 첫 줄), 업무특화는 늘 첫 질문 첫 줄이다(베이스로 지으면 모델 교체로 첫 답이 약 5초 늦어졌다, `app/services/titles.py` `uses_llm`). 그 뒤에는 상담원이 바꿀 수 있다(PATCH). **세 모드 모두 채운다** — 업무특화도 고객 조회의 과거 상담 목록에서 제목을 쓴다(09번 1-3절) [code:app/services/titles.py:38-56] [code:app/routers/sessions.py:48-57] [code:app/services/sessions.py:149-150] |
 | deleted_at | 상담원이 목록에서 치운 시각. 로그는 지우지 않는다(1-4절) [code:db/migrations/petmint/0001_init.sql:16] |
 | pinned | 지난 대화 목록 상단 고정. 상담원 개인 설정이라 일반·사내규정에만 쓴다 [code:db/migrations/petmint/0001_init.sql:13] [code:app/routers/sessions.py:51] |
 
@@ -50,12 +50,12 @@ sessions (상담 1건)
 | session_id | FK |
 | question / rewritten_question / answer | 원문 질문, 재작성된 질문, 답변 [code:db/migrations/petmint/0001_init.sql:26-28] |
 | pet_id / pet_name / species / breed / pet_age | 이 턴이 누구 얘기였나 — 상담 중에 바뀐다 [code:db/migrations/petmint/0001_init.sql:29-34] [code:app/services/turn_log.py:20-25] |
-| is_hypothetical | 가정 질문 여부(09번 4절) [code:db/migrations/petmint/0001_init.sql:35] |
-| clarified | 되묻기가 발동했는지(09번 4절) — 등급 되묻기, 그리고 코드가 되물은 턴(금액·병명 되묻기, 날짜별 금액 칸) [code:db/migrations/petmint/0002_graph_clarified.sql:22-23] |
+| is_hypothetical | 가정 질문 여부(09번 1-8절) [code:db/migrations/petmint/0001_init.sql:35] |
+| clarified | 되묻기가 발동했는지(09번 1-8절) — 등급 되묻기, 그리고 코드가 되물은 턴(금액·병명 되묻기, 날짜별 금액 칸) [code:db/migrations/petmint/0002_graph_clarified.sql:22-23] |
 | code_rule | 답한 코드 규칙(`code_rules.Rule.key` 14개 또는 `hr_personal`). NULL이면 모델이 답했다. 2026-10-29 `0008_turn_code_rule` — 그 전 턴도 NULL이라 규칙별 집계(`db.rule_report`, 16번 5절)는 적용 시각 이후만 본다 [code:db/migrations/petmint/0008_turn_code_rule.sql:1-7] [code:app/services/code_rules.py:70-92] [code:app/services/answer.py:423] [code:db/rule_report.py:7] [c:82d86f0] |
 | model / prompt_version / index_version | 재현에 필요한 버전 [code:db/migrations/petmint/0001_init.sql:36-38] |
 | refused | 답이 거절 문구인가(0/1). 판정은 `data/refusal.refused` — 평가(`scripts/eval_serving`)와 운영 집계(`db.rule_report`)가 같은 함수를 쓰고, `verify_modes`는 같은 파일의 거절 문구 목록(`REFUSAL_PHRASES`)만 쓴다. `status=ok` 턴만 채우고 cancelled·error는 NULL. 코드 답 턴은 판정하지 않고 0으로 둔다(코드 답은 거절하지 않는다). 2026-11-11 `0009_turn_refused_search_ms` — 그 전 턴은 NULL이고 다시 채우지 않는다. Grafana 「거절률」이 읽는다(15번) [code:db/migrations/petmint/0009_turn_refused_search_ms.sql:1-11] [code:data/refusal.py:42] [code:db/rule_report.py:29-35] [code:scripts/eval_serving.py:146-150] [code:scripts/verify_cases.py:23] [code:scripts/verify_modes.py:28] [code:scripts/verify_modes.py:93-95] [code:app/services/answer.py:548-549] [c:327c913] [c:6078a79] |
-| first_token_ms / latency_ms / created_at | 첫 토큰까지의 시간, 전체 지연 시간, 시각. `first_token_ms`는 모델 스왑 지연 측정에 쓴다(09번 7-3절) [code:db/migrations/petmint/0001_init.sql:39-42] |
+| first_token_ms / latency_ms / created_at | 첫 토큰까지의 시간, 전체 지연 시간, 시각. `first_token_ms`는 모델 스왑 지연 측정에 쓴다(09번 1-15절) [code:db/migrations/petmint/0001_init.sql:39-42] |
 | search_ms | 그 턴에서 search-service(`/search`·`/embed`)를 기다린 시간 합(ms). 부르지 않은 턴(일반 모드, 사내규정 개인화)은 NULL. **업무특화 코드 답 턴도 값이 있다** — 코드 답 규칙은 검색 결과를 받은 뒤에 돈다(`answer._generate`). 실패한 호출도 기다린 시간은 더한다. 턴마다 `answer.TimedRetriever`가 공용 리트리버를 감싸 다른 턴과 섞이지 않는다. 2026-11-11 `0009`, Grafana 「검색 지연」이 읽는다 [code:db/migrations/petmint/0009_turn_refused_search_ms.sql:4] [code:app/services/answer.py:154-175] [code:app/services/answer.py:555] [c:327c913] |
 | status | `ok` / `cancelled` / `error`. 08 평가가 미완성 턴을 걸러낼 수 있어야 한다 [code:db/migrations/petmint/0001_init.sql:41] |
 | payout | 계산 카드 결과(JSON, `CalcResult` — 의료비·법률비용·한도·날짜별 입력). 카드가 없는 턴은 NULL [code:db/migrations/petmint/0004_turn_payout.sql:5-6] [code:app/schemas.py:342] [code:app/services/answer.py:546] |
@@ -81,11 +81,11 @@ sessions (상담 1건)
 
 `turn_id`, `rank`, `graph_key`, `score`, `content`, `used`. 턴당 3~10줄(검색 `top_k` 설정에 따른다. 답변 경로의 top_k는 3이다(`answer.SEARCH_TOP_K`). 일반 모드는 검색이 없어 0줄). `used`는 답변에 실제로 쓰인 근거인지 — 08 평가에서 쓴다. [code:db/migrations/petmint/0001_init.sql:63-80] [code:app/services/answer.py:53] [code:app/services/answer.py:225]
 
-**조문 식별은 `graph_key`가 기준이다.** Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다(09번 6-3절). `section_name`+`article_num`만으로는 조문이 특정되지 않는다 — 강아지·고양이 약관에 같은 조합이 있고, 보통약관은 `section_name`이 NULL이며, 사내규정은 별도 코퍼스다. [code:db/migrations/petmint/0001_init.sql:66] [code:data/rag_context.py:61]
+**조문 식별은 `graph_key`가 기준이다.** Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다(09번 1-12절). `section_name`+`article_num`만으로는 조문이 특정되지 않는다 — 강아지·고양이 약관에 같은 조합이 있고, 보통약관은 `section_name`이 NULL이며, 사내규정은 별도 코퍼스다. [code:db/migrations/petmint/0001_init.sql:66] [code:data/rag_context.py:61]
 
 여기에 표시·복원용 값을 함께 박아둔다: `corpus`(강아지/고양이/인사규정), `section`, `article_num`, `article_title`, `coverage_type`, `paragraph_num`, 그리고 `used` 행에만 `citation_label`. 2-3절의 스냅샷 원칙과 같은 이유다 — 지난 대화를 다시 열었을 때 근거 패널과 인용이 그때 모습 그대로 나와야 한다. [code:db/migrations/petmint/0001_init.sql:67-77] [code:app/services/turn_log.py:117-155]
 
-`corpus`는 문자열로 둔다. 모드마다 리트리버가 달라지고 코퍼스가 늘어날 수 있다(09번 9절). [code:db/migrations/petmint/0001_init.sql:67]
+`corpus`는 문자열로 둔다. 모드마다 리트리버가 달라지고 코퍼스가 늘어날 수 있다(09번 3-7절). [code:db/migrations/petmint/0001_init.sql:67]
 
 **그래프로 따라간 조문도 여기 남는다.** 답변이 인용한 조문이 벡터 검색 결과에 없으면 저장할 곳이 없어진다 — 참조 그래프로 따라간 조문이나 소득세법 박스가 그렇다. `via_graph`로 구분해 함께 넣는다. [code:db/migrations/petmint/0002_graph_clarified.sql:2-5] [code:app/services/turn_log.py:40-68]
 
@@ -100,7 +100,7 @@ sessions (상담 1건)
 
 **제약을 앱이 아니라 DB에 두는 이유**는, 검색 행의 보장이 조용히 풀리면 08 평가가 틀어지기 때문이다. [code:db/migrations/petmint/0002_graph_clarified.sql:4]
 
-참조 조문의 개별 청크 키를 만들어 넣는 안은 버렸다. `data/rag_context.py`는 05·06 노트북과 공유하는 모듈이라, 저장 스키마를 맞추려고 그 출력을 바꾸면 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 3-3절)이 깨진다. 합성 키도 Milvus에 대응이 없는 발명이라 나중에 무엇을 가리키는지 알 수 없게 된다.
+참조 조문의 개별 청크 키를 만들어 넣는 안은 버렸다. `data/rag_context.py`는 05·06 노트북과 공유하는 모듈이라, 저장 스키마를 맞추려고 그 출력을 바꾸면 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 1-6절)이 깨진다. 합성 키도 Milvus에 대응이 없는 발명이라 나중에 무엇을 가리키는지 알 수 없게 된다.
 
 08 Ragas가 "모델이 받은 발췌"를 입력으로 쓰므로, 그래프 확장분이 빠지면 컨텍스트가 실제보다 짧게 기록된다.
 
@@ -165,7 +165,7 @@ sessions (상담 1건)
 
 UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구라 로그가 남는 것은 맞지만, 버튼이 "삭제"인데 실제로 안 지워지면 상담원이 오해한다.
 
-지난 대화 목록은 일반·사내규정에만 있다. 업무특화는 고객 조회 화면의 "최근 상담" 탭이 그 자리를 대신하므로(09번 2-2절) 제거 기능도 없다. 다만 `deleted_at`은 모드와 무관하게 `sessions`에 둔다 — 최근 상담 탭과 고객별 과거 상담 목록도 같은 필터를 쓴다. [code:app/services/sessions.py:149-162]
+지난 대화 목록은 일반·사내규정에만 있다. 업무특화는 고객 조회 화면의 "최근 상담" 탭이 그 자리를 대신하므로(09번 1-3절) 제거 기능도 없다. 다만 `deleted_at`은 모드와 무관하게 `sessions`에 둔다 — 최근 상담 탭과 고객별 과거 상담 목록도 같은 필터를 쓴다. [code:app/services/sessions.py:149-162]
 
 #### 1-5. 백업과 복구 (2026-11-10)
 
@@ -238,8 +238,8 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 
 상담 한 건 동안 고객은 바뀌지 않으니 가입 내용도 세션에 붙이면 될 것 같다. 그러나 **같은 상담 안에서도 검색 범위가 바뀌는 경우가 둘** 있다.
 
-- **반려동물 전환**(10번 6절) — 초코 얘기하다 보리로 넘어가면 종·특약·등급이 전부 바뀐다
-- **가정 질문**(09번 4절) — 고급형 가입자가 "실속형이면 어때요?"라고 물으면 그 턴만 범위가 달라진다
+- **반려동물 전환**(10번 1-7절) — 초코 얘기하다 보리로 넘어가면 종·특약·등급이 전부 바뀐다
+- **가정 질문**(09번 1-8절) — 고급형 가입자가 "실속형이면 어때요?"라고 물으면 그 턴만 범위가 달라진다
 
 세션에 고정하면 이 둘이 기록되지 않는다. 중복은 늘어나지만(턴당 두세 줄) 로그는 추측이 섞이면 쓸모가 없다.
 
@@ -328,9 +328,3 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 - [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19, 2026-11-19 지금 테이블은 20개) [c:74397ed] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 테이블 20개(petmint 9, insurance_core 11) --> <!-- 확인 못 함: 그날 복구 시험의 행 수는 지난 일이라 다시 잴 수 없음 -->
 - [x]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가 — 2026-11-11 03:30:00 KST `petmint-20261111-033000.sql.gz`(135,942바이트, 3초). sha256 OK, 끝 줄 `Dump completed`, 소유자 uid 1000(all_squash), 권한 640 [code:deploy/scripts/host-nfs-backup-setup.sh:8] <!-- 2026-11-19 잼: ls -l, sha256sum -c, zcat | tail -1, stat -c '%u %a' (135,942바이트, mtime 03:30:00, sha256 OK, 끝 줄 Dump completed, uid 1000, 640) --> <!-- 확인 못 함: 3초는 지난 일이라 다시 잴 수 없음 -->
 - [ ]  복구 절차 1~7을 운영 DB에 그대로 해 본 적이 있는가(지금은 임시 컨테이너 시험만)
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-| 옛 절 | 새 절 | 내용 |
-| --- | --- | --- |
-| 4절 | 1-3절 | 고객 원장과 인사 원장은 별도 DB, customer_id와 employee_id에 외래키를 걸지 않는 경계 |

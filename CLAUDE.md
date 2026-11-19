@@ -9,7 +9,7 @@
 
 - 반려동물 보험 약관(메리츠화재 '펫퍼민트', 강아지 · 고양이)과 가상 인사규정에 답하는 상담원용 RAG 챗봇(`README.md`). 원격 `https://github.com/Gabriel-Joo/petmint-rag-chatbot.git`
 - 앱 `app/`(FastAPI) · `web/`(React) · `search_service/`(호스트 검색 서비스) · `db/`(MySQL 접속 · 마이그레이션 · 시드) · 데이터 구축 파이프라인(`scripts/` · `notebooks/`, 단계 문서 `docs/02_pipeline/00~16`). 모델 · 데이터 · GPU는 모두 로컬, 외부 LLM API는 부르지 않는다
-- **push가 하는 일**: `main` push → GitHub 웹훅(안전망 폴링 15분) → Jenkins `petmint-app`이 이미지(`harbor.ronanlab.dev/petmint/petmint-app`, 태그 = 커밋 해시 12자리)를 Harbor로 → **ronanlab-infra** `apps/petmint/kustomization.yaml`에 태그 커밋 → ArgoCD **자동 Sync**(2026-11-11~, `docs/02_pipeline/14_deployment.md` 1-25절). Jenkins는 이 저장소에 커밋하지 않는다
+- **push가 하는 일**: `main` push → GitHub 웹훅(안전망 폴링 15분) → Jenkins `petmint-app`이 이미지(`harbor.ronanlab.dev/petmint/petmint-app`, 태그 = 커밋 해시 12자리)를 Harbor로 → **ronanlab-infra** `apps/petmint/kustomization.yaml`에 태그 커밋 → ArgoCD **자동 Sync**(2026-11-11~, `docs/02_pipeline/14_deployment.md` 1-15절). Jenkins는 이 저장소에 커밋하지 않는다
 - **Sync마다 초기화 Job이 돈다**(infra `apps/petmint/jobs/init-db.yaml`: bootstrap → `db.migrate` → `db.migrate --app insurance_core` → 시드 `--if-empty`). 그래서 `db/migrations/`에 새 파일이 든 push는 **push만으로 운영 DB 스키마가 바뀌고, 이미지를 되돌려도 스키마는 돌아오지 않는다**(14번 4절)
 - **문서만 바뀐 push**(바뀐 파일이 모두 `docs/` · `data/review/` · 루트 `*.md`)는 빌드는 돌지만 이미지 · 태그를 건너뛴다(`Jenkinsfile` 머리 주석). 손으로 누른 빌드, 직전 성공 커밋을 못 찾을 때는 늘 빌드한다
 - 호스트에서 도는 것(클러스터 밖): Ollama 컨테이너 `ollama`, Milvus, search-service(`deploy/host/petmint-search.service`), 로컬 개발 DB 컨테이너 `mysql`(127.0.0.1:3306)
@@ -47,7 +47,7 @@
 하지 않고 사용자에게 묻는다. 관리자가 대신 승인하지 않는다:
 - 위 「하지 않는 것」(재부팅 · `~/.cloudflared/` · ollama 터널 · 비밀값 출력)은 그대로 하지 않는다
 - **force push**(이력 다시 쓰기). Jenkins는 직전 성공 커밋과 새 커밋의 차이로 건너뜀을 정하므로(`Jenkinsfile` 「태그」) 직전 성공 커밋이 원격에서 사라지면 전체 빌드 → 태그 커밋 → 자동 Sync가 된다
-- **마이그레이션이 든 push**(`db/migrations/petmint/` · `db/migrations/insurance_core/`의 새 `NNNN_*.sql`). 자동 Sync라 push가 곧 운영 DB 스키마 변경이고 되돌아가지 않는다. 사람이 지켜봐야 하는 스키마 변경은 자동 Sync를 먼저 끄고 넣는다(14번 1-25절, 끄는 명령은 infra `apps/petmint/README.md`)
+- **마이그레이션이 든 push**(`db/migrations/petmint/` · `db/migrations/insurance_core/`의 새 `NNNN_*.sql`). 자동 Sync라 push가 곧 운영 DB 스키마 변경이고 되돌아가지 않는다. 사람이 지켜봐야 하는 스키마 변경은 자동 Sync를 먼저 끄고 넣는다(14번 1-15절, 끄는 명령은 infra `apps/petmint/README.md`)
 - **설정 파일** — 이 저장소에서 그렇게 보는 것: `Jenkinsfile`(CI), `deploy/host/`(호스트 systemd 유닛 · 백업 스크립트), `.claude/`(세션 설정), `.env.example`(키 목록). 운영 플래그 ConfigMap은 infra 저장소다. 이 목록 밖의 것을 설정으로 볼지는 **정해지지 않음**
 - **운영 DB** 쓰기 · 지우기 · 복구(`kubectl … exec mysql-0`, 12번 1-5절). 운영 DB의 질문 원문을 직접 읽지 않는다(2026-10-28 개인정보 — 16번 「운영 로그로 확인하는 방법」)
 - **배포 되돌리기**(이미지 태그 · ConfigMap 키 되돌리기). 절차는 14번의 반영마다 적힌 「되돌리기」이고 클러스터 쪽은 인프라 관리자가 한다. 이 저장소용 한 벌짜리 되돌리기 런북은 없다 — 둘지는 **정해지지 않음**

@@ -24,7 +24,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml (65b9abb, 2026-10-16), docs/history/build_log/07_project_deploy.md:5 --> |
 | FastAPI + React 빌드물 | Pod | GPU를 쓰지 않는다 [code:Dockerfile:12-47] |
 
-**컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다**(09번 7-3절). 둘을 한 이미지에 담는다 — FastAPI가 빌드물을 StaticFiles로 서빙하므로 Pod 하나로 끝난다. [code:app/main.py:96-98] [code:Dockerfile:37] [docs:02_pipeline/09_ui_design.md]
+**컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다**(09번 1-15절). 둘을 한 이미지에 담는다 — FastAPI가 빌드물을 StaticFiles로 서빙하므로 Pod 하나로 끝난다. [code:app/main.py:96-98] [code:Dockerfile:37] [docs:02_pipeline/09_ui_design.md]
 
 #### 1-2. 이미지
 
@@ -57,7 +57,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | `PETMINT_CHUNKS_DIR` | `data/chunks` | 약관 청크. `컨테이너에서는 /var/lib/petmint/chunks (Dockerfile ENV)` [code:app/config.py:20] [code:Dockerfile:40] |
 | `PETMINT_GRAPH_DIR` | `data/graph` | 참조 그래프. `컨테이너에서는 /var/lib/petmint/graph (Dockerfile ENV)` [code:app/config.py:21] [code:Dockerfile:41] |
 
-**없으면 기동이 실패한다.** `exit 3`과 함께 빠진 파일을 전부 밝히고, 파일이 있어도 청크가 비어 있으면 멈춘다. 조용히 0건이 되면 검색이 아무것도 못 찾는데 원인을 알 수 없다 — 09번 6-1절에서 로더가 `section_name` 불일치에 기동을 실패시키는 것과 같은 판단이다. [code:app/services/policy_data.py:28-43] [code:app/main.py:41] [docs:02_pipeline/09_ui_design.md] <!-- 공개 출처: https://raw.githubusercontent.com/encode/uvicorn/master/uvicorn/config.py 의 STARTUP_FAILURE = 3 과 server.py 의 sys.exit(STARTUP_FAILURE) (2026-11-19 확인) -->
+**없으면 기동이 실패한다.** `exit 3`과 함께 빠진 파일을 전부 밝히고, 파일이 있어도 청크가 비어 있으면 멈춘다. 조용히 0건이 되면 검색이 아무것도 못 찾는데 원인을 알 수 없다 — 09번 1-10절에서 로더가 `section_name` 불일치에 기동을 실패시키는 것과 같은 판단이다. [code:app/services/policy_data.py:28-43] [code:app/main.py:41] [docs:02_pipeline/09_ui_design.md] <!-- 공개 출처: https://raw.githubusercontent.com/encode/uvicorn/master/uvicorn/config.py 의 STARTUP_FAILURE = 3 과 server.py 의 sys.exit(STARTUP_FAILURE) (2026-11-19 확인) -->
 
 개발 중에는 `docker run -v`로 호스트 경로를 붙이고, 클러스터에서는 **NFS 읽기 전용 PV**로 붙인다. 호스트의 `data/chunks`·`data/graph`·`app/fixtures`를 `/srv/nfs/petmint/`에 읽기 전용 bind mount하고 사설망(192.168.122.0/24)에만 NFSv4로 공유한다. 복사본이 없으므로 재색인해도 어긋나지 않는다. [code:Dockerfile:8-9] [code:deploy/scripts/host-nfs-setup.sh:7-17] [code:deploy/scripts/host-nfs-setup.sh:39] [c:afefd07]
 
@@ -101,7 +101,7 @@ Harbor           이미지를 당겨 Pod 교체
 
 **앱 코드와 매니페스트를 다른 저장소에 둔다.** 한 저장소에 합치면 Jenkins가 태그를 바꿔 push할 때마다 빌드가 다시 돌아 무한루프가 된다. 매니페스트는 클러스터 공용 설정이 있는 `ronanlab-infra`의 `apps/petmint/`에 둔다(1-9절). [code:Jenkinsfile:12-13] [code:Jenkinsfile:60-61]
 
-**이미지 태그에 버전을 박는다.** `latest`를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다(10번 8절). [code:Jenkinsfile:10] [code:Jenkinsfile:69] [docs:02_pipeline/10_consultation_flow.md]
+**이미지 태그에 버전을 박는다.** `latest`를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다(10번 1-9절). [code:Jenkinsfile:10] [code:Jenkinsfile:69] [docs:02_pipeline/10_consultation_flow.md]
 
 push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋 → 클러스터 반영**까지 자동으로 간다. 반영은 2026-11-10까지 ArgoCD에서 Sync를 눌러 했고, 매니페스트가 의도대로 들어가는 것을 확인한 뒤 2026-11-11 자동(`automated`)으로 바꿨다(1-15절). [code:Jenkinsfile:1] [code:Jenkinsfile:95-154] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6, :25-28 -->
 
@@ -296,7 +296,7 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
 
 | 바뀐 것 | 펫퍼민트에 |
 | --- | --- |
-| 앱은 app 노드(w1 · w2)에만(nodeSelector) | app 노드가 둘이라 롤링을 **옛 Pod 하나 먼저 내리고 새 Pod**로 바꿨다(maxSurge 0 · maxUnavailable 1, 10번 8절의 maxSurge 1 · maxUnavailable 0 에서). 롤링 동안 잠깐 Pod 하나 — 1초 탐침 실패 0, `rollout restart` 23초 [docs:02_pipeline/10_consultation_flow.md] (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:4-7, :20-23, :43-44, docs/history/build_log/08_scale_out.md:66, :368 --> |
+| 앱은 app 노드(w1 · w2)에만(nodeSelector) | app 노드가 둘이라 롤링을 **옛 Pod 하나 먼저 내리고 새 Pod**로 바꿨다(maxSurge 0 · maxUnavailable 1, 10번 1-9절의 maxSurge 1 · maxUnavailable 0 에서). 롤링 동안 잠깐 Pod 하나 — 1초 탐침 실패 0, `rollout restart` 23초 [docs:02_pipeline/10_consultation_flow.md] (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:4-7, :20-23, :43-44, docs/history/build_log/08_scale_out.md:66, :368 --> |
 | MySQL Replica `mysql-replica-0`(w2) | binlog 복제(파일 · 위치, GTID 꺼짐 — Primary 재시작 없이). 자동 전환은 없다 — 사람이 승격(SQL 0.2초 · Service 전환 0.1초, 시험은 runshoes로). 복제 계정 Secret `mysql-repl` (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/runbooks/mysql-replica.md:9, :13, :15, apps/petmint/mysql/replica.yaml:3-7, docs/history/build_log/08_scale_out.md:356, :365-366 --> |
 | Harbor · Jenkins · ArgoCD는 w3, 모니터링은 w4 | 배포 · 빌드는 w3가, 모니터링은 w4가 죽어도 상담은 돈다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/harbor/values.yaml:56-72, platform/jenkins/values.yaml:21-22, platform/argocd/pin-infra.sh:7, apps/monitoring/kustomization.yaml:11, cluster/label-nodes.sh:6-8 --> <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 실제 배치가 이와 같음 --> |
 | 모니터링(15번) | Grafana가 턴 로그를 **Replica에서** 읽는다 — 계정 `grafana_ro`는 컬럼 단위 SELECT만(질문 · 답 · 코멘트 · 고객 · 상담원 컬럼 권한 없음) [docs:02_pipeline/15_monitoring.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): grafana_ro 는 USAGE 와 feedback, sessions, turns 의 글 아닌 칼럼에 대한 열 단위 SELECT 뿐, 글 칼럼 권한 없음 --> |
@@ -338,9 +338,9 @@ model-service는 `After=libvirtd`이고 `ExecStartPost`가 `/health` 200을 기�
 
 클러스터가 Vagrant VM 위에 있어 GPU가 VM 안으로 들어오지 않는다. PCI 패스스루를 하려면 호스트에서 GPU 드라이버를 떼어내야 하는데, 그러면 호스트의 Ollama를 포기해야 한다.
 
-그래서 **GPU를 쓰는 것은 전부 호스트에, Pod는 네트워크로 호출한다**(09번 7-3절). 생성은 이미 호스트 Ollama를 부르는 구조였으므로 검색도 같은 방식으로 뺐다. [code:app/config.py:32-33] [code:app/config.py:66] [docs:02_pipeline/09_ui_design.md]
+그래서 **GPU를 쓰는 것은 전부 호스트에, Pod는 네트워크로 호출한다**(09번 1-15절). 생성은 이미 호스트 Ollama를 부르는 구조였으므로 검색도 같은 방식으로 뺐다. [code:app/config.py:32-33] [code:app/config.py:66] [docs:02_pipeline/09_ui_design.md]
 
-**이것이 임시방편만은 아니다.** 16GB 한 장에 모델 넷이 올라가고, `OLLAMA_MAX_LOADED_MODELS`와 `keep_alive`를 그 예산 안에서 정해야 한다(09번 7-3절). [code:search_service/main.py:16] [docs:02_pipeline/09_ui_design.md] 그 배분을 쿠버네티스 스케줄러에 맡기는 것보다 직접 관리하는 편이 지금은 통제 가능하다. device plugin은 기본적으로 GPU를 통째로 Pod 하나에 주므로, Ollama와 search-service가 둘 다 필요하면 한쪽만 받는다 — time-slicing이나 MPS로 쪼갤 수 있지만 그 자체가 또 하나의 변수다.
+**이것이 임시방편만은 아니다.** 16GB 한 장에 모델 넷이 올라가고, `OLLAMA_MAX_LOADED_MODELS`와 `keep_alive`를 그 예산 안에서 정해야 한다(09번 1-15절). [code:search_service/main.py:16] [docs:02_pipeline/09_ui_design.md] 그 배분을 쿠버네티스 스케줄러에 맡기는 것보다 직접 관리하는 편이 지금은 통제 가능하다. device plugin은 기본적으로 GPU를 통째로 Pod 하나에 주므로, Ollama와 search-service가 둘 다 필요하면 한쪽만 받는다 — time-slicing이나 MPS로 쪼갤 수 있지만 그 자체가 또 하나의 변수다.
 
 현업에서도 GPU 노드를 따로 두고 앱은 일반 노드에 올린다. 구조로는 같다.
 
@@ -360,7 +360,7 @@ private 저장소라도 "사내 서버 상주"는 아니다. 그리고 약관은
 
 복사해 두면 세 가지가 어긋난다 — 원본이 바뀌어도 모르고, 같은 데이터가 두 군데 있어 어느 쪽이 맞는지 생기고, 계약 변경·해지가 기간계에서 일어나는데 챗봇은 따라가지 못한다.
 
-그래서 `insurance_core` DB를 따로 두고 `petmint_app` 계정에 **SELECT 권한만** 준다. 데이터베이스가 다르면 외래키를 걸 수도 없는데, 그것이 곧 경계가 있다는 표시다(12번 4절에서 `customer_id`를 외래키 없이 문자열로 둔 이유와 같다). [code:db/bootstrap.py:39-46] [code:db/migrate.py:7] [code:app/config.py:15-17] [docs:02_pipeline/12_data_storage.md]
+그래서 `insurance_core` DB를 따로 두고 `petmint_app` 계정에 **SELECT 권한만** 준다. 데이터베이스가 다르면 외래키를 걸 수도 없는데, 그것이 곧 경계가 있다는 표시다(12번 1-3절에서 `customer_id`를 외래키 없이 문자열로 둔 이유와 같다). [code:db/bootstrap.py:39-46] [code:db/migrate.py:7] [code:app/config.py:15-17] [docs:02_pipeline/12_data_storage.md]
 
 **12번 2-2절의 스냅샷 원칙을 실제로 시험할 수 있게 된다.** 고객 등급을 바꿔보려면 전에는 JSON을 고쳐야 했지만, 이제 `UPDATE` 한 줄이면 "외부에서 값이 바뀐 상황"이 그대로 재현된다. [docs:02_pipeline/12_data_storage.md] [code:app/config.py:15-17]
 
@@ -368,7 +368,7 @@ private 저장소라도 "사내 서버 상주"는 아니다. 그리고 약관은
 
 파일이 없거나 비어 있으면 기동을 실패시킨다. 검색 코퍼스가 0건이어도 앱은 멀쩡히 뜨고 답변도 하는데, 모델이 발췌 없이 답하므로 **틀린 답을 자신 있게 한다.** 그 상태로 배포되면 로그를 보기 전까지 모른다. [code:app/services/policy_data.py:6-7] [code:app/services/policy_data.py:28-43]
 
-09번 6-1절에서 고객 픽스처의 `section_name` 불일치에 기동을 실패시키는 것, 12번에서 검색 행 제약을 앱이 아니라 DB의 `CHECK`에 둔 것과 같은 판단이다 — **조용한 실패를 만들지 않는다.** [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/12_data_storage.md] [code:app/main.py:43]
+09번 1-10절에서 고객 픽스처의 `section_name` 불일치에 기동을 실패시키는 것, 12번에서 검색 행 제약을 앱이 아니라 DB의 `CHECK`에 둔 것과 같은 판단이다 — **조용한 실패를 만들지 않는다.** [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/12_data_storage.md] [code:app/main.py:43]
 
 #### 2-5. 왜 MetalLB인가
 
@@ -408,7 +408,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 | 약관 데이터를 git에 올려 이미지에 담기 | 6.4MB라 크기는 문제가 아니었으나 01번의 외부 유출 0건 원칙에 어긋난다. 런타임 마운트로 바꿨다 [docs:requirements.md] [code:.dockerignore:22-24] [code:app/services/policy_data.py:1-8] (2026-10-15~2026-10-18 사이) |
 | 단일 스테이지 이미지 | node와 python을 한 이미지에 담으면 빌드 도구가 최종 이미지에 남는다. 멀티스테이지로 528MB까지 줄였다 [code:Dockerfile:12-37] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답), 이미지 크기는 Harbor에서 봐야 함 --> |
 | `chown -R` 레이어 | 비root 실행을 위해 소유권을 바꿨더니 레이어가 크게 늘었다. 소유권을 바꾸지 않고 파일은 root 소유로 COPY하며 실행만 비root(uid 10001)로 바꿨다. 569MB → 528MB로 줄었으나 무엇으로 줄었는지는 기록에 없다 [code:Dockerfile:29-30] [code:Dockerfile:33-37] [code:Dockerfile:43] (2026-10-15~2026-10-18 사이) |
-| `data/rag_context.py`의 pymilvus import를 함수 안으로 | 251MB를 줄일 수 있으나 05·06 노트북과 공유하는 모듈이다. 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 3-3절)을 깨면서까지 줄일 이유가 없고, ContextBuilder를 붙이면 실제로 필요해진다. 손대지 않았다 [code:data/rag_context.py:15] [code:app/main.py:21] [code:app/main.py:46] [docs:02_pipeline/09_ui_design.md] (2026-10-15~2026-10-18 사이) |
+| `data/rag_context.py`의 pymilvus import를 함수 안으로 | 251MB를 줄일 수 있으나 05·06 노트북과 공유하는 모듈이다. 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 1-6절)을 깨면서까지 줄일 이유가 없고, ContextBuilder를 붙이면 실제로 필요해진다. 손대지 않았다 [code:data/rag_context.py:15] [code:app/main.py:21] [code:app/main.py:46] [docs:02_pipeline/09_ui_design.md] (2026-10-15~2026-10-18 사이) |
 | GPU 패스스루로 Ollama를 Pod에 | 호스트에서 GPU 드라이버를 떼어내야 한다. 호스트 Ollama를 포기하는 대가가 크다 |
 | 검색을 CPU로 돌려 Pod에 | 리랭커가 후보를 쌍으로 비교하는 구조라 지연이 크게 늘어난다. 고객 전화를 받으며 쓰는 도구에 맞지 않는다 |
 | 노드 `/etc/hosts`에 Ingress 주소 추가 | 이름은 풀렸으나 443이 열려 있지 않아 connection refused. NodePort는 30000~32767만 쓸 수 있다 <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
@@ -469,12 +469,3 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [x]  kubectl로 바꾸면 ArgoCD가 OutOfSync로 잡는가
 - [x]  Pod에서 호스트의 Ollama·Milvus·search-service에 닿는가
 - [x]  롤링 중 HTTP 요청이 실패하지 않는가 — drain 5,621건 실패 0. WS는 1012로 한 번 끊기고 다시 연결된다 [c:afefd07] (2026-10-16 기준) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답, 펫퍼민트 쪽 기록은 afefd07 의 deploy/README.md), 다시 재려면 서비스가 끊길 수 있어 사람 승인이 필요함 -->
-
-#### 옛 절 번호 (코드 주석이 가리키는 것)
-
-| 옛 번호 | 새 번호 | 가리키는 곳 |
-| --- | --- | --- |
-| 1-4절 | 1-4절 | search_service/main.py:20 |
-| 1-5절 | 1-5절 | Jenkinsfile:1, deploy/README.md:14 |
-| 1-6절 | 1-6절 | Jenkinsfile:9 |
-| 1-26절 | 1-16절 | deploy/README.md:10 |
