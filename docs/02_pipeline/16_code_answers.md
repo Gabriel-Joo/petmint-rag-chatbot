@@ -1,11 +1,15 @@
-> 상태: 2026-10-28 정리. 코드가 답하는 규칙(모델 대신)과 검색·발췌·표시 규칙의 목록·발동 조건·순서·충돌. 규칙을 더하거나 바꾸면 이 표를 같이 고친다.
+<!--
+다루는 곳: app/services/code_rules.py, app/services/lexicon.py, app/services/answer.py, app/services/customer_facts.py, app/services/payout.py, app/services/named_cover.py, app/services/name_check.py, app/services/intent.py, app/services/hr_personal.py, app/services/guardrail.py, app/services/tables.py, app/services/article_display.py, app/services/dayparse.py, app/services/context.py, db/rule_report.py, db/migrations/petmint/0008_turn_code_rule.sql, tests/test_rule_registry.py, tests/test_ask_amount.py, tests/test_named_cover.py, tests/test_rule_report.py
+읽은 커밋: 6710b83
+-->
+> 상태: 2026-10-28 정리. 코드가 답하는 규칙(모델 대신)과 검색·발췌·표시 규칙의 목록·발동 조건·순서·충돌. 규칙을 더하거나 바꾸면 이 표를 같이 고친다. [code:app/services/code_rules.py:9] [c:2c12d2e]
 
 ---
 
 ### 0. 한 줄 요약
 
-코드 답 규칙은 **업무특화 14개(+ 등급 되묻기) · 사내규정 7주제**다(2026-10-29 병명 보장 대조 추가). 그 밖에 답에 덧붙이는 규칙 3개, 검색·발췌·표시 규칙 5개가 있다.
-규칙 코드는 약 2,700줄, 정규식 약 100개다. 모든 질문(평가 220 + 탐침, 243개)에 순서를 무시하고 돌리면, 두 규칙이 함께 맞는 질문은 **2개**다(3절).
+코드 답 규칙은 **업무특화 14개(+ 등급 되묻기) · 사내규정 7주제**다(2026-10-29 병명 보장 대조 추가). 그 밖에 답에 덧붙이는 규칙 3개, 검색·발췌·표시 규칙 5개가 있다. [code:app/services/code_rules.py:69-99] [c:d3a8706]
+규칙 코드는 약 2,700줄, 정규식 약 100개다. 모든 질문(평가 220 + 탐침, 243개)에 순서를 무시하고 돌리면, 두 규칙이 함께 맞는 질문은 **2개**다(3절). (2026-10-28 기준) [code:tests/test_rule_registry.py:19-20]
 
 ---
 
@@ -18,7 +22,7 @@
            → ⑩ 부담보 → ⑪ 면책 단서 → ⑪′ 병명 보장 대조 → ⑫ 상해 후속 → ⑬ 병명 되묻기 → 모델 → [덧붙임: 숫자 가드레일 · 고객 사실 · 답 아래 표]
 ```
 
-순서는 등록부 **`app/services/code_rules.py`의 `RULES` 목록**이 정한다. `answer._generate`가 위에서부터 돌고, 처음 답을 낸 규칙의 key가 `ctx.code_rule`에 남는다. 사내규정은 검색 전에 `answer._hr_personal`이 돈다. 트리거 낱말(정규식 46개 — A안 때 44개, B안에서 둘 더함)은 **`app/services/lexicon.py`** 한 곳에 개념별로 있다 — 질병·보장 질문·금액이 규칙마다 다르게 정의된 것이 거기서 보인다(2026-10-28 A안).
+순서는 등록부 **`app/services/code_rules.py`의 `RULES` 목록**이 정한다. `answer._generate`가 위에서부터 돌고, 처음 답을 낸 규칙의 key가 `ctx.code_rule`에 남는다. 사내규정은 검색 전에 `answer._hr_personal`이 돈다. 트리거 낱말(정규식 46개 — A안 때 44개, B안에서 둘 더함)은 **`app/services/lexicon.py`** 한 곳에 개념별로 있다 — 질병·보장 질문·금액이 규칙마다 다르게 정의된 것이 거기서 보인다(2026-10-28 A안). [code:app/services/code_rules.py:69-96] [code:app/services/answer.py:326-342] [code:app/services/answer.py:212-218] [code:app/services/answer.py:413-423] [code:app/services/lexicon.py] [c:e6a69e7] <!-- 안 맞음: 문서는 「정규식 46개」, 코드는 re.compile 47개(app/services/lexicon.py). 2026-11-12 「PAYOUT_YESNO = re.compile(…)」(app/services/lexicon.py:34, 커밋 cbe6382)가 더해졌다 -->
 
 ---
 
@@ -28,58 +32,58 @@
 
 | # | 규칙 (함수) | 플래그 | 발동 조건 | 답 | 만든 때·측정 |
 | --- | --- | --- | --- | --- | --- |
-| — | 등급 되묻기 (`clarify_options`) | — | 검색 결과에 가입 등급이 둘 이상 섞였다. 질문이 통원/입원을 말하거나(`named_section`) 등급과 상관없는 질문(`needs_grade`)이면 묻지 않는다. 앞 턴에서 고른 특약은 이어 쓴다(`carry_chosen`) | 어느 특약인지 선택지 | 09번 4절 |
-| ① | 되묻기 답 이어받기 (`payout.reply_turn`) | (기본) | 앞 답이 코드의 금액 되묻기 문구(`ASKS`)이고, 이번 말이 금액·일수·"모르겠어요"다(`dayparse.is_reply`) | 의료비 계산 카드 + 답. 날짜별 금액이 필요하면 입력 칸 | 2026-10-21 |
-| ② | 미가입 특약 (`customer_facts.not_enrolled`) | CUSTOMER_FACTS | 질문이 가입하지 않은 특약(배상책임·법률비용, 통원/입원)을 가리킨다 | "○○는 그 특약에 가입하지 않아…" + 가입 특약 | 4d |
-| ③ | 올해 받은·남은 (`annual_answer`) | CUSTOMER_FACTS | 올해·남은·받은 + 한도·보험금 | 청구 이력으로 올해 받은 금액·잔여 | 4d |
-| ④ | 금액 되묻기 (`payout.needs_amount`) | (기본) | 받을 금액을 묻는데(금액 낱말 + 임베딩 `intent.asks_amount`) 치료비 금액이 없다. 한도·법률·다른 돈 질문은 빠진다. NAMED_COVER면 금액 되묻기 바로 뒤에 ⑪′가 맞는 병명 보장 질문("감기도 돼요?")일 때 빠진다(`code_rules._cover_switch` — 앞 질문의 "얼마"로 되묻기를 되풀이하던 것). **얼마 없이 「보험금 나와요?」**(`lexicon.PAYOUT_YESNO` — 보험금 + 나와 · 나오 · 나올 · 받을 수 · 지급)도 병명 · 치료 이름 · 부담보 · 상해 · 면책 사실이 없으면 여기서 받는다(`payout._payout_yesno`, 2026-11-12 — 아래 3-3) | "치료비 총액과 입원 일수를 알려 주세요" | 2026-10-21, 2026-11-12 |
-| ⑤ | 가정 등급 한도표 (`hypothetical_card`) | CUSTOMER_FACTS | 가입과 다른 등급·유형 + 한도·금액 낱말 | 그 등급의 한도표("이 고객의 한도가 아니다") | 2026-10-21 |
-| ⑥ | 법률비용 카드 (`legal_card`) | (기본) | 소송·변호사 낱말 + 법률비용 특약 가입 + 소가가 계산된다 | 별표3·4·5 한도 카드 | 2026-10-21 |
-| ⑦ | 치료비 질문 카드 (`question_turn`) | (기본) | 질문에 치료비 금액이 있고 의료비 카드가 계산된다 | 계산 카드 + 답(2~5일이면 날짜별 입력 칸) | 2026-10-21 |
-| ⑧ | 한도표 (`limit_card`) | (기본) | 한도 낱말이 있고 치료비 금액·법률 낱말이 없다 | 가입 특약 한도표 + 올해 사용·잔여 | 2026-10-21 |
-| ⑨ | 가입 나이 (`enrollment_age_answer`) | AGE_CODE | 숫자 나이(살·세) + 신규 가입 + 재가입·갱신이 아니다 | 만 8세(실속형 10세) 기준 판정 | 2026-10-24, `age_measure.md` |
-| ⑩ | 부담보 (`exclusion_answer`) | COVERAGE_CODE | 보장 질문 + 그 반려동물의 부담보 병명 | "부담보 기간 동안 보상하지 않습니다" | 2026-10-23 3안′ |
-| ⑪ | 면책 단서 (`proviso_answer`) | PROVISO_CODE | 침술(⑫) · 1년 이내 예방접종 사실(②) · Ⅰ형 구강질환(⑲). 병명·치료 말이 지금 질문에 있다 | 단서로 보장되는지 판정 | 2026-10-24, `proviso_measure.md` |
-| ⑪′ | 병명 보장 대조 (`named_cover.answer`) | NAMED_COVER | 지금 질문에 닫힌 목록 낱말이 한 항목(제2조 면책 항목 26 · 약관에 없는 흔한 병명 23) + 보장 질문(또는 ⑬ 되묻기 뒤 짧은 답 "감기예요") + 금액·숫자·한도·횟수·기간·절차·접종·면책 사실·상해 낱말 없음 + 부담보 아님. Ⅱ·Ⅲ 특약에 없는 항목(서혜부·아포퀠)은 그 특약이면 모델로 | 목록에 없으면 "면책 목록에 없어 원칙 보상" + 원인 단서(감기 → 면책 감염병이면 접종 기록)·가입 전 발병·상병명 + 대기기간. 목록에 있으면 그 조항으로 "보상하지 않습니다"(감염병은 접종 단서, 선천·유전은 최초 발견 단서, 처치는 제2조 ③) | 2026-10-29, `named_cover_measure.md` |
-| ⑫ | 상해 후속 (`injury_followup`) | ASK_DISEASE | 앞 답이 ⑬의 되묻기 + 상해 낱말. 금액·슬관절/고관절·부담보·제2조 ① 면책 사유·질병 낱말은 빠진다 | 상해 보상 원칙 · 대기기간 없음 · 금액 되묻기 | 2026-10-28, `disease_ask_measure.md` |
-| ⑬ | 병명 되묻기 (`disease_ask`) | ASK_DISEASE | 겪은 일 + 보장 질문 + 금액 없음 + 후속 아님 + 이름·그 말들을 지우면 한글이 남지 않는다 | 가입 특약 원칙 + "어떤 질병이나 상해로" | 2026-10-28 |
+| — | 등급 되묻기 (`clarify_options`) | — | 검색 결과에 가입 등급이 둘 이상 섞였다. 질문이 통원/입원을 말하거나(`named_section`) 등급과 상관없는 질문(`needs_grade`)이면 묻지 않는다. 앞 턴에서 고른 특약은 이어 쓴다(`carry_chosen`) | 어느 특약인지 선택지 | 09번 4절 [code:app/services/answer.py:294-323] [code:app/services/answer.py:239-258] [code:app/services/context.py:104] [docs:02_pipeline/09_ui_design.md:254] |
+| ① | 되묻기 답 이어받기 (`payout.reply_turn`) | (기본) | 앞 답이 코드의 금액 되묻기 문구(`ASKS`)이고, 이번 말이 금액·일수·"모르겠어요"다(`dayparse.is_reply`) | 의료비 계산 카드 + 답. 날짜별 금액이 필요하면 입력 칸 | 2026-10-21 [code:app/services/code_rules.py:70-72] [code:app/services/payout.py:861] [code:app/services/payout.py:586-594] [code:app/services/dayparse.py:140] |
+| ② | 미가입 특약 (`customer_facts.not_enrolled`) | CUSTOMER_FACTS | 질문이 가입하지 않은 특약(배상책임·법률비용, 통원/입원)을 가리킨다 | "○○는 그 특약에 가입하지 않아…" + 가입 특약 | 4d [code:app/services/code_rules.py:73] [code:app/services/customer_facts.py:65] |
+| ③ | 올해 받은·남은 (`annual_answer`) | CUSTOMER_FACTS | 올해·남은·받은 + 한도·보험금 | 청구 이력으로 올해 받은 금액·잔여 | 4d [code:app/services/code_rules.py:74] [code:app/services/customer_facts.py:87] |
+| ④ | 금액 되묻기 (`payout.needs_amount`) | (기본) | 받을 금액을 묻는데(금액 낱말 + 임베딩 `intent.asks_amount`) 치료비 금액이 없다. 한도·법률·다른 돈 질문은 빠진다. NAMED_COVER면 금액 되묻기 바로 뒤에 ⑪′가 맞는 병명 보장 질문("감기도 돼요?")일 때 빠진다(`code_rules._cover_switch` — 앞 질문의 "얼마"로 되묻기를 되풀이하던 것). **얼마 없이 「보험금 나와요?」**(`lexicon.PAYOUT_YESNO` — 보험금 + 나와 · 나오 · 나올 · 받을 수 · 지급)도 병명 · 치료 이름 · 부담보 · 상해 · 면책 사실이 없으면 여기서 받는다(`payout._payout_yesno`, 2026-11-12 — 아래 3-3) | "치료비 총액과 입원 일수를 알려 주세요" | 2026-10-21, 2026-11-12 [code:app/services/code_rules.py:63-66] [code:app/services/code_rules.py:75-77] [code:app/services/payout.py:587] [code:app/services/payout.py:615-648] [code:app/services/intent.py:52-62] [code:app/services/lexicon.py:34] [c:cbe6382] |
+| ⑤ | 가정 등급 한도표 (`hypothetical_card`) | CUSTOMER_FACTS | 가입과 다른 등급·유형 + 한도·금액 낱말 | 그 등급의 한도표("이 고객의 한도가 아니다") | 2026-10-21 [code:app/services/code_rules.py:78-79] [code:app/services/payout.py:462] |
+| ⑥ | 법률비용 카드 (`legal_card`) | (기본) | 소송·변호사 낱말 + 법률비용 특약 가입 + 소가가 계산된다 | 별표3·4·5 한도 카드 | 2026-10-21 [code:app/services/code_rules.py:80] [code:app/services/payout.py:364] |
+| ⑦ | 치료비 질문 카드 (`question_turn`) | (기본) | 질문에 치료비 금액이 있고 의료비 카드가 계산된다 | 계산 카드 + 답(2~5일이면 날짜별 입력 칸) | 2026-10-21 [code:app/services/code_rules.py:81-82] [code:app/services/payout.py:276] |
+| ⑧ | 한도표 (`limit_card`) | (기본) | 한도 낱말이 있고 치료비 금액·법률 낱말이 없다 | 가입 특약 한도표 + 올해 사용·잔여 | 2026-10-21 [code:app/services/code_rules.py:83-84] [code:app/services/payout.py:427] |
+| ⑨ | 가입 나이 (`enrollment_age_answer`) | AGE_CODE | 숫자 나이(살·세) + 신규 가입 + 재가입·갱신이 아니다 | 만 8세(실속형 10세) 기준 판정 | 2026-10-24, `age_measure.md` [code:app/services/code_rules.py:85] [code:app/services/customer_facts.py:166-199] [code:data/review/age_measure.md] [c:98c24de] |
+| ⑩ | 부담보 (`exclusion_answer`) | COVERAGE_CODE | 보장 질문 + 그 반려동물의 부담보 병명 | "부담보 기간 동안 보상하지 않습니다" | 2026-10-23 3안′ [code:app/services/code_rules.py:86] [code:app/services/customer_facts.py:142-157] [c:20bf39a] |
+| ⑪ | 면책 단서 (`proviso_answer`) | PROVISO_CODE | 침술(⑫) · 1년 이내 예방접종 사실(②) · Ⅰ형 구강질환(⑲). 병명·치료 말이 지금 질문에 있다 | 단서로 보장되는지 판정 | 2026-10-24, `proviso_measure.md` [code:app/services/code_rules.py:87] [code:app/services/customer_facts.py:231-266] [code:data/review/proviso_measure.md] |
+| ⑪′ | 병명 보장 대조 (`named_cover.answer`) | NAMED_COVER | 지금 질문에 닫힌 목록 낱말이 한 항목(제2조 면책 항목 26 · 약관에 없는 흔한 병명 23) + 보장 질문(또는 ⑬ 되묻기 뒤 짧은 답 "감기예요") + 금액·숫자·한도·횟수·기간·절차·접종·면책 사실·상해 낱말 없음 + 부담보 아님. Ⅱ·Ⅲ 특약에 없는 항목(서혜부·아포퀠)은 그 특약이면 모델로 | 목록에 없으면 "면책 목록에 없어 원칙 보상" + 원인 단서(감기 → 면책 감염병이면 접종 기록)·가입 전 발병·상병명 + 대기기간. 목록에 있으면 그 조항으로 "보상하지 않습니다"(감염병은 접종 단서, 선천·유전은 최초 발견 단서, 처치는 제2조 ③) | 2026-10-29, `named_cover_measure.md` [code:app/services/code_rules.py:88-89] [code:app/services/named_cover.py:38-97] [code:app/services/named_cover.py:117-140] [code:app/services/named_cover.py:143-175] [code:data/review/named_cover_measure.md] [c:d3a8706] |
+| ⑫ | 상해 후속 (`injury_followup`) | ASK_DISEASE | 앞 답이 ⑬의 되묻기 + 상해 낱말. 금액·슬관절/고관절·부담보·제2조 ① 면책 사유·질병 낱말은 빠진다 | 상해 보상 원칙 · 대기기간 없음 · 금액 되묻기 | 2026-10-28, `disease_ask_measure.md` [code:app/services/code_rules.py:90-91] [code:app/services/customer_facts.py:347-367] [code:app/services/lexicon.py:13-14] [code:data/review/disease_ask_measure.md] |
+| ⑬ | 병명 되묻기 (`disease_ask`) | ASK_DISEASE | 겪은 일 + 보장 질문 + 금액 없음 + 후속 아님 + 이름·그 말들을 지우면 한글이 남지 않는다 | 가입 특약 원칙 + "어떤 질병이나 상해로" | 2026-10-28 [code:app/services/code_rules.py:92-95] [code:app/services/customer_facts.py:303] [code:app/services/lexicon.py:16-19] [code:app/services/lexicon.py:94] |
 
 #### 2-2. 업무특화 — 모델 답에 덧붙이는 것
 
 | 규칙 | 플래그 | 하는 일 |
 | --- | --- | --- |
-| 숫자 가드레일 (`guardrail`) | NUMBER_GUARD | 모델이 본 글·카드에 없는 금액이 답에 있으면 경고 한 줄 |
-| 고객 사실 (`customer_facts.notes`) | CUSTOMER_FACTS | 가입일 대기기간(질병 30일, 반려견 슬관절·고관절 1년, 반려묘 비뇨기 90일)·나이 한 줄. 카드 답에도 붙는다 |
-| 답 아래 표 (`tables`) | ANSWER_TABLES | 답이 쓴 발췌의 Markdown 표, 질문에 맞는 행 강조 |
+| 숫자 가드레일 (`guardrail`) | NUMBER_GUARD | 모델이 본 글·카드에 없는 금액이 답에 있으면 경고 한 줄 [code:app/services/answer.py:371-377] [code:app/services/guardrail.py:37-45] [code:app/config.py:39] |
+| 고객 사실 (`customer_facts.notes`) | CUSTOMER_FACTS | 가입일 대기기간(질병 30일, 반려견 슬관절·고관절 1년, 반려묘 비뇨기 90일)·나이 한 줄. 카드 답에도 붙는다 [code:app/services/customer_facts.py:109-135] [code:app/services/answer.py:379-384] [code:app/services/answer.py:443] |
+| 답 아래 표 (`tables`) | ANSWER_TABLES | 답이 쓴 발췌의 Markdown 표, 질문에 맞는 행 강조 [code:app/services/answer.py:388-394] [code:app/services/tables.py:68] [code:app/services/tables.py:98] [code:app/config.py:36] |
 
 #### 2-3. 사내규정 — 개인화 (`hr_personal`, HR_PERSONAL)
 
 발동은 세 가지가 함께 맞을 때다.
-- 본인 지칭(내·제·저·나 + 조사)이 있거나, 앞 개인화 사슬을 이어받는다(같은 갈래 · 주제 낱말이 있는 짧은 후속 · 퇴직 예정일 정보)
-- 주제 낱말이 있다
-- 로그인한 직원이 인사 원장에 있다
+- 본인 지칭(내·제·저·나 + 조사)이 있거나, 앞 개인화 사슬을 이어받는다(같은 갈래 · 주제 낱말이 있는 짧은 후속 · 퇴직 예정일 정보) [code:app/services/lexicon.py:66] [code:app/services/hr_personal.py:504-563]
+- 주제 낱말이 있다 [code:app/services/hr_personal.py:435]
+- 로그인한 직원이 인사 원장에 있다 [code:app/services/answer.py:419-422] [code:app/services/answer.py:212]
 
 | 주제 | 주제 낱말 | 답 | 빼는 것 |
 | --- | --- | --- | --- |
-| 연차 | 연차·휴가 + 남·잔여·몇·며칠·얼마 | 이번 연차 기간의 부여·사용·잔여(퇴직 예정일이면 그날 기준) | 경조·병가·출산·육아·재택·휴직 |
-| 연차수당 | 연차 + 미사용·수당 + 얼마·받 | 잔여 × 하루 통상임금(÷209×8) | 위와 같다 |
-| 퇴직금 | 퇴직금 | 평균임금(지급된 3개월) × 30 × 근속 ÷ 365(퇴직 예정일 지원) | — |
-| 자격수당 | 자격수당 | 이번 달 수당(사본 다음 달부터, 큰 것 하나) | 따면·있으면(가정) |
-| 승진 | 승진·진급·"대리 될" | 체류연수 차는 날, 2회 연속 D면 제외 | 직급 이름이 든 일반 질문(이어받기 때) |
-| 급여 | 월급·급여·봉급·임금 | 최근 지급분 세전 내역 + 다음 지급일(익월 10일, 휴일이면 전일) | 세금·공제·실수령·퇴직 맥락·평균임금 |
-| 통상임금 | 통상임금·시급·일급 | 월·시간·하루·연장 1시간 | 세금·공제 |
+| 연차 | 연차·휴가 + 남·잔여·몇·며칠·얼마 | 이번 연차 기간의 부여·사용·잔여(퇴직 예정일이면 그날 기준) | 경조·병가·출산·육아·재택·휴직 [code:app/services/lexicon.py:67-69] [code:app/services/hr_personal.py:245] |
+| 연차수당 | 연차 + 미사용·수당 + 얼마·받 | 잔여 × 하루 통상임금(÷209×8) | 위와 같다 [code:app/services/lexicon.py:70] [code:app/services/hr_personal.py:53-54] [code:app/services/hr_personal.py:279-303] |
+| 퇴직금 | 퇴직금 | 평균임금(지급된 3개월) × 30 × 근속 ÷ 365(퇴직 예정일 지원) | — [code:app/services/lexicon.py:71] [code:app/services/hr_personal.py:305-318] |
+| 자격수당 | 자격수당 | 이번 달 수당(사본 다음 달부터, 큰 것 하나) | 따면·있으면(가정) [code:app/services/lexicon.py:81-82] [code:app/services/hr_personal.py:209-224] |
+| 승진 | 승진·진급·"대리 될" | 체류연수 차는 날, 2회 연속 D면 제외 | 직급 이름이 든 일반 질문(이어받기 때) [code:app/services/lexicon.py:72] [code:app/services/lexicon.py:83] [code:app/services/hr_personal.py:225-239] |
+| 급여 | 월급·급여·봉급·임금 | 최근 지급분 세전 내역 + 다음 지급일(익월 10일, 휴일이면 전일) | 세금·공제·실수령·퇴직 맥락·평균임금 [code:app/services/lexicon.py:73] [code:app/services/lexicon.py:75] [code:app/services/hr_personal.py:173] [code:app/services/hr_personal.py:184-191] [code:app/services/hr_personal.py:344] |
+| 통상임금 | 통상임금·시급·일급 | 월·시간·하루·연장 1시간 | 세금·공제 [code:app/services/lexicon.py:74] [code:app/services/hr_personal.py:380] |
 
-계약직은 금액 없이 개별근로계약 안내만 한다. 퇴직자는 계산하지 않는다.
+계약직은 금액 없이 개별근로계약 안내만 한다. 퇴직자는 계산하지 않는다. [code:app/services/hr_personal.py:570-577]
 
 #### 2-4. 검색·발췌·표시 규칙 (답이 아니라 모델이 볼 글이나 화면을 바꾼다)
 
 | 규칙 | 플래그 | 하는 일 |
 | --- | --- | --- |
-| 원칙 앞으로 (`rule_first`) | RULE_FIRST | 지급사유 조의 예외 항이 발췌 본문이면 같은 조 제1항을 참조에서 본문 앞으로 |
-| 같은 제목 특약 조 (`human_article_adjust`) | TWIN_ARTICLE | 특약 낱말 없는 질문이 보통약관(사람 보험) 제3·5조로 가면 의료비 특약 제1·2조를 그 앞으로 |
-| 약한 발췌 빼기 (`cut_weak_results`) | (사내규정) | 리랭커 1위 점수의 일정 배수 미만 발췌를 뺀다 |
-| 부모 글 보이기 (`display_parent`) | DISPLAY_PARENT | v3 조각으로 찾고 모델에게는 원래 청크 글 |
-| 원문 표시 (`article_display`) | (기본) | 근거 패널 원문의 줄 잇기·등급 묶음·박스·표 — 표시만 |
+| 원칙 앞으로 (`rule_first`) | RULE_FIRST | 지급사유 조의 예외 항이 발췌 본문이면 같은 조 제1항을 참조에서 본문 앞으로 [code:app/services/answer.py:72-87] [code:app/services/answer.py:232-233] [code:app/config.py:43] |
+| 같은 제목 특약 조 (`human_article_adjust`) | TWIN_ARTICLE | 특약 낱말 없는 질문이 보통약관(사람 보험) 제3·5조로 가면 의료비 특약 제1·2조를 그 앞으로 [code:data/rag_context.py:573] [code:app/services/answer.py:220-221] [code:app/config.py:52] |
+| 약한 발췌 빼기 (`cut_weak_results`) | (사내규정) | 리랭커 1위 점수의 일정 배수 미만 발췌를 뺀다 [code:app/services/answer.py:66] [code:app/services/answer.py:110-115] |
+| 부모 글 보이기 (`display_parent`) | DISPLAY_PARENT | v3 조각으로 찾고 모델에게는 원래 청크 글 [code:app/services/answer.py:90-107] [code:app/config.py:41] |
+| 원문 표시 (`article_display`) | (기본) | 근거 패널 원문의 줄 잇기·등급 묶음·박스·표 — 표시만 [code:app/services/article_display.py] |
 
 ---
 
@@ -87,48 +91,48 @@
 
 #### 3-1. 재서 본 것 — 두 규칙이 함께 맞는 질문
 
-평가 220 보이는 세트와 병명 되묻기 탐침을 합친 243문항에서, 업무특화 규칙 ②~⑪·⑬을 순서 없이 모두 돌렸다(①·⑫는 앞 턴이 있어야 해서 뺐다). 2026-10-29 ⑪′를 넣고 다시 돌려도 새 겹침은 없다(`tests/test_rule_registry`).
+평가 220 보이는 세트와 병명 되묻기 탐침을 합친 243문항에서, 업무특화 규칙 ②~⑪·⑬을 순서 없이 모두 돌렸다(①·⑫는 앞 턴이 있어야 해서 뺐다). 2026-10-29 ⑪′를 넣고 다시 돌려도 새 겹침은 없다(`tests/test_rule_registry`). [code:tests/test_rule_registry.py:18-31] [code:tests/test_rule_registry.py:37-51] [c:d3a8706]
 
 | 질문 | 함께 맞는 규칙 | 지금 순서의 결과 | 판단 |
 | --- | --- | --- | --- |
-| 올해 남은 입원 한도가 얼마예요? | ③ 올해 받은·남은, ⑧ 한도표 | ③이 답한다(잔여) | 의도한 순서다 |
-| 슬개골 탈구로 입원했는데 보험금 얼마나 나와요?(망고, 부담보 슬개골) | ④ 금액 되묻기, ⑩ 부담보 | ④가 먼저 금액을 되묻는다. 부담보는 다음 턴 카드에 붙는다 | **순서가 틀린 쪽에 가깝다** — 보상하지 않는 병에 금액부터 묻는다. ⑩을 ④ 앞으로 옮기는 안을 재 볼 만하다 |
+| 올해 남은 입원 한도가 얼마예요? | ③ 올해 받은·남은, ⑧ 한도표 | ③이 답한다(잔여) | 의도한 순서다 [code:tests/test_rule_registry.py:19] [code:app/services/code_rules.py:74] [code:app/services/code_rules.py:83] |
+| 슬개골 탈구로 입원했는데 보험금 얼마나 나와요?(망고, 부담보 슬개골) | ④ 금액 되묻기, ⑩ 부담보 | ④가 먼저 금액을 되묻는다. 부담보는 다음 턴 카드에 붙는다 | **순서가 틀린 쪽에 가깝다** — 보상하지 않는 병에 금액부터 묻는다. ⑩을 ④ 앞으로 옮기는 안을 재 볼 만하다 [code:tests/test_rule_registry.py:20] [code:app/services/code_rules.py:75] [code:app/services/code_rules.py:86] |
 
-나머지 241문항은 규칙이 하나만 맞거나 하나도 맞지 않는다.
+나머지 241문항은 규칙이 하나만 맞거나 하나도 맞지 않는다. (2026-10-29 기준)
 
 #### 3-3. 두 규칙 사이로 빠진 질문 — 「보험금 나와요?」 (2026-11-12)
 
-운영에서 「초코 입원했는데 보험금 나와요?」(권태호, 김서연 / 초코)가 어느 규칙에도 안 걸리고 모델이 거절했다. 같은 상담의 「네 ? 초코 입원해서 보험금 나오냐고요」도 거절. 「초코가 입원했는데 보험금 **얼마나** 나와요?」(10-29)는 ④ 금액 되묻기가 받았다.
+운영에서 「초코 입원했는데 보험금 나와요?」(권태호, 김서연 / 초코)가 어느 규칙에도 안 걸리고 모델이 거절했다. 같은 상담의 「네 ? 초코 입원해서 보험금 나오냐고요」도 거절. 「초코가 입원했는데 보험금 **얼마나** 나와요?」(10-29)는 ④ 금액 되묻기가 받았다. <!-- 확인 못 함: 운영 질문과 답은 운영 DB -->
 
-- **원인**: ⑬ 병명 되묻기는 겪은 일(입원했) + 보장 질문(나와요)이 맞았지만 `AMOUNT_UPSELL`에 「보험금」이 있어 금액 질문으로 보고 빠졌다 — "금액은 ④가 받는다"는 설계(10-28, 평가 L01 "…보험금이 나올까요?"를 금액 되묻기 유형으로 봤다). 그런데 ④는 금액 낱말(`intent.AMOUNT_WORD` — 얼마 · 금액 · 액수 · 몇만원)이 있어야 임베딩까지 가고, 「보험금」은 그 낱말이 아니라 걸리지 않았다. 둘 다 "저쪽이 받는다"고 본 자리였다. L01도 같은 길로 빠져 있었다
-- **고침**: ④에 좁은 문 하나 — 「보험금 + 나와/나오/나올/받을 수/지급」이 있고, 병명(⑪′ 목록) · 부담보 · 상해 · 면책 사실이 없고, 반려동물 이름 · 그 말 · 채움말을 지우면 한글이 남지 않을 때(⑬과 같은 '이름이 남는가')만 금액을 되묻는다. 병명 · 치료 이름이 있는 「감기로 입원했는데 보험금 나와요?」 · 「슬개골 수술도 보험금 나오나요?」는 그대로다(아래 남은 것). ⑬ 쪽(「보험금」을 금액에서 빼기)으로 고치지 않은 것은 L01의 기대 답이 입원일수 되묻기이고, ⑪′ · ⑫도 같은 `AMOUNT_UPSELL`을 써서 범위가 넓어지기 때문이다
-- **dry-run**: 평가 · 탐침 · 시드 질문 중 반려동물이 있는 463개에서 새로 걸리는 것은 **L01 하나**(기대 답 "입원일수" — 되묻기 문구 "입원 일수"가 맞는다). `tests/test_ask_amount.py`에 되물어야 4 · 되묻지 말아야 6 추가
-- **확인(로컬, 운영 설정)**: 위 두 질문과 L01이 "치료비 총액과 입원 일수를 알려 주세요"로 답하고, 다음 턴 「3일 입원했고 60만원 나왔어요」가 계산 카드로 이어진다
-- **병명이 있는 「보험금 나와요?」(같은 날 두 번째 고침)** — 「감기로 입원했는데 보험금 나와요?」는 ⑪′가 「보험금」을 금액으로 보고 빠지고, ④는 병명이 있어 빠져 모델로 갔다. **⑪′가 받는다**: 얼마 없이 「보험금 나와요?」는 금액이 아니라 *나오는가*를 묻고, 병명이 있으면 ⑪′가 면책 목록 · 대기기간으로 그 답을 낼 수 있다. ④가 받으면 면책 항목(「중성화 수술했는데 보험금 나와요?」 · 파보)에도 치료비부터 물어 계산으로 끌고 간다 — 3-1의 "순서가 틀린 쪽"과 같은 문제다. 얼마가 있으면(「감기로 입원했는데 보험금 얼마 나와요?」) 전처럼 ④가 먼저 되묻는다. ⑪′ 쪽 답에 금액 되묻기를 덧붙이지 않은 것은 다음 턴이 앞 답을 되묻기 문구와 **글자 그대로 같을 때만** 이어받기 때문이다(`payout.reply_stage` — 103행 「문구 결합」) 
-  - 고침(`named_cover.fires`): 금액 낱말을 볼 때 「보험금 나와요」 말(`PAYOUT_YESNO`)만 지우고 보고, 그 말도 보장 질문으로 친다. 나머지 조건(면책 사실 · 상해 · 한도/기간/절차 · 부담보 · 병명 하나)은 그대로
-  - dry-run: 평가 · 탐침 · 시드 463개에서 ⑪′ 발동이 **바뀐 질문 0개**(83 → 83 — 병명 + 「보험금 나와요」 + 얼마 없음 꼴이 세트에 없다). `tests/test_named_cover.py`에 받아야 4(감기 · 장염 · 기침 · 중성화 면책) · 받지 말아야 6(얼마 · 숫자 · 해외 · 상해 · 부담보 · 언제)
+- **원인**: ⑬ 병명 되묻기는 겪은 일(입원했) + 보장 질문(나와요)이 맞았지만 `AMOUNT_UPSELL`에 「보험금」이 있어 금액 질문으로 보고 빠졌다 — "금액은 ④가 받는다"는 설계(10-28, 평가 L01 "…보험금이 나올까요?"를 금액 되묻기 유형으로 봤다). 그런데 ④는 금액 낱말(`intent.AMOUNT_WORD` — 얼마 · 금액 · 액수 · 몇만원)이 있어야 임베딩까지 가고, 「보험금」은 그 낱말이 아니라 걸리지 않았다. 둘 다 "저쪽이 받는다"고 본 자리였다. L01도 같은 길로 빠져 있었다 [code:app/services/lexicon.py:31] [code:app/services/intent.py:24] [code:app/services/intent.py:52-56] [code:app/services/customer_facts.py:303]
+- **고침**: ④에 좁은 문 하나 — 「보험금 + 나와/나오/나올/받을 수/지급」이 있고, 병명(⑪′ 목록) · 부담보 · 상해 · 면책 사실이 없고, 반려동물 이름 · 그 말 · 채움말을 지우면 한글이 남지 않을 때(⑬과 같은 '이름이 남는가')만 금액을 되묻는다. 병명 · 치료 이름이 있는 「감기로 입원했는데 보험금 나와요?」 · 「슬개골 수술도 보험금 나오나요?」는 그대로다(아래 남은 것). ⑬ 쪽(「보험금」을 금액에서 빼기)으로 고치지 않은 것은 L01의 기대 답이 입원일수 되묻기이고, ⑪′ · ⑫도 같은 `AMOUNT_UPSELL`을 써서 범위가 넓어지기 때문이다 [code:app/services/payout.py:625-648] [code:app/services/lexicon.py:34] [code:app/services/named_cover.py:130] [c:cbe6382]
+- **dry-run**: 평가 · 탐침 · 시드 질문 중 반려동물이 있는 463개에서 새로 걸리는 것은 **L01 하나**(기대 답 "입원일수" — 되묻기 문구 "입원 일수"가 맞는다). `tests/test_ask_amount.py`에 되물어야 4 · 되묻지 말아야 6 추가 (2026-11-12 기준) [code:tests/test_ask_amount.py] [c:cbe6382] <!-- 확인 못 함: dry-run 결과 원자료는 git 밖 -->
+- **확인(로컬, 운영 설정)**: 위 두 질문과 L01이 "치료비 총액과 입원 일수를 알려 주세요"로 답하고, 다음 턴 「3일 입원했고 60만원 나왔어요」가 계산 카드로 이어진다 [code:app/services/payout.py:587] [code:app/services/code_rules.py:70-72] <!-- 확인 못 함: 로컬 서버 실행 결과 -->
+- **병명이 있는 「보험금 나와요?」(같은 날 두 번째 고침)** — 「감기로 입원했는데 보험금 나와요?」는 ⑪′가 「보험금」을 금액으로 보고 빠지고, ④는 병명이 있어 빠져 모델로 갔다. **⑪′가 받는다**: 얼마 없이 「보험금 나와요?」는 금액이 아니라 *나오는가*를 묻고, 병명이 있으면 ⑪′가 면책 목록 · 대기기간으로 그 답을 낼 수 있다. ④가 받으면 면책 항목(「중성화 수술했는데 보험금 나와요?」 · 파보)에도 치료비부터 물어 계산으로 끌고 간다 — 3-1의 "순서가 틀린 쪽"과 같은 문제다. 얼마가 있으면(「감기로 입원했는데 보험금 얼마 나와요?」) 전처럼 ④가 먼저 되묻는다. ⑪′ 쪽 답에 금액 되묻기를 덧붙이지 않은 것은 다음 턴이 앞 답을 되묻기 문구와 **글자 그대로 같을 때만** 이어받기 때문이다(`payout.reply_stage` — 103행 「문구 결합」) [code:app/services/named_cover.py:117-140] [code:app/services/payout.py:848-858] [c:7ddb7e3]
+  - 고침(`named_cover.fires`): 금액 낱말을 볼 때 「보험금 나와요」 말(`PAYOUT_YESNO`)만 지우고 보고, 그 말도 보장 질문으로 친다. 나머지 조건(면책 사실 · 상해 · 한도/기간/절차 · 부담보 · 병명 하나)은 그대로 [code:app/services/named_cover.py:121-139]
+  - dry-run: 평가 · 탐침 · 시드 463개에서 ⑪′ 발동이 **바뀐 질문 0개**(83 → 83 — 병명 + 「보험금 나와요」 + 얼마 없음 꼴이 세트에 없다). `tests/test_named_cover.py`에 받아야 4(감기 · 장염 · 기침 · 중성화 면책) · 받지 말아야 6(얼마 · 숫자 · 해외 · 상해 · 부담보 · 언제) (2026-11-12 기준) [code:tests/test_named_cover.py] [c:7ddb7e3] <!-- 확인 못 함: dry-run 결과 원자료는 git 밖 -->
 - **남은 것**: (1) 질문이 아닌 「초코 입원했는데」 한 마디 — 어느 규칙도 받지 않는다. (2) 아래 3-4의 틈들
 
 #### 3-4. 같은 뜻, 다른 낱말 — 규칙이 못 받는 질문 목록 (2026-11-12 훑어봄, 고치지 않음)
 
-낱말 목록으로 거르다 보니 같은 뜻을 다른 말로 하면 빠진다. 초코(통원 · 입원Ⅱ 고급형, 부담보 슬개골)로 같은 뜻 다른 말 46개를 운영 설정(병명 판정은 모델)으로 규칙에 넣어 보고, 모델로 간 22개는 로컬 서버에서 실제로 물어 거절 여부를 봤다. **거절 18 · 엇나간 답 3 · 다른 규칙 2**:
+낱말 목록으로 거르다 보니 같은 뜻을 다른 말로 하면 빠진다. 초코(통원 · 입원Ⅱ 고급형, 부담보 슬개골)로 같은 뜻 다른 말 46개를 운영 설정(병명 판정은 모델)으로 규칙에 넣어 보고, 모델로 간 22개는 로컬 서버에서 실제로 물어 거절 여부를 봤다. **거절 18 · 엇나간 답 3 · 다른 규칙 2**: (2026-11-12 기준) <!-- 확인 못 함: 로컬 서버에 물은 결과 원자료는 git 밖 -->
 
 | 갈래 | 받아야 할 규칙 | 거절된 말 | 그 밖 |
 | --- | --- | --- | --- |
-| 금액, 얼마 대신 다른 말 | ④ 금액 되묻기 | 「얼마 **환급**돼요?」 · 「보험금 **계산해** 주세요」 · 「보험금이 **어느 정도** 나와요?」 · 「보험금 **대략** 알려 주세요」 | 「**몇 푼**이나 나와요?」 · 「보상금은 **어느 정도**예요?」는 ⑬ 병명 되묻기가 받는다(금액이 아니라 원칙 + 병명을 되묻는다). 「돈 얼마 줘요?」 · 「얼마쯤 받아요?」 · 「액수」는 ④가 받는다 |
-| 보장 여부, 병명 없음 | ⑬ 병명 되묻기(또는 ④) | 「보험으로 **커버**돼요?」 · 「**실비** 돼요?」 · 「**지원**돼요?」 · 「**환급**돼요?」 · 「보험 **혜택** 받을 수 있나요?」 · 「보험금 **청구 가능**해요?」 | 「보험 **적용**돼요?」는 모델이 원칙을 답했다(거절 아님). 「**청구하면** 받을 수 있어요?」는 모델이 '보험수익자' 정의를 답했다(엇나감). 「보상 받을 수 있어요?」 · 「돈 나와요?」는 ⑬이 받는다 |
-| 보장 여부, 병명 있음 | ⑪′ 병명 보장 대조 | 「감기로 입원했는데 **청구하면 받을 수** 있어요?」 | 보험 적용 · 커버 · 실비 · 환급 · 돈 나와요는 ⑪′가 받는다(끝말 「돼요?」를 보는 `_COVER_SHORT` 덕) |
-| 겪은 일, 다른 말 | ⑬ 병명 되묻기 | 「**병원비 나왔는데**」 · 「**진료 봤는데**」 · 「**동물병원 갔다 왔는데**」 · 「**입원해서**」 · 「**병원 다니는데**」 + 보장돼요? | 「**입원하게 됐는데**」는 모델이 대기기간 문단을 답했다(엇나감). 입원시켰 · 입원 중 · 수술 받았는 ⑬이 받는다 |
-| 상해 | ⑬ 또는 상해 쪽 | 「**다리를 다쳤는데** 보험금 나와요?」 · 「**계단에서 떨어졌는데** 보장돼요?」 | 상해 낱말이 있으면 ⑪′ · ④가 빠지고, ⑬은 '다리' · '계단'을 이름으로 본다. 「다쳐서 입원했는데」는 ⑬이 받는다 |
+| 금액, 얼마 대신 다른 말 | ④ 금액 되묻기 | 「얼마 **환급**돼요?」 · 「보험금 **계산해** 주세요」 · 「보험금이 **어느 정도** 나와요?」 · 「보험금 **대략** 알려 주세요」 | 「**몇 푼**이나 나와요?」 · 「보상금은 **어느 정도**예요?」는 ⑬ 병명 되묻기가 받는다(금액이 아니라 원칙 + 병명을 되묻는다). 「돈 얼마 줘요?」 · 「얼마쯤 받아요?」 · 「액수」는 ④가 받는다 [code:app/services/intent.py:24] |
+| 보장 여부, 병명 없음 | ⑬ 병명 되묻기(또는 ④) | 「보험으로 **커버**돼요?」 · 「**실비** 돼요?」 · 「**지원**돼요?」 · 「**환급**돼요?」 · 「보험 **혜택** 받을 수 있나요?」 · 「보험금 **청구 가능**해요?」 | 「보험 **적용**돼요?」는 모델이 원칙을 답했다(거절 아님). 「**청구하면** 받을 수 있어요?」는 모델이 '보험수익자' 정의를 답했다(엇나감). 「보상 받을 수 있어요?」 · 「돈 나와요?」는 ⑬이 받는다 [code:app/services/lexicon.py:39] |
+| 보장 여부, 병명 있음 | ⑪′ 병명 보장 대조 | 「감기로 입원했는데 **청구하면 받을 수** 있어요?」 | 보험 적용 · 커버 · 실비 · 환급 · 돈 나와요는 ⑪′가 받는다(끝말 「돼요?」를 보는 `_COVER_SHORT` 덕) [code:app/services/named_cover.py:104] |
+| 겪은 일, 다른 말 | ⑬ 병명 되묻기 | 「**병원비 나왔는데**」 · 「**진료 봤는데**」 · 「**동물병원 갔다 왔는데**」 · 「**입원해서**」 · 「**병원 다니는데**」 + 보장돼요? | 「**입원하게 됐는데**」는 모델이 대기기간 문단을 답했다(엇나감). 입원시켰 · 입원 중 · 수술 받았는 ⑬이 받는다 [code:app/services/lexicon.py:26-27] |
+| 상해 | ⑬ 또는 상해 쪽 | 「**다리를 다쳤는데** 보험금 나와요?」 · 「**계단에서 떨어졌는데** 보장돼요?」 | 상해 낱말이 있으면 ⑪′ · ④가 빠지고, ⑬은 '다리' · '계단'을 이름으로 본다. 「다쳐서 입원했는데」는 ⑬이 받는다 [code:app/services/lexicon.py:23-24] [code:app/services/named_cover.py:129] |
 
-원인은 셋으로 묶인다 — ① 금액 낱말(`intent.AMOUNT_WORD`)에 없는 금액 말(환급 · 어느 정도 · 대략 · 계산) ② 보장 질문 낱말(`COVERAGE_Q_STRICT`)에 없는 보장 말(커버 · 실비 · 지원 · 환급 · 혜택 · 청구 가능) ③ 겪은 일 낱말(`EVENT_HAPPENED`)에 없는 겪은 일(병원비 나왔 · 진료 봤 · 갔다 왔 · 입원해서 · 다니는). 하나씩 낱말을 더하면 이번처럼 좁게 막을 수 있지만 틈은 계속 생긴다 — 금액 의도는 이미 임베딩(`intent.asks_amount`)을 쓰므로, 보장 · 겪은 일도 낱말 대신 임베딩 판정으로 바꾸는 안을 따로 재 볼 만하다. 질문 목록 · 결과: 이 절의 표가 전부다(재현 — 같은 질문을 업무특화 초코로)
+원인은 셋으로 묶인다 — ① 금액 낱말(`intent.AMOUNT_WORD`)에 없는 금액 말(환급 · 어느 정도 · 대략 · 계산) ② 보장 질문 낱말(`COVERAGE_Q_STRICT`)에 없는 보장 말(커버 · 실비 · 지원 · 환급 · 혜택 · 청구 가능) ③ 겪은 일 낱말(`EVENT_HAPPENED`)에 없는 겪은 일(병원비 나왔 · 진료 봤 · 갔다 왔 · 입원해서 · 다니는). 하나씩 낱말을 더하면 이번처럼 좁게 막을 수 있지만 틈은 계속 생긴다 — 금액 의도는 이미 임베딩(`intent.asks_amount`)을 쓰므로, 보장 · 겪은 일도 낱말 대신 임베딩 판정으로 바꾸는 안을 따로 재 볼 만하다. 질문 목록 · 결과: 이 절의 표가 전부다(재현 — 같은 질문을 업무특화 초코로) [code:app/services/intent.py:24] [code:app/services/intent.py:52-62] [code:app/services/lexicon.py:26-27] [code:app/services/lexicon.py:39]
 
 #### 3-2. 구조에서 오는 위험 (재지 않았다)
 
-- **순서 의존.** 규칙끼리 조건을 서로 빼 주지 않고 순서로 정한다. 새 규칙을 어디에 끼우는지가 결과를 바꾼다
-- **같은 개념을 여러 곳에서 따로 정의한다.** 병명·질병 낱말이 `_DISEASE`(고객 사실) · `_INJURY_NOT`(상해 후속) · `_ASK_FILLER`(병명 되묻기)에 따로 있다. 금액 낱말과 본인 지칭도 모듈마다 다르다. 한쪽만 고치면 어긋난다
-- **문구 결합.** 앞 턴이 무엇이었는지를 답 문구로 알아본다 — 금액 되묻기 `ASKS`, 병명 되묻기 `ASKED_MARK`("어떤 질병이나 상해로"). 문구를 바꾸면 다음 턴이 끊긴다
-- **같은 사실이 두 곳에서 나온다.** 대기기간 줄을 `notes`와 ⑫·⑬이 각자 만든다(말이 조금 다르다)
+- **순서 의존.** 규칙끼리 조건을 서로 빼 주지 않고 순서로 정한다. 새 규칙을 어디에 끼우는지가 결과를 바꾼다 [code:app/services/answer.py:334-342]
+- **같은 개념을 여러 곳에서 따로 정의한다.** 병명·질병 낱말이 `_DISEASE`(고객 사실) · `_INJURY_NOT`(상해 후속) · `_ASK_FILLER`(병명 되묻기)에 따로 있다. 금액 낱말과 본인 지칭도 모듈마다 다르다. 한쪽만 고치면 어긋난다 [code:app/services/lexicon.py:10-19] [code:app/services/customer_facts.py:22-24]
+- **문구 결합.** 앞 턴이 무엇이었는지를 답 문구로 알아본다 — 금액 되묻기 `ASKS`, 병명 되묻기 `ASKED_MARK`("어떤 질병이나 상해로"). 문구를 바꾸면 다음 턴이 끊긴다 [code:app/services/payout.py:594] [code:app/services/lexicon.py:94] [code:tests/test_rule_registry.py:59-64]
+- **같은 사실이 두 곳에서 나온다.** 대기기간 줄을 `notes`와 ⑫·⑬이 각자 만든다(말이 조금 다르다) [code:app/services/customer_facts.py:121] [code:app/services/customer_facts.py:363-367]
 - **탐침을 내가 만들었다.** 범위는 dry-run과 탐침으로 좁혔지만 탐침의 말투가 규칙 쪽으로 기울었을 수 있다. 운영 로그로 다시 봐야 한다
 
 ---
@@ -151,33 +155,33 @@
 | 안 | 하는 일 | 장점 | 비용·위험 |
 | --- | --- | --- | --- |
 | A. 정리만 | 규칙 등록부(이름·순서·조건·플래그를 한 곳에) + 낱말 사전 하나(병명·상해·치료·금액·본인 지칭)를 모든 규칙이 나눠 쓴다 + 3-1절 충돌 검사를 테스트로 | 어긋남·순서 실수를 막는다. 동작은 그대로라 측정이 쉽다 | 작다. 말투에 약한 것은 그대로다 |
-| B. 트리거를 의도 분류로 | 한 턴에 한 번, 질문을 {의도, 반려동물, 사건, 병명/상해, 날짜, 금액, 주제}로 뽑는다. 임베딩 분류(`intent.asks_amount`처럼 이미 쓰는 KURE)나 베이스 모델 구조화 출력. 계산 코드는 그 칸을 받는다 | 말투에 강하다. 규칙이 "칸 → 계산" 표 하나가 된다 | 분류를 재야 한다(지금 탐침·평가로 정규식과 대조). 지연(LLM이면 +수백 ms). 같은 질문에 결과가 흔들릴 수 있다 |
+| B. 트리거를 의도 분류로 | 한 턴에 한 번, 질문을 {의도, 반려동물, 사건, 병명/상해, 날짜, 금액, 주제}로 뽑는다. 임베딩 분류(`intent.asks_amount`처럼 이미 쓰는 KURE) [code:app/services/intent.py:52]나 베이스 모델 구조화 출력. 계산 코드는 그 칸을 받는다 | 말투에 강하다. 규칙이 "칸 → 계산" 표 하나가 된다 | 분류를 재야 한다(지금 탐침·평가로 정규식과 대조). 지연(LLM이면 +수백 ms). 같은 질문에 결과가 흔들릴 수 있다 |
 | C. 모델이 도구를 부른다 | 다음 재학습(rebuild5)에 함수 호출(보험금 계산·면책 확인·연차 잔여)을 학습시킨다 | 트리거가 모델 안으로 들어간다 | 학습 데이터·재학습·전면 재평가. 7B의 함수 호출 정확도가 관건 |
 
-**진행(2026-10-28).** A는 했다 — 등록부(`code_rules.py`)·낱말 한 곳(`lexicon.py`)·충돌 검사 테스트(`tests/test_rule_registry.py`: 순서, 3-1절 겹침 둘 말고 새 겹침이 생기면 실패, 다음 턴 문구). 동작은 그대로다 — 평가 220 1회 프롬프트·코드 답 여부·코드 답 글 모두 같음, 탐침 코드 답 107턴 글 같음. 낱말을 개념별로 합치는 것은 동작이 바뀌어 하지 않았다(합칠 때는 따로 잰다).
+**진행(2026-10-28).** A는 했다 — 등록부(`code_rules.py`)·낱말 한 곳(`lexicon.py`)·충돌 검사 테스트(`tests/test_rule_registry.py`: 순서, 3-1절 겹침 둘 말고 새 겹침이 생기면 실패, 다음 턴 문구). 동작은 그대로다 — 평가 220 1회 프롬프트·코드 답 여부·코드 답 글 모두 같음, 탐침 코드 답 107턴 글 같음. 낱말을 개념별로 합치는 것은 동작이 바뀌어 하지 않았다(합칠 때는 따로 잰다). [code:app/services/code_rules.py] [code:app/services/lexicon.py:1-5] [code:tests/test_rule_registry.py] [c:e6a69e7] <!-- 확인 못 함: 평가와 탐침 대조 원자료는 git 밖 -->
 
-**제안(원래).** 지금은 **A**를 하고, 그다음 **B를 트리거 하나에서만 시험**한다. 예를 들어 ⑬ 병명 되묻기의 "병명이 있는가"를 임베딩·분류로 바꿔 지금 탐침 66문항과 평가 220에서 정규식과 대조한다. 거기서 이기면 넓힌다. **C**는 rebuild5 계획에 넣는다. 계산 코드는 어느 안에서든 그대로 둔다.
+**제안(원래).** 지금은 **A**를 하고, 그다음 **B를 트리거 하나에서만 시험**한다. 예를 들어 ⑬ 병명 되묻기의 "병명이 있는가"를 임베딩·분류로 바꿔 지금 탐침 66문항과 평가 220에서 정규식과 대조한다. (2026-10-28 기준) [code:data/eval/disease_ask_probe.json] 거기서 이기면 넓힌다. **C**는 rebuild5 계획에 넣는다. 계산 코드는 어느 안에서든 그대로 둔다.
 
 
 ---
 
 ### 5. B안 결과와 운영 로그로 확인하는 방법 (2026-10-28)
 
-**B안(병명 되묻기 ⑤만 모델).** 채택했다 — `PETMINT_ASK_DISEASE_LLM`, `app/services/name_check.py`. gemma가 만든 처음 보는 말투에서 무병명 질문 되묻기 7/60 → 39/60(거절 46 → 16), 병명 질문 잘못 되묻기 0 그대로, 내 탐침·평가 220은 같다. 면책을 가르는 사실(태풍·해외·가입 전·고의)은 모델이 보지 못해 코드가 막는다. ①②까지 모델로 넓힌 안은 의도 판정이 흔들려(내 탐침 8개 중 3개, L14 놓침) 접었다. 상세 `data/review/disease_ask_llm_measure.md`.
+**B안(병명 되묻기 ⑤만 모델).** 채택했다 — `PETMINT_ASK_DISEASE_LLM`, `app/services/name_check.py`. gemma가 만든 처음 보는 말투에서 무병명 질문 되묻기 7/60 → 39/60(거절 46 → 16), 병명 질문 잘못 되묻기 0 그대로, 내 탐침·평가 220은 같다. 면책을 가르는 사실(태풍·해외·가입 전·고의)은 모델이 보지 못해 코드가 막는다. ①②까지 모델로 넓힌 안은 의도 판정이 흔들려(내 탐침 8개 중 3개, L14 놓침) 접었다. 상세 `data/review/disease_ask_llm_measure.md`. (2026-10-28 기준) [code:app/config.py:58] [code:app/services/name_check.py:22] [code:app/services/code_rules.py:92-95] [code:app/services/lexicon.py:87] [code:data/review/disease_ask_llm_measure.md] [c:130b1d6]
 
-**드러난 것.** 지금 정규식은 내 탐침에서 22/22였지만 gemma 말투에서는 7/43이었다 — 탐침이 규칙 쪽으로 기울었다는 걱정이 맞았다. 다른 규칙의 탐침도 같은 위험이 있다.
+**드러난 것.** 지금 정규식은 내 탐침에서 22/22였지만 gemma 말투에서는 7/43이었다 — 탐침이 규칙 쪽으로 기울었다는 걱정이 맞았다. 다른 규칙의 탐침도 같은 위험이 있다. (2026-10-28 기준) [code:data/review/disease_ask_llm_measure.md]
 
-**운영 로그로 확인하는 방법 (2026-10-29 1·2단계 만듦, 3·4는 아직).** 운영 DB의 질문을 내가 직접 읽는 것은 개인정보로 막혔다(2026-10-28). 그래서 질문 글을 밖으로 내지 않고 세는 방식으로 한다.
+**운영 로그로 확인하는 방법 (2026-10-29 1·2단계 만듦, 3·4는 아직).** 운영 DB의 질문을 내가 직접 읽는 것은 개인정보로 막혔다(2026-10-28). 그래서 질문 글을 밖으로 내지 않고 세는 방식으로 한다. [c:82d86f0]
 
-1. **턴마다 답한 규칙을 남긴다.** 코드는 이미 `ctx.code_rule`(등록부 key, 사내규정은 `hr_personal`)을 채운다. `turns.code_rule VARCHAR(32) NULL` 칸 하나 — **만들었다**(`0008_turn_code_rule`, 턴 로그가 쓴다)
-2. **클러스터 안에서 도는 집계 스크립트** — **만들었다**: `kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report [--since … --until … --json]`(scripts/는 이미지에 없어 db/에 둔다, 14번 1-20절). 질문 글 없이 숫자만 낸다(테스트가 결과에 질문·답·세션 id가 없는지 본다):
+1. **턴마다 답한 규칙을 남긴다.** 코드는 이미 `ctx.code_rule`(등록부 key, 사내규정은 `hr_personal`)을 채운다. `turns.code_rule VARCHAR(32) NULL` 칸 하나 — **만들었다**(`0008_turn_code_rule`, 턴 로그가 쓴다) [code:db/migrations/petmint/0008_turn_code_rule.sql:6] [code:app/services/answer.py:338] [code:app/services/answer.py:420] [code:app/services/turn_log.py:95]
+2. **클러스터 안에서 도는 집계 스크립트** — **만들었다**: `kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report [--since … --until … --json]`(scripts/는 이미지에 없어 db/에 둔다, 14번 1-20절). 질문 글 없이 숫자만 낸다(테스트가 결과에 질문·답·세션 id가 없는지 본다): [code:db/rule_report.py:7-8] [code:db/rule_report.py:155-157] [code:Dockerfile:34-36] [code:tests/test_rule_report.py:80] [docs:02_pipeline/14_deployment.md:375]
    - 규칙별 발동 수
-   - 모델 답 중 거절 비율, 코드 되묻기 뒤 다음 턴의 거절 비율
-   - 규칙별 👎 수(feedback 테이블)
-   - **놓침 후보**: 모델이 거절한 턴 중 규칙 앞 조건 일부(겪은 일·보장 질문·상해 낱말·본인 지칭)에 걸린 수 — 어느 조건이 막았는지 갈래만
+   - 모델 답 중 거절 비율, 코드 되묻기 뒤 다음 턴의 거절 비율 [code:db/rule_report.py:85] [code:db/rule_report.py:107]
+   - 규칙별 👎 수(feedback 테이블) [code:db/rule_report.py:97] [code:db/rule_report.py:115]
+   - **놓침 후보**: 모델이 거절한 턴 중 규칙 앞 조건 일부(겪은 일·보장 질문·상해 낱말·본인 지칭)에 걸린 수 — 어느 조건이 막았는지 갈래만 [code:db/rule_report.py:12] [code:db/rule_report.py:39]
    - 갈래: 병명 되묻기는 disease_ask 순서대로 — 겪은일+보장질문에서 금액 낱말·면책 사실·정규식 ⑤(병명 있다고 봄)·조건 모두 통과(특약 없음·후속 턴), 겪은일만, 보장질문만. 그 밖에 상해 낱말. 사내규정은 개인화 주제+본인 지칭(원장 없음·답 없음) / 주제 낱말만
-   - 로컬 확인(2026-10-29): 병명 되묻기 탐침 1회(8/8·14/14·8/8) 뒤 집계가 disease_ask 16 · injury_followup 4 · question_turn 2 · exclusion 2 · limit 1 · proviso 1, 모델 답 13 중 거절 6을 냈다. 모델 갈래는 정규식만이라 ASK_DISEASE_LLM이 켜진 운영에서는 "정규식 ⑤가 병명 있다고 봄"이 모델 판정과 다를 수 있다 — 그 차이를 세는 것이 3단계
+   - 로컬 확인(2026-10-29): 병명 되묻기 탐침 1회(8/8·14/14·8/8) 뒤 집계가 disease_ask 16 · injury_followup 4 · question_turn 2 · exclusion 2 · limit 1 · proviso 1, 모델 답 13 중 거절 6을 냈다. 모델 갈래는 정규식만이라 ASK_DISEASE_LLM이 켜진 운영에서는 "정규식 ⑤가 병명 있다고 봄"이 모델 판정과 다를 수 있다 — 그 차이를 세는 것이 3단계 [code:app/config.py:58] <!-- 확인 못 함: 로컬 집계 결과 원자료는 git 밖 -->
 3. **불일치 검사**: 같은 스크립트가 운영 질문에 정규식 판정과 모델 판정(name_check)을 둘 다 돌려 불일치 수를 센다. 불일치 표본(질문 글)은 **사용자만** 본다 — 관리자 화면이나 클러스터 안 파일로
 4. **운영 탐침**: 사용자가 표본에서 고른 질문을 가명 처리해 `data/eval/ops_probe.json`으로 넣는다. 그다음부터 규칙을 바꿀 때 내 탐침·gemma 세트와 함께 잰다
 
-순서는 1(칸 하나) → 2(집계만, 개인정보 없음) → 3·4(사용자가 표본을 본 뒤)다. 1을 하려면 마이그레이션 하나가 들어간다.
+순서는 1(칸 하나) → 2(집계만, 개인정보 없음) → 3·4(사용자가 표본을 본 뒤)다. 1을 하려면 마이그레이션 하나가 들어간다. [code:db/migrations/petmint/0008_turn_code_rule.sql]

@@ -1,32 +1,36 @@
-> 상태: 설계 확정, 구현 중. ✓ 전화 알림(상담 중 안 울림·10초 무응답 거절)·받기 → 업무특화 상담 전환(10-18 배포 서버 확인)·종료 전 모드 잠금, 모델 이름 환경변수(10-18). △ 종료 후 읽기 전용·지난 채팅·과거 상담 모달은 코드 있음, 확인 전(9절). △ 약관 날짜 표시·`keep_alive` 설정은 코드 없음. 8절 모델 교체는 ConfigMap으로 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)로 했다(2026-10-21, 14번 1-11절).
+<!--
+다루는 곳: web/src/App.tsx, web/src/hooks/useCallSimulator.ts, web/src/components/CallAlert.tsx, web/src/components/TopBar.tsx, web/src/components/ChatHistory.tsx, web/src/components/ChatHistory.module.css, web/src/components/PastConsultations.tsx, web/src/components/CustomerCard.tsx, web/src/components/SpeciesToggle.tsx, web/src/components/SourcePanel.tsx, web/src/components/ArticleText.tsx, web/src/components/ArticleText.module.css, web/src/pages/Chat.tsx, web/src/pages/Consultation.tsx, web/src/pages/CustomerSelect.tsx, app/routers/sessions.py, app/routers/chat_ws.py, app/routers/articles.py, app/services/sessions.py, app/services/titles.py, app/services/article_display.py, app/config.py
+읽은 커밋: 6710b83
+-->
+> 상태: 설계 확정, 구현 중. ✓ 전화 알림(상담 중 안 울림·10초 무응답 거절)·받기 → 업무특화 상담 전환(10-18 배포 서버 확인)·종료 전 모드 잠금, 모델 이름 환경변수(10-18). △ 종료 후 읽기 전용·지난 채팅·과거 상담 모달은 코드 있음, 확인 전(9절). △ 약관 날짜 표시·`keep_alive` 설정은 코드 없음. 8절 모델 교체는 ConfigMap으로 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)로 했다(2026-10-21, 14번 1-11절). [code:web/src/hooks/useCallSimulator.ts:8-11] [code:web/src/App.tsx:101-111] [code:web/src/App.tsx:136] [code:web/src/components/TopBar.tsx:58-60] [code:app/config.py:70-71] [c:0e0944e] [code:web/src/components/CustomerCard.tsx:15] [docs:02_pipeline/14_deployment.md:73] <!-- 안 맞음: 문서는 「14번 1-11절」, 14번 1-11절 제목은 「검색·답 표시 플래그 운영 반영 (2026-10-23)」(docs/02_pipeline/14_deployment.md:214), rebuild4 값은 같은 편 73줄 --> <!-- 확인 못 함: 배포 서버 확인과 ConfigMap 값은 클러스터 쪽 -->
 > 
 
 ---
 
 ### 0. 이 문서가 다루는 것
 
-09번은 "무엇을 보여줄 것인가"를 정했다 — 모드 3개, 고객 카드, 근거 패널, 검색 필터.
+09번은 "무엇을 보여줄 것인가"를 정했다 — 모드 3개, 고객 카드, 근거 패널, 검색 필터. [docs:02_pipeline/09_ui_design.md]
 
 이 문서는 "상담원이 하루를 어떻게 보내는가"를 정한다. 전화가 언제 오고, 세션이 언제 끝나고, 화면 사이를 어떻게 오가는가.
 
-> **설계가 바뀐 지점**: 09번은 `모드 선택 → 고객 조회 → 상담` 한 줄기를 가정했다. 실무는 그렇지 않다 — 상담원은 다른 일을 하다가 전화를 받는다. 그래서 전화를 전역 진입점으로 두고, 고객 조회는 두 번째 입구로 남긴다.
+> **설계가 바뀐 지점**: 09번은 `모드 선택 → 고객 조회 → 상담` 한 줄기를 가정했다. 실무는 그렇지 않다 — 상담원은 다른 일을 하다가 전화를 받는다. 그래서 전화를 전역 진입점으로 두고, 고객 조회는 두 번째 입구로 남긴다. [code:web/src/App.tsx:100-111] [code:web/src/App.tsx:165] [code:web/src/App.tsx:171]
 > 
 
 ---
 
 ### 1. 전화 알림 — 전역
 
-상담원이 어느 화면에 있든 전화 알림이 나타난다. 실제 CTI가 없으므로 가상으로 울린다.
+상담원이 어느 화면에 있든 전화 알림이 나타난다. 실제 CTI가 없으므로 가상으로 울린다. [code:web/src/components/CallAlert.tsx:12-13] [code:web/src/hooks/useCallSimulator.ts:1-2]
 
 | 항목 | 동작 |
 | --- | --- |
-| 자동 | 2~3분 주기. 켜고 끄는 토글 |
-| 수동 | "전화 울리기" 버튼 — 개발·시연용 |
-| 지속 | 10초. 받기 / 거절 |
-| 무응답 | 자동 거절 — "다른 상담원에게 연결됨" |
-| 받으면 | 업무특화 모드 + 해당 고객으로 상담 화면 진입 |
+| 자동 | 2~3분 주기. 켜고 끄는 토글 [code:web/src/hooks/useCallSimulator.ts:9-10] [code:web/src/hooks/useCallSimulator.ts:56-62] |
+| 수동 | "전화 울리기" 버튼 — 개발·시연용 [code:web/src/components/TopBar.tsx:82-84] |
+| 지속 | 10초. 받기 / 거절 [code:web/src/hooks/useCallSimulator.ts:8] [code:web/src/components/CallAlert.tsx:51-54] |
+| 무응답 | 자동 거절 — "다른 상담원에게 연결됨" [code:web/src/hooks/useCallSimulator.ts:39-48] |
+| 받으면 | 업무특화 모드 + 해당 고객으로 상담 화면 진입 [code:web/src/hooks/useCallSimulator.ts:64-68] [code:web/src/App.tsx:101-111] [code:web/src/App.tsx:136] |
 
-**상담 세션이 진행 중이면 울리지 않는다.** 실제 상담에서도 통화 중에는 전화가 들어오지 않는다. 자동·수동 모두 막는다 — 구현도 이쪽이 단순하고, 세션 셋이 동시에 살아있는 조합을 다룰 필요가 없어진다.
+**상담 세션이 진행 중이면 울리지 않는다.** 실제 상담에서도 통화 중에는 전화가 들어오지 않는다. 자동·수동 모두 막는다 — 구현도 이쪽이 단순하고, 세션 셋이 동시에 살아있는 조합을 다룰 필요가 없어진다. [code:web/src/hooks/useCallSimulator.ts:25-31] [code:web/src/hooks/useCallSimulator.ts:50-53] [code:web/src/App.tsx:39] [code:web/src/App.tsx:136] [code:web/src/components/TopBar.tsx:82]
 
 ---
 
@@ -36,53 +40,53 @@
 
 | 모드 | 세션 수명 | 고객 |
 | --- | --- | --- |
-| 일반 | 닫히지 않는다. "새 대화"는 새 세션을 여는 것일 뿐, 지난 대화는 목록에 남아 언제든 이어 쓸 수 있다 | 없음 |
-| 사내규정 | 같음 | 없음 |
-| 업무특화 | 상담 시작 시 생성, 상담 종료로 닫음 | 있음 |
+| 일반 | 닫히지 않는다. "새 대화"는 새 세션을 여는 것일 뿐, 지난 대화는 목록에 남아 언제든 이어 쓸 수 있다 | 없음 [code:web/src/App.tsx:83-89] [code:app/services/sessions.py:5-6] |
+| 사내규정 | 같음 | 없음 [code:app/routers/sessions.py:30-31] |
+| 업무특화 | 상담 시작 시 생성, 상담 종료로 닫음 | 있음 [code:web/src/App.tsx:101-124] [code:app/routers/sessions.py:25-29] [code:app/services/sessions.py:119-122] |
 
-**일반·사내규정은 상담원 개인의 작업 공간이다.** 모드를 오가도 대화가 보존되고, 지난 대화도 언제든 다시 열어 이어 쓴다. 업무특화는 고객 한 명과의 상담 한 건이므로 끝나면 닫는다 — 다음 전화는 다른 고객이라 이전 대화가 남아 있으면 섞인다. 끝난 상담은 읽기 전용이다.
+**일반·사내규정은 상담원 개인의 작업 공간이다.** 모드를 오가도 대화가 보존되고, 지난 대화도 언제든 다시 열어 이어 쓴다. 업무특화는 고객 한 명과의 상담 한 건이므로 끝나면 닫는다 — 다음 전화는 다른 고객이라 이전 대화가 남아 있으면 섞인다. 끝난 상담은 읽기 전용이다. [code:web/src/App.tsx:34] [code:web/src/App.tsx:58-67] [code:app/services/sessions.py:64-67]
 
-> **30분 무활동 정리는 없앴다 (2026-10-15).** 그 규칙은 세션을 메모리에 두던 시절의 유물이다 — 안 쓰는 세션이 쌓이면 메모리를 먹었기 때문이다. 세션을 MySQL에 두면서 디스크에 남아 있는 것은 비용이 아니게 됐다. 인위적인 정리 규칙 대신 모드 성격에 따라 갈라진다.
+> **30분 무활동 정리는 없앴다 (2026-10-15).** 그 규칙은 세션을 메모리에 두던 시절의 유물이다 — 안 쓰는 세션이 쌓이면 메모리를 먹었기 때문이다. 세션을 MySQL에 두면서 디스크에 남아 있는 것은 비용이 아니게 됐다. 인위적인 정리 규칙 대신 모드 성격에 따라 갈라진다. [code:app/services/sessions.py:3-6] [c:2c6ff32]
 > 
 
-> 09번 1-3절의 "상담 한 건 = 세션 하나"는 **업무특화에만** 해당한다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다.
+> 09번 1-3절의 "상담 한 건 = 세션 하나"는 **업무특화에만** 해당한다. 로그가 세션 단위로 묶이는 것은 세 모드 모두 같다. [docs:02_pipeline/09_ui_design.md:59] [code:app/services/sessions.py:128-143]
 > 
 
-**세션은 MySQL에 둔다**(09번 6-2·6-3절, 12번). 초안은 메모리여서 재시작하면 사라졌으나, 로그를 DB로 옮기면서 세션도 같이 넣었다. 일반·사내규정을 하루 종일 쓰는 구조라 서버 한 번 재시작에 대화가 다 날아가면 곤란하다.
+**세션은 MySQL에 둔다**(09번 6-2·6-3절, 12번). 초안은 메모리여서 재시작하면 사라졌으나, 로그를 DB로 옮기면서 세션도 같이 넣었다. 일반·사내규정을 하루 종일 쓰는 구조라 서버 한 번 재시작에 대화가 다 날아가면 곤란하다. [code:app/services/sessions.py:1-3] [docs:02_pipeline/12_data_storage.md] [c:2c6ff32]
 
 #### 2-1. 지난 대화 목록
 
-일반·사내규정 대화창 왼쪽에 "지난 채팅" 사이드바를 둔다. 화면 폭의 1:4~1:5 정도.
+일반·사내규정 대화창 왼쪽에 "지난 채팅" 사이드바를 둔다. 화면 폭의 1:4~1:5 정도. [code:web/src/pages/Chat.tsx:132-134] [code:web/src/components/ChatHistory.module.css:5]
 
 | 항목 | 내용 |
 | --- | --- |
-| 제목 | 첫 질문이 들어올 때 자동으로 한 번 만든다 — 일반·사내규정은 베이스 모델이 요약하고, 업무특화는 첫 질문 첫 줄을 쓴다(첫 답 지연을 피하려고, 12번 문서 title). 그 뒤에는 상담원이 이름을 바꿀 수 있다(PATCH). 세 모드 모두 채운다 — 업무특화도 과거 상담 목록에서 제목을 쓴다 |
-| 고정 | 자주 보는 대화를 목록 위로 올린다(`pinned`). 상담원 개인 설정이라 일반·사내규정에만 있다 |
-| 시간 | 상대 시간("3분 전"). 고객 조회 카드와 톤을 맞춘다 |
-| 모드 분리 | **각 모드에서 자기 것만 보인다.** 일반과 사내규정이 섞이면 무엇을 물어봤는지 헷갈리고, 그렇게 섞인 채팅은 실무에서 자주 나오는 사고다 |
-| 이어 쓰기 | 가능. 일반·사내규정 세션은 닫히지 않는다 |
-| 목록에서 제거 | `deleted_at`을 찍어 목록에서만 뺀다. 턴·검색 결과·평가는 남는다(12번 1-4절). 버튼 라벨도 "삭제"가 아니라 "목록에서 제거"다 |
+| 제목 | 첫 질문이 들어올 때 자동으로 한 번 만든다 — 일반·사내규정은 베이스 모델이 요약하고, 업무특화는 첫 질문 첫 줄을 쓴다(첫 답 지연을 피하려고, 12번 문서 title). 그 뒤에는 상담원이 이름을 바꿀 수 있다(PATCH). 세 모드 모두 채운다 — 업무특화도 과거 상담 목록에서 제목을 쓴다 [code:app/services/titles.py:1-9] [code:app/services/titles.py:38-56] [code:app/routers/chat_ws.py:144-146] [code:app/services/sessions.py:112-117] [code:app/routers/sessions.py:48-61] [code:app/services/sessions.py:145-152] |
+| 고정 | 자주 보는 대화를 목록 위로 올린다(`pinned`). 상담원 개인 설정이라 일반·사내규정에만 있다 [code:app/services/sessions.py:69-72] [code:app/routers/sessions.py:51-57] [code:web/src/components/ChatHistory.tsx:121-122] |
+| 시간 | 상대 시간("3분 전"). 고객 조회 카드와 톤을 맞춘다 [code:web/src/components/ChatHistory.tsx:145] |
+| 모드 분리 | **각 모드에서 자기 것만 보인다.** 일반과 사내규정이 섞이면 무엇을 물어봤는지 헷갈리고, 그렇게 섞인 채팅은 실무에서 자주 나오는 사고다 [code:app/routers/sessions.py:14-18] [code:app/services/sessions.py:69-72] |
+| 이어 쓰기 | 가능. 일반·사내규정 세션은 닫히지 않는다 [code:web/src/App.tsx:86-89] [code:app/services/sessions.py:5-6] |
+| 목록에서 제거 | `deleted_at`을 찍어 목록에서만 뺀다. 턴·검색 결과·평가는 남는다(12번 1-4절). 버튼 라벨도 "삭제"가 아니라 "목록에서 제거"다 [code:app/services/sessions.py:124-126] [code:app/routers/sessions.py:64-73] [code:web/src/components/ChatHistory.tsx:194] [docs:02_pipeline/12_data_storage.md:164] |
 
-업무특화에는 두지 않는다. 상담 화면은 이미 오른쪽에 근거 패널이 있어 복잡하고, 지난 상담은 고객 조회의 "최근 상담" 탭이 맡는다(3절).
+업무특화에는 두지 않는다. 상담 화면은 이미 오른쪽에 근거 패널이 있어 복잡하고, 지난 상담은 고객 조회의 "최근 상담" 탭이 맡는다(3절). [code:app/routers/sessions.py:14-17] [code:web/src/pages/Consultation.tsx:95-97]
 
-**고객 없는 세션**: 현재 백엔드는 일반·사내규정 모드에서 `customer_id`를 거부한다(422 또는 error). 그대로 유지한다.
+**고객 없는 세션**: 현재 백엔드는 일반·사내규정 모드에서 `customer_id`를 거부한다(422 또는 error). 그대로 유지한다. [code:app/routers/sessions.py:30-31]
 
 ---
 
 ### 3. 업무특화 진입 경로 — 둘
 
-둘 다 같은 곳으로 수렴한다. 고객 하나를 정해 세션을 여는 함수 하나다.
+둘 다 같은 곳으로 수렴한다. 고객 하나를 정해 세션을 여는 함수 하나다. [code:web/src/App.tsx:100-111]
 
 | 경로 | 누가 고객을 정하나 | 쓰임 |
 | --- | --- | --- |
-| 전화 받기 | 시스템이 고른다 | 실제 상담 흐름 |
-| 고객 조회 | 상담원이 고른다 | 먼저 걸기, 개발·시연 시 지목 |
+| 전화 받기 | 시스템이 고른다 | 실제 상담 흐름 [code:web/src/hooks/useCallSimulator.ts:25-31] [code:web/src/App.tsx:136] |
+| 고객 조회 | 상담원이 고른다 | 먼저 걸기, 개발·시연 시 지목 [code:web/src/App.tsx:165] |
 
-고객 조회 화면은 모드 선택에서 업무특화를 누를 때 나타난다. 탭은 둘이다 — 전체와 최근 상담(09번 2-2절). 종 조합으로 나누던 카드 3종은 폐기했다.
+고객 조회 화면은 모드 선택에서 업무특화를 누를 때 나타난다. 탭은 둘이다 — 전체와 최근 상담(09번 2-2절). 종 조합으로 나누던 카드 3종은 폐기했다. [code:web/src/App.tsx:61-64] [code:web/src/pages/CustomerSelect.tsx:10-11] [docs:02_pipeline/09_ui_design.md:108]
 
-**지난 세션 읽기는 09번 2-2절에서 정했다.** 과거 상담 목록은 고객 하나에 딸린 컴포넌트 하나로, 고객 조회 화면의 고객 카드와 상담 화면 상단 고객 카드 두 곳에서 부른다. 열면 읽기 전용이고 거기서 이어 질문할 수는 없다.
+**지난 세션 읽기는 09번 2-2절에서 정했다.** 과거 상담 목록은 고객 하나에 딸린 컴포넌트 하나로, 고객 조회 화면의 고객 카드와 상담 화면 상단 고객 카드 두 곳에서 부른다. 열면 읽기 전용이고 거기서 이어 질문할 수는 없다. [code:web/src/components/PastConsultations.tsx:20-23] [code:web/src/pages/CustomerSelect.tsx:112] [code:web/src/pages/Consultation.tsx:62] [c:6368a99]
 
-최근 상담 탭과 같은 데이터를 보지만 쓰임이 다르다 — 탭은 고객을 다시 고르는 것이고, 과거 상담 목록은 지난 대화를 읽는 것이다. 최근 상담 탭은 상담원으로 거르지 않는다 — 다른 상담원이 받은 고객도 다시 전화할 수 있다.
+최근 상담 탭과 같은 데이터를 보지만 쓰임이 다르다 — 탭은 고객을 다시 고르는 것이고, 과거 상담 목록은 지난 대화를 읽는 것이다. 최근 상담 탭은 상담원으로 거르지 않는다 — 다른 상담원이 받은 고객도 다시 전화할 수 있다. [code:app/services/sessions.py:154-163] [code:app/services/sessions.py:145-152]
 
 ---
 
@@ -113,80 +117,80 @@
 
 ### 5. 상담 화면의 두 상태
 
-**상담 종료를 눌러도 화면을 떠나지 않는다.** 세션만 닫히고 대화는 읽기 전용으로 남는다. 통화를 끊자마자 화면이 바뀌면 방금 무엇을 답했는지 확인할 틈이 없다. 상담원이 읽어보다가 알아서 떠난다.
+**상담 종료를 눌러도 화면을 떠나지 않는다.** 세션만 닫히고 대화는 읽기 전용으로 남는다. 통화를 끊자마자 화면이 바뀌면 방금 무엇을 답했는지 확인할 틈이 없다. 상담원이 읽어보다가 알아서 떠난다. [code:web/src/App.tsx:113-124] [code:web/src/pages/Consultation.tsx:19-20] [code:web/src/pages/Consultation.tsx:55]
 
 |  | 진행 중 | 종료됨 |
 | --- | --- | --- |
-| 입력창 | 활성 | 비활성 |
-| 전화 알림 | 안 울림 | 울림 |
-| 모드 전환 | 잠김 | 가능 |
+| 입력창 | 활성 | 비활성 [code:web/src/pages/Consultation.tsx:90] |
+| 전화 알림 | 안 울림 | 울림 [code:web/src/App.tsx:39] [code:web/src/App.tsx:136] |
+| 모드 전환 | 잠김 | 가능 [code:web/src/App.tsx:58-59] [code:web/src/components/TopBar.tsx:58-60] |
 
-**상담 중 모드 전환을 막는 이유**: 고객 전화를 받는 중에 다른 화면으로 가는 것은 업무 흐름에 맞지 않는다. 구현도 단순해진다.
+**상담 중 모드 전환을 막는 이유**: 고객 전화를 받는 중에 다른 화면으로 가는 것은 업무 흐름에 맞지 않는다. 구현도 단순해진다. [code:web/src/components/TopBar.tsx:49] [code:web/src/components/TopBar.tsx:65]
 
-- 종료된 화면에서 전화를 받으면 새 고객으로 갈린다
-- 모드 선택에서 업무특화를 다시 누르면 **고객 조회**가 나타난다. 방금 끝낸 상담이 아니다
+- 종료된 화면에서 전화를 받으면 새 고객으로 갈린다 [code:web/src/App.tsx:105-108]
+- 모드 선택에서 업무특화를 다시 누르면 **고객 조회**가 나타난다. 방금 끝낸 상담이 아니다 [code:web/src/App.tsx:50-64]
 
 ---
 
 ### 6. 고객 정보 카드
 
-전화를 받자마자 훑는 화면이다. 필드를 다 띄우되 **크기로 층을 나눠** 한눈에 들어오게 한다. 전부 같은 크기로 늘어놓으면 중요한 것을 놓친다.
+전화를 받자마자 훑는 화면이다. 필드를 다 띄우되 **크기로 층을 나눠** 한눈에 들어오게 한다. 전부 같은 크기로 늘어놓으면 중요한 것을 놓친다. [code:web/src/components/CustomerCard.tsx:20-46]
 
 | 층 | 내용 |
 | --- | --- |
-| 크게 | 고객 이름, 반려동물 이름·종·품종·나이 |
-| 중간 | 가입 특약, 등급, 자기부담금 |
-| 눈에 띄게 | 부담보 — 있을 때만. 없으면 공간을 차지하지 않는다 |
-| 작게 | 상품명, 약관 버전, 가입일 |
+| 크게 | 고객 이름, 반려동물 이름·종·품종·나이 [code:web/src/components/CustomerCard.tsx:23-27] |
+| 중간 | 가입 특약, 등급, 자기부담금 [code:web/src/components/CustomerCard.tsx:31-38] |
+| 눈에 띄게 | 부담보 — 있을 때만. 없으면 공간을 차지하지 않는다 [code:web/src/components/CustomerCard.tsx:39] |
+| 작게 | 상품명, 약관 버전, 가입일 [code:web/src/components/CustomerCard.tsx:42-45] |
 
-반려동물이 둘 이상이면 **개체 선택으로 하나씩** 본다. 종이 아니라 이름으로 고른다 — 같은 종을 여러 마리 기를 수 있다. 둘을 동시에 펼치지 않는다.
+반려동물이 둘 이상이면 **개체 선택으로 하나씩** 본다. 종이 아니라 이름으로 고른다 — 같은 종을 여러 마리 기를 수 있다. 둘을 동시에 펼치지 않는다. [code:web/src/components/SpeciesToggle.tsx:12-24] [code:web/src/pages/Consultation.tsx:33-34] [code:web/src/pages/Consultation.tsx:60-61]
 
-**부담보는 두 겹이다** — 카드에 상시 표시, 그리고 질문이 해당하면 답변 위 배너(09번 2-3절).
+**부담보는 두 겹이다** — 카드에 상시 표시, 그리고 질문이 해당하면 답변 위 배너(09번 2-3절). [code:web/src/components/CustomerCard.tsx:39] [code:web/src/pages/Consultation.tsx:75-78] [docs:02_pipeline/09_ui_design.md:154]
 
-**약관 날짜**(시행일·종료일)는 고객 레코드에 없다. `doc_id`로 청크 메타에서 조회해 띄운다(09번 6-1절). △ 코드 없음 — 조회 API가 없어 카드에 날짜가 나오지 않는다.
+**약관 날짜**(시행일·종료일)는 고객 레코드에 없다. `doc_id`로 청크 메타에서 조회해 띄운다(09번 6-1절). △ 코드 없음 — 조회 API가 없어 카드에 날짜가 나오지 않는다. [code:web/src/components/CustomerCard.tsx:15] [docs:02_pipeline/09_ui_design.md:402]
 
 ---
 
 ### 7. 근거 조항 원문 — 패널 안에서 펼친다
 
-09번 2-3절의 배치(PC 2단, 모바일 접힘)는 그대로 간다. 조항을 클릭했을 때 **모달로 띄우지 않고 패널 안에서 펼친다.**
+09번 2-3절의 배치(PC 2단, 모바일 접힘)는 그대로 간다. 조항을 클릭했을 때 **모달로 띄우지 않고 패널 안에서 펼친다.** [code:web/src/components/SourcePanel.tsx:28-59] [code:web/src/pages/Consultation.tsx:95-97] [docs:02_pipeline/09_ui_design.md:154]
 
 두 가지 이유다. 모달은 대화를 가리고, 조항 원문이 길 수 있다 — 보통약관 제2조 용어 정의처럼 표가 두 번 들어가는 청크도 있다.
 
-**약관 원문은 표시용 블록으로 보인다(2026-10-28).** PDF 2단 조판에서 뽑은 글이라 문장·낱말 중간 줄바꿈(조 416개 중 400개, 7,806곳), 이름표 없는 등급 세 벌(의료비 특약 제1조 12개), 본문에 붙은 【】 박스, 공백 정렬 표가 그대로 보였다. 원문·청크·색인·발췌·프롬프트는 그대로 두고, 조항 원문 API가 표시용 `sections`(등급 묶음 → 블록)를, 근거 목록이 `snippet`(이은 미리보기)을 더한다(`app/services/article_display.py`, 화면 `ArticleText`).
-- 줄 잇기: 줄바꿈 양옆 한글 두 글자의 글자열 빈도("동물병원" vs "동물 병원") → 낱말 빈도 → 조사·어미 규칙. 실제 약관 줄 2,494곳에 일부러 끊어 잰 정확도 93.8%(틀린 띄움 59 · 틀린 붙임 96)
-- 등급 묶음: 근거 결과의 등급(가입 등급)을 먼저 펼치고 다른 등급은 접는다. 항이 둘 이상이면 "제N항" 머리(호가 ①을 쓰므로 항에 ①을 붙이지 않는다)
-- 【】 박스는 왼쪽 띠 상자(예시는 다른 색), 공백 정렬 표는 표, 박스 뒤 그림 글자는 고정폭 묶음, 쪽 넘김 빈 줄은 지운다
-- 인사규정은 원문이 이미 깨끗해 그대로 보인다. 전처리에서 고치는 안은 운영 모델이 이 줄바꿈이 든 발췌로 학습해 프롬프트가 바뀌면 재평가·재학습이 따라와 다음 재학습 때로 미뤘다(`data/review/article_display_survey.md`)
+**약관 원문은 표시용 블록으로 보인다(2026-10-28).** PDF 2단 조판에서 뽑은 글이라 문장·낱말 중간 줄바꿈(조 416개 중 400개, 7,806곳), 이름표 없는 등급 세 벌(의료비 특약 제1조 12개), 본문에 붙은 【】 박스, 공백 정렬 표가 그대로 보였다. 원문·청크·색인·발췌·프롬프트는 그대로 두고, 조항 원문 API가 표시용 `sections`(등급 묶음 → 블록)를, 근거 목록이 `snippet`(이은 미리보기)을 더한다(`app/services/article_display.py`, 화면 `ArticleText`). [code:data/review/article_display_survey.md:1-25] [code:app/routers/articles.py:36-41] [code:app/schemas.py:421] [code:app/schemas.py:469] [code:app/services/answer.py:516-520] [code:web/src/components/SourcePanel.tsx:55-59] [c:d079589]
+- 줄 잇기: 줄바꿈 양옆 한글 두 글자의 글자열 빈도("동물병원" vs "동물 병원") → 낱말 빈도 → 조사·어미 규칙. 실제 약관 줄 2,494곳에 일부러 끊어 잰 정확도 93.8%(틀린 띄움 59 · 틀린 붙임 96) [code:app/services/article_display.py:79-100] [code:data/review/article_display_survey.md:48] [code:data/review/article_display_survey.md:74] (2026-10-28 기준)
+- 등급 묶음: 근거 결과의 등급(가입 등급)을 먼저 펼치고 다른 등급은 접는다. 항이 둘 이상이면 "제N항" 머리(호가 ①을 쓰므로 항에 ①을 붙이지 않는다) [code:app/services/article_display.py:198-215] [code:web/src/components/ArticleText.tsx:3] [code:web/src/components/ArticleText.tsx:33-41]
+- 【】 박스는 왼쪽 띠 상자(예시는 다른 색), 공백 정렬 표는 표, 박스 뒤 그림 글자는 고정폭 묶음, 쪽 넘김 빈 줄은 지운다 [code:app/services/article_display.py:9-12] [code:app/services/article_display.py:114-196] [code:web/src/components/ArticleText.module.css:10-18]
+- 인사규정은 원문이 이미 깨끗해 그대로 보인다. 전처리에서 고치는 안은 운영 모델이 이 줄바꿈이 든 발췌로 학습해 프롬프트가 바뀌면 재평가·재학습이 따라와 다음 재학습 때로 미뤘다(`data/review/article_display_survey.md`) [code:app/routers/articles.py:36-39] [code:app/services/article_display.py:5] [code:data/review/article_display_survey.md]
 
 ---
 
 ### 8. 모델 교체와 배포
 
-파인튜닝 모델이 개선되면 무중단으로 교체할 수 있어야 한다. **Ollama가 호스트에 있고 Pod에는 모델이 없으므로**(09번 7-3절), Pod를 롤링해도 바뀌는 것은 "어느 모델 이름을 부를지"뿐이다. 교체는 두 단계다.
+파인튜닝 모델이 개선되면 무중단으로 교체할 수 있어야 한다. **Ollama가 호스트에 있고 Pod에는 모델이 없으므로**(09번 7-3절), Pod를 롤링해도 바뀌는 것은 "어느 모델 이름을 부를지"뿐이다. 교체는 두 단계다. [code:app/config.py:66] [code:app/config.py:70-71] [docs:02_pipeline/09_ui_design.md:632]
 
 | 단계 | 위치 | 할 일 |
 | --- | --- | --- |
-| 1 | 호스트 | 어댑터 병합 → GGUF 변환 → Q4_K_M 양자화 → ollama create |
-| 2 | Pod |  ConfigMap의 PETMINT_MODEL_RAG를 바꾸고 Sync 뒤 rollout restart. 이미지 재빌드가 필요 없다 |
+| 1 | 호스트 | 어댑터 병합 → GGUF 변환 → Q4_K_M 양자화 → ollama create [docs:02_pipeline/00_model_setup.md] <!-- 확인 못 함: 호스트 Ollama 작업 --> |
+| 2 | Pod |  ConfigMap의 PETMINT_MODEL_RAG를 바꾸고 Sync 뒤 rollout restart. 이미지 재빌드가 필요 없다 [code:app/config.py:71] [c:0e0944e] [docs:02_pipeline/14_deployment.md:73] <!-- 확인 못 함: ConfigMap은 인프라 저장소 --> |
 
-**모델 이름에 버전을 박는다**(예: `petmint-ft-v2`). `latest` 태그를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다.
+**모델 이름에 버전을 박는다**(예: `petmint-ft-v2`). `latest` 태그를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다. [code:app/config.py:71]
 
-1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다.
+1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다. <!-- 확인 못 함: 실행 중 Ollama와 클러스터 상태 -->
 
-**롤링은 한 Pod씩 한다** (`maxSurge: 1, maxUnavailable: 0`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 7-3절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다.
+**롤링은 한 Pod씩 한다** (`maxSurge: 1, maxUnavailable: 0`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 7-3절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md:456] <!-- 안 맞음: 문서는 「maxSurge: 1, maxUnavailable: 0」, 14번은 「maxSurge 0, maxUnavailable 1」로 바꿨다고 적음(docs/02_pipeline/14_deployment.md:456). 매니페스트는 인프라 저장소라 확인 못 함 --> <!-- 확인 못 함: keep_alive는 app/, search_service/, web/src/, deploy/ 에 없음(git grep), Ollama 쪽 설정은 호스트 -->
 
 ---
 
 ### 9. 검증 항목
 
-- [x]  상담 중에는 자동·수동 모두 전화가 울리지 않는가
-- [x]  10초 무응답이 거절과 같게 처리되는가
+- [x]  상담 중에는 자동·수동 모두 전화가 울리지 않는가 [code:web/src/hooks/useCallSimulator.ts:25-31] [code:web/src/hooks/useCallSimulator.ts:56-62]
+- [x]  10초 무응답이 거절과 같게 처리되는가 [code:web/src/hooks/useCallSimulator.ts:39-48] [code:web/src/hooks/useCallSimulator.ts:70-73]
 - [ ]  모드 세 개의 세션이 동시에 존재할 수 있는가
 - [ ]  일반 ↔ 사내규정을 오갔을 때 대화가 남아 있는가
 - [ ]  종료 후 입력창이 막히고 대화는 그대로 보이는가
-- [x]  종료 전에 모드 전환이 막히는가
-- [x]  모델 이름이 설정값으로 빠져 있는가
+- [x]  종료 전에 모드 전환이 막히는가 [code:web/src/App.tsx:58-59] [code:web/src/components/TopBar.tsx:58]
+- [x]  모델 이름이 설정값으로 빠져 있는가 [code:app/config.py:70-71] [c:0e0944e]
 - [ ]  상담 중 과거 상담을 열었다 닫았을 때 진행 중인 세션이 유지되는가
 - [ ]  목록에서 제거한 세션의 턴이 DB에 남아 있는가
 - [ ]  롤링 중 VRAM 실측치가 16GB 안에 들어오는가
