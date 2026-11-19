@@ -152,7 +152,9 @@ sessions (상담 1건)
 
 #### 1-3. 인스턴스 구성
 
-클러스터에 MySQL 인스턴스 **하나**만 둔다(StatefulSet + PVC). 데이터베이스를 `petmint`와 `insurance_core`로 나누고, 계정도 나눠 각자 자기 데이터베이스만 접근하게 한다. `insurance_core`는 고객 원장이고 `petmint_app` 계정은 SELECT만 가진다(아래). Secret은 네임스페이스별로 둔다. RUNSHOES를 같은 클러스터에 올릴 때 `runshoes` 데이터베이스와 계정을 같은 방식으로 추가한다 — 초기화 Job의 `BOOTSTRAP_APPS`에 넣으면 된다. [code:db/bootstrap.py:5-8] [code:db/bootstrap.py:19-21] [code:db/bootstrap.py:40-46]
+클러스터 petmint 네임스페이스에 MySQL Primary(StatefulSet `mysql`)와 Replica(StatefulSet `mysql-replica`)를 둔다(2026-11-19 인프라 관리자 답). <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra 4a04406 판을 읽기만 함): apps/petmint/mysql/statefulset.yaml:5, :14, apps/petmint/mysql/replica.yaml:26, :35 --> 데이터베이스를 `petmint`와 `insurance_core`로 나누고, 계정도 나눠 각자 자기 데이터베이스만 접근하게 한다. `insurance_core`는 고객 원장이고 `petmint_app` 계정은 SELECT만 가진다(아래). Secret은 네임스페이스별로 둔다. [code:db/bootstrap.py:5-8] [code:db/bootstrap.py:40-46] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 MySQL의 데이터베이스는 petmint와 insurance_core 둘뿐 -->
+
+코드(`db/bootstrap.py:19-21`)에 RUNSHOES가 남아 있으나 운영에서는 쓰지 않는다. 운영 초기화 Job은 `BOOTSTRAP_APPS`가 PETMINT와 INSURANCE_SEED이고, 런슈즈는 자기 네임스페이스의 runshoes-mysql을 쓴다. 처음 설계 설명은 `docs/archive/12_data_storage_log.md`로 옮겼다. [code:db/bootstrap.py:19-21] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra 4a04406 판을 읽기만 함): apps/petmint/app/configmap.yaml:79, apps/runshoes/mysql/statefulset.yaml -->
 
 - **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다) [code:app/services/auth.py:84-125]
 - **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절. [code:db/migrations/insurance_core/0001_init.sql:1-4] [code:db/bootstrap.py:8] [docs:02_pipeline/14_deployment.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 insurance_core.customers 10행 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, customers 10행 --> <!-- 확인 못 함: 고객 픽스처 파일 app/fixtures/customers.json은 개인정보가 들 수 있어 열지 않음 -->
@@ -308,7 +310,7 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 
 조건: 우리가 고르지 않은 것
 
-- **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. 바깥 사본은 아직 없다(1-5절) <!-- 2026-11-19 잼: df -h, lsblk, findmnt -T, virsh domblklist k8s-cluster_w1-k8s. ~/backup, /srv/nfs/backup/petmint, w1 VM 디스크가 모두 /dev/nvme0n1p2 -->
+- **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. <!-- 2026-11-19 잼: df -h, lsblk, findmnt -T, virsh domblklist k8s-cluster_w1-k8s. ~/backup, /srv/nfs/backup/petmint, w1 VM 디스크가 모두 /dev/nvme0n1p2 -->
 
 ---
 

@@ -233,6 +233,8 @@ clause_mix (예외·단서 섞기)  17%
 
 이 프로젝트에서 파인튜닝을 시도한 적이 있다. 옛 청크·옛 FAQ로 한 것이라 지금 데이터와 연결이 없어 별개 작업으로 보지만, 거기서 확인한 세 가지는 이번 설계의 근거가 됐다.
 
+첫 재구축(rebuild)부터 rebuild4까지의 경과는 본문에 두지 않는다. rebuild는 docs/archive/07_finetuning_log.md 10절, rebuild2와 rebuild3는 docs/archive/next_rebuild_log.md 7, 8절, rebuild4 평가는 data/review/rebuild4_eval_compare_20261019.md에 있다. [code:data/review/rebuild4_eval_compare_20261019.md]
+
 #### 3-1. 지시와 데이터가 모순이면 지시가 무시된다
 
 ```

@@ -339,5 +339,5 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 
 ### 9. 다음에 반영할 개선 사항
 
-- vLLM 서빙 최적화, 임베딩 모델 양자화 (까닭: vLLM은 00번의 Ollama를 택한 이유, 상담원이 여러 명 동시 접속하게 되면 그때 vLLM 전환을 검토한다) [docs:02_pipeline/00_model_setup.md:53-55]
+- vLLM 서빙 최적화 (까닭: vLLM은 00번의 Ollama를 택한 이유, 상담원이 여러 명 동시 접속하게 되면 그때 vLLM 전환을 검토한다) [docs:02_pipeline/00_model_setup.md:53-55]
 - **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다 [code:data/faq_generate.py:23] [code:data/faq_generate.py:211] [code:data/review/ref_usage_20261014_2008.md:7] [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준) (까닭: 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다, 같은 줄)

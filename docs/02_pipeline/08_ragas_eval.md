@@ -45,7 +45,7 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 | 파일럿(심판이 한국어를 제대로 판정하나) | △ 1회 실행(2026-10-18, `data/ragas_pilot.py` 1-5절) — 90회 중 55회 파싱 실패, 5절 확인 항목은 아직 채우지 않았다 [code:data/review/ragas_pilot_20261018_2243.json] [code:data/ragas_pilot.py:133-135] |
 | Ollama 생성 러너(네 조합 생성 → rows에 질문·답·contexts) | △ 코드 없음 — 파일럿 통과 뒤 |
 | LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 1-9절 절차, Ollama 등록, 운영 모델) [docs:02_pipeline/10_consultation_flow.md:164] [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.kabyul-tri-7b-rag1-rebuild4-ckpt462 --> <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 --> |
-| answer_relevancy 임베딩 | △ 정하지 않았다(4-1절) |
+| answer_relevancy 임베딩 | △ 정하지 않았다 |
 
 #### 1-4. 실행 절차와 예상 시간
 
@@ -107,24 +107,7 @@ python -m data.ragas_pilot prepare                        # llm_env — Milvus �
 
 ### 4. 남은 한계
 
-#### 4-1. 정하지 않은 것
-
-- partial·flawed 처리(4-2절)
-- answer_relevancy 임베딩 — KURE-v1을 쓰려면 ~/ragas_env에 sentence-transformers·torch를 더 넣거나(무겁다), 공용 model-service의 `/embed`(192.168.122.1:8200, 2026-11-11부터)를 부르거나, Ollama 임베딩 모델을 새로 받는다 [code:data/model_client.py:3] [code:data/model_client.py:36] [c:13f82da]
-- 생성 온도 — 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가를 재현하려면 0으로 고정할지 [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.tri7b 3줄 PARAMETER temperature 0.3 -->
-- RAG 없음 조합의 입력 — 질문만 보낼지(일반 모드와 같음), `build_messages(question, [])`로 "(검색된 발췌 없음)"을 넣을지 [code:data/prompts.py:63]
-- RAG 조합의 발췌 조립 — 서비스와 answer_eval `--search`(2026-10-21부터) 모두 `build_full_context`(참조 조문 포함). 예전 경로(`search_with_graph`, 참조 없음)는 `--search-legacy`로만 남았다 [code:data/answer_eval.py:217-224] [code:data/answer_eval.py:243] [code:data/answer_eval.py:277] [code:data/answer_eval.py:529-530] [code:app/services/answer.py:14] [c:cf7f368]
-- 목표치(1-1절) — 파일럿 뒤
-- no_answer 20문항을 생성 평가에 넣을지 — 넣으면 거절률 비교가 늘고 생성 횟수가 468회가 된다 [code:data/answer_eval.py:30] [code:data/answer_eval.py:200]
-
-#### 4-2. partial과 flawed 12문항 처리
-
-`data/eval/answer_eval_labels.json` — partial 10(발췌가 핵심 일부만 담아 거절도 변호 가능), flawed 2(질문이 등급·특약을 특정하지 않아 답이 하나로 정해지지 않음). [code:data/eval/answer_eval_labels.json]
-
-- 제안 A: 본 집계는 answerable 85문항으로 하고, partial·flawed는 따로 표에 둔다(answer_eval·ckpt_select와 같은 처리라 숫자가 서로 이어진다) [code:data/eval/answer_eval_labels.json] [code:data/ckpt_select.py:9]
-- 제안 B: 97문항 전체로 집계하고 partial·flawed를 표시만 한다(문항 수가 더 많지만 거절이 정답일 수 있는 문항이 섞인다) [code:data/eval/answer_eval_labels.json]
-
-결정: (비워 둠)
+없음.
 
 ---
 

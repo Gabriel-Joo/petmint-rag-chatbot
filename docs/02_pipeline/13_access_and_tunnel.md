@@ -12,7 +12,7 @@
 
 ### 0. 한 줄 요약
 
-사설망 안의 서버를 포트포워딩 없이 외부에 내고, **Cloudflare Access로 사내 계정 인증을 걸어 상담원 신원을 확인한다.**
+사설망 안의 서버를 포트포워딩 없이 외부에 내고, 상담원 신원은 앱 자체 인증(`PETMINT_AUTH=app`)으로 확인한다. [code:app/config.py:89] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:59 -->
 초기엔 사내 SSO(Cloudflare Access)를 전제로 설계했으나, 외부 데모 요구가 생기면서 앱 자체 인증으로 전환했다. 운영 환경에서는 Access를 앞단에 두는 구성도 가능하다.
 
 ---
@@ -23,11 +23,13 @@
 
 ```
 상담원 브라우저
-  → Cloudflare 엣지 (Access 정책 검사 — 사내 계정 로그인)
+  → Cloudflare 엣지 (petmint.ronanlab.dev에는 Access 정책 없음)
   → ronanlab-tunnel (클러스터 내 cloudflared Pod 2개)
   → nginx-ingress
   → petmint 앱 (FastAPI + React 빌드물)
 ```
+
+petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3절 표). 그림의 옛 「Access 정책 검사」 줄은 기록 폴더로 옮겼다. <!-- 2026-11-19 잼: 바깥 주소 https://petmint.ronanlab.dev 에 Access 토큰 없이 체험 로그인과 WS 질문이 됐다(measure_ops, demo_probe.py) -->
 
 인바운드 포트를 하나도 열지 않는다. 서버가 Cloudflare로 **아웃바운드 연결을 먼저 걸고** 그 연결을 유지하므로, 공유기 설정이 필요 없고 학교·회사 망에서도 동작한다.
 
@@ -62,21 +64,17 @@
 - **런슈즈·펫퍼민트는 이 터널을 쓰지 않는다.** 두 앱의 Pod는 `PETMINT_OLLAMA_URL=http://192.168.122.1:11434`(런슈즈는 키 이름이 `OLLAMA_URL`)(VM 사설망의 GPU 호스트)로 직접 부른다(`ronanlab-infra/apps/runshoes/app/deployment.yaml`, 펫퍼민트 ConfigMap, 2026-11-09 Pod 환경변수로 확인). 런슈즈 `chatbot/llm.py`의 기본값 `https://ollama.ronanlab.dev`와 CF 헤더 코드는 학교 시절(2026-10-18 이주 전)의 흔적이고, 운영에서는 쓰이지 않는다 [code:app/config.py:66] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:23, apps/runshoes/app/deployment.yaml:98-99, :139-140 --> <!-- 확인 못 함: 2026-11-09 Pod 환경변수 확인은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답). --> <!-- 런슈즈 저장소 확인(2026-11-19, runshoes c955875 판, 다른 저장소라 code 표시 대신 주석): 기본값 chatbot/llm.py:12, CF 헤더 chatbot/llm.py:14. 예전 문서가 적은 chatbot_server.py는 지금 없다 -->
 - 사고 기록(2026-11-09): 이 호스트에 Access 정책이 빠져 토큰 없이 열려 있었다 — Ollama 로그로 11-02부터 바깥 IP의 `GET /`·`HEAD /`가 들어왔다(생성·pull·delete는 바깥 IP 0건). 쓰는 곳이 없다고 잘못 보고 터널을 잠시 껐다가(`systemctl disable --now`) 학교 PC 용도를 확인해 다시 켜고, 위 Service Auth 정책을 걸었다. GPU가 한 장이라 바깥에서 긴 생성을 돌리면 펫퍼민트 서빙이 멈춘다 — 이 호스트는 늘 Access 뒤에 둔다 <!-- 2026-11-19 잼: docker logs ollama 의 GIN 줄에서 사설 대역 밖 IP 요청을 날짜와 메서드별로 셈(IP는 출력 안 함). 2026-11-02 GET / 2, 11-03 HEAD / 2, 11-09 GET /api/tags 4와 /api/version 5, 11-10 뒤 0, 생성과 pull과 delete 0. systemctl is-active cloudflared-ollama 결과 active -->
 
-> 설계상 petmint.ronanlab.dev의 정책은 시연용으로 로그인한 누구나 접근 가능하다(지금은 데모 공개를 위해 정책을 제거했다 — 위 표). 단, 실무에서는 Include를 Emails나 Email domain으로 바꿔 상담원만 통과시킨다. 어느 쪽이든 통과한 사람의 이메일이 헤더로 전달되므로 앱 코드는 바뀌지 않는다. [code:app/deps.py:39-41]
-> 
+코드에 길(access 모드, Access 헤더의 이메일을 신원으로 받는 것)은 남아 있으나 운영에서는 쓰지 않는다. petmint.ronanlab.dev의 처음 설계 정책 설명은 기록 폴더로 옮겼다. [code:app/deps.py:39-41]
 
-> **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `;` 우회 변형은 Access 302였고, 인코딩한 `..` 변형(`..%2f`, `%2e%2e`)은 302가 아니라 400으로 Cloudflare가 막았다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다 — 서버가 404·403·405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). 더 좁히려면 WAF 규칙으로 정확한 경로의 POST만 남긴다(선택, 미적용) <!-- 2026-11-19 잼: curl -s --path-as-is -o /dev/null -D - 로 argocd와 jenkins에 10개 경로. /, /script, /api/v1/applications, ;/script 302. ..%2f, %2e%2e/script 400(server: cloudflare). 서버까지 가는 것 argocd /API/webhook 404, /api/webhook/x 404, jenkins /github-webhook/ 405, /Github-webhook/ 403, /github-webhook/x 404. 41개 전부는 다시 재지 않음 --> <!-- 확인 못 함: Bypass Access 앱은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
+> **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `;` 우회 변형은 Access 302였고, 인코딩한 `..` 변형(`..%2f`, `%2e%2e`)은 302가 아니라 400으로 Cloudflare가 막았다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다 — 서버가 404·403·405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). <!-- 2026-11-19 잼: curl -s --path-as-is -o /dev/null -D - 로 argocd와 jenkins에 10개 경로. /, /script, /api/v1/applications, ;/script 302. ..%2f, %2e%2e/script 400(server: cloudflare). 서버까지 가는 것 argocd /API/webhook 404, /api/webhook/x 404, jenkins /github-webhook/ 405, /Github-webhook/ 403, /github-webhook/x 404. 41개 전부는 다시 재지 않음 --> <!-- 확인 못 함: Bypass Access 앱은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
 >
 
 > 운영 도구 셋은 자체 로그인이 있지만 Access를 앞에 둔다. 로그인 화면 자체가 공격면이고, 인증 전에 터지는 취약점이 드물지 않기 때문이다. 정책이 같으므로 Application 하나에 묶었고, 하나를 인증하면 셋 다 통한다.
 > 
 
-앱은 `Cf-Access-Authenticated-User-Email` 헤더를 읽어 `sessions.agent_email`에 넣는다(12번). 로컬 개발에서는 그 헤더가 없으므로 기본값을 둔다. [code:app/config.py:84-85] [code:app/deps.py:39-41] [docs:02_pipeline/12_data_storage.md]
+운영(app 모드)에서는 로그인한 직원의 이메일이 `sessions.agent_email`에 들어간다(2-1절). access 모드에서 `Cf-Access-Authenticated-User-Email` 헤더를 읽는 길은 코드에 남아 있으나 운영에서는 쓰지 않는다(기록 폴더). [code:app/routers/chat_ws.py:75] [code:app/config.py:84-85] [code:app/deps.py:39-41] [docs:02_pipeline/12_data_storage.md]
 
-**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH·DELETE·피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 1-13절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다** — 최근 상담 탭이 그 위에 서 있다. 따라서 **헤더가 위조되면 남의 상담을 바꾸거나 지울 수 있다** — 앱에 직접 닿는 경로를 막아 모든 요청이 엣지를 거치게 해야 한다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
-
-> 다만 시연용 정책에서는 누구나 로그인할 수 있으므로 `agent_email`은 "그 브라우저로 로그인한 사람"을 뜻할 뿐이다. 상담원 명단으로 거르는 실무 정책에서만 이 구분이 본래 의미를 갖는다.
-> 
+**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH·DELETE·피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 1-13절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다** — 최근 상담 탭이 그 위에 서 있다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
 
 ---
 
@@ -84,13 +82,7 @@
 
 #### 2-1. 처음에는 앱에 로그인을 만들지 않았다 → 앱 자체 인증으로 전환(2026-10-28)
 
-**초기 설계.** 상담 내용에는 책임이 따른다 — 누가 어떤 답변을 했는지 남아야 한다. 그래도 앱이 직접 로그인을 만들 이유는 없다고 봤다.
-
-- 비밀번호 저장·세션 관리·재설정을 전부 떠안아야 한다
-- 사내 계정 체계가 이미 있는데 또 하나를 만드는 셈이다. 퇴사자 처리도 두 곳에서 해야 한다
-- 앱이 비밀번호를 다루지 않으면 유출될 것도 없다
-
-사내 도구는 SSO로 묶는 것이 표준이고(Okta, Google Workspace 등), Cloudflare Access가 그 역할을 했다.
+코드에 길(access 모드, `PETMINT_AUTH`의 기본값)은 남아 있으나 운영에서는 쓰지 않는다. 운영 ConfigMap은 `PETMINT_AUTH`가 app이다. 처음 설계(Access SSO)의 설명은 `docs/archive/13_access_and_tunnel_log.md`로 옮겼다. [code:app/config.py:89] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:59 -->
 
 **전환.** 초기엔 사내 SSO(Cloudflare Access)를 전제로 설계했으나, 외부 데모 요구가 생기면서 앱 자체 인증으로 전환했다. 운영 환경에서는 Access를 앞단에 두는 구성도 가능하다.
 
@@ -98,7 +90,7 @@
 - 데모를 보는 사람은 사내 계정이 없다. Access 정책을 "로그인한 누구나"로 열면 상담원 명단으로 거르지 못하고(4절), 계정을 만들어 주면 사내 계정 체계 밖의 사람을 SSO에 넣게 된다
 - 상담원 명단·역할·재직 여부를 앱이 알아야 한다. 다음 단계의 사내규정 개인화(퇴직금·연차·자격수당)는 로그인한 사람이 누구인지 사번 단위로 알아야 한다
 
-그래서 직원 원장을 두고 앱이 그 직원을 직접 인증한다. 위의 세 가지 비용은 그대로 떠안되, 이렇게 줄였다.
+그래서 직원 원장을 두고 앱이 그 직원을 직접 인증한다. 처음 설계가 꼽은 세 가지 비용(기록 폴더로 옮긴 글)은 그대로 떠안되, 이렇게 줄였다.
 
 | 항목 | 구현 |
 | --- | --- |
@@ -151,6 +143,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 | GPU 보호 | 체험 세션의 질문은 방문자(로그인 쿠키)마다 1분에 10번(`PETMINT_DEMO_TURNS_PER_MIN`). 넘으면 그 질문은 턴으로 남기지 않고 "체험 계정은 1분에 10번까지…"(`rate_limited`)를 보낸다. Pod 메모리에서 센다 [code:app/config.py:98] [code:app/routers/chat_ws.py:38-40] [code:app/routers/chat_ws.py:121-122] [code:app/services/rate_limit.py:14] |
 | 기록 | 방문자는 같은 계정을 함께 쓰므로 지난 대화 · 최근 상담이 서로 보인다 — 그대로 두고 안내 문구를 단다(사용자). 체험 대화는 그 직원의 `agent_email`로 남아 기존 시험 기록과 섞인다 [code:web/src/auth/Login.tsx:141-144] |
 | 끄기 | `PETMINT_DEMO_LOGIN`(기본 0). 끄면 두 API가 404이고 화면에 체험 영역이 없다. `PETMINT_AUTH=access`에서도 404 [code:app/config.py:96] [code:app/routers/auth.py:59-61] |
+| 운영 값 | 운영은 켜 둔다(`PETMINT_DEMO_LOGIN`이 1) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:64 (942c440, 2026-11-12) --> |
 
 - **체험 계정은 방문자끼리 기록이 보인다(2-4절).** 같은 계정을 함께 쓰기 때문이다 — 안내 문구로 알린다. 방문자가 질문에 자기 개인 정보를 적으면 다음 방문자도 본다 [code:web/src/auth/Login.tsx:144]
 

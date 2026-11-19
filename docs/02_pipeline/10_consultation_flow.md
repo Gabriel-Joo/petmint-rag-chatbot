@@ -169,7 +169,7 @@
 
 1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다. <!-- 2026-11-19 잼: docker exec ollama ollama list 로 업무특화 모델 셋(rebuild4, rebuild5, rebuild5b)과 tri-7b가 함께 등록된 것을 봄(Ollama 쪽만) -->
 
-**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 1-15절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17-23 --> <!-- 2026-11-19 잼: docker inspect ollama 환경변수에 OLLAMA_KEEP_ALIVE 없음 -->
+**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 1-15절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`는 아직 정하지 않았다(할 일 petmint-26). [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17-23 --> <!-- 2026-11-19 잼: docker inspect ollama 환경변수에 OLLAMA_KEEP_ALIVE 없음 -->
 
 ---
 

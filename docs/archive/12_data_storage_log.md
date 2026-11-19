@@ -1,5 +1,13 @@
 12_data_storage.md 에서 떼어 낸 구현 기록(2026-11-19 문서 정리 B단계). 지금 설계는 docs/02_pipeline/12_data_storage.md
 
+## 인스턴스 구성의 처음 설계 (옛 1-3절)
+
+운영에서는 쓰지 않는 설명이라 2026-11-19 사람 결정으로 옮겼다(운영 MySQL은 petmint 네임스페이스의 Primary와 Replica, 런슈즈는 자기 runshoes-mysql).
+
+클러스터에 MySQL 인스턴스 **하나**만 둔다(StatefulSet + PVC).
+
+RUNSHOES를 같은 클러스터에 올릴 때 `runshoes` 데이터베이스와 계정을 같은 방식으로 추가한다 — 초기화 Job의 `BOOTSTRAP_APPS`에 넣으면 된다. [code:db/bootstrap.py:19-21]
+
 ## 클러스터 MySQL 이주 (2026-10-16, 옛 1-2절)
 
 **이주 때 할 일** (상세는 14번)

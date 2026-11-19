@@ -148,7 +148,7 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 | --- | --- |
 | 빌드 | BuildKit rootless v0.33.1. 특권 컨테이너 대신 seccomp·AppArmor만 푼다 [code:Jenkinsfile:6-7] [code:Jenkinsfile:28-39] |
 | 태그 | 커밋 해시(예: 4e81fa250169). latest를 쓰지 않는다 [code:Jenkinsfile:10] [code:Jenkinsfile:69] |
-| 트리거 | ~~SCM 폴링 2분. webhook 은 Access 에 막힌다~~ 2026-11-03부터 GitHub 웹훅(githubPush) + 폴링 15분 안전망 — 1-12절 [code:Jenkinsfile:3] [code:Jenkinsfile:173-178] |
+| 트리거 | 2026-11-03부터 GitHub 웹훅(githubPush) + 폴링 15분 안전망(pollSCM `H/15 * * * *`) — 1-12절 [code:Jenkinsfile:3] [code:Jenkinsfile:173-178] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): platform/jenkins/values.yaml:101, :108-110, :151-153 --> |
 | Jenkins 설정 | JCasC + job-dsl. 자격 증명과 Job 을 Helm values 가 만든다 [code:Jenkinsfile:3] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:54-110, :182 --> |
 | Harbor 계정 | robot 둘로 나눔 — jenkins(push+pull), pull(pull 전용, petmint 네임스페이스의 imagePullSecret harbor-pull) [code:Jenkinsfile:100-101] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/05_harbor.md:133, platform/jenkins/values.yaml:30, :75-76, apps/petmint/scripts/create-secrets.sh:8, :31-36, apps/petmint/app/deployment.yaml:34 --> <!-- 확인 못 함: jenkins robot 의 pull 권한은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
 
@@ -202,8 +202,31 @@ ronanlab-infra/
 
 - [ ]  **ArgoCD는 `ssl-passthrough`를 뺀 상태다.** 나중에 그 플래그를 켜면 붙인 인증서가 쓰이지 않는다
 
+ArgoCD 초기 admin 비밀번호 Secret(`argocd-initial-admin-secret`)은 지워 두어 없다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/04_argocd.md:18, :234 (argocd-initial-admin-secret 없음, 기록은 2026-11-12 조회) -->
+
 
 #### 1-10. 운영 플래그 반영
+
+운영 ConfigMap에서 켜 둔 검색과 코드 답 플래그(2026-11-19 운영 값). 반영마다의 측정은 docs/archive/14_deployment_log.md 에 있다. <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:35-53, :61 -->
+
+| ConfigMap 키 | 값 | 하는 일 |
+| --- | --- | --- |
+| `PETMINT_CHUNKS_DIR`·`PETMINT_GRAPH_DIR` | `/var/lib/petmint/chunks/v3`·`graph/v3` | 청크 v3(약관 호·법령박스 분할). NFS 공유 안의 v3 폴더 [code:app/config.py:19-21] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:35-36 --> |
+| `PETMINT_SEARCH_VARIANT` | `v3` | search-service가 Milvus `petmint_*_v3`로 찾는다(약관만) [code:app/config.py:38] [code:app/services/retrieval.py:23-24] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:40 --> |
+| `PETMINT_DISPLAY_PARENT` | `1` | v3 조각으로 찾고 모델에게는 부모(원래 청크) 글을 보여 준다 [code:app/config.py:40-41] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:41 --> |
+| `PETMINT_SEARCH_EXPAND` | `1` | 질의 확장(고객 말 → 약관 말, BM25·리랭커 질의에만) [code:app/config.py:34] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:42 --> |
+| `PETMINT_EXPAND_DICT` | `v2` | 동의어 사전 v2(62항목) [code:app/config.py:35] [code:data/synonyms.py:41] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:43 --> |
+| `PETMINT_ANSWER_TABLES` | `1` | 답이 쓴 발췌의 표를 답 아래에 붙인다 [code:app/config.py:36] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:44 --> |
+| `PETMINT_RULE_FIRST` | `1` | 보험금 지급사유·보상하는 손해 조에서, 같은 조의 원칙(제1항)이 참조에만 있으면 본문 앞으로 옮긴다(1안) [code:app/config.py:42-43] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:45 --> |
+| `PETMINT_COVERAGE_CODE` | `1` | 그 반려동물의 부담보에 걸리는 보장 질문은 코드가 특약 제2조 ①②④로 답한다. 대기기간에도 걸리면 그 줄을 붙인다. 분류 질문은 모델에게 남긴다(3안′) [code:app/config.py:44-45] [code:app/services/code_rules.py:86] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:46 --> |
+| `PETMINT_SEARCH_POOL` | `50` | search-service 1차 후보 깊이(Dense·BM25 각각) 20 → 50 [code:app/config.py:37] [code:data/search_engine.py:165-167] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:47 --> |
+| `PETMINT_AGE_CODE` | `1` | 신규 가입 나이를 숫자로 묻는 질문은 코드가 약관 기준(일반조항 제2조 '반려동물' 1호: 만 8세, 실속형 만 10세 초과는 가입 대상 아님)과 비교해 답한다 [code:app/config.py:46-47] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:48 --> |
+| `PETMINT_PROVISO_CODE` | `1` | 의료비 특약 제2조 면책 항목의 단서가 질문의 경우를 보장 쪽으로 빼 주면 코드가 답한다(⑫ 침술, ② 1년 이내 예방접종, ⑲ Ⅰ 유형의 치아 외 구강질환) [code:app/config.py:48-49] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:49 --> |
+| `PETMINT_TWIN_ARTICLE` | `1` | 업무특화 검색에서 질문에 특약 낱말(통원·입원·치료·진료·수술·의료비·병원·질병·특약)이 없고 상위 3에 보통약관 제3조·제5조가 있으면, 후보 20 안의 같은 제목 의료비 특약 조(제1조 보험금의 지급사유·제2조 보험금을 지급하지 않는 사유)를 그 앞으로 올린다. 보통약관은 사람 상해보험 약관이라 이 두 조는 반려동물 보장의 근거가 아니다 [code:app/config.py:50-52] [code:data/rag_context.py:560-566] [code:data/rag_context.py:581-596] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:50 --> |
+| `PETMINT_HR_PERSONAL` | `1` | 사내규정 모드에서 본인 지칭 + 연차 잔여·연차수당·퇴직금·자격수당·승진·급여·통상임금이면 인사 원장으로 코드가 답한다(2026-10-28 급여·통상임금 추가, 지급일은 개정 제25조) [code:app/config.py:53-54] [code:app/services/hr_personal.py] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:61 --> |
+| `PETMINT_ASK_DISEASE` | `1` | 업무특화에서 병명 없이 보장을 묻는 질문("○○가 입원했어요. 보장되나요?")은 가입 의료비 특약 원칙 + 병명 되묻기를 코드가 답한다(다섯 조건, 대기기간 안이면 발병일도) [code:app/config.py:55-56] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:51 --> |
+| `PETMINT_ASK_DISEASE_LLM` | `1` | 병명 되묻기의 "병명·증상 이름이 있는가"를 베이스 모델(tri-7b)이 본다. 면책 사실은 코드가 막고, 모델 실패 시 정규식 [code:app/config.py:57-58] [code:app/services/name_check.py] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:52 --> |
+| `PETMINT_NAMED_COVER` | `1` | 업무특화에서 병명이 있는 보장 질문("감기도 보장되나요?")은 그 반려동물 의료비 특약 제2조 면책 목록과 대조해 코드가 답한다 — 목록에 없으면 원칙 보상 + 단서, 있으면 그 조항. 금액 되묻기 뒤 "감기도 돼요?"는 금액 되묻기를 되풀이하지 않는다 [code:app/config.py:59-61] [code:app/services/named_cover.py] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): apps/petmint/app/configmap.yaml:53 --> |
 
 플래그는 코드 기본값을 바꾸지 않고 ConfigMap에서만 켠다 — 되돌릴 때 ConfigMap만 고치면 된다. 모델(rebuild4)·고객 사실·숫자 가드레일은 그대로다. [code:app/config.py:34-41] [code:app/config.py:39] [code:app/config.py:65]
 
@@ -249,7 +272,7 @@ Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 �
 
 #### 1-12. GitHub 웹훅 — ArgoCD · Jenkins (2026-11-03)
 
-push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 않고 바로 반영된다. [code:Jenkinsfile:3] [c:62216c0]
+push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 15분)를 기다리지 않고 바로 반영된다. [code:Jenkinsfile:3] [c:62216c0] <!-- 인프라 확인(2026-11-19 ronanlab-infra 4a04406 판을 읽음): platform/jenkins/values.yaml:101, :108-110 -->
 
 | | ArgoCD | Jenkins |
 | --- | --- | --- |
@@ -286,7 +309,7 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
 
 | 바뀐 것 | 펫퍼민트에 |
 | --- | --- |
-| 워커 3 → 4대 | 앱 Pod 둘(required anti-affinity)의 롤링 2+1이 워커 하나가 빠진 동안에도 된다 — 전에는 Pending에 멈췄다(4절) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:8-9, apps/petmint/app/deployment.yaml:17, :46-47 --> |
+| 워커 3 → 4대 | 앱 Pod 둘(required anti-affinity)의 롤링 2+1이 워커 하나가 빠진 동안에도 된다 — 전에는 Pending에 멈췄다(petmint-44) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:8-9, apps/petmint/app/deployment.yaml:17, :46-47 --> |
 | 워커 4 → 8GB | 노드 메모리 여유(앱 limits 1Gi × 롤링 3개 · MySQL)가 생겼다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:5-9, apps/petmint/app/deployment.yaml:102 --> |
 | Harbor DB 백업(infra `apps/harbor-backup/`, 매일 03:45 KST) | Harbor가 망가져도 프로젝트 · robot 계정(`robot$petmint+pull`)이 돌아온다. 이미지 레이어는 백업하지 않는다 — 다시 빌드한다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/harbor-backup/cronjob.yaml:3-4, :17-18, docs/07_registry.md:129 --> |
 
@@ -431,7 +454,6 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다 [code:app/requirements.txt] [code:data/rag_context.py:15] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답), 레이어 크기는 Harbor에서 봐야 함 --> 까닭: 3절 표 pymilvus 줄(평가와 서비스가 같은 코드를 쓴다는 원칙)
 - [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다 까닭: 깨는 변경이 생기면 그때 정한다(이 줄)
 - [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다 까닭: 호스트가 죽으면 어차피 서비스가 안 된다(이 줄)
-- [x]  ~~ArgoCD 초기 admin 비밀번호 Secret이 남아 있다.~~ 지워졌다(2026-11-09 확인 — 없음) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/04_argocd.md:18, :234 (argocd-initial-admin-secret 없음, 기록은 2026-11-12 조회) -->
 - [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica(w2, 2026-11-10) + 수동 승격을 택했다. w1이 죽으면 사람이 런북(infra `docs/runbooks/mysql-replica.md`)대로 승격한다 — 기계 쪽 약 2분, 나머지는 알아채고 판단하는 시간. 앱 트래픽까지 옮기는 전환은 아직 해 보지 않았다. Replica는 백업이 아니다(지운 것은 Replica에서도 지워진다) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:79, :371, :432, docs/runbooks/mysql-replica.md:3-4 --> 까닭: Operator가 필요한데 자원 제약(이 줄)
 
 **조건: 우리가 고르지 않은 것**
