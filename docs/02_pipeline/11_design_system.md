@@ -2,7 +2,7 @@
 다루는 곳: web/src/styles/, web/src/assets/fonts/, web/src/assets/characters/, web/src/components/TopBar.tsx, web/src/components/TopBar.module.css, web/src/components/CallAlert.tsx, web/src/components/CallAlert.module.css, web/src/components/Badges.tsx, web/src/components/Badges.module.css, web/src/components/FlowCarousel.tsx, web/src/components/FlowCarousel.module.css, web/src/components/ArchDiagram.tsx, web/src/components/ArchDiagram.module.css, web/src/hooks/useReducedMotion.ts, web/src/components/CalcCard.tsx, web/src/components/CalcCard.module.css, web/src/components/CustomerCard.module.css, web/src/components/EmployeeCard.tsx, web/src/components/ArticleText.module.css, web/src/components/SourcePanel.module.css, web/src/components/ChatHistory.module.css, web/src/components/PastConsultations.module.css, web/src/auth/Login.tsx, web/src/auth/Login.module.css, web/src/auth/DemoCards.tsx, web/src/pages/ModeSelect.tsx, web/src/pages/ModeSelect.module.css, web/src/pages/CustomerSelect.tsx, web/src/pages/CustomerSelect.module.css, web/src/pages/Admin.tsx, web/src/pages/Admin.module.css, web/src/pages/Chat.tsx, web/src/pages/Consultation.tsx, web/src/policySummary.ts
 읽은 커밋: 6710b83
 -->
-> 상태: 설계 확정, 구현 중. 09·10번에서 정한 화면·흐름을 어떻게 보이게 할 것인가. ✓ 토큰·글꼴·캐릭터 영상·모드 선택 아래 소개 섹션(10-16)·전화 수신 카드(크기·광륜을 카드 안으로·남은 시간 숫자와 막대, 10-18) 구현, 5절 검증 5건 확인. 5절의 받기 대비·카드 질감·누름 효과는 확인 전(대비는 미달로 알려져 있다). △ 다크 모드는 코드 없음. [code:web/src/styles/tokens.css] [code:web/src/styles/global.css:3-20] [code:web/src/pages/ModeSelect.tsx:42-121] [code:web/src/components/CallAlert.tsx:20-37] [code:web/src/components/CallAlert.module.css:21-30] [c:8b1272e] [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
+> 상태: 설계 확정, 구현 중(2026-11-19 코드와 맞춰 봄). 09, 10번에서 정한 화면, 흐름을 어떻게 보이게 할 것인가. ✓ 토큰, 글꼴, 캐릭터 영상, 모드 선택 아래 소개 섹션(10-16), 전화 수신 카드(크기, 광륜을 카드 안으로, 남은 시간 숫자와 막대, 10-18) 구현, 5절 검증 5건 확인. 5절의 받기 대비, 카드 질감, 누름 효과는 확인 전(대비는 미달로 알려져 있다, 할 일 petmint-29). △ 다크 모드는 코드 없음(4절 한계). △ 완주대둔산체 출처 표시가 화면에 없다(할 일 petmint-30). [docs:TODO.md] [code:web/src/styles/tokens.css] [code:web/src/styles/global.css:3-20] [code:web/src/pages/ModeSelect.tsx:42-121] [code:web/src/components/CallAlert.tsx:20-37] [code:web/src/components/CallAlert.module.css:21-30] [c:8b1272e] [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
 > 
 
 ---
@@ -11,36 +11,37 @@
 
 09번은 "무엇을 보여줄 것인가", 10번은 "상담원이 하루를 어떻게 보내는가"를 정했다. [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
 
-이 문서는 색·글꼴·질감·캐릭터를 정한다. 원래 10번 10절에 있던 것을 떼어내 더 써넣었다. [code:web/src/styles/tokens.css:1] [docs:02_pipeline/10_consultation_flow.md]
+이 문서는 색, 글꼴, 질감, 캐릭터를 정한다. 원래 10번 10절에 있던 것을 떼어내 더 써넣었다. [code:web/src/styles/tokens.css:1] [docs:02_pipeline/10_consultation_flow.md]
 
 ---
 
 ### 1. 최종 설계
-#### 1-1. 방향 — 라이트 보라
+
+#### 1-1. 방향: 라이트 보라
 
 라이트 단일 모드로 간다. 상담원이 사무실에서 하루 종일 쓰는 도구라 흰 바탕이 눈에 편하다. [code:web/src/styles/tokens.css:1-4]
 
 ---
 
-#### 1-2. 색 — 흰 바탕에 보라 포인트
+#### 1-2. 색: 흰 바탕에 보라 포인트
 
-바탕은 흰색·연회색이고, 보라는 버튼·선택된 항목·강조에만 쓴다. 진한 보라와 연한 보라 둘을 나눠 쓴다 — 진한 쪽은 채우고, 연한 쪽은 배경이나 선택 표시다. [code:web/src/styles/global.css:49-54] [code:web/src/styles/global.css:74-86]
+바탕은 흰색, 연회색이고, 보라는 버튼, 선택된 항목, 강조에만 쓴다. 진한 보라와 연한 보라 둘을 나눠 쓴다. 진한 쪽은 채우고, 연한 쪽은 배경이나 선택 표시다. [code:web/src/styles/global.css:49-54] [code:web/src/styles/global.css:74-86]
 
 | 토큰 | 값 | 쓰임 |
 | --- | --- | --- |
 | --bg | `#FFFFFF` | 바탕 [code:web/src/styles/tokens.css:6] |
 | --surface | `#F7F6FB` | 카드 바깥면, 연한 구획 [code:web/src/styles/tokens.css:7] |
-| --card | `#FDFDFC` | 카드 면 — 그림자로 띄운다 [code:web/src/styles/tokens.css:8] |
+| --card | `#FDFDFC` | 카드 면: 그림자로 띄운다 [code:web/src/styles/tokens.css:8] |
 | --line | `#E9E6F2` | 엷은 경계선 [code:web/src/styles/tokens.css:9] |
-| --primary | `#6C2BD9` | 진한 보라 — 주요 버튼의 채움, 선택된 항목의 글자색 [code:web/src/styles/tokens.css:10] |
-| --primary-soft | `#EDE4FD` | 연한 보라 — 헤더 바탕, 선택 배경, 배지, 호버 [code:web/src/styles/tokens.css:11] [code:web/src/components/TopBar.module.css:20] |
-| --primary-hover | `--primary` 88% + 검정 | 주요 버튼 호버 — 같은 보라를 조금 어둡게 (2026-10-30) [code:web/src/styles/tokens.css:22] [c:89a1f33] |
-| --primary-press | `--primary` 76% + 검정 | 주요 버튼 눌림 — 한 단계 더 어둡게 (2026-10-30) [code:web/src/styles/tokens.css:23] [c:89a1f33] |
+| --primary | `#6C2BD9` | 진한 보라: 주요 버튼의 채움, 선택된 항목의 글자색 [code:web/src/styles/tokens.css:10] |
+| --primary-soft | `#EDE4FD` | 연한 보라: 헤더 바탕, 선택 배경, 배지, 호버 [code:web/src/styles/tokens.css:11] [code:web/src/components/TopBar.module.css:20] |
+| --primary-hover | `--primary` 88% + 검정 | 주요 버튼 호버: 같은 보라를 조금 어둡게 (2026-10-30) [code:web/src/styles/tokens.css:22] [c:89a1f33] |
+| --primary-press | `--primary` 76% + 검정 | 주요 버튼 눌림: 한 단계 더 어둡게 (2026-10-30) [code:web/src/styles/tokens.css:23] [c:89a1f33] |
 | --text | `#1B1725` | 본문 [code:web/src/styles/tokens.css:12] |
 | --text-dim | `#6B6880` | 보조 텍스트 [code:web/src/styles/tokens.css:13] |
-| --call | `#16A34A` | 전화 — 과거 상담의 "진행 중" 표시에도 쓴다 [code:web/src/styles/tokens.css:14] [code:web/src/components/PastConsultations.module.css:37] |
+| --call | `#16A34A` | 전화: 과거 상담의 "진행 중" 표시에도 쓴다 [code:web/src/styles/tokens.css:14] [code:web/src/components/PastConsultations.module.css:37] |
 | --warn | `#EA580C` | 부담보 경고 [code:web/src/styles/tokens.css:15] |
-| --grade-high | `--primary`와 같음 | 특약 등급 고급형 — 고객 조회 카드의 칩 테두리·글자, 위쪽 띠 (2026-10-23) [code:web/src/styles/tokens.css:25-27] [c:261ae45] |
+| --grade-high | `--primary`와 같음 | 특약 등급 고급형: 고객 조회 카드의 칩 테두리, 글자, 위쪽 띠 (2026-10-23) [code:web/src/styles/tokens.css:25-27] [c:261ae45] |
 | --grade-mid | `#0F766E` | 특약 등급 기본형 (청록) [code:web/src/styles/tokens.css:28] |
 | --grade-low | `#4A5B86` | 특약 등급 실속형 (남회색) [code:web/src/styles/tokens.css:29] |
 
@@ -52,33 +53,33 @@
 
 ---
 
-#### 1-3. 글꼴 — 제목과 본문을 나눈다
+#### 1-3. 글꼴: 제목과 본문을 나눈다
 
 시스템 기본 글꼴은 멋이 없다. 둘을 쓰임에 따라 나눈다.
 
 | 글꼴 | 쓰는 곳 |
 | --- | --- |
 | 완주대둔산체 | 헤더 로고, 모드 선택 화면 제목과 카드 제목, 소개 섹션의 모드 이름과 "기술 구성" 제목 [code:web/src/components/TopBar.module.css:56] [code:web/src/pages/ModeSelect.module.css:13] [code:web/src/pages/ModeSelect.module.css:69] [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:169] |
-| Wanted Sans 가변 (400/500/700/800/900) | 그 외 전부 — 화면 제목, 카드 제목, 본문, 대사, 메뉴, 고객 정보, 대화 내용 [code:web/src/styles/global.css:3-11] [code:web/src/styles/tokens.css:72] [code:web/src/styles/tokens.css:74-79] |
+| Wanted Sans 가변 (400/500/700/800/900) | 그 외 전부: 화면 제목, 카드 제목, 본문, 대사, 메뉴, 고객 정보, 대화 내용 [code:web/src/styles/global.css:3-11] [code:web/src/styles/tokens.css:72] [code:web/src/styles/tokens.css:74-79] |
 
-**라이선스**: 완주대둔산체는 완주군청 저작물로 공공누리 제1유형(공개 페이지에서 출처를 못 찾음, 2026-11-19)이다. 개인·기업 모두 무료, 상업적 이용과 웹 임베딩 모두 허용된다. [code:web/src/styles/global.css:13] [code:web/src/assets/fonts/WanjuDaedunsan-Bold.woff2] <!-- 공개 출처: https://www.kogl.or.kr/info/licenseType1.do (2026-11-19 확인, 1유형 조건만: 출처 표시, 상업 이용 가능, 변형 가능) -->
+**라이선스**: 완주대둔산체는 완주군청 저작물로 공공누리 제1유형(공개 페이지에서 출처를 못 찾음, 2026-11-19)이다. 개인, 기업 모두 무료, 상업적 이용과 웹 임베딩 모두 허용된다. [code:web/src/styles/global.css:13] [code:web/src/assets/fonts/WanjuDaedunsan-Bold.woff2] <!-- 공개 출처: https://www.kogl.or.kr/info/licenseType1.do (2026-11-19 확인, 1유형 조건만: 출처 표시, 상업 이용 가능, 변형 가능) -->
 
 `--font-logo`, `--font-body` 변수로 잡고 컴포넌트는 변수만 참조한다. [code:web/src/styles/tokens.css:71-72]
 
-**크기는 새로 만들지 않는다(2026-11-12 사용자 — "새 크기를 만들지 말고 이미 있는 토큰을 쓰는 쪽으로").** 새 배율 · px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다. 화면끼리 같은 계단을 맞춘다 — 제목 52 · 섹션 40 · 묶음 30 · 본문 26 · 보조 24px(본문 배율, 1440px 기준), 카드 안은 `.chat-text` 토큰. 화면별 자리는 1-5절 「로그인 화면 글씨」 · 「홈 글씨」. [code:web/src/styles/tokens.css:49] [code:web/src/styles/tokens.css:55-65] [code:web/src/styles/tokens.css:90-102] [code:web/src/auth/Login.module.css:1-7] [c:7532eb8]
+**크기는 새로 만들지 않는다(2026-11-12 사용자: "새 크기를 만들지 말고 이미 있는 토큰을 쓰는 쪽으로").** 새 배율, px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다. 화면끼리 같은 계단을 맞춘다. 제목 52, 섹션 40, 묶음 30, 본문 26, 보조 24px(본문 배율, 1440px 기준), 카드 안은 `.chat-text` 토큰. 화면별 자리는 1-5절 「로그인 화면 글씨」, 「홈 글씨」. [code:web/src/styles/tokens.css:49] [code:web/src/styles/tokens.css:55-65] [code:web/src/styles/tokens.css:90-102] [code:web/src/auth/Login.module.css:1-7] [c:7532eb8]
 
-무게는 다섯 단계 토큰이다 — `--font-weight-caption` 400(부연·보조), `--font-weight-body` 500(본문·대화·발췌), `--font-weight-label` 700(메뉴·버튼·탭·라벨, 대화 화면 인사 말풍선), `--font-weight-title` 800(화면·카드 제목, 고객 이름), `--font-weight-heavy` 900(작은 크기로 쓰는 화면 제목을 옆 글씨보다 더 굵게 — 고객 조회 제목, 2026-10-23 추가). [code:web/src/styles/tokens.css:74-79] [code:web/src/pages/CustomerSelect.module.css:6]
+무게는 다섯 단계 토큰이다. `--font-weight-caption` 400(부연, 보조), `--font-weight-body` 500(본문, 대화, 발췌), `--font-weight-label` 700(메뉴, 버튼, 탭, 라벨, 대화 화면 인사 말풍선), `--font-weight-title` 800(화면, 카드 제목, 고객 이름), `--font-weight-heavy` 900(작은 크기로 쓰는 화면 제목을 옆 글씨보다 더 굵게: 고객 조회 제목, 2026-10-23 추가). [code:web/src/styles/tokens.css:74-79] [code:web/src/pages/CustomerSelect.module.css:6]
 
 ---
 
-#### 1-4. 질감 — 그림자로 띄운다
+#### 1-4. 질감: 그림자로 띄운다
 
 그라데이션과 유리 효과는 쓰지 않는다. 평면 카드에 그림자만으로 깊이를 만든다. [code:web/src/styles/tokens.css:31-40]
 
 - **카드**: 흰 면 + 엷은 그림자. 바탕에서 살짝 떠 있어 보여야 한다. 테두리는 없거나 `--line`으로 아주 엷게 [code:web/src/styles/global.css:48-54]
-- **누를 때**: 살짝 올라오는 효과. `transform: translateY(-2px)`와 그림자를 한 단계 키우고, 150ms 안쪽으로 끝낸다. 모드 선택 카드만 -6px에 `--shadow-4`로 크게 준다 — 그 화면은 카드가 셋뿐이라 과하지 않다 [code:web/src/styles/global.css:56-61] [code:web/src/styles/tokens.css:38-41] [code:web/src/pages/ModeSelect.module.css:43]
+- **누를 때**: 살짝 올라오는 효과. `transform: translateY(-2px)`와 그림자를 한 단계 키우고, 150ms 안쪽으로 끝낸다. 모드 선택 카드만 -6px에 `--shadow-4`로 크게 준다. 그 화면은 카드가 셋뿐이라 과하지 않다 [code:web/src/styles/global.css:56-61] [code:web/src/styles/tokens.css:38-41] [code:web/src/pages/ModeSelect.module.css:43]
 - **선택 상태**: 채움을 `--primary-soft`로, 글자를 `--primary`로. 진한 보라 채움은 주요 버튼에만 쓴다 [code:web/src/styles/global.css:88-93]
-- **주요 버튼(`.btn-primary`) 세 상태 (2026-10-30)**: 호버는 `--primary-hover` + `--shadow-2`, 눌림은 `--primary-press` + `--shadow-1`, 비활성은 그대로 흐리게(불투명도 0.45). 호버·눌림은 어두워지고 비활성은 밝아져 방향이 반대라 눈으로 갈린다. 크기·위치는 바꾸지 않는다(누르다 빗나간다 — 카드의 `translateY`도 주요 버튼에는 쓰지 않는다). `.btn`과 함께 붙여도 `.btn` 호버의 연보라 배경이 덮지 않는다 — 전에는 로그인 버튼(`btn btn-primary`)이 호버에 연보라로 바뀌어 비활성처럼 보였다 [code:web/src/styles/global.css:44] [code:web/src/styles/global.css:74-86] [c:89a1f33]
+- **주요 버튼(`.btn-primary`) 세 상태 (2026-10-30)**: 호버는 `--primary-hover` + `--shadow-2`, 눌림은 `--primary-press` + `--shadow-1`, 비활성은 그대로 흐리게(불투명도 0.45). 호버, 눌림은 어두워지고 비활성은 밝아져 방향이 반대라 눈으로 갈린다. 크기, 위치는 바꾸지 않는다(누르다 빗나간다. 카드의 `translateY`도 주요 버튼에는 쓰지 않는다). `.btn`과 함께 붙여도 `.btn` 호버의 연보라 배경이 덮지 않는다. 전에는 로그인 버튼(`btn btn-primary`)이 호버에 연보라로 바뀌어 비활성처럼 보였다 [code:web/src/styles/global.css:44] [code:web/src/styles/global.css:74-86] [c:89a1f33]
 - **모서리**: 카드 12px, 컨트롤 8px [code:web/src/styles/tokens.css:44-45]
 - **움직임 줄이기** 설정을 켜둔 사용자에게는 올라오는 움직임을 끈다 [code:web/src/styles/global.css:62-64]
 
@@ -88,66 +89,66 @@
 
 - 헤더는 **스크롤해도 상단에 고정**한다(`sticky`). 배경은 `--primary-soft` [code:web/src/components/TopBar.module.css:6-20]
 - 헤더 제목은 "펫퍼민트 상담", 그 옆에 작게 "약관 안내 챗봇" [code:web/src/components/TopBar.tsx:50-51]
-- 헤더는 **두 칸 격자**다(2026-10-28) — 제목·부제 | 모드 탭(상담 중이면 "🔒 상담 중") | 전화 묶음(자동 전화·전화 울리기)·상담원. 1920px 이상은 한 줄(74px) — 제목 | 탭 | 전화 | 상담원, 그보다 좁으면 두 줄 — **첫 줄 제목 | 상담원, 둘째 줄 모드 탭 | 전화 묶음(1023px 이하는 ☰)**(2026-11-12 사용자 — 전화는 두 줄일 때 늘 둘째 줄 오른쪽 끝). 격자 칸 넷(brand · tabs · call · user), 왼쪽 · 오른쪽 묶음은 `display: contents`. 두 줄일 때 첫 줄은 제목과 상담원이 줄 전체를 함께 쓴다(상담원 칸이 열 폭을 잡으면 둘째 줄 탭이 좁아져 「사내규정」이 셋째 줄로 밀렸다). 부제는 1023px 이하에서 숨기고(820px 아래에서 제목과 상담원이 맞닿았다), 로그아웃은 719px 이하에서 ☰ 메뉴 안(641~700px에서 맞닿았다). 확인: 360~1920px 17폭 × 상담원 · 관리자 계정 — 넘침 0, 상담원 첫 줄 오른쪽 끝, 전화(☰) 둘째 줄 오른쪽 끝, 탭 한 줄, 제목 · 상담원 안 겹침, ☰ 메뉴 화면 안. **상담원 표시는 어느 폭·어느 화면(모드 선택·사내규정·상담 중·상담 종료)에서도 첫 줄 오른쪽 끝에 고정**이다. 전에는 한 줄로 흐르게 두어 🔒 상담 중 표시가 생기면 상담원 표시가 아래 줄로 밀렸다. 1024px 이상(데스크톱)은 전화 묶음을 늘 펼치고, 1023px 이하에서 ☰ 메뉴로 접는다 [code:web/src/components/TopBar.module.css:10-50] [code:web/src/components/TopBar.module.css:98-130] [code:web/src/components/TopBar.tsx:69] [c:a2ddb7f] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+- 헤더는 **두 칸 격자**다(2026-10-28): 제목, 부제 | 모드 탭(상담 중이면 "🔒 상담 중") | 전화 묶음(자동 전화, 전화 울리기), 상담원. 1920px 이상은 한 줄(74px): 제목 | 탭 | 전화 | 상담원, 그보다 좁으면 두 줄: **첫 줄 제목 | 상담원, 둘째 줄 모드 탭 | 전화 묶음(1023px 이하는 ☰)**(2026-11-12 사용자: 전화는 두 줄일 때 늘 둘째 줄 오른쪽 끝). 격자 칸 넷(brand, tabs, call, user), 왼쪽, 오른쪽 묶음은 `display: contents`. 두 줄일 때 첫 줄은 제목과 상담원이 줄 전체를 함께 쓴다(상담원 칸이 열 폭을 잡으면 둘째 줄 탭이 좁아져 「사내규정」이 셋째 줄로 밀렸다). 부제는 1023px 이하에서 숨기고(820px 아래에서 제목과 상담원이 맞닿았다), 로그아웃은 719px 이하에서 ☰ 메뉴 안(641~700px에서 맞닿았다). 확인: 360~1920px 17폭 × 상담원, 관리자 계정: 넘침 0, 상담원 첫 줄 오른쪽 끝, 전화(☰) 둘째 줄 오른쪽 끝, 탭 한 줄, 제목, 상담원 안 겹침, ☰ 메뉴 화면 안. **상담원 표시는 어느 폭, 어느 화면(모드 선택, 사내규정, 상담 중, 상담 종료)에서도 첫 줄 오른쪽 끝에 고정**이다. 전에는 한 줄로 흐르게 두어 🔒 상담 중 표시가 생기면 상담원 표시가 아래 줄로 밀렸다. 1024px 이상(데스크톱)은 전화 묶음을 늘 펼치고, 1023px 이하에서 ☰ 메뉴로 접는다 [code:web/src/components/TopBar.module.css:10-50] [code:web/src/components/TopBar.module.css:98-130] [code:web/src/components/TopBar.tsx:69] [c:a2ddb7f] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
   - 제목은 `--font-brand`(52px), 1279px 이하에서는 한 단계 낮은 `--font-xl`(40px). 1023px 이하는 부제를 숨긴다(첫 줄 = 제목, 상담원) [code:web/src/components/TopBar.module.css:56-57] [code:web/src/styles/tokens.css:62-63] [code:web/src/components/TopBar.module.css:39-44]
-  - 좌우 여백 24px, 칸 사이 16px. 헤더 높이(2026-10-28 확인, 상담 중·종료 같음): 1920px 74 · 1440/1280px 127 · 1024px 114 · 800px 118 · 400px 76. 여섯 폭 모두 가로 넘침 0, 헤더 안 겹침 0 [code:web/src/components/TopBar.module.css:17-18] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-- 본문은 2배(`--text-scale`)로 키운다. 헤더 메뉴(모드 탭·🔒 상담 중·자동 전화·전화 울리기·☰)는 모두 부제와 같은 `--font-xs`(12px × 본문 배율 = 24px)이고, 모드 아이콘은 그 글씨를 따라간다(1.5em). 좁은 화면에서는 줄인다 — 640px 이하에서 본문 1.15배. **대화 화면**(헤더 아래 전부 — 일반·사내규정·업무특화)은 본문 배율 대신 `--chat-scale` 1.3배로 같은 글자 토큰을 다시 계산한다(`.chat-text`). 지금은 붙이는 곳이 셋이다 — 일반·사내규정은 지난 채팅과 대화 칸을 함께 감싼 `Chat .layout`, 업무특화는 상담 화면 전체 `Consultation main`, 지난 상담 창(포털이라 따로 `dialog`). 상단바는 밖이라 그대로다. 그래서 대화 화면 안의 글씨는 대화 글씨를 기준으로 한 배율 안에서 단계(`--font-2xs` < `--font-xs` < `--font-sm` < `--font-md`)만 다르다. 2배일 때 1280px 업무특화 대화가 한 화면 6줄이었다(1.3배 10줄) (`--menu-scale`·`--font-menu`·`--font-menu-sub`는 2026-10-21부터 쓰는 곳이 없다) [code:web/src/styles/tokens.css:47-67] [code:web/src/styles/tokens.css:86-111] [code:web/src/components/TopBar.module.css:74] [code:web/src/components/TopBar.module.css:90] [code:web/src/pages/Chat.tsx:132] [code:web/src/pages/Consultation.tsx:52] [code:web/src/components/PastConsultations.tsx:39] [c:a407831] [c:45d5fa9]
+  - 좌우 여백 24px, 칸 사이 16px. 헤더 높이(2026-10-28 확인, 상담 중과 종료 같음): 1920px 74, 1440/1280px 127, 1024px 114, 800px 118, 400px 76. 여섯 폭 모두 가로 넘침 0, 헤더 안 겹침 0 [code:web/src/components/TopBar.module.css:17-18] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+- 본문은 2배(`--text-scale`)로 키운다. 헤더 메뉴(모드 탭, 🔒 상담 중, 자동 전화, 전화 울리기, ☰)는 모두 부제와 같은 `--font-xs`(12px × 본문 배율 = 24px)이고, 모드 아이콘은 그 글씨를 따라간다(1.5em). 좁은 화면에서는 줄인다. 640px 이하에서 본문 1.15배. **대화 화면**(헤더 아래 전부: 일반, 사내규정, 업무특화)은 본문 배율 대신 `--chat-scale` 1.3배로 같은 글자 토큰을 다시 계산한다(`.chat-text`). 지금은 붙이는 곳이 셋이다. 일반, 사내규정은 지난 채팅과 대화 칸을 함께 감싼 `Chat .layout`, 업무특화는 상담 화면 전체 `Consultation main`, 지난 상담 창(포털이라 따로 `dialog`). 상단바는 밖이라 그대로다. 그래서 대화 화면 안의 글씨는 대화 글씨를 기준으로 한 배율 안에서 단계(`--font-2xs` < `--font-xs` < `--font-sm` < `--font-md`)만 다르다. 2배일 때 1280px 업무특화 대화가 한 화면 6줄이었다(1.3배 10줄) (`--menu-scale`, `--font-menu`, `--font-menu-sub`는 2026-10-21부터 쓰는 곳이 없다) [code:web/src/styles/tokens.css:47-67] [code:web/src/styles/tokens.css:86-111] [code:web/src/components/TopBar.module.css:74] [code:web/src/components/TopBar.module.css:90] [code:web/src/pages/Chat.tsx:132] [code:web/src/pages/Consultation.tsx:52] [code:web/src/components/PastConsultations.tsx:39] [c:a407831] [c:45d5fa9]
 
   | 요소 | 토큰 | 1.3배(641px 이상) | 1.15배(640px 이하) |
   |---|---|---|---|
-  | 대화 글씨 — 일반·사내규정 로그, 입력창·플레이스홀더, 보내기, 인사 말풍선(굵기 `--font-weight-label`), 지난 채팅 제목, + 새 대화 | `--font-sm` | 16.9px | 14.9px [code:web/src/pages/Chat.module.css:23] [code:web/src/pages/Chat.module.css:45] [code:web/src/pages/Chat.module.css:48] [code:web/src/components/ChatHistory.module.css:19] [code:web/src/components/ChatHistory.module.css:64] |
-  | 대화 글씨 — 업무특화 로그, 입력창·플레이스홀더, 보내기, 지난 상담 창의 대화 | `--font-md` | 18.2px | 16.1px [code:web/src/pages/Consultation.module.css:15] [code:web/src/pages/Consultation.module.css:24] [code:web/src/components/PastConsultations.module.css:10] |
-  | 근거 조항 제목·조항 이름, 고객 이름·반려동물, 상담 중 줄 | `--font-sm` | 16.9px | 14.9px [code:web/src/components/SourcePanel.module.css:2] [code:web/src/components/SourcePanel.module.css:24] [code:web/src/components/CustomerCard.module.css:8-9] [code:web/src/pages/Consultation.module.css:18] |
-  | 근거 조항 본문(요약), 특약 칩, 부담보, 지난 채팅 묶음 제목(고정·지난 채팅) | `--font-xs` | 15.6px | 13.8px [code:web/src/components/SourcePanel.module.css:27] [code:web/src/components/CustomerCard.module.css:13] [code:web/src/components/CustomerCard.module.css:16] [code:web/src/components/ChatHistory.module.css:22] |
-  | 지난 채팅 날짜, 근거 조항 메타, 가입일·약관 버전 줄 | `--font-2xs` | 14.3px | 12.7px [code:web/src/components/ChatHistory.module.css:65] [code:web/src/components/SourcePanel.module.css:25] [code:web/src/components/CustomerCard.module.css:19] |
-  | 근거 조항 원문 본문(펼침) — 문단·항목(내어쓰기 1.1em) | `--font-xs` | 15.6px | 13.8px [code:web/src/components/SourcePanel.module.css:33] [code:web/src/components/ArticleText.module.css] |
-  | 근거 조항 원문의 항 머리(제N항)·【】 박스·표·등급 단추 | `--font-2xs` | 14.3px | 12.7px [code:web/src/components/ArticleText.module.css:8-19] |
+  | 대화 글씨: 일반, 사내규정 로그, 입력창, 플레이스홀더, 보내기, 인사 말풍선(굵기 `--font-weight-label`), 지난 채팅 제목, + 새 대화 | `--font-sm` | 16.9px | 14.9px [code:web/src/pages/Chat.module.css:23] [code:web/src/pages/Chat.module.css:45] [code:web/src/pages/Chat.module.css:48] [code:web/src/components/ChatHistory.module.css:19] [code:web/src/components/ChatHistory.module.css:64] |
+  | 대화 글씨: 업무특화 로그, 입력창, 플레이스홀더, 보내기, 지난 상담 창의 대화 | `--font-md` | 18.2px | 16.1px [code:web/src/pages/Consultation.module.css:15] [code:web/src/pages/Consultation.module.css:24] [code:web/src/components/PastConsultations.module.css:10] |
+  | 근거 조항 제목, 조항 이름, 고객 이름, 반려동물, 상담 중 줄 | `--font-sm` | 16.9px | 14.9px [code:web/src/components/SourcePanel.module.css:2] [code:web/src/components/SourcePanel.module.css:24] [code:web/src/components/CustomerCard.module.css:8-9] [code:web/src/pages/Consultation.module.css:18] |
+  | 근거 조항 본문(요약), 특약 칩, 부담보, 지난 채팅 묶음 제목(고정, 지난 채팅) | `--font-xs` | 15.6px | 13.8px [code:web/src/components/SourcePanel.module.css:27] [code:web/src/components/CustomerCard.module.css:13] [code:web/src/components/CustomerCard.module.css:16] [code:web/src/components/ChatHistory.module.css:22] |
+  | 지난 채팅 날짜, 근거 조항 메타, 가입일, 약관 버전 줄 | `--font-2xs` | 14.3px | 12.7px [code:web/src/components/ChatHistory.module.css:65] [code:web/src/components/SourcePanel.module.css:25] [code:web/src/components/CustomerCard.module.css:19] |
+  | 근거 조항 원문 본문(펼침): 문단, 항목(내어쓰기 1.1em) | `--font-xs` | 15.6px | 13.8px [code:web/src/components/SourcePanel.module.css:33] [code:web/src/components/ArticleText.module.css] |
+  | 근거 조항 원문의 항 머리(제N항), 【】 박스, 표, 등급 단추 | `--font-2xs` | 14.3px | 12.7px [code:web/src/components/ArticleText.module.css:8-19] |
   | 지난 상담 창 제목 | `--font-lg` | 23.4px | 20.7px [code:web/src/styles/tokens.css:90-102] [code:web/src/styles/tokens.css:110-111] |
 
-  상단바(제목·부제·모드 탭·전화 묶음)는 본문 배율 그대로다(모드 탭 24px). 대화 안 카드(계산 카드·답 아래 표)는 원래 로그 안이라 바뀌지 않았다. [code:web/src/styles/tokens.css:86-89] [code:web/src/components/TopBar.module.css:74]
+  상단바(제목, 부제, 모드 탭, 전화 묶음)는 본문 배율 그대로다(모드 탭 24px). 대화 안 카드(계산 카드, 답 아래 표)는 원래 로그 안이라 바뀌지 않았다. [code:web/src/styles/tokens.css:86-89] [code:web/src/components/TopBar.module.css:74]
   배율을 줄인 만큼 업무특화 고객 정보 블록이 144 → 110px(800px 폭 279 → 110px)로 낮아지고 대화 로그가 그만큼 길어졌다(1280px 441 → 502px). (2026-10-23 기준) [c:45d5fa9] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  확인(2026-10-23): 1920·1440·1280·1024·800·400px × 세 모드에서 가로 넘침 0, 영역 겹침 0(899px 이하에서 지난 채팅이 대화 위로 덮이는 서랍은 원래 설계), [c:45d5fa9]
+  확인(2026-10-23): 1920, 1440, 1280, 1024, 800, 400px × 세 모드에서 가로 넘침 0, 영역 겹침 0(899px 이하에서 지난 채팅이 대화 위로 덮이는 서랍은 원래 설계), [c:45d5fa9]
   입력창 한 줄 높이 안에 글자가 들어가고 보내기가 보인다, 지난 채팅 60건을 더 붙여도 목록만 스크롤되고 긴 제목은 말줄임. (2026-10-23 기준) [code:web/src/components/ChatHistory.module.css:5] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-- **앱 로그인(2026-10-28, `PETMINT_AUTH=app`)** — 헤더 첫 줄 오른쪽 끝(전화 묶음 다음)에 "권태호 상담원"과 로그아웃. 팀은 쓰지 않는다 — 상담원 전용 도구라 팀이 하나(고객상담팀)다. 헤더 메뉴와 같은 `--font-xs`, 이름은 `--font-weight-label`. 아바타 원은 쓰지 않는다. 719px 이하는 로그아웃이 ☰ 메뉴 안으로 들어간다. 상담 중에는 로그아웃이 잠긴다. access 모드에서는 보이지 않는다 **2026-11-12부터 "이름 직급 [권한]"** — 예: 「권태호 부장 [관리자]」 · 「송미경 차장 [상담원]」(사용자 — 직급과 권한은 따로다). 권한은 거절 표시와 같은 작은 배지(`components/Badges` `RoleBadge` — `--font-2xs` 굵게, 테두리 칩 모서리 6px, 관리자 `--primary` · 상담원 `--text-dim`). 관리자 화면 상담원 목록 · 상담 목록 머리도 같은 규칙. 400px 이하는 이 칸의 사이를 0.3em으로 좁힌다(360px에서 제목과 2px로 붙었다) [code:web/src/components/TopBar.tsx:41-42] [code:web/src/components/TopBar.tsx:103-118] [code:web/src/components/TopBar.module.css:132-137] [code:web/src/components/Badges.tsx:9] [code:web/src/components/Badges.module.css:1-8] [code:web/src/App.tsx:28-29] [c:fa1754c] [code:web/src/components/TopBar.module.css:46-50]
-  - 로그인·비밀번호 변경 화면: `--primary-soft` 바탕 가운데 `.raised` 카드 하나(최대 560px). 입력칸 테두리 `--line` · 포커스 `--primary`, 오류 `--warn`, 버튼 `.btn-primary`. 확인(2026-10-28): 1440·400px 가로 넘침 0 [code:web/src/auth/Login.module.css:8-36] [code:web/src/auth/Login.module.css:9] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  - **로그인 화면 글씨(2026-11-12)** — 새 크기를 만들지 않고 있는 토큰만 쓴다. 기준은 **로그인 뒤 홈**(모드 선택 · 상단바)이고, 체험 카드만 **업무특화 고객 카드**와 같다(사용자): [code:web/src/auth/Login.module.css:1-7]
-    | 자리 | 토큰 | 1440 · 1024 · 400px | 홈에서 같은 토큰을 쓰는 곳 |
+- **앱 로그인(2026-10-28, `PETMINT_AUTH=app`)**: 헤더 첫 줄 오른쪽 끝(전화 묶음 다음)에 "권태호 상담원"과 로그아웃. 팀은 쓰지 않는다. 상담원 전용 도구라 팀이 하나(고객상담팀)다. 헤더 메뉴와 같은 `--font-xs`, 이름은 `--font-weight-label`. 아바타 원은 쓰지 않는다. 719px 이하는 로그아웃이 ☰ 메뉴 안으로 들어간다. 상담 중에는 로그아웃이 잠긴다. access 모드에서는 보이지 않는다 **2026-11-12부터 "이름 직급 [권한]"**. 예: 「권태호 부장 [관리자]」, 「송미경 차장 [상담원]」(사용자: 직급과 권한은 따로다). 권한은 거절 표시와 같은 작은 배지(`components/Badges` `RoleBadge`: `--font-2xs` 굵게, 테두리 칩 모서리 6px, 관리자 `--primary`, 상담원 `--text-dim`). 관리자 화면 상담원 목록, 상담 목록 머리도 같은 규칙. 400px 이하는 이 칸의 사이를 0.3em으로 좁힌다(360px에서 제목과 2px로 붙었다) [code:web/src/components/TopBar.tsx:41-42] [code:web/src/components/TopBar.tsx:103-118] [code:web/src/components/TopBar.module.css:132-137] [code:web/src/components/Badges.tsx:9] [code:web/src/components/Badges.module.css:1-8] [code:web/src/App.tsx:28-29] [c:fa1754c] [code:web/src/components/TopBar.module.css:46-50]
+  - 로그인, 비밀번호 변경 화면: `--primary-soft` 바탕 가운데 `.raised` 카드 하나(최대 560px). 입력칸 테두리 `--line`, 포커스 `--primary`, 오류 `--warn`, 버튼 `.btn-primary`. 확인(2026-10-28): 1440, 400px 가로 넘침 0 [code:web/src/auth/Login.module.css:8-36] [code:web/src/auth/Login.module.css:9] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  - **로그인 화면 글씨(2026-11-12)**: 새 크기를 만들지 않고 있는 토큰만 쓴다. 기준은 **로그인 뒤 홈**(모드 선택, 상단바)이고, 체험 카드만 **업무특화 고객 카드**와 같다(사용자): [code:web/src/auth/Login.module.css:1-7]
+    | 자리 | 토큰 | 1440, 1024, 400px | 홈에서 같은 토큰을 쓰는 곳 |
     | --- | --- | --- | --- |
-    | 로고 「펫퍼민트 상담」 | `--font-brand`, 1279px 이하 `--font-xl`(로고 글꼴) | 52 · 40 · 23px | 상단바 로고(같은 규칙 — 로그인 → 홈에서 그대로) · 「누구와 이야기할까요?」 [code:web/src/auth/Login.module.css:10-11] [code:web/src/components/TopBar.module.css:56-57] [code:web/src/pages/ModeSelect.module.css:13] |
-    | 「사번 없이 체험하기」 | `--font-xl`, 1279px 이하 `--font-lg`(로고 글꼴) | 40 · 36 · 21px | "기술 구성" 제목. 로고가 작아지는 폭에서는 로고보다 한 단계 아래 [code:web/src/auth/Login.module.css:43-44] [code:web/src/pages/ModeSelect.module.css:169] |
-    | 「상담원/관리자로 체험하기」 | `--font-lead` 보라 | 30 · 30 · 17px | 소개 모드 이름, 말풍선 [code:web/src/auth/Login.module.css:50] [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:127] |
-    | 입력칸 · 로그인 버튼 | `--font-sm` | 26 · 26 · 15px | 상단바 버튼과 한 단계 차이 [code:web/src/auth/Login.module.css:18] [code:web/src/auth/Login.module.css:37] |
-    | 라벨 · 안내 · 체험 안내 · 사번 기억하기 | `--font-xs` 캡션 `--text-dim` | 24 · 24 · 14px | 상단바 메뉴 · 부제 [code:web/src/auth/Login.module.css:13-15] [code:web/src/auth/Login.module.css:34] [code:web/src/auth/Login.module.css:45] |
-    | 체험 카드 이름 · 근속 · 칩 | `.chat-text` 안 `--font-sm` 800 · `--font-xs` · `--font-2xs` 700 | 16.9 · 15.6 · 14.3px | 업무특화 고객 카드(`CustomerSelect`) — `.raised .lift` 면 · 그림자 · 호버, 안쪽 12/14px, 칩은 테두리 · 모서리 6px [code:web/src/auth/Login.module.css:51-64] |
-    묶음 사이(로그인 카드 ↔ 체험 제목 ↔ 상담원 ↔ 관리자)는 56 · 40 · 48 · 56px(휴대폰 36 · 28 · 32 · 36) — 붙어 보였다(사용자). 한 화면에 다 담지 않는다(스크롤). [code:web/src/auth/Login.module.css:8] [code:web/src/auth/Login.module.css:42] [code:web/src/auth/Login.module.css:46-47] [code:web/src/auth/Login.module.css:67-73]
-  - **비밀번호 보기(2026-11-12)** — 비밀번호 칸마다 오른쪽 끝에 눈 단추를 겹친다(런슈즈 로그인과 같은 방식 · 같은 그림). 가렸을 때 사선 그은 눈, 보일 때 눈. `aria-pressed` · 「비밀번호 보기/가리기」. 색 `--text-dim`, 호버 · 켬 `--text`. 칸마다 따로 켠다(변경 화면의 새 비밀번호 · 확인) [code:web/src/auth/Login.tsx:168-193] [code:web/src/auth/Login.module.css:27-29] <!-- 확인 못 함: 런슈즈 로그인은 다른 저장소라 code 표시로 걸 수 없음 -->
-  - **체험 카드(2026-11-12, 13번 2-4절)** — 로그인 카드 아래 구분선(`--line`), 「사번 없이 체험하기」, 상담원 카드 2줄이 가로로 흐른다(공용 `components/FlowCarousel` — 런슈즈 `DemoCards`와 같은 동작 — 초당 13px, 호버 멈춤, 끌기 · 관성, 움직임 줄이기면 멈춤). 흐르는 동안 양 끝 32px을 흐리게(mask) — 걸쳐 지나가는 카드가 잘린 것이 아니라 흘러가는 것으로 보이게. 상담원 → 관리자를 **세로로 쌓는다**(흐름이 화면 전체 폭을 쓴다 — 나란히 두면 1280px에서 끝 카드가 반쯤 잘렸다). 카드 300px(칩이 한 줄에 둘), 관리자 카드는 `.raised` 테두리를 점선(`--text-dim`)으로. 칩은 고객 카드 칩 모양에 `--primary`. 카드 그림자 · 호버 들림이 잘리지 않게 흐름 칸 위아래에 여유(8 · 14px). 1920px은 다 보여 흐르지 않고 가운데 선다 [code:web/src/auth/DemoCards.tsx:1-8] [code:web/src/auth/DemoCards.tsx:32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/components/FlowCarousel.tsx:78-88] [code:web/src/components/FlowCarousel.module.css:2-8] [code:web/src/auth/Login.module.css:38-58] [c:cc346b8] [docs:02_pipeline/13_access_and_tunnel.md]
-  - 확인(2026-11-12, 헤드리스 크롬 1920 · 1440 · 1280 · 1024 · 800 · 400): 페이지 가로 넘침 0, 흐름 칸이 페이지 안, 비밀번호 보기 — 입력 뒤 눌러 `text`, 다시 눌러 `password`. 세로로 쌓아 1440 · 1280 · 1024px은 관리자 카드가 한 화면 아래(스크롤) [c:cc346b8] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  - 사번 기억하기(2026-10-30): 사번 칸 바로 밑 체크박스, `--font-xs` 캡션 무게 `--text-dim`, 체크 색 `--primary`(accent-color). 기본 꺼짐(공용 PC). 체크하면 사번만 localStorage `petmint.login.employeeId`에 두고, 풀면 바로 지운다. 저장된 사번이 있으면 체크된 채로 열고 비밀번호 칸에 포커스. 비밀번호는 저장하지 않는다 — 브라우저 비밀번호 관리자에 맡기고, 입력칸에 `name`·`autocomplete`(사번 `username`, 비밀번호 `current-password`, 변경 화면 `new-password` + 숨긴 `username`)를 단다 [code:web/src/auth/Login.tsx:14-17] [code:web/src/auth/Login.tsx:63-64] [code:web/src/auth/Login.tsx:105-126] [code:web/src/auth/Login.module.css:31-35] [c:89a1f33]
-  - 확인(2026-10-30, 미리보기 빌드 + API 가짜 응답): 1920·1440·1280·1024·800·400px 가로 넘침 0, 체크 → 새로고침에 사번 채워짐, 해제 → 저장값 지워짐, 로그인 시도 뒤 localStorage·sessionStorage에 비밀번호 없음, 버튼 비활성·호버·눌림 색이 서로 다르고 버튼 상자 크기·위치 그대로 [c:89a1f33] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-- **관리자 화면(2026-11-12, 13번 2-5절)** — 들어가는 곳은 헤더 이름 옆 **「관리자 화면」**(관리자 계정만. 같은 날 처음에는 「관리」였다 — 사용자). 모드 탭에 넣지 않는다 — 모드 탭은 캐릭터가 있는 대화 모드이고, 탭이 하나 늘면 둘째 줄 탭 칸과 🔒 상담 중 자리가 다시 어긋난다. 로그아웃과 같은 모양(`--font-xs`, 같은 테두리 · 호버), 열려 있으면 선택된 모드 탭과 같은 표시(`--card` 면 · `--primary` 글자 · `--shadow-1`). **호버 설명(툴팁)은 두지 않는다** — 다른 헤더 단추에 없어 여기만 튀었다. 무엇을 보는 화면인지는 화면 안 제목 옆에 쓴다. 상담 중에는 잠긴다(로그아웃과 같다 — 잠겼을 때만 "상담을 종료한 뒤 …" 설명이 붙는 것도 로그아웃과 같다). 나갈 때는 로고(홈)나 모드 탭 [code:web/src/components/TopBar.tsx:110-117] [code:web/src/components/TopBar.module.css:142-150] [code:web/src/App.tsx:75-81] [c:06536d3] [docs:02_pipeline/13_access_and_tunnel.md]
+    | 로고 「펫퍼민트 상담」 | `--font-brand`, 1279px 이하 `--font-xl`(로고 글꼴) | 52, 40, 23px | 상단바 로고(같은 규칙: 로그인 → 홈에서 그대로), 「누구와 이야기할까요?」 [code:web/src/auth/Login.module.css:10-11] [code:web/src/components/TopBar.module.css:56-57] [code:web/src/pages/ModeSelect.module.css:13] |
+    | 「사번 없이 체험하기」 | `--font-xl`, 1279px 이하 `--font-lg`(로고 글꼴) | 40, 36, 21px | "기술 구성" 제목. 로고가 작아지는 폭에서는 로고보다 한 단계 아래 [code:web/src/auth/Login.module.css:43-44] [code:web/src/pages/ModeSelect.module.css:169] |
+    | 「상담원/관리자로 체험하기」 | `--font-lead` 보라 | 30, 30, 17px | 소개 모드 이름, 말풍선 [code:web/src/auth/Login.module.css:50] [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:127] |
+    | 입력칸, 로그인 버튼 | `--font-sm` | 26, 26, 15px | 상단바 버튼과 한 단계 차이 [code:web/src/auth/Login.module.css:18] [code:web/src/auth/Login.module.css:37] |
+    | 라벨, 안내, 체험 안내, 사번 기억하기 | `--font-xs` 캡션 `--text-dim` | 24, 24, 14px | 상단바 메뉴, 부제 [code:web/src/auth/Login.module.css:13-15] [code:web/src/auth/Login.module.css:34] [code:web/src/auth/Login.module.css:45] |
+    | 체험 카드 이름, 근속, 칩 | `.chat-text` 안 `--font-sm` 800, `--font-xs`, `--font-2xs` 700 | 16.9, 15.6, 14.3px | 업무특화 고객 카드(`CustomerSelect`): `.raised .lift` 면, 그림자, 호버, 안쪽 12/14px, 칩은 테두리, 모서리 6px [code:web/src/auth/Login.module.css:51-64] |
+    묶음 사이(로그인 카드 ↔ 체험 제목 ↔ 상담원 ↔ 관리자)는 56, 40, 48, 56px(휴대폰 36, 28, 32, 36): 붙어 보였다(사용자). 한 화면에 다 담지 않는다(스크롤). [code:web/src/auth/Login.module.css:8] [code:web/src/auth/Login.module.css:42] [code:web/src/auth/Login.module.css:46-47] [code:web/src/auth/Login.module.css:67-73]
+  - **비밀번호 보기(2026-11-12)**: 비밀번호 칸마다 오른쪽 끝에 눈 단추를 겹친다(런슈즈 로그인과 같은 방식, 같은 그림). 가렸을 때 사선 그은 눈, 보일 때 눈. `aria-pressed`, 「비밀번호 보기/가리기」. 색 `--text-dim`, 호버, 켬 `--text`. 칸마다 따로 켠다(변경 화면의 새 비밀번호, 확인) [code:web/src/auth/Login.tsx:168-193] [code:web/src/auth/Login.module.css:27-29] <!-- 확인 못 함: 런슈즈 로그인은 다른 저장소라 code 표시로 걸 수 없음 -->
+  - **체험 카드(2026-11-12, 13번 2-4절)**: 로그인 카드 아래 구분선(`--line`), 「사번 없이 체험하기」, 상담원 카드 2줄이 가로로 흐른다(공용 `components/FlowCarousel`. 런슈즈 `DemoCards`와 같은 동작: 초당 13px, 호버 멈춤, 끌기, 관성, 움직임 줄이기면 멈춤). 흐르는 동안 양 끝 32px을 흐리게(mask): 걸쳐 지나가는 카드가 잘린 것이 아니라 흘러가는 것으로 보이게. 상담원 → 관리자를 **세로로 쌓는다**(흐름이 화면 전체 폭을 쓴다. 나란히 두면 1280px에서 끝 카드가 반쯤 잘렸다). 카드 300px(칩이 한 줄에 둘), 관리자 카드는 `.raised` 테두리를 점선(`--text-dim`)으로. 칩은 고객 카드 칩 모양에 `--primary`. 카드 그림자, 호버 들림이 잘리지 않게 흐름 칸 위아래에 여유(8, 14px). 1920px은 다 보여 흐르지 않고 가운데 선다 [code:web/src/auth/DemoCards.tsx:1-8] [code:web/src/auth/DemoCards.tsx:32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/components/FlowCarousel.tsx:78-88] [code:web/src/components/FlowCarousel.module.css:2-8] [code:web/src/auth/Login.module.css:38-58] [c:cc346b8] [docs:02_pipeline/13_access_and_tunnel.md]
+  - 확인(2026-11-12, 헤드리스 크롬 1920, 1440, 1280, 1024, 800, 400): 페이지 가로 넘침 0, 흐름 칸이 페이지 안, 비밀번호 보기: 입력 뒤 눌러 `text`, 다시 눌러 `password`. 세로로 쌓아 1440, 1280, 1024px은 관리자 카드가 한 화면 아래(스크롤) [c:cc346b8] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  - 사번 기억하기(2026-10-30): 사번 칸 바로 밑 체크박스, `--font-xs` 캡션 무게 `--text-dim`, 체크 색 `--primary`(accent-color). 기본 꺼짐(공용 PC). 체크하면 사번만 localStorage `petmint.login.employeeId`에 두고, 풀면 바로 지운다. 저장된 사번이 있으면 체크된 채로 열고 비밀번호 칸에 포커스. 비밀번호는 저장하지 않는다. 브라우저 비밀번호 관리자에 맡기고, 입력칸에 `name`, `autocomplete`(사번 `username`, 비밀번호 `current-password`, 변경 화면 `new-password` + 숨긴 `username`)를 단다 [code:web/src/auth/Login.tsx:14-17] [code:web/src/auth/Login.tsx:63-64] [code:web/src/auth/Login.tsx:105-126] [code:web/src/auth/Login.module.css:31-35] [c:89a1f33]
+  - 확인(2026-10-30, 미리보기 빌드 + API 가짜 응답): 1920, 1440, 1280, 1024, 800, 400px 가로 넘침 0, 체크 → 새로고침에 사번 채워짐, 해제 → 저장값 지워짐, 로그인 시도 뒤 localStorage, sessionStorage에 비밀번호 없음, 버튼 비활성, 호버, 눌림 색이 서로 다르고 버튼 상자 크기, 위치 그대로 [c:89a1f33] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+- **관리자 화면(2026-11-12, 13번 2-5절)**: 들어가는 곳은 헤더 이름 옆 **「관리자 화면」**(관리자 계정만. 같은 날 처음에는 「관리」였다(사용자)). 모드 탭에 넣지 않는다. 모드 탭은 캐릭터가 있는 대화 모드이고, 탭이 하나 늘면 둘째 줄 탭 칸과 🔒 상담 중 자리가 다시 어긋난다. 로그아웃과 같은 모양(`--font-xs`, 같은 테두리, 호버), 열려 있으면 선택된 모드 탭과 같은 표시(`--card` 면, `--primary` 글자, `--shadow-1`). **호버 설명(툴팁)은 두지 않는다**. 다른 헤더 단추에 없어 여기만 튀었다. 무엇을 보는 화면인지는 화면 안 제목 옆에 쓴다. 상담 중에는 잠긴다(로그아웃과 같다. 잠겼을 때만 "상담을 종료한 뒤 …" 설명이 붙는 것도 로그아웃과 같다). 나갈 때는 로고(홈)나 모드 탭 [code:web/src/components/TopBar.tsx:110-117] [code:web/src/components/TopBar.module.css:142-150] [code:web/src/App.tsx:75-81] [c:06536d3] [docs:02_pipeline/13_access_and_tunnel.md]
   - 「관리자 화면」 단추는 889px 이하에서 ☰ 안이다(로그아웃은 719px 그대로). 한 줄 경계는 1919px(1920px부터 한 줄)다 [code:web/src/components/TopBar.module.css:32-42] [code:web/src/components/TopBar.module.css:142-149] [c:fa1754c]
-  - 화면 맨 위: 제목 「관리자 화면」(`--font-lg`, 지난 상담 창 제목) **아래**에 설명 두 문단(사이 한 줄, `--font-xs` 캡션 `--text-dim`, 사용자 문구 그대로) — "모든 상담원의 업무특화 상담 내역과 사내규정 대화 기록을 봅니다. 일반 모드 대화는 개인적인 내용이라 보이지 않습니다." / "직원 탭은 인사 원장을 그대로 보여 줍니다. 직원 추가나 정보 수정은 인사 시스템에서 합니다." 그 아래 갈래 「상담 조회」 · 「직원」. [code:web/src/pages/Admin.tsx:41-47]
-  - 화면은 대화 배율(`.chat-text`) 안의 기존 토큰만 쓴다 — 새 크기 없음. 갈래 · 기간 버튼 · 날짜 칸 · 목록 줄 `--font-sm`, 보조 줄(건수 · 제목 · 시각 설명) · 필터 칩 · 보이는 인원 `--font-xs`, 꼬리표(업무특화 · 퇴직 · 목록에서 지움) · 정렬 표시 ▲▼ `--font-2xs`, 펼친 대화 `--font-md`(지난 상담 창과 같다), 직원 표 `--font-xs`(머리행 `--primary-soft`, 칸 선 `--line` — 근거 조항 원문 표와 같은 색). 거절은 부담보 경고와 같은 주황 테두리 칩(`--warn` · `--warn-fill`), 진행 중은 `--call`. 이름 뒤 직급, 그 옆 권한 배지(헤더와 같다). 상담 목록의 모드는 배지 — 업무특화 · 사내규정 둘 다 모드 탭과 같은 캐릭터 아이콘 + 모드 이름(`ModeBadge`, 테두리 `--line`). 모드 탭에는 모드별 색이 따로 없고 캐릭터가 모드를 가르므로 색 대신 캐릭터를 붙였다. [code:web/src/pages/Admin.module.css] [code:web/src/components/Badges.tsx:15] [code:web/src/components/Badges.module.css:9-11] [c:fa1754c]
-  - 직원 표: 머리를 누르면 오름차순 ↔ 내림차순(정렬 중인 칸에만 ▲▼ `--primary`, `aria-sort`), 기본은 사번 오름차순. 위에 필터 칩 셋(재직 · 고용 · 앱 계정, 고른 칩은 `.selected`)과 오른쪽 끝 보이는 인원 [code:web/src/pages/Admin.tsx:274] [code:web/src/pages/Admin.tsx:309-313] [code:web/src/pages/Admin.tsx:326-328] [code:web/src/pages/Admin.module.css:79]
-  - 1024px 이상은 두 칸 — 상담원 목록(260~340px, 스크롤해도 위에 붙어 있다) | 상담 목록. 상담을 누르면 그 자리에서 펼쳐진다. 1023px 이하는 한 칸씩 — 상담원 목록 → 상담 목록(「← 상담원」으로 돌아온다). 직원 표가 칸보다 넓으면 표만 가로로 민다 [code:web/src/pages/Admin.module.css:24-32] [code:web/src/pages/Admin.module.css:84] [code:web/src/pages/Admin.tsx:159]
-  - 확인(2026-11-12, 헤드리스 크롬 1920 · 1440 · 1280 · 1024 · 800 · 400 × 비밀번호 관리자 · 체험 관리자 · 상담원): 페이지 가로 넘침 0. 홈 헤더 높이 74 · 127 · 127 · 114 · 117 · 74px로 전과 같고, 탭 한 줄, 상담원 첫 줄 오른쪽 끝. 헤더 규칙 18폭(1920 · 1919 · 1860 · 1440 · 1280 · 1024 · 1023 · 840 · 820 · 819 · 800 · 760 · 720 · 719 · 641 · 640 · 400 · 360) 체험 관리자 모두 통과. 상담 중 체험 관리자 1920px 74px, 1919 · 1880px 127px. 상담원 계정은 「관리자 화면」이 없고 관리자 API 넷이 404 [code:web/src/App.tsx:81] [code:app/routers/admin.py:5] [code:app/routers/admin.py:22-32] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-- **사내규정 본인 정보 블록(2026-10-28)** — 인사 원장에 있는 상담원이면 사내규정 대화창 위(캐릭터 인사 아래)에 뜬다. 업무특화 고객 블록과 같은 CSS(`CustomerCard.module.css`)·같은 세 층: 큰 줄(이름 `--font-sm` 굵게 · 직급 · 입사일·근속 `--font-xs` dim — 팀은 하나라 띄우지 않는다, 직급은 승진·수습·정년 계산에 걸린다) / 칩 줄(연차 잔여·총·사용, 자격증 — 사본 미제출은 부담보와 같은 경고 칩) / 작은 줄(`--font-2xs` faint: 연차 기간·수습 종료·다음 승진 체류 충족일·정년퇴직일). **급여·평균임금·수당 금액·인사평가는 띄우지 않는다** — 옆에서 볼 수 있다. 물을 때만 답에 나온다. 높이 1440px 98px(고객 블록 110px), 400px 145~207px, 가로 넘침 0 [code:web/src/components/EmployeeCard.tsx:1-45] [code:web/src/pages/Chat.tsx:150] [code:web/src/components/CustomerCard.module.css:8-24] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-- **근거 조항 원문(2026-10-28)** — 펼친 원문 칸 최대 높이 320 → 480px. 【】 박스는 왼쪽 3px `--primary-soft` 띠 + `--surface` 바탕, 예시 박스는 띠만 `--grade-low`. 표는 머리행 `--primary-soft`, 칸 선 `--line`, 패널보다 넓으면 표만 가로로 민다. 그림 글자는 `--mono`. 등급 단추는 가입 등급만 `--primary`. 여섯 폭(1920~400px) 가로 넘침 0(전후 화면 `data/review/article_display/app_*.png`) [code:web/src/components/SourcePanel.module.css:35] [code:web/src/components/ArticleText.module.css:10-19] [code:data/review/article_display/app_q1_1280.png] [code:data/review/article_display_survey.md:77] [c:d079589]
+  - 화면 맨 위: 제목 「관리자 화면」(`--font-lg`, 지난 상담 창 제목) **아래**에 설명 두 문단(사이 한 줄, `--font-xs` 캡션 `--text-dim`, 사용자 문구 그대로): "모든 상담원의 업무특화 상담 내역과 사내규정 대화 기록을 봅니다. 일반 모드 대화는 개인적인 내용이라 보이지 않습니다." / "직원 탭은 인사 원장을 그대로 보여 줍니다. 직원 추가나 정보 수정은 인사 시스템에서 합니다." 그 아래 갈래 「상담 조회」, 「직원」. [code:web/src/pages/Admin.tsx:41-47]
+  - 화면은 대화 배율(`.chat-text`) 안의 기존 토큰만 쓴다. 새 크기 없음. 갈래, 기간 버튼, 날짜 칸, 목록 줄 `--font-sm`, 보조 줄(건수, 제목, 시각 설명), 필터 칩, 보이는 인원 `--font-xs`, 꼬리표(업무특화, 퇴직, 목록에서 지움), 정렬 표시 ▲▼ `--font-2xs`, 펼친 대화 `--font-md`(지난 상담 창과 같다), 직원 표 `--font-xs`(머리행 `--primary-soft`, 칸 선 `--line`: 근거 조항 원문 표와 같은 색). 거절은 부담보 경고와 같은 주황 테두리 칩(`--warn`, `--warn-fill`), 진행 중은 `--call`. 이름 뒤 직급, 그 옆 권한 배지(헤더와 같다). 상담 목록의 모드는 배지: 업무특화, 사내규정 둘 다 모드 탭과 같은 캐릭터 아이콘 + 모드 이름(`ModeBadge`, 테두리 `--line`). 모드 탭에는 모드별 색이 따로 없고 캐릭터가 모드를 가르므로 색 대신 캐릭터를 붙였다. [code:web/src/pages/Admin.module.css] [code:web/src/components/Badges.tsx:15] [code:web/src/components/Badges.module.css:9-11] [c:fa1754c]
+  - 직원 표: 머리를 누르면 오름차순 ↔ 내림차순(정렬 중인 칸에만 ▲▼ `--primary`, `aria-sort`), 기본은 사번 오름차순. 위에 필터 칩 셋(재직, 고용, 앱 계정, 고른 칩은 `.selected`)과 오른쪽 끝 보이는 인원 [code:web/src/pages/Admin.tsx:274] [code:web/src/pages/Admin.tsx:309-313] [code:web/src/pages/Admin.tsx:326-328] [code:web/src/pages/Admin.module.css:79]
+  - 1024px 이상은 두 칸: 상담원 목록(260~340px, 스크롤해도 위에 붙어 있다) | 상담 목록. 상담을 누르면 그 자리에서 펼쳐진다. 1023px 이하는 한 칸씩: 상담원 목록 → 상담 목록(「← 상담원」으로 돌아온다). 직원 표가 칸보다 넓으면 표만 가로로 민다 [code:web/src/pages/Admin.module.css:24-32] [code:web/src/pages/Admin.module.css:84] [code:web/src/pages/Admin.tsx:159]
+  - 확인(2026-11-12, 헤드리스 크롬 1920, 1440, 1280, 1024, 800, 400 × 비밀번호 관리자, 체험 관리자, 상담원): 페이지 가로 넘침 0. 홈 헤더 높이 74, 127, 127, 114, 117, 74px로 전과 같고, 탭 한 줄, 상담원 첫 줄 오른쪽 끝. 헤더 규칙 18폭(1920, 1919, 1860, 1440, 1280, 1024, 1023, 840, 820, 819, 800, 760, 720, 719, 641, 640, 400, 360) 체험 관리자 모두 통과. 상담 중 체험 관리자 1920px 74px, 1919, 1880px 127px. 상담원 계정은 「관리자 화면」이 없고 관리자 API 넷이 404 [code:web/src/App.tsx:81] [code:app/routers/admin.py:5] [code:app/routers/admin.py:22-32] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+- **사내규정 본인 정보 블록(2026-10-28)**: 인사 원장에 있는 상담원이면 사내규정 대화창 위(캐릭터 인사 아래)에 뜬다. 업무특화 고객 블록과 같은 CSS(`CustomerCard.module.css`), 같은 세 층: 큰 줄(이름 `--font-sm` 굵게, 직급, 입사일, 근속 `--font-xs` dim: 팀은 하나라 띄우지 않는다, 직급은 승진, 수습, 정년 계산에 걸린다) / 칩 줄(연차 잔여, 총, 사용, 자격증: 사본 미제출은 부담보와 같은 경고 칩) / 작은 줄(`--font-2xs` faint: 연차 기간, 수습 종료, 다음 승진 체류 충족일, 정년퇴직일). **급여, 평균임금, 수당 금액, 인사평가는 띄우지 않는다**. 옆에서 볼 수 있다. 물을 때만 답에 나온다. 높이 1440px 98px(고객 블록 110px), 400px 145~207px, 가로 넘침 0 [code:web/src/components/EmployeeCard.tsx:1-45] [code:web/src/pages/Chat.tsx:150] [code:web/src/components/CustomerCard.module.css:8-24] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+- **근거 조항 원문(2026-10-28)**: 펼친 원문 칸 최대 높이 320 → 480px. 【】 박스는 왼쪽 3px `--primary-soft` 띠 + `--surface` 바탕, 예시 박스는 띠만 `--grade-low`. 표는 머리행 `--primary-soft`, 칸 선 `--line`, 패널보다 넓으면 표만 가로로 민다. 그림 글자는 `--mono`. 등급 단추는 가입 등급만 `--primary`. 여섯 폭(1920~400px) 가로 넘침 0(전후 화면 `data/review/article_display/app_*.png`) [code:web/src/components/SourcePanel.module.css:35] [code:web/src/components/ArticleText.module.css:10-19] [code:data/review/article_display/app_q1_1280.png] [code:data/review/article_display_survey.md:77] [c:d079589]
 - **모드 선택 카드는 화면 폭을 셋으로 나눈 폭**으로 키워 세 개가 화면을 차지하게 한다 [code:web/src/pages/ModeSelect.module.css:16-27]
-- **홈 글씨(2026-11-12)** — 로그인 화면을 손본 뒤 홈이 오히려 커 보여(사용자) 로그인 화면과 같은 계단에 맞췄다. 새 크기 없이 토큰만 한두 단계 낮췄다(1440px 기준, 400px은 본문 배율 1.15): [code:web/src/pages/ModeSelect.module.css:67-68] [code:web/src/styles/tokens.css:110-111] [c:7532eb8]
+- **홈 글씨(2026-11-12)**: 로그인 화면을 손본 뒤 홈이 오히려 커 보여(사용자) 로그인 화면과 같은 계단에 맞췄다. 새 크기 없이 토큰만 한두 단계 낮췄다(1440px 기준, 400px은 본문 배율 1.15): [code:web/src/pages/ModeSelect.module.css:67-68] [code:web/src/styles/tokens.css:110-111] [c:7532eb8]
   | 자리 | 전 → 후 |
   | --- | --- |
   | 「누구와 이야기할까요?」 | `--font-brand` 52 그대로 [code:web/src/pages/ModeSelect.module.css:13] |
-  | 모드 카드 이름 · 대사 | `--font-xl` 40 → `--font-lg` 36 · `--font-lead` 30 → `--font-sm` 26 [code:web/src/pages/ModeSelect.module.css:69-70] |
-  | 소개 모드 이름 · 말풍선 | `--font-lg` 36 → `--font-lead` 30 · `--font-xl` 40 → `--font-lead` 30 [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:127] |
-  | 소개 본문 · 사양 표 | `--font-lead` 30 → `--font-sm` 26 · `--font-md` 28 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:114] [code:web/src/pages/ModeSelect.module.css:146] |
-  | 「기술 구성」 · 기술 카드 이름 · 설명 | `--font-2xl` 56 → `--font-xl` 40 · `--font-base` 32 → `--font-sm` 26 · `--font-sm` 26 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:169] [code:web/src/pages/ModeSelect.module.css:175-176] |
-  | 아코디언 제목 · 본문 · 구성도 설명 | `--font-base` 32 → `--font-sm` 26 · `--font-md` 28 → `--font-xs` 24 · `--font-sm` 26 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:187] [code:web/src/pages/ModeSelect.module.css:196] [code:web/src/components/ArchDiagram.module.css:24] |
-  **첫 화면 높이(2026-11-12)** — 첫 화면(`.hero`)이 본문 높이를 꽉 채워(`min-height: 100%`) 창이 커도 소개는 늘 스크롤해야 나왔고, 캐릭터 칸이 남는 높이를 채워(1fr) 세로로 긴 창에서 캐릭터 위가 하얗게 비었다(사용자). 첫 화면은 카드 높이만큼만 — 아래 48px 뒤 바로 소개가 이어진다. 캐릭터 칸 높이는 직접 계산한다: 그림 높이(카드 안쪽 폭 `(100cqw − 64px) / 3 − 64px` × 2400/1792)가 기준이고, 창이 짧으면 카드가 창 안에 들어오게 줄이되(`100dvh − 470px`) 280px(그림이 더 작으면 그림)보다는 줄이지 않는다. 1024 · 1280 · 1440 · 1920px × 짧은 창 · 긴 창 7가지에서 그림 위 빈칸 0, 긴 창은 소개가 첫 화면에 보인다 [code:web/src/pages/ModeSelect.module.css:1-8] [code:web/src/pages/ModeSelect.module.css:20-26] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  **좁은 화면(1023px 이하) 모드 카드는 한 장씩 넘긴다(2026-11-12 사용자)** — 처음엔 업무특화 한 장(최대 340px), 카드 양옆 세로 가운데에 동그란 화살표(44px, `--card` 면 · `--primary` 화살 · `--shadow-2`), 손으로 끌어서도 넘긴다(폭의 20% 넘게 끌면 넘어가고 아니면 제자리, 끝에서는 바깥으로 1/3만 끌린다). 처음 · 끝에서는 그쪽 화살표를 막는다(세 장이라 순환하지 않는다). 5px 넘게 끈 클릭은 모드로 들어가지 않는다. 보이지 않는 카드는 탭 순서 · 화면 읽기에서 뺀다. 넘김 0.3초(움직임 줄이기면 바로). 360 · 400 · 640 · 800 · 1023px에서 넘침 0, 화살표가 화면 안 [code:web/src/pages/ModeSelect.tsx:29] [code:web/src/pages/ModeSelect.tsx:42] [code:web/src/pages/ModeSelect.tsx:251-280] [code:web/src/pages/ModeSelect.module.css:218-236] [c:f30cf58] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  모드 카드 대사는 문장마다 줄을 나눠 두고(`<br>`), `word-break: keep-all` + `text-wrap: balance`로 좁은 카드(1024~1279px)에서도 낱말 중간에서 끊지 않는다 — 기본값이면 "전문이에 / 요."처럼 글자 단위로 끊겼다(2026-11-12 사용자). 360~1920px 12폭에서 줄마다 낱말이 온전함을 쟀다 [code:web/src/pages/ModeSelect.tsx:24-26] [code:web/src/pages/ModeSelect.module.css:70-73] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  계단은 52 · 40 · 36 · 30 · 26 · 24 · 22(칩)px — 로그인 화면(52 · 40 · 30 · 26 · 24)과 같은 토큰. 구성도 그림(SVG) 안 글씨는 그림과 함께 줄어 따로 둔다. 1280px 홈 전체 높이 6,392 → 5,691px [code:web/src/pages/ModeSelect.module.css:108] [c:7532eb8] (2026-11-12 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  | 모드 카드 이름, 대사 | `--font-xl` 40 → `--font-lg` 36, `--font-lead` 30 → `--font-sm` 26 [code:web/src/pages/ModeSelect.module.css:69-70] |
+  | 소개 모드 이름, 말풍선 | `--font-lg` 36 → `--font-lead` 30, `--font-xl` 40 → `--font-lead` 30 [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:127] |
+  | 소개 본문, 사양 표 | `--font-lead` 30 → `--font-sm` 26, `--font-md` 28 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:114] [code:web/src/pages/ModeSelect.module.css:146] |
+  | 「기술 구성」, 기술 카드 이름, 설명 | `--font-2xl` 56 → `--font-xl` 40, `--font-base` 32 → `--font-sm` 26, `--font-sm` 26 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:169] [code:web/src/pages/ModeSelect.module.css:175-176] |
+  | 아코디언 제목, 본문, 구성도 설명 | `--font-base` 32 → `--font-sm` 26, `--font-md` 28 → `--font-xs` 24, `--font-sm` 26 → `--font-xs` 24 [code:web/src/pages/ModeSelect.module.css:187] [code:web/src/pages/ModeSelect.module.css:196] [code:web/src/components/ArchDiagram.module.css:24] |
+  **첫 화면 높이(2026-11-12)**: 첫 화면(`.hero`)이 본문 높이를 꽉 채워(`min-height: 100%`) 창이 커도 소개는 늘 스크롤해야 나왔고, 캐릭터 칸이 남는 높이를 채워(1fr) 세로로 긴 창에서 캐릭터 위가 하얗게 비었다(사용자). 첫 화면은 카드 높이만큼만: 아래 48px 뒤 바로 소개가 이어진다. 캐릭터 칸 높이는 직접 계산한다: 그림 높이(카드 안쪽 폭 `(100cqw − 64px) / 3 − 64px` × 2400/1792)가 기준이고, 창이 짧으면 카드가 창 안에 들어오게 줄이되(`100dvh − 470px`) 280px(그림이 더 작으면 그림)보다는 줄이지 않는다. 1024, 1280, 1440, 1920px × 짧은 창, 긴 창 7가지에서 그림 위 빈칸 0, 긴 창은 소개가 첫 화면에 보인다 [code:web/src/pages/ModeSelect.module.css:1-8] [code:web/src/pages/ModeSelect.module.css:20-26] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  **좁은 화면(1023px 이하) 모드 카드는 한 장씩 넘긴다(2026-11-12 사용자)**: 처음엔 업무특화 한 장(최대 340px), 카드 양옆 세로 가운데에 동그란 화살표(44px, `--card` 면, `--primary` 화살, `--shadow-2`), 손으로 끌어서도 넘긴다(폭의 20% 넘게 끌면 넘어가고 아니면 제자리, 끝에서는 바깥으로 1/3만 끌린다). 처음, 끝에서는 그쪽 화살표를 막는다(세 장이라 순환하지 않는다). 5px 넘게 끈 클릭은 모드로 들어가지 않는다. 보이지 않는 카드는 탭 순서, 화면 읽기에서 뺀다. 넘김 0.3초(움직임 줄이기면 바로). 360, 400, 640, 800, 1023px에서 넘침 0, 화살표가 화면 안 [code:web/src/pages/ModeSelect.tsx:29] [code:web/src/pages/ModeSelect.tsx:42] [code:web/src/pages/ModeSelect.tsx:251-280] [code:web/src/pages/ModeSelect.module.css:218-236] [c:f30cf58] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  모드 카드 대사는 문장마다 줄을 나눠 두고(`<br>`), `word-break: keep-all` + `text-wrap: balance`로 좁은 카드(1024~1279px)에서도 낱말 중간에서 끊지 않는다. 기본값이면 "전문이에 / 요."처럼 글자 단위로 끊겼다(2026-11-12 사용자). 360~1920px 12폭에서 줄마다 낱말이 온전함을 쟀다 [code:web/src/pages/ModeSelect.tsx:24-26] [code:web/src/pages/ModeSelect.module.css:70-73] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+  계단은 52, 40, 36, 30, 26, 24, 22(칩)px: 로그인 화면(52, 40, 30, 26, 24)과 같은 토큰. 구성도 그림(SVG) 안 글씨는 그림과 함께 줄어 따로 둔다. 1280px 홈 전체 높이 6,392 → 5,691px [code:web/src/pages/ModeSelect.module.css:108] [c:7532eb8] (2026-11-12 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 ---
 
@@ -156,18 +157,18 @@
 | 화면 | 밀도 |
 | --- | --- |
 | 모드 선택, 전화 알림 | 여백 넉넉하게. 캐릭터와 카드가 살아나게 [code:web/src/pages/ModeSelect.module.css:5-8] [code:web/src/components/CallAlert.module.css:3-16] |
-| 고객 조회 | 촘촘하게 — 한 화면에 고객을 많이(1920px에서 6열, 10명 전부). 고객 카드와 전체/최근 상담 탭은 대화 배율(`.chat-text`) 안에서 상담 화면 고객 정보 블록과 같은 토큰을 쓴다 — 이름 `--font-sm`(제목 무게), 반려동물 이름 `--font-sm`(라벨 무게), 전화·품종·나이·부담보·과거 상담 `--font-xs`, 상담 시각 `--font-2xs`, 탭 `--font-sm`(제목 무게). "고객 조회" 제목과 설명문은 헤더 모드 탭과 같은 `--font-xs`(본문 배율 24px), 제목만 `--font-weight-heavy`. 열 최소 폭은 13em(글씨를 따라간다 — 1.3배에서 약 220px). 반려동물은 "🐶 이름" 아래 "품종 · 나이" 두 줄(단어 중간에서 꺾이지 않게), 640px 이하는 한 줄. 2026-10-23 글씨를 줄여 카드 높이 398 → 274px, 한 화면에 보이는 카드 1920·1440px 6 → 10, 1280px 5 → 10, 1024px 4 → 8, 800px 3 → 6, 400px 3 → 4(여섯 폭 넘침·겹침·줄바꿈 깨짐 0) 2026-10-23 B안: 카드 위쪽 5px 띠를 반려동물 수만큼 칸으로 나눠 각 칸을 그 반려동물의 가장 높은 등급 색으로(`--grade-*`), 고객(이름·전화)과 반려동물 사이 실선 구분선, 반려동물마다 품종 줄 아래 칩 줄 — 등급 칩은 테두리만(`--font-2xs`, 통원·입원 등급이 같으면 "Ⅱ 고급형" 하나, 다르면 "통원 고급형"·"입원 기본형" 둘, 한쪽만이면 "· 통원만", 유형 Ⅰ은 번호 생략), 배상책임·법률비용은 회색 칩, 부담보는 채운 주황 칩으로 **그 반려동물 줄에**(전에는 모든 반려동물의 부담보를 카드 맨 아래 한 줄에 모아 다른 반려동물 것처럼 보였다). 줄이는 규칙은 `web/src/policySummary.ts`. 칩 줄만큼 카드가 길어져 1440px에서 한 화면 카드가 10 → 6장(띠·칩으로 특약을 상담 화면에 들어가지 않고 본다) [code:web/src/pages/CustomerSelect.module.css:6-11] [code:web/src/pages/CustomerSelect.module.css:38] [code:web/src/pages/CustomerSelect.tsx:76] [code:web/src/pages/CustomerSelect.tsx:92] [code:web/src/policySummary.ts] [c:261ae45] (2026-10-23 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 --> |
-| 상담 화면 | 같은 색을 쓰되 밀도를 올린다. 관리자 화면에 가깝게. 고객 블록은 세 줄(이름·반려동물 / 특약 칩·부담보 / 상품·가입일). 첫 줄은 참조용이라 작게 — 이름·반려동물 `--font-sm`, 품종·나이·토글·과거 상담 `--font-xs`, 줄 간격 1.2. 칩·부담보 `--font-xs` [code:web/src/components/CustomerCard.module.css:8-24] |
+| 고객 조회 | 촘촘하게: 한 화면에 고객을 많이(1920px에서 6열, 10명 전부). 고객 카드와 전체/최근 상담 탭은 대화 배율(`.chat-text`) 안에서 상담 화면 고객 정보 블록과 같은 토큰을 쓴다. 이름 `--font-sm`(제목 무게), 반려동물 이름 `--font-sm`(라벨 무게), 전화, 품종, 나이, 부담보, 과거 상담 `--font-xs`, 상담 시각 `--font-2xs`, 탭 `--font-sm`(제목 무게). "고객 조회" 제목과 설명문은 헤더 모드 탭과 같은 `--font-xs`(본문 배율 24px), 제목만 `--font-weight-heavy`. 열 최소 폭은 13em(글씨를 따라간다. 1.3배에서 약 220px). 반려동물은 "🐶 이름" 아래 "품종 · 나이" 두 줄(단어 중간에서 꺾이지 않게), 640px 이하는 한 줄. 2026-10-23 글씨를 줄여 카드 높이 398 → 274px, 한 화면에 보이는 카드 1920, 1440px 6 → 10, 1280px 5 → 10, 1024px 4 → 8, 800px 3 → 6, 400px 3 → 4(여섯 폭 넘침, 겹침, 줄바꿈 깨짐 0) 2026-10-23 B안: 카드 위쪽 5px 띠를 반려동물 수만큼 칸으로 나눠 각 칸을 그 반려동물의 가장 높은 등급 색으로(`--grade-*`), 고객(이름, 전화)과 반려동물 사이 실선 구분선, 반려동물마다 품종 줄 아래 칩 줄: 등급 칩은 테두리만(`--font-2xs`, 통원과 입원 등급이 같으면 "Ⅱ 고급형" 하나, 다르면 "통원 고급형", "입원 기본형" 둘, 한쪽만이면 "· 통원만", 유형 Ⅰ은 번호 생략), 배상책임, 법률비용은 회색 칩, 부담보는 채운 주황 칩으로 **그 반려동물 줄에**(전에는 모든 반려동물의 부담보를 카드 맨 아래 한 줄에 모아 다른 반려동물 것처럼 보였다). 줄이는 규칙은 `web/src/policySummary.ts`. 칩 줄만큼 카드가 길어져 1440px에서 한 화면 카드가 10 → 6장(띠, 칩으로 특약을 상담 화면에 들어가지 않고 본다) [code:web/src/pages/CustomerSelect.module.css:6-11] [code:web/src/pages/CustomerSelect.module.css:38] [code:web/src/pages/CustomerSelect.tsx:76] [code:web/src/pages/CustomerSelect.tsx:92] [code:web/src/policySummary.ts] [c:261ae45] (2026-10-23 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 --> |
+| 상담 화면 | 같은 색을 쓰되 밀도를 올린다. 관리자 화면에 가깝게. 고객 블록은 세 줄(이름, 반려동물 / 특약 칩, 부담보 / 상품, 가입일). 첫 줄은 참조용이라 작게: 이름, 반려동물 `--font-sm`, 품종, 나이, 토글, 과거 상담 `--font-xs`, 줄 간격 1.2. 칩, 부담보 `--font-xs` [code:web/src/components/CustomerCard.module.css:8-24] |
 
-**계산 카드**(상담 화면, 그 턴의 답변과 같은 칸) — 금액은 서버가 약관 표(`data/limit_table.py`)로 계산하고 모델은 손대지 않는다. 아래 세 종류는 제목 아래에 "금액은 약관 표로 계산한 값" 배지(`--primary` 글자, `--primary-soft` 바탕, `--font-2xs`)를 붙인다 — 답변이 거절하거나 다른 금액을 말해도 카드의 출처가 보이게. 가정 등급 한도표는 배지 자리에 "실제 가입: …"을 쓴다. 이 밖에 2~5일 총액이면 날짜별 금액 입력 카드(09번 1-8절)가 뜬다 — 계산 전 입력 칸이라 배지가 없다. [code:data/limit_table.py] [code:web/src/components/CalcCard.tsx:7] [code:web/src/components/CalcCard.tsx:204] [code:web/src/components/CalcCard.module.css:7] [code:app/services/payout.py:14-19] [docs:02_pipeline/09_ui_design.md]
+**계산 카드**(상담 화면, 그 턴의 답변과 같은 칸): 금액은 서버가 약관 표(`data/limit_table.py`)로 계산하고 모델은 손대지 않는다. 아래 세 종류는 제목 아래에 "금액은 약관 표로 계산한 값" 배지(`--primary` 글자, `--primary-soft` 바탕, `--font-2xs`)를 붙인다. 답변이 거절하거나 다른 금액을 말해도 카드의 출처가 보이게. 가정 등급 한도표는 배지 자리에 "실제 가입: …"을 쓴다. 이 밖에 2~5일 총액이면 날짜별 금액 입력 카드(09번 1-8절)가 뜬다. 계산 전 입력 칸이라 배지가 없다. [code:data/limit_table.py] [code:web/src/components/CalcCard.tsx:7] [code:web/src/components/CalcCard.tsx:204] [code:web/src/components/CalcCard.module.css:7] [code:app/services/payout.py:14-19] [docs:02_pipeline/09_ui_design.md]
 
 | 카드 | 뜨는 때 | 담는 것 |
 | --- | --- | --- |
-| 의료비 | 치료비 금액이 든 질문 + 의료비 특약 | 청구 치료비 · 자기부담금 · 1일 지급 한도 · 예상 지급액 [code:app/services/payout.py:155] [code:web/src/components/CalcCard.tsx] |
-| 법률비용 | 민사소송법률비용 특약 가입 + 소송 금액 또는 심급을 말한 질문. 의료비와 같이 해당하면 법률비용 | 소송목적의 값 · 【별표3】 적용 구간·변호사비 한도 · 자기부담금 · 【별표4】 인지액 · 【별표5】 송달료 · 1소송당 상한 · 변호사 보수 최대. 소송 금액 없이 심급만 말하면 송달료만 [code:app/services/payout.py:319] [code:app/services/payout.py:364] |
-| 한도 | 치료비 금액 없이 한도·얼마까지를 묻는 질문(소송·변호사·배상 낱말이 있으면 빠진다). 질문이 '통원'/'입원'·등급·유형을 말하면 그에 맞는 가입 특약만, 맞는 것이 없으면 띄우지 않는다. 가입과 다른 등급·유형을 말하면 그 등급의 가정 한도표("이 고객의 한도가 아니다", 16번 ⑤). 되묻기 뒤에는 고른 특약만 | 가입한 의료비 특약마다 자기부담금 · 보상비율 · 수술 안 한 날 1일 · (Ⅲ) MRI 등 연간 첫 번째·두 번째부터 · 수술한 날 1일 · 연간 총 한도. 질문이 짚은 줄(수술·MRI)은 `--primary` 글자·`--primary-soft` 바탕 [code:app/services/payout.py:427] [docs:02_pipeline/16_code_answers.md] |
+| 의료비 | 치료비 금액이 든 질문 + 의료비 특약 | 청구 치료비, 자기부담금, 1일 지급 한도, 예상 지급액 [code:app/services/payout.py:155] [code:web/src/components/CalcCard.tsx] |
+| 법률비용 | 민사소송법률비용 특약 가입 + 소송 금액 또는 심급을 말한 질문. 의료비와 같이 해당하면 법률비용 | 소송목적의 값, 【별표3】 적용 구간, 변호사비 한도, 자기부담금, 【별표4】 인지액, 【별표5】 송달료, 1소송당 상한, 변호사 보수 최대. 소송 금액 없이 심급만 말하면 송달료만 [code:app/services/payout.py:319] [code:app/services/payout.py:364] |
+| 한도 | 치료비 금액 없이 한도, 얼마까지를 묻는 질문(소송, 변호사, 배상 낱말이 있으면 빠진다). 질문이 '통원'/'입원', 등급, 유형을 말하면 그에 맞는 가입 특약만, 맞는 것이 없으면 띄우지 않는다. 가입과 다른 등급, 유형을 말하면 그 등급의 가정 한도표("이 고객의 한도가 아니다", 16번 ⑤). 되묻기 뒤에는 고른 특약만 | 가입한 의료비 특약마다 자기부담금, 보상비율, 수술 안 한 날 1일, (Ⅲ) MRI 등 연간 첫 번째, 두 번째부터, 수술한 날 1일, 연간 총 한도. 질문이 짚은 줄(수술, MRI)은 `--primary` 글자, `--primary-soft` 바탕 [code:app/services/payout.py:427] [docs:02_pipeline/16_code_answers.md] |
 
-카드 폭은 420px까지, 금액 칸은 줄바꿈하지 않는다. 한 질문에 카드는 하나 — 법률비용 → 의료비(금액 있음) → 한도 순으로 먼저 해당하는 것. [code:web/src/components/CalcCard.module.css:1-4] [code:app/services/payout.py:18]
+카드 폭은 420px까지, 금액 칸은 줄바꿈하지 않는다. 한 질문에 카드는 하나: 법률비용 → 의료비(금액 있음) → 한도 순으로 먼저 해당하는 것. [code:web/src/components/CalcCard.module.css:1-4] [code:app/services/payout.py:18]
 
 ---
 
@@ -177,33 +178,33 @@
 
 받기 전까지 10초간 계속 울리고, 받거나 거절하면 멈춘다. [code:web/src/hooks/useCallSimulator.ts:8] [code:web/src/hooks/useCallSimulator.ts:39-73] [code:web/src/components/CallAlert.tsx:14-16]
 
-원 안의 수화기는 **흰 SVG 아이콘**(`--card`, currentColor)이다(2026-11-12 사용자). 전에는 이모지 📞라 글꼴의 빨간 수화기가 초록 원 위에 얹혀 나왔다 — 이모지는 글자색으로 바꿀 수 없다. [code:web/src/components/CallAlert.tsx:23-26] [code:web/src/components/CallAlert.module.css:37] [c:cc346b8]
+원 안의 수화기는 **흰 SVG 아이콘**(`--card`, currentColor)이다(2026-11-12 사용자). 전에는 이모지 📞라 글꼴의 빨간 수화기가 초록 원 위에 얹혀 나왔다. 이모지는 글자색으로 바꿀 수 없다. [code:web/src/components/CallAlert.tsx:23-26] [code:web/src/components/CallAlert.module.css:37] [c:cc346b8]
 
 > 흰 바탕에서는 반투명 테두리만으로는 링이 보이지 않는다. 진한 `--call` 테두리에 옅은 초록 채움을 더한 원반이 퍼지게 한다. [code:web/src/components/CallAlert.module.css:21-22] [code:web/src/styles/tokens.css:20]
 
-**크기(2026-10-23)** — 카드는 대화 배율(`.chat-text`) 안이고 고객 조회 카드와 같은 토큰을 쓴다. 전에는 본문 배율 2배라 카드 480×308px, 이름 36px, 남은 시간 56px, 버튼 글씨 32px였다. [code:web/src/components/CallAlert.tsx:19-20] [code:web/src/components/CallAlert.module.css:1-2] [c:a07480a]
+**크기(2026-10-23)**: 카드는 대화 배율(`.chat-text`) 안이고 고객 조회 카드와 같은 토큰을 쓴다. 전에는 본문 배율 2배라 카드 480×308px, 이름 36px, 남은 시간 56px, 버튼 글씨 32px였다. [code:web/src/components/CallAlert.tsx:19-20] [code:web/src/components/CallAlert.module.css:1-2] [c:a07480a]
 
 | 요소 | 토큰 | 1.3배 | 1.15배(640px 이하) |
 |---|---|---|---|
-| 고객 이름, 반려동물 이름, 받기·거절 | `--font-sm` | 16.9px | 14.9px [code:web/src/components/CallAlert.module.css:75] [code:web/src/components/CallAlert.module.css:79] [code:web/src/components/CallAlert.module.css:83] |
-| 전화번호, 품종·나이, "전화 수신" | `--font-xs` | 15.6px | 13.8px [code:web/src/components/CallAlert.module.css:59] [code:web/src/components/CallAlert.module.css:76] [code:web/src/components/CallAlert.module.css:80] |
+| 고객 이름, 반려동물 이름, 받기, 거절 | `--font-sm` | 16.9px | 14.9px [code:web/src/components/CallAlert.module.css:75] [code:web/src/components/CallAlert.module.css:79] [code:web/src/components/CallAlert.module.css:83] |
+| 전화번호, 품종, 나이, "전화 수신" | `--font-xs` | 15.6px | 13.8px [code:web/src/components/CallAlert.module.css:59] [code:web/src/components/CallAlert.module.css:76] [code:web/src/components/CallAlert.module.css:80] |
 | 남은 시간 숫자 | `--font-lg` | 23.4px | 20.7px [code:web/src/components/CallAlert.module.css:60-61] |
 
-카드 폭·여백·초록 원은 글씨를 따라가게 em으로 둔다(폭 22em ≈ 372px, 원 2.8em ≈ 47px, 아이콘은 원 글씨의 1.3배 — 고정 28px 토큰 `--font-call-icon`은 없앴다). 링은 원의 1.9배라 원 밖으로 1.26em 나가고, 왼쪽 여백 1.4em·오른쪽 간격 1.6em이 그보다 커 카드 안에서 끝난다. 받기·거절은 높이 44px 이상(손가락). 고객 조회 카드처럼 전화번호와 반려동물마다 "품종 · 나이"를 함께 보인다(전에는 반려동물 이름만). 확인: 1920~400px 여섯 폭 × 전화 울리기·자동 전화에서 카드가 화면 안, 넘침·잘림 0, 버튼 44px. [code:web/src/components/CallAlert.module.css:3-30] [code:web/src/components/CallAlert.module.css:81-83] [code:web/src/components/CallAlert.tsx:42-50] [c:a07480a] (2026-10-23 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+카드 폭, 여백, 초록 원은 글씨를 따라가게 em으로 둔다(폭 22em ≈ 372px, 원 2.8em ≈ 47px, 아이콘은 원 글씨의 1.3배: 고정 28px 토큰 `--font-call-icon`은 없앴다). 링은 원의 1.9배라 원 밖으로 1.26em 나가고, 왼쪽 여백 1.4em, 오른쪽 간격 1.6em이 그보다 커 카드 안에서 끝난다. 받기, 거절은 높이 44px 이상(손가락). 고객 조회 카드처럼 전화번호와 반려동물마다 "품종 · 나이"를 함께 보인다(전에는 반려동물 이름만). 확인: 1920~400px 여섯 폭 × 전화 울리기, 자동 전화에서 카드가 화면 안, 넘침, 잘림 0, 버튼 44px. [code:web/src/components/CallAlert.module.css:3-30] [code:web/src/components/CallAlert.module.css:81-83] [code:web/src/components/CallAlert.tsx:42-50] [c:a07480a] (2026-10-23 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 > 
 
 ---
 
-#### 1-8. 캐릭터 3종 — 같은 도마뱀, 다른 역할
+#### 1-8. 캐릭터 3종: 같은 도마뱀, 다른 역할
 
 3D 렌더 도마뱀 캐릭터. 큰 둥근 눈, 2~3등신, 말려 올라간 꼬리, 부드러운 질감. 정면, 전신, 흰 배경.
 
 생김새를 고정하고 **색과 옷만 바꿔** 셋이 같은 캐릭터로 보이게 한다. 복장은 캐주얼 → 셔츠+넥타이 → 베스트로 단계가 올라간다.
 
-| 모드 | 색 | 복장·소품 | 페르소나 |
+| 모드 | 색 | 복장, 소품 | 페르소나 |
 | --- | --- | --- | --- |
 | 일반 | 스카이블루 | 베이지 니트, 머그컵 | 틀에 얽매이지 않고 유연하게 답하는 영리한 동료 |
-| 사내규정 | 민트 | 흰 셔츠 + 네이비 넥타이, 사원증 | 인사·복무 규정을 정확히 짚어주는 에이스 선배 |
+| 사내규정 | 민트 | 흰 셔츠 + 네이비 넥타이, 사원증 | 인사, 복무 규정을 정확히 짚어주는 에이스 선배 |
 | 업무특화 | 딥 퍼플 + 골드 포인트 | 딥 퍼플 수트 베스트, 태블릿 | 약관을 근거까지 찾아주는 베테랑 실무자. 셋 중 가장 갖춰 입은 쪽 |
 
 **소품은 손에 든 것만.** 공중에 뜨는 홀로그램이나 발광 아이콘은 AI 영상에서 프레임마다 모양이 바뀌어 반복 재생할 때 어색해진다.
@@ -212,9 +213,9 @@
 
 #### 1-9. 캐릭터 영상
 
-모드 선택 카드에서는 평소 정지 이미지, **마우스를 올리면 영상**이 재생된다. 뗄 때 정지 이미지로 돌아간다. 평소에 움직이면 산만하다 — 상담원이 고객 전화를 받으며 쓰는 도구다. [code:web/src/pages/ModeSelect.tsx:46-88] [code:web/src/pages/ModeSelect.module.css:60-65]
+모드 선택 카드에서는 평소 정지 이미지, **마우스를 올리면 영상**이 재생된다. 뗄 때 정지 이미지로 돌아간다. 평소에 움직이면 산만하다. 상담원이 고객 전화를 받으며 쓰는 도구다. [code:web/src/pages/ModeSelect.tsx:46-88] [code:web/src/pages/ModeSelect.module.css:60-65]
 
-그 아래 소개 섹션에서는 **자동 재생 루프**다. 음소거·반복이고, 화면에 들어온 영상만 재생한다. 거기는 읽는 영역이라 움직임이 시선을 끄는 편이 낫다 [code:web/src/pages/ModeSelect.tsx:102-121]
+그 아래 소개 섹션에서는 **자동 재생 루프**다. 음소거, 반복이고, 화면에 들어온 영상만 재생한다. 거기는 읽는 영역이라 움직임이 시선을 끄는 편이 낫다 [code:web/src/pages/ModeSelect.tsx:102-121]
 
 | 모드 | 동작 |
 | --- | --- |
@@ -224,15 +225,15 @@
 
 셋 다 **시작 자세로 돌아오는** 동작이다. 그래야 반복 재생할 때 끊기지 않는다.
 
-**제작**: Tripo3D로 기본 모델을 뽑고, Gemini로 색·옷을 바꾼 정지 이미지 셋을 만든 뒤, Kling으로 각각 영상으로 돌렸다. 828x1108, 투명 webm + Safari용 mp4 [code:web/src/pages/ModeSelect.module.css:60] [code:web/src/pages/ModeSelect.tsx:18] [code:web/src/assets/characters/] <!-- 확인 못 함: 제작 도구(Tripo3D, Gemini, Kling) 사용은 기록이 남지 않음 -->
+**제작**: Tripo3D로 기본 모델을 뽑고, Gemini로 색, 옷을 바꾼 정지 이미지 셋을 만든 뒤, Kling으로 각각 영상으로 돌렸다. 828x1108, 투명 webm + Safari용 mp4 [code:web/src/pages/ModeSelect.module.css:60] [code:web/src/pages/ModeSelect.tsx:18] [code:web/src/assets/characters/] <!-- 확인 못 함: 제작 도구(Tripo3D, Gemini, Kling) 사용은 기록이 남지 않음 -->
 
-파일은 `web/src/assets/characters/`에 모드 키 이름으로 둔다 — `general`, `hr`, `domain`. 모드마다 png·webm·mp4 셋이고, 작은 아이콘용 `*-icon.png`가 따로 있다. [code:web/src/assets/characters/] [code:web/src/pages/ModeSelect.tsx:3-11]
+파일은 `web/src/assets/characters/`에 모드 키 이름으로 둔다. `general`, `hr`, `domain`. 모드마다 png, webm, mp4 셋이고, 작은 아이콘용 `*-icon.png`가 따로 있다. [code:web/src/assets/characters/] [code:web/src/pages/ModeSelect.tsx:3-11]
 
 ---
 
 #### 1-10. 구현
 
-- CSS 파일을 직접 쓴다(컴포넌트별 CSS Modules). Tailwind나 UI 라이브러리를 쓰지 않는다 — 화면이 넷이라 복잡하지 않다 [code:web/package.json] [code:web/src/components/] [code:web/src/pages/]
+- CSS 파일을 직접 쓴다(컴포넌트별 CSS Modules). Tailwind나 UI 라이브러리를 쓰지 않는다. 화면이 넷이라 복잡하지 않다 [code:web/package.json] [code:web/src/components/] [code:web/src/pages/]
 - 위 토큰을 `:root`에 CSS 변수로 정의하고 컴포넌트는 변수만 참조한다. 하드코딩한 색을 두지 않는다 [code:web/src/styles/tokens.css:1-4]
 - 그림자도 `--text`에서 투명도만 바꿔 만든다 [code:web/src/styles/tokens.css:31-40]
 
@@ -242,7 +243,9 @@
 
 **특정 곳에만 완주대둔산체를 쓴 이유**: 지자체 폰트는 개성이 강해 긴 글에 쓰면 읽기 피곤하다. 짧은 단어는 개성이 읽기를 방해하지 않고, 그 화면은 포트폴리오 성격이라 인상이 중요하다. 상담 화면은 그대로 Wanted Sans다.
 
-**색 배치의 이유**: 셋이 색상환에서 고르게 퍼져 있어 구분이 쉽다. 초록과 가까운 것은 민트뿐이고, 채도를 낮추면 전화 알림과 충분히 갈린다. 빨간 넥타이는 네이비로 바꿨다 — 팔레트에 빨강이 없고 경고색(주황)과 혼동된다.
+**색 배치의 이유**: 셋이 색상환에서 고르게 퍼져 있어 구분이 쉽다. 초록과 가까운 것은 민트뿐이고, 채도를 낮추면 전화 알림과 충분히 갈린다. 빨간 넥타이는 네이비로 바꿨다. 팔레트에 빨강이 없고 경고색(주황)과 혼동된다.
+
+---
 
 ### 3. 시도했던 것들
 
@@ -257,16 +260,18 @@
 
 - **모드 선택 화면 아래 소개 영역** ✓ 2026-10-16 구현. 세 모드를 지그재그로 소개하고, 기술 구성 카드 8장과 아키텍처 구성도, 아코디언 설명을 붙였다 [code:web/src/pages/ModeSelect.module.css:76-99] [code:web/src/pages/ModeSelect.tsx:203-230] [code:web/src/components/ArchDiagram.tsx]
 
+---
+
 ### 4. 남은 한계
 
-- **다크 모드** △ 코드 없음 — 토큰으로 잡아두었으므로 필요해지면 추가할 수 있다 [code:web/src/styles/tokens.css:1]
-  까닭: 1-1절 「라이트 단일 모드로 간다」(상담원이 사무실에서 하루 종일 쓰는 도구라 흰 바탕이 눈에 편하다)
-- 상담 중 체험 관리자(체험 계정 표시, 관리자 화면 단추, 로그아웃)는 약 1985px가 있어야 헤더 한 줄에 들어가, **1920px에서는 그 경우만 🔒가 탭 아래로 내려간다**(헤더 74 → 106px, 겹침 없음) [code:web/src/components/TopBar.module.css:32-42] [c:fa1754c] (2026-11-12 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
-  까닭: 경계를 더 올리면 1920px 화면이 모든 계정에서 두 줄이 되므로 그대로 둔다(옛 1-5절 「헤더 경계가 여러 번 밀렸다」)
+- **다크 모드** △ 코드 없음: 토큰으로 잡아두었으므로 필요해지면 추가할 수 있다 [code:web/src/styles/tokens.css:1] 까닭: 1-1절 「라이트 단일 모드로 간다」(상담원이 사무실에서 하루 종일 쓰는 도구라 흰 바탕이 눈에 편하다)
+- 상담 중 체험 관리자(체험 계정 표시, 관리자 화면 단추, 로그아웃)는 약 1985px가 있어야 헤더 한 줄에 들어가, **1920px에서는 그 경우만 🔒가 탭 아래로 내려간다**(헤더 74 → 106px, 겹침 없음) [code:web/src/components/TopBar.module.css:32-42] [c:fa1754c] (2026-11-12 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음 --> 까닭: 경계를 더 올리면 1920px 화면이 모든 계정에서 두 줄이 되므로 그대로 둔다(옛 1-5절 「헤더 경계가 여러 번 밀렸다」)
+
+---
 
 ### 5. 검증 항목
 
-UI를 바꾸면 1920 · 1440 · 1280 · 1024 · 800 · 400px 여섯 폭에서 가로 넘침 · 겹침 0을 확인하고, 결과(폭별 수치)를 이 문서의 해당 절에 적는다(2026-10-23 사용자 지시). [c:1cf1479]
+UI를 바꾸면 1920, 1440, 1280, 1024, 800, 400px 여섯 폭에서 가로 넘침, 겹침 0을 확인하고, 결과(폭별 수치)를 이 문서의 해당 절에 적는다(2026-10-23 사용자 지시). [c:1cf1479]
 
 - [x]  색이 전부 변수로 들어가 있는가 (토큰 파일 밖 하드코딩 색 0건, 흐르는 카드 양 끝을 흐리게 하는 마스크 그라데이션의 `#000`은 색이 아니라 마스크 값) [code:web/src/styles/tokens.css:1-3] [code:web/src/components/FlowCarousel.module.css:7-8]
 - [ ]  "받기" 버튼 글자 대비가 4.5:1을 넘는가 [code:web/src/components/CallAlert.module.css:84-92]

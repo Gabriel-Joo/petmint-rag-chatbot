@@ -2,11 +2,11 @@
 다루는 곳: notebooks/00_모델_준비.ipynb, deploy/host/milvus/docker-compose.yml
 읽은 커밋: 6710b83
 -->
-> 상태: 완료. Tri-7B 원본을 GGUF 변환·Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 파인튜닝 모델의 GGUF 변환은 10번 1-9절에서 다룬다. [code:notebooks/00_모델_준비.ipynb:563] [code:notebooks/00_모델_준비.ipynb:922] [code:notebooks/00_모델_준비.ipynb:1304] [code:app/config.py:70] [docs:02_pipeline/10_consultation_flow.md]
+> 상태: 완료(2026-11-19 코드와 맞춰 봄). Tri-7B 원본을 GGUF 변환, Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 2026-11-19에도 `tri-7b`가 Ollama에 등록돼 있다. <!-- 2026-11-19 잼: docker exec ollama ollama list --> 파인튜닝 모델의 GGUF 변환은 10번 1-9절에서 다룬다. [code:notebooks/00_모델_준비.ipynb:563] [code:notebooks/00_모델_준비.ipynb:922] [code:notebooks/00_모델_준비.ipynb:1304] [code:app/config.py:70] [docs:02_pipeline/10_consultation_flow.md]
 
 ### 0. 한 줄 요약
 
-Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자화해 Ollama에 등록하고 동작을 확인한다. [code:notebooks/00_모델_준비.ipynb:43-44]
+Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환, 양자화해 Ollama에 등록하고 동작을 확인한다. [code:notebooks/00_모델_준비.ipynb:43-44]
 
 ---
 
@@ -16,7 +16,7 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 한국 AI 스타트업 Trillion Labs가 개발한 7.76B 파라미터 언어모델로, 전작 Trillion-7B-preview의 다음 세대 버전이다. [code:notebooks/00_모델_준비.ipynb:44] <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인) -->
 
-가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어·일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다 — 그 덕분에 전체 학습 데이터의 10% (공개 페이지에서 출처를 못 찾음, 2026-11-19)만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: XLDA는 https://huggingface.co/trillionlabs/Tri-7B 카드에 없고 기술 보고서는 읽지 않음(2026-11-19) -->
+가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어, 일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다. 그 덕분에 전체 학습 데이터의 10% (공개 페이지에서 출처를 못 찾음, 2026-11-19)만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: XLDA는 https://huggingface.co/trillionlabs/Tri-7B 카드에 없고 기술 보고서는 읽지 않음(2026-11-19) -->
 
 구조 자체는 표준적인 Transformer Decoder(RoPE, SwiGLU, RMSNorm)라 llama.cpp 계열 도구와의 호환성도 좋다(3절 트러블슈팅 참고). [code:notebooks/00_모델_준비.ipynb:148]
 
@@ -37,12 +37,12 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 **선정 절차**: 네 단계로 후보를 좁혔다.
 
-1. **상업 라이선스** — 상업적 배포가 가능한 모델만 남긴다 (사내 서비스용이므로 필수 조건)
-2. **16GB VRAM에서 QLoRA 가능한 크기** — 보유 GPU(RTX 5070 Ti 16GB) 한 장으로 추론과 파인튜닝을 모두 돌려야 하므로 모델 크기에 상한선을 둔다 <!-- 2026-11-19 잼: nvidia-smi --query-gpu=name,memory.total 로 NVIDIA GeForce RTX 5070 Ti, 16303 MiB, 한 장 -->
-3. **Ollama 서빙 가능** — GGUF로 변환 가능하고 llama.cpp 계열에서 지원하는 구조인지 확인 [code:notebooks/00_모델_준비.ipynb:148]
-4. **한국어 지표 비교** — 위 조건을 통과한 후보들 중 한국어 대화 품질(KO-MT-Bench, 10점 만점)과 KMMLU(한국어 지식 평가)를 비교해 최종 선정 <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인, KO-MT-Bench 10점 척도와 KMMLU를 쓴다) -->
+1. **상업 라이선스**: 상업적 배포가 가능한 모델만 남긴다 (사내 서비스용이므로 필수 조건)
+2. **16GB VRAM에서 QLoRA 가능한 크기**: 보유 GPU(RTX 5070 Ti 16GB) 한 장으로 추론과 파인튜닝을 모두 돌려야 하므로 모델 크기에 상한선을 둔다 <!-- 2026-11-19 잼: nvidia-smi --query-gpu=name,memory.total 로 NVIDIA GeForce RTX 5070 Ti, 16303 MiB, 한 장 -->
+3. **Ollama 서빙 가능**: GGUF로 변환 가능하고 llama.cpp 계열에서 지원하는 구조인지 확인 [code:notebooks/00_모델_준비.ipynb:148]
+4. **한국어 지표 비교**: 위 조건을 통과한 후보들 중 한국어 대화 품질(KO-MT-Bench, 10점 만점)과 KMMLU(한국어 지식 평가)를 비교해 최종 선정 <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인, KO-MT-Bench 10점 척도와 KMMLU를 쓴다) -->
 
-| 모델 | 라이선스 | 크기·문맥 | 한국어 대화 | KMMLU | 판단 |
+| 모델 | 라이선스 | 크기, 문맥 | 한국어 대화 | KMMLU | 판단 |
 | --- | --- | --- | --- | --- | --- |
 | EXAONE 3.5 7.8B | EXAONE 1.1 NC (비상업) | 6.98B, 32K | 7.96 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 45.30 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 배제 (상업 배포 금지 조항 확인) <!-- 공개 출처: https://huggingface.co/LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct (2026-11-19 확인, 라이선스와 크기와 문맥) --> |
 | Kanana 1.5 8B | Apache 2.0 | 8B, 32K | 7.63 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 48.28 | 후보 <!-- 공개 출처: https://huggingface.co/kakaocorp/kanana-1.5-8b-instruct-2505 (2026-11-19 확인, 라이선스와 크기와 문맥과 KMMLU) --> |
@@ -53,11 +53,11 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 #### 2-2. 탈락한 Kanana의 재등장
 
-이후 06번(FAQ 품질 검증)에서 FAQ의 오류를 판정할 심판 모델이 필요해졌는데, 요구 조건이 생성 모델과 정반대였다 — **생성 모델과 달라야 한다**. 같은 모델은 자기가 틀린 곳에서 똑같이 틀리기 때문이다. [docs:02_pipeline/06_quality_check.md]
+이후 06번(FAQ 품질 검증)에서 FAQ의 오류를 판정할 심판 모델이 필요해졌는데, 요구 조건이 생성 모델과 정반대였다. **생성 모델과 달라야 한다**. 같은 모델은 자기가 틀린 곳에서 똑같이 틀리기 때문이다. [docs:02_pipeline/06_quality_check.md]
 
 실제로 "원문을 먼저 인용하고 답하라"는 프롬프트 실험에서, Tri-7B는 맞는 문장을 정확히 인용해놓고 결론을 정반대로 쓰는 사례가 반복됐다. 자기 출력을 자기가 심판하면 이 오류를 잡아낼 수 없다. [docs:02_pipeline/06_quality_check.md]
 
-그래서 여기서 탈락했던 Kanana 1.5 8B가 심판 후보로 다시 올라왔고, Qwen3-14B·Gemma 4 12B와 함께 같은 정답지로 평가했다(상세는 06번 문서 참고). [docs:02_pipeline/06_quality_check.md]
+그래서 여기서 탈락했던 Kanana 1.5 8B가 심판 후보로 다시 올라왔고, Qwen3-14B, Gemma 4 12B와 함께 같은 정답지로 평가했다(상세는 06번 문서 참고). [docs:02_pipeline/06_quality_check.md]
 
 #### 2-3. 서빙 방식 선정 근거
 
@@ -65,17 +65,17 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 **양자화(Q4_K_M) 선택 이유**: 16GB VRAM 안에서 추론과 QLoRA 학습이 함께 돌아야 하는데, f16(15.1GB)은 여유 공간이 거의 없어진다. Q4_K_M으로 4.4GB까지 줄여 공간을 확보했다. [code:notebooks/00_모델_준비.ipynb:554] [code:notebooks/00_모델_준비.ipynb:909] (2026-09-29까지)
 
-**Ollama를 택한 이유(vLLM 대신)**: 지금 단계는 1인 개발·로컬 실험 단계라, "동시에 여러 사람이 접속해도 빠르게" 처리해야 하는 vLLM의 강점(Continuous Batching, PagedAttention)이 아직 필요 없다. 반면 Ollama는 GGUF를 네이티브로 바로 읽고, 여러 모델을 쉽게 바꿔가며 실험할 수 있어 개발 단계에 더 적합했다.
+**Ollama를 택한 이유(vLLM 대신)**: 지금 단계는 1인 개발, 로컬 실험 단계라, "동시에 여러 사람이 접속해도 빠르게" 처리해야 하는 vLLM의 강점(Continuous Batching, PagedAttention)이 아직 필요 없다. 반면 Ollama는 GGUF를 네이티브로 바로 읽고, 여러 모델을 쉽게 바꿔가며 실험할 수 있어 개발 단계에 더 적합했다.
 
 ---
 
 ### 3. 시도했던 것들
 
-#### 3-1. GGUF 변환 — EXAONE 때와 달리 인자 패치 없이 성공
+#### 3-1. GGUF 변환: EXAONE 때와 달리 인자 패치 없이 성공
 
 EXAONE 3.5는 특수 구조라 변환 과정에서 추가 패치가 필요했는데, Tri-7B는 **llama 구조**를 그대로 따르고 있어 `convert_hf_to_gguf.py`의 표준 변환 경로와 바로 호환된다. f16 GGUF(15.1GB) 변환이 추가 조치 없이 한 번에 성공했다. [code:notebooks/00_모델_준비.ipynb:148] [code:notebooks/00_모델_준비.ipynb:554-556] (2026-09-29까지)
 
-#### 3-2. 양자화(Q4_K_M) — `--override-kv` 생략 시도 → 성공
+#### 3-2. 양자화(Q4_K_M): `--override-kv` 생략 시도 → 성공
 
 EXAONE은 `exaone.attention.layer_norm_rms_epsilon`이라는 비표준 키 이름 때문에 `--override-kv`로 명시적으로 키를 지정해야만 양자화가 돌았다. Tri-7B는 llama 구조라 이 문제가 없을 거라고 판단해 override 없이 먼저 시도했고, 실제로 문제없이 성공했다(14357MB → 4411MB, 4.92 BPW). [code:notebooks/00_모델_준비.ipynb:908-909] [code:notebooks/00_모델_준비.ipynb:918-922] (2026-09-29까지)
 
@@ -90,7 +90,7 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 #### 3-4. 컨테이너 재시작 정책 누락 (운영 이슈)
 
-서버를 재부팅했더니 Ollama·Milvus 컨테이너가 올라오지 않았다. `docker run` 시 재시작 정책을 지정하지 않아 기본값인 `no` 상태였기 때문이다. <!-- 확인 못 함: 지난 재부팅 때 상태 -->
+서버를 재부팅했더니 Ollama, Milvus 컨테이너가 올라오지 않았다. `docker run` 시 재시작 정책을 지정하지 않아 기본값인 `no` 상태였기 때문이다. <!-- 확인 못 함: 지난 재부팅 때 상태 -->
 
 **해결**: `docker update --restart unless-stopped`로 변경. `always`가 아니라 `unless-stopped`를 고른 이유는, 의도적으로 멈춘 컨테이너는 재부팅 후에도 꺼진 채로 두는 쪽이 자연스럽기 때문이다. [code:deploy/host/milvus/docker-compose.yml:24] [code:deploy/host/milvus/docker-compose.yml:49] <!-- 2026-11-19 잼: docker inspect ollama 의 RestartPolicy 가 unless-stopped -->
 
@@ -109,6 +109,6 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 한국어 응답 정상, 응답 속도 1.8~3.0초 (측정 2회) [code:notebooks/00_모델_준비.ipynb:1318] [code:notebooks/00_모델_준비.ipynb:1321] (2026-09-29~2026-10-13 사이)
 
-단, 파인튜닝 전(원본) 상태라 우리 약관의 세부 내용은 알지 못한다 — "보험금 청구서류 접수 후 얼마나 빠르게 받을 수 있나요?"라는 질문에 "1~2주일" 같은 일반적인 보험 상식으로 답한다(실제 펫퍼민트 약관의 정확한 지급기일은 반영하지 못함). [code:notebooks/00_모델_준비.ipynb:1334]
+단, 파인튜닝 전(원본) 상태라 우리 약관의 세부 내용은 알지 못한다. "보험금 청구서류 접수 후 얼마나 빠르게 받을 수 있나요?"라는 질문에 "1~2주일" 같은 일반적인 보험 상식으로 답한다(실제 펫퍼민트 약관의 정확한 지급기일은 반영하지 못함). [code:notebooks/00_모델_준비.ipynb:1334]
 
 모델 자체의 언어 능력이 부족한 게 아니라 이 도메인 지식을 모르는 것뿐이고, 이것이 이후 RAG+파인튜닝이 반드시 필요한 실증적 근거가 된다.

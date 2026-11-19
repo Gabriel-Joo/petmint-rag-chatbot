@@ -2,7 +2,7 @@
 다루는 곳: notebooks/03-1_citation_해석.ipynb
 읽은 커밋: 6710b83
 -->
-> 상태: ✓ citation 해석은 2026-10-13까지 구현 — 강아지 966건 중 not_found 0건(data/graph/*_resolved.json, 5절). 남은 구현 없음. [code:notebooks/03-1_citation_해석.ipynb:266] [code:notebooks/03-1_citation_해석.ipynb:458-466]
+> 상태(2026-11-19 코드와 맞춰 봄): ✓ citation 해석은 2026-10-13까지 구현, 강아지 966건 중 not_found 0건(data/graph/*_resolved.json, 5절). 남은 구현 없음. [code:notebooks/03-1_citation_해석.ipynb:266] [code:notebooks/03-1_citation_해석.ipynb:458-466]
 
 ### 0. 한 줄 요약
 
@@ -51,9 +51,9 @@ flowchart TD
 
 법규(【법규1~7】) 본문에 있는 law_name 없는 citation은 **그 법 자신의 조문**을 가리킨다. 민사소송법 제254조 안의 "제249조제1항"은 민사소송법 제249조다. [code:notebooks/01_데이터_전처리.ipynb:1632-1634]
 
-01번에서 section_name("【법규6】 민사소송법")에서 법명을 뽑아 채우도록 했다. 이때 **다른 법을 인용하는 건 덮어쓰지 않는다** — 금융소비자보호법 제17조가 「전자서명법」 제2조를 인용하면 그건 그대로 둔다. [code:notebooks/01_데이터_전처리.ipynb:1650-1653]
+01번에서 section_name("【법규6】 민사소송법")에서 법명을 뽑아 채우도록 했다. 이때 **다른 법을 인용하는 건 덮어쓰지 않는다**: 금융소비자보호법 제17조가 「전자서명법」 제2조를 인용하면 그건 그대로 둔다. [code:notebooks/01_데이터_전처리.ipynb:1650-1653]
 
-다만 법규는 **발췌본**이라 참조 대상 조문이 수록되지 않은 경우가 많다(민사소송법은 254·266·269·393·399·402·412·425만 수록, 제249조는 없음). 이런 경우를 `not_found`와 구분해 `law_not_in_excerpt`로 분류했다 — "찾기 실패"와 "애초에 미수록"은 성격이 다르기 때문이다. [code:notebooks/03-1_citation_해석.ipynb:209-213] [code:notebooks/03-1_citation_해석.ipynb:239-246] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 4절 민사소송법 수록 조 -->
+다만 법규는 **발췌본**이라 참조 대상 조문이 수록되지 않은 경우가 많다(민사소송법은 254, 266, 269, 393, 399, 402, 412, 425만 수록, 제249조는 없음). 이런 경우를 `not_found`와 구분해 `law_not_in_excerpt`로 분류했다. "찾기 실패"와 "애초에 미수록"은 성격이 다르기 때문이다. [code:notebooks/03-1_citation_해석.ipynb:209-213] [code:notebooks/03-1_citation_해석.ipynb:239-246] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 4절 민사소송법 수록 조 -->
 
 ---
 
@@ -61,7 +61,7 @@ flowchart TD
 
 #### 2-1. 왜 01번과 분리했나
 
-01번에서는 citation의 **번호·단위·법명·문서명**까지만 추출한다. 그 번호가 어느 조를 가리키는지는 03번에서 해석한다. [code:notebooks/01_데이터_전처리.ipynb:717] [code:notebooks/03-1_citation_해석.ipynb:81-97]
+01번에서는 citation의 **번호, 단위, 법명, 문서명**까지만 추출한다. 그 번호가 어느 조를 가리키는지는 03번에서 해석한다. [code:notebooks/01_데이터_전처리.ipynb:717] [code:notebooks/03-1_citation_해석.ipynb:81-97]
 
 분리한 이유는 **해석에 필요한 정보가 01번 시점에 아직 없기 때문**이다. "제15조"를 해석하려면 전체 문서에 어떤 제15조들이 있는지 알아야 하는데, 01번은 청크를 하나씩 만드는 중이라 전체 목록이 완성되지 않았다.
 
@@ -84,11 +84,11 @@ flowchart TD
 | 낫표 안 | 75 | 「반려동물 비용손해 관련 특별약관 일반조항」제15조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] [code:notebooks/01_데이터_전처리.ipynb:684-685] |
 | 괄호 없음 | 약 32 | 보통약관 제35조 / 해당계약 보통약관 제29조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] [code:notebooks/01_데이터_전처리.ipynb:684-685] |
 
-**낫표만 잡으면 부족했다.** 그리고 측정해보니 낫표 75건이 지금 "맞게" 연결돼 있던 것도 문서명을 읽은 결과가 아니었다 — 인용한 문서에 그 조가 없어서 다음 후보로 넘어간 **우연**이었다. [code:notebooks/03-1_citation_해석.ipynb:355-381] (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71]
+**낫표만 잡으면 부족했다.** 그리고 측정해보니 낫표 75건이 지금 "맞게" 연결돼 있던 것도 문서명을 읽은 결과가 아니었다. 인용한 문서에 그 조가 없어서 다음 후보로 넘어간 **우연**이었다. [code:notebooks/03-1_citation_해석.ipynb:355-381] (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71]
 
-**해결**: 01번 citation 추출에 `doc_name` 필드를 추가했다. 낫표 안의 약관명과, 괄호 없는 이름('일반조항'으로 끝나는 section_name과 보통약관만 공백 무시로 대조 — SECTION_MAP 전체를 대조하지는 않는다)을 모두 인식한다. 03번은 `doc_name`이 있으면 **그 문서에서만** 조회하고, 없으면 `not_found`로 둔다. [code:notebooks/01_데이터_전처리.ipynb:686-701] [code:notebooks/03-1_citation_해석.ipynb:189-199] [code:notebooks/03-1_citation_해석.ipynb:303-313] [c:12a4e2b]
+**해결**: 01번 citation 추출에 `doc_name` 필드를 추가했다. 낫표 안의 약관명과, 괄호 없는 이름('일반조항'으로 끝나는 section_name과 보통약관만 공백 무시로 대조, SECTION_MAP 전체를 대조하지는 않는다)을 모두 인식한다. 03번은 `doc_name`이 있으면 **그 문서에서만** 조회하고, 없으면 `not_found`로 둔다. [code:notebooks/01_데이터_전처리.ipynb:686-701] [code:notebooks/03-1_citation_해석.ipynb:189-199] [code:notebooks/03-1_citation_해석.ipynb:303-313] [c:12a4e2b]
 
-**결과**: 문서명을 명시한 인용의 오연결이 강아지 4건·고양이 3건에서 0건으로 줄었다. [code:notebooks/03-1_citation_해석.ipynb:192] (2026-10-12 기준)
+**결과**: 문서명을 명시한 인용의 오연결이 강아지 4건, 고양이 3건에서 0건으로 줄었다. [code:notebooks/03-1_citation_해석.ipynb:192] (2026-10-12 기준)
 
 #### 3-2. 호(號)를 항(項)으로 조회하던 문제
 
@@ -148,7 +148,7 @@ cit["matched_scope"] = f"cross_section({section}/{section_name})"
 
 03-2번이 이걸 다시 파싱해 참조 대상을 꺼냈는데, `cross_section(보통약관/None)`에서 `split("/")[-1]`이 문자열 `"None"`을 만들어냈다(41건). 04번이 `section_name == "None"`으로 필터링해 조회가 실패했다. (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 고치기 전 코드는 저장소 첫 커밋(ba373fe, 2026-10-13) 전 코드라 git에 없고, 41건은 그때 원자료가 남지 않음 -->
 
-`matched_scope`는 분류값만 담고, 참조 대상은 `ref_section`·`ref_section_name` 별도 필드로 분리했다. [code:notebooks/03-1_citation_해석.ipynb:294-297]
+`matched_scope`는 분류값만 담고, 참조 대상은 `ref_section`, `ref_section_name` 별도 필드로 분리했다. [code:notebooks/03-1_citation_해석.ipynb:294-297]
 
 ---
 
@@ -163,12 +163,12 @@ cit["matched_scope"] = f"cross_section({section}/{section_name})"
 | scope | 의미 | 강아지 |
 | --- | --- | --- |
 | `self_paragraph` | 같은 조 안의 항 (실제 연결) | 498 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
-| `same_section` | 같은 섹션·같은 문서 | 105 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
+| `same_section` | 같은 섹션, 같은 문서 | 105 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `law_not_in_excerpt` | 약관에 미수록된 외부법 | 101 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `named_document` | 문서명이 명시된 인용 | 99 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `law_section_reference` | 【법규】 섹션으로 연결 | 49 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `inline_law_same_block` | 같은 조의 【법명】 박스 | 47 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
-| `self_item` | 조번호 없는 호 — 자기 본문 | 39 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
+| `self_item` | 조번호 없는 호, 자기 본문 | 39 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `excluded_reference` | 준용에서 제외된 조문 | 17 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `inline_law_nearby` | 근처 조의 【법명】 박스 | 6 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |
 | `cross_section` | 다른 섹션 | 5 [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) |

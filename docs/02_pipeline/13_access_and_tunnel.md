@@ -2,10 +2,10 @@
 다루는 곳: app/routers/auth.py, app/services/auth.py, app/deps.py, app/config.py, app/main.py, app/services/demo.py, app/services/rate_limit.py, app/routers/chat_ws.py, app/routers/admin.py, app/services/admin.py, app/routers/sessions.py, app/services/sessions.py, db/employees.py, db/migrations/petmint/0006_accounts.sql, db/migrations/petmint/0010_auth_session_demo.sql, db/migrations/petmint/0011_admin_views.sql, db/migrations/petmint/0012_accounts_precreated.sql, web/src/auth/, web/src/components/FlowCarousel.tsx, web/src/pages/Admin.tsx, scripts/seed_consultations.py, db/fixtures/seed_consultations.json, tests/test_auth.py, tests/test_admin.py
 읽은 커밋: 6710b83
 -->
-> 상태: 구축 완료. 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. petmint.ronanlab.dev의 Access 정책은 데모 시연 때 상대방이 들어갈 수 있도록 사용자가 의도적으로 제거했다 — 지금은 앱 로그인(`/api/auth/me` 미로그인 401)만 건다(2026-11-09 확인). ollama.ronanlab.dev(학교 PC용 Ollama 터널)는 Service Token 정책(`ollama-school-pc`)으로 막혀 있다(2026-11-09 다시 걸음, 1-3절). [code:app/config.py:89] [code:app/routers/auth.py:33-44] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:59 PETMINT_AUTH app --> <!-- 확인 못 함: Access 정책은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
-> 2026-10-28: 앱 자체 인증(사번·비밀번호)을 더했다 — `PETMINT_AUTH=app`. 기본(`access`)은 아래 Access 설계 그대로다(2-1절). [code:app/config.py:89] [c:c3aba5d]
-> 2026-11-12: 체험 로그인(사번 · 비밀번호 없이 가상 직원으로)을 더했다 — `PETMINT_DEMO_LOGIN`, 기본 꺼짐(2-4절). [code:app/config.py:94-96] [c:f613431]
-> cloudflared 매니페스트는 ronanlab-infra `apps/cloudflared`에 있다(2026-10-18 `platform/cloudflared`로 만들었고 2026-11-02 App of Apps 때 옮겼다, 4절). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 125d90e(2026-10-18 platform/cloudflared), ed00626(2026-11-02 apps/로 옮김), apps/cloudflared/app.yaml:1 --> <!-- 확인 못 함: 구축 기록은 Notion 문서라 저장소와 서버에서 읽지 않음 -->
+> 상태: 구축 완료(2026-11-19 코드와 맞춰 봄). 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. petmint.ronanlab.dev의 Access 정책은 데모 시연 때 상대방이 들어갈 수 있도록 사용자가 의도적으로 제거했다. 지금은 앱 로그인(`/api/auth/me` 미로그인 401)만 건다(2026-11-09 확인). ollama.ronanlab.dev(학교 PC용 Ollama 터널)는 Service Token 정책(`ollama-school-pc`)으로 막혀 있다(2026-11-09 다시 걸음, 1-3절). [code:app/config.py:89] [code:app/routers/auth.py:33-44] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:59 PETMINT_AUTH app --> <!-- 확인 못 함: Access 정책은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
+> 2026-10-28: 앱 자체 인증(사번, 비밀번호)을 더했다: `PETMINT_AUTH=app`. 기본(`access`)의 길은 코드에 남아 있으나 운영에서는 쓰지 않는다(2-1절). [code:app/config.py:89] [c:c3aba5d]
+> 2026-11-12: 체험 로그인(사번, 비밀번호 없이 가상 직원으로)을 더했다: `PETMINT_DEMO_LOGIN`, 기본 꺼짐, 운영은 켜 둠(2-4절). [code:app/config.py:94-96] [c:f613431]
+> cloudflared 매니페스트는 ronanlab-infra `apps/cloudflared`에 있다(2026-10-18 `platform/cloudflared`로 만들었고 2026-11-02 App of Apps 때 옮겼다, 옮긴 기록은 docs/archive/13_access_and_tunnel_log.md). 구축 과정의 상세 기록은 "쿠버네티스 설치 / 03. Cloudflare Tunnel 연결" 문서에 있다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 125d90e(2026-10-18 platform/cloudflared), ed00626(2026-11-02 apps/로 옮김), apps/cloudflared/app.yaml:1 --> <!-- 확인 못 함: 구축 기록은 Notion 문서라 저장소와 서버에서 읽지 않음 -->
 > 
 
 ---
@@ -31,7 +31,7 @@
 
 petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3절 표). 그림의 옛 「Access 정책 검사」 줄은 기록 폴더로 옮겼다. <!-- 2026-11-19 잼: 바깥 주소 https://petmint.ronanlab.dev 에 Access 토큰 없이 체험 로그인과 WS 질문이 됐다(measure_ops, demo_probe.py) -->
 
-인바운드 포트를 하나도 열지 않는다. 서버가 Cloudflare로 **아웃바운드 연결을 먼저 걸고** 그 연결을 유지하므로, 공유기 설정이 필요 없고 학교·회사 망에서도 동작한다.
+인바운드 포트를 하나도 열지 않는다. 서버가 Cloudflare로 **아웃바운드 연결을 먼저 걸고** 그 연결을 유지하므로, 공유기 설정이 필요 없고 학교, 회사 망에서도 동작한다.
 
 #### 1-2. 터널 구성
 
@@ -50,23 +50,23 @@ petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3�
 
 | 호스트 | 정책 |
 | --- | --- |
-| petmint.ronanlab.dev | 없음 — 데모 공개를 위해 의도적으로 제거(사용자, 2026-11-09 확인). 앱 로그인(`PETMINT_AUTH=app`)이 신원을 받는다. 처음 설계는 "로그인한 누구나(시연용), 이메일을 헤더로 전달" [code:app/config.py:84-89] <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
+| petmint.ronanlab.dev | 없음. 데모 공개를 위해 의도적으로 제거(사용자, 2026-11-09 확인). 앱 로그인(`PETMINT_AUTH=app`)이 신원을 받는다. [code:app/config.py:84-89] <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
 | runshoes.ronanlab.dev | Access 없음(공개 사이트, 2026-10-18 이 터널로 옮김) <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
 | argocd / harbor / jenkins | 운영자만. Application 하나로 묶어 세션을 공유한다 <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
-| argocd.ronanlab.dev/api/webhook · jenkins.ronanlab.dev/github-webhook | Bypass(누구나) — GitHub 웹훅만(2026-11-03). 지키는 것은 서버의 HMAC SHA-256 서명 검사다 <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
+| argocd.ronanlab.dev/api/webhook, jenkins.ronanlab.dev/github-webhook | Bypass(누구나): GitHub 웹훅만(2026-11-03). 지키는 것은 서버의 HMAC SHA-256 서명 검사다 <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
 
-**`ollama.ronanlab.dev` — 학교 PC에서 서버 PC의 Ollama를 부르는 경로.** 클러스터 터널이 아니라 호스트의 별도 터널이다.
+**`ollama.ronanlab.dev`: 학교 PC에서 서버 PC의 Ollama를 부르는 경로.** 클러스터 터널이 아니라 호스트의 별도 터널이다.
 
 - 용도: 교육 PC(학교)는 환경이 달라 서버 PC의 Ollama API를 이 주소로 부른다. 브라우저가 아니라 API 호출이다
 - 구성: 호스트 systemd `cloudflared-ollama`(enabled) → 터널 `ollama-tunnel`(`~/.cloudflared/config.yml`) → `http://localhost:11434`. 이 파일들은 지우지 않는다 <!-- 2026-11-19 잼: systemctl is-active cloudflared-ollama 결과 active --> <!-- 확인 못 함: ~/.cloudflared 는 열지 않음 -->
-- 인증: Access 앱 `ollama.ronanlab.dev`, 정책 Action **Service Auth** + Include Service Token **`ollama-school-pc`**. 이메일 로그인(`Allow`)은 API 호출이 통과할 수 없어 쓰지 않는다. 부르는 쪽은 요청마다 `CF-Access-Client-Id`·`CF-Access-Client-Secret` 헤더를 붙인다(값은 학교 PC 환경변수에만 둔다). 토큰은 런슈즈가 쓰던 `runshoes-ollama-token`의 이름을 바꿔 그대로 쓴다 <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
-- 확인(2026-11-09): 토큰 없이 `/api/version`·`/api/tags`·`POST /api/generate` 모두 403 <!-- 2026-11-19 잼: curl -s -o /dev/null -w '%{http_code}' https://ollama.ronanlab.dev/ 의 세 경로(generate는 빈 JSON POST), 셋 다 403 -->
-- **런슈즈·펫퍼민트는 이 터널을 쓰지 않는다.** 두 앱의 Pod는 `PETMINT_OLLAMA_URL=http://192.168.122.1:11434`(런슈즈는 키 이름이 `OLLAMA_URL`)(VM 사설망의 GPU 호스트)로 직접 부른다(`ronanlab-infra/apps/runshoes/app/deployment.yaml`, 펫퍼민트 ConfigMap, 2026-11-09 Pod 환경변수로 확인). 런슈즈 `chatbot/llm.py`의 기본값 `https://ollama.ronanlab.dev`와 CF 헤더 코드는 학교 시절(2026-10-18 이주 전)의 흔적이고, 운영에서는 쓰이지 않는다 [code:app/config.py:66] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:23, apps/runshoes/app/deployment.yaml:98-99, :139-140 --> <!-- 확인 못 함: 2026-11-09 Pod 환경변수 확인은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답). --> <!-- 런슈즈 저장소 확인(2026-11-19, runshoes c955875 판, 다른 저장소라 code 표시 대신 주석): 기본값 chatbot/llm.py:12, CF 헤더 chatbot/llm.py:14. 예전 문서가 적은 chatbot_server.py는 지금 없다 -->
-- 사고 기록(2026-11-09): 이 호스트에 Access 정책이 빠져 토큰 없이 열려 있었다 — Ollama 로그로 11-02부터 바깥 IP의 `GET /`·`HEAD /`가 들어왔다(생성·pull·delete는 바깥 IP 0건). 쓰는 곳이 없다고 잘못 보고 터널을 잠시 껐다가(`systemctl disable --now`) 학교 PC 용도를 확인해 다시 켜고, 위 Service Auth 정책을 걸었다. GPU가 한 장이라 바깥에서 긴 생성을 돌리면 펫퍼민트 서빙이 멈춘다 — 이 호스트는 늘 Access 뒤에 둔다 <!-- 2026-11-19 잼: docker logs ollama 의 GIN 줄에서 사설 대역 밖 IP 요청을 날짜와 메서드별로 셈(IP는 출력 안 함). 2026-11-02 GET / 2, 11-03 HEAD / 2, 11-09 GET /api/tags 4와 /api/version 5, 11-10 뒤 0, 생성과 pull과 delete 0. systemctl is-active cloudflared-ollama 결과 active -->
+- 인증: Access 앱 `ollama.ronanlab.dev`, 정책 Action **Service Auth** + Include Service Token **`ollama-school-pc`**. 이메일 로그인(`Allow`)은 API 호출이 통과할 수 없어 쓰지 않는다. 부르는 쪽은 요청마다 `CF-Access-Client-Id`, `CF-Access-Client-Secret` 헤더를 붙인다(값은 학교 PC 환경변수에만 둔다). 토큰은 런슈즈가 쓰던 `runshoes-ollama-token`의 이름을 바꿔 그대로 쓴다 <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
+- 확인(2026-11-09): 토큰 없이 `/api/version`, `/api/tags`, `POST /api/generate` 모두 403 <!-- 2026-11-19 잼: curl -s -o /dev/null -w '%{http_code}' https://ollama.ronanlab.dev/ 의 세 경로(generate는 빈 JSON POST), 셋 다 403 -->
+- **런슈즈, 펫퍼민트는 이 터널을 쓰지 않는다.** 두 앱의 Pod는 `PETMINT_OLLAMA_URL=http://192.168.122.1:11434`(런슈즈는 키 이름이 `OLLAMA_URL`)(VM 사설망의 GPU 호스트)로 직접 부른다(`ronanlab-infra/apps/runshoes/app/deployment.yaml`, 펫퍼민트 ConfigMap, 2026-11-09 Pod 환경변수로 확인). 런슈즈 `chatbot/llm.py`의 기본값 `https://ollama.ronanlab.dev`와 CF 헤더 코드는 학교 시절(2026-10-18 이주 전)의 흔적이고, 운영에서는 쓰이지 않는다 [code:app/config.py:66] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:23, apps/runshoes/app/deployment.yaml:98-99, :139-140 --> <!-- 확인 못 함: 2026-11-09 Pod 환경변수 확인은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답). --> <!-- 런슈즈 저장소 확인(2026-11-19, runshoes c955875 판, 다른 저장소라 code 표시 대신 주석): 기본값 chatbot/llm.py:12, CF 헤더 chatbot/llm.py:14. 예전 문서가 적은 chatbot_server.py는 지금 없다 -->
+- 사고 기록(2026-11-09): 이 호스트에 Access 정책이 빠져 토큰 없이 열려 있었다. Ollama 로그로 11-02부터 바깥 IP의 `GET /`, `HEAD /`가 들어왔다(생성, pull, delete는 바깥 IP 0건). 쓰는 곳이 없다고 잘못 보고 터널을 잠시 껐다가(`systemctl disable --now`) 학교 PC 용도를 확인해 다시 켜고, 위 Service Auth 정책을 걸었다. GPU가 한 장이라 바깥에서 긴 생성을 돌리면 펫퍼민트 서빙이 멈춘다. 이 호스트는 늘 Access 뒤에 둔다 <!-- 2026-11-19 잼: docker logs ollama 의 GIN 줄에서 사설 대역 밖 IP 요청을 날짜와 메서드별로 셈(IP는 출력 안 함). 2026-11-02 GET / 2, 11-03 HEAD / 2, 11-09 GET /api/tags 4와 /api/version 5, 11-10 뒤 0, 생성과 pull과 delete 0. systemctl is-active cloudflared-ollama 결과 active -->
 
 코드에 길(access 모드, Access 헤더의 이메일을 신원으로 받는 것)은 남아 있으나 운영에서는 쓰지 않는다. petmint.ronanlab.dev의 처음 설계 정책 설명은 기록 폴더로 옮겼다. [code:app/deps.py:39-41]
 
-> **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `;` 우회 변형은 Access 302였고, 인코딩한 `..` 변형(`..%2f`, `%2e%2e`)은 302가 아니라 400으로 Cloudflare가 막았다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다 — 서버가 404·403·405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). <!-- 2026-11-19 잼: curl -s --path-as-is -o /dev/null -D - 로 argocd와 jenkins에 10개 경로. /, /script, /api/v1/applications, ;/script 302. ..%2f, %2e%2e/script 400(server: cloudflare). 서버까지 가는 것 argocd /API/webhook 404, /api/webhook/x 404, jenkins /github-webhook/ 405, /Github-webhook/ 403, /github-webhook/x 404. 41개 전부는 다시 재지 않음 --> <!-- 확인 못 함: Bypass Access 앱은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
+> **웹훅 경로만 Bypass한다(2026-11-03).** GitHub 웹훅은 헤더를 마음대로 넣지 못해 Service Token을 쓸 수 없다. 경로가 더 구체적인 Access 앱(`argocd-webhook`, `jenkins-webhook`)을 하나씩 더 만들어 그 경로만 Bypass하고, 나머지는 위 정책 그대로다. 바깥에서 41개 경로를 재 보니 `/`, `/script`, `/api/v1/*`, `;` 우회 변형은 Access 302였고, 인코딩한 `..` 변형(`..%2f`, `%2e%2e`)은 302가 아니라 400으로 Cloudflare가 막았다. 다만 Cloudflare 경로 일치는 **하위 경로를 포함하고 대소문자를 가리지 않아** `/api/webhook/x`, `/API/webhook`, `/github-webhook/x`, `/Github-webhook/`도 서버까지 간다. 서버가 404, 403, 405로 막는다(Jenkins 응답 헤더의 버전은 웹훅 주소 자체에서도 나가므로 새로 드러나는 것은 없다). <!-- 2026-11-19 잼: curl -s --path-as-is -o /dev/null -D - 로 argocd와 jenkins에 10개 경로. /, /script, /api/v1/applications, ;/script 302. ..%2f, %2e%2e/script 400(server: cloudflare). 서버까지 가는 것 argocd /API/webhook 404, /api/webhook/x 404, jenkins /github-webhook/ 405, /Github-webhook/ 403, /github-webhook/x 404. 41개 전부는 다시 재지 않음 --> <!-- 확인 못 함: Bypass Access 앱은 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
 >
 
 > 운영 도구 셋은 자체 로그인이 있지만 Access를 앞에 둔다. 로그인 화면 자체가 공격면이고, 인증 전에 터지는 취약점이 드물지 않기 때문이다. 정책이 같으므로 Application 하나에 묶었고, 하나를 인증하면 셋 다 통한다.
@@ -74,7 +74,7 @@ petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3�
 
 운영(app 모드)에서는 로그인한 직원의 이메일이 `sessions.agent_email`에 들어간다(2-1절). access 모드에서 `Cf-Access-Authenticated-User-Email` 헤더를 읽는 길은 코드에 남아 있으나 운영에서는 쓰지 않는다(기록 폴더). [code:app/routers/chat_ws.py:75] [code:app/config.py:84-85] [code:app/deps.py:39-41] [docs:02_pipeline/12_data_storage.md]
 
-**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH·DELETE·피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 1-13절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다** — 최근 상담 탭이 그 위에 서 있다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
+**이 값은 기록용이면서 소유권 판정에도 쓰인다.** 세션을 바꾸는 작업(PATCH, DELETE, 피드백)은 `agent_email`로 거르고, 남의 세션은 없는 세션과 같게 404다(09번 1-13절). WS는 연결 자체를 4404로 닫는다. 다만 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다**. 최근 상담 탭이 그 위에 서 있다. [code:app/routers/sessions.py:36-46] [code:app/services/sessions.py:52-60] [code:app/config.py:30] [code:app/routers/chat_ws.py:5]
 
 ---
 
@@ -88,23 +88,23 @@ petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3�
 
 요구가 바뀐 지점은 둘이다.
 - 데모를 보는 사람은 사내 계정이 없다. Access 정책을 "로그인한 누구나"로 열면 상담원 명단으로 거르지 못하고(4절), 계정을 만들어 주면 사내 계정 체계 밖의 사람을 SSO에 넣게 된다
-- 상담원 명단·역할·재직 여부를 앱이 알아야 한다. 다음 단계의 사내규정 개인화(퇴직금·연차·자격수당)는 로그인한 사람이 누구인지 사번 단위로 알아야 한다
+- 상담원 명단, 역할, 재직 여부를 앱이 알아야 한다. 다음 단계의 사내규정 개인화(퇴직금, 연차, 자격수당)는 로그인한 사람이 누구인지 사번 단위로 알아야 한다
 
 그래서 직원 원장을 두고 앱이 그 직원을 직접 인증한다. 처음 설계가 꼽은 세 가지 비용(기록 폴더로 옮긴 글)은 그대로 떠안되, 이렇게 줄였다.
 
 | 항목 | 구현 |
 | --- | --- |
-| 신원 | 기간계 `insurance_core.employees`(인사 원장, 앱은 SELECT만). 앱 쪽은 `petmint.accounts`(역할·해시·잠금)·`auth_sessions` — 12번 1-1절 [code:app/services/auth.py:84-113] [code:db/migrations/petmint/0006_accounts.sql] [docs:02_pipeline/12_data_storage.md] |
+| 신원 | 기간계 `insurance_core.employees`(인사 원장, 앱은 SELECT만). 앱 쪽은 `petmint.accounts`(역할, 해시, 잠금), `auth_sessions`. 12번 1-1절 [code:app/services/auth.py:84-113] [code:db/migrations/petmint/0006_accounts.sql] [docs:02_pipeline/12_data_storage.md] |
 | 비밀번호 | argon2id. 최소 10자, 관리자가 준 임시 비밀번호는 첫 로그인 때 바꾼다. 바꾸면 그 직원의 다른 로그인을 모두 끊는다 [code:app/services/auth.py:18] [code:app/services/auth.py:30] [code:app/services/auth.py:74-76] [code:app/services/auth.py:201-215] [code:app/deps.py:62-69] |
-| 세션 | 32바이트 난수 토큰을 HttpOnly·SameSite=Lax·Secure 쿠키로, DB에는 SHA-256만. 미사용 2시간·절대 12시간. JWT를 쓰지 않는다 — 퇴직·비밀번호 변경·로그아웃 때 즉시 끊어야 한다 [code:app/services/auth.py:25-26] [code:app/services/auth.py:79-80] [code:app/services/auth.py:142] [code:app/routers/auth.py:28-30] [code:app/services/auth.py:172-199] |
-| 무차별 대입 | 5회 실패 → 15분 잠금. 실패 문구는 하나("사번 또는 비밀번호가 올바르지 않습니다") — 없는 사번도 같은 해시 시간 [code:app/services/auth.py:28-33] [code:app/services/auth.py:124-135] |
+| 세션 | 32바이트 난수 토큰을 HttpOnly, SameSite=Lax, Secure 쿠키로, DB에는 SHA-256만. 미사용 2시간, 절대 12시간. JWT를 쓰지 않는다: 퇴직, 비밀번호 변경, 로그아웃 때 즉시 끊어야 한다 [code:app/services/auth.py:25-26] [code:app/services/auth.py:79-80] [code:app/services/auth.py:142] [code:app/routers/auth.py:28-30] [code:app/services/auth.py:172-199] |
+| 무차별 대입 | 5회 실패 → 15분 잠금. 실패 문구는 하나("사번 또는 비밀번호가 올바르지 않습니다"). 없는 사번도 같은 해시 시간 [code:app/services/auth.py:28-33] [code:app/services/auth.py:124-135] |
 | 퇴사 | 기간계 `retired_on`이 지나면 다음 요청부터 401, 앱만 끊을 때는 `accounts.disabled_at` [code:app/services/auth.py:185-193] [code:db/migrations/petmint/0006_accounts.sql:13] |
-| CSRF·WS 위조 | 상태를 바꾸는 `/api` 요청과 WS 연결은 Origin이 같은 Host이거나 허용 목록이어야 한다(`PETMINT_ALLOWED_ORIGINS`) [code:app/deps.py:44-47] [code:app/main.py:80-86] [code:app/routers/chat_ws.py:73-74] [code:app/config.py:101-102] |
-| 신원 기록 | 로그인한 직원의 이메일이 그대로 `sessions.agent_email`에 들어간다 — 세션 소유권 판정(1-3절)은 코드가 바뀌지 않았다 [code:app/routers/chat_ws.py:75] |
+| CSRF, WS 위조 | 상태를 바꾸는 `/api` 요청과 WS 연결은 Origin이 같은 Host이거나 허용 목록이어야 한다(`PETMINT_ALLOWED_ORIGINS`) [code:app/deps.py:44-47] [code:app/main.py:80-86] [code:app/routers/chat_ws.py:73-74] [code:app/config.py:101-102] |
+| 신원 기록 | 로그인한 직원의 이메일이 그대로 `sessions.agent_email`에 들어간다. 세션 소유권 판정(1-3절)은 코드가 바뀌지 않았다 [code:app/routers/chat_ws.py:75] |
 
 `PETMINT_AUTH`로 고른다. `access`(기본)는 지금처럼 Access 헤더가 신원이고, `app`은 로그인 쿠키가 있어야 한다. 둘 다 `GET /api/auth/me`가 답하고 프런트는 `auth_mode`를 보고 로그인 화면을 띄울지 정한다. 계정은 관리 화면 대신 `python -m db.employees add|reset|disable|enable|list`로 다룬다(비밀번호는 명령줄에 쓰지 않고 두 번 묻는다). [code:app/config.py:89] [code:app/routers/auth.py:33-44] [code:app/routers/auth.py:4] [code:db/employees.py:5] [code:db/employees.py:24-42]
 
-> **프로젝트마다 다르게 간다.** RUNSHOES처럼 불특정 사용자가 가입하는 공개 서비스는 처음부터 자체 로그인이다. 펫민트는 사내 상담원용이지만 직원 원장을 앱이 갖게 되면서 자체 인증이 됐다 — 가입은 없고 관리자가 계정을 만든다.
+> **프로젝트마다 다르게 간다.** RUNSHOES처럼 불특정 사용자가 가입하는 공개 서비스는 처음부터 자체 로그인이다. 펫민트는 사내 상담원용이지만 직원 원장을 앱이 갖게 되면서 자체 인증이 됐다. 가입은 없고 관리자가 계정을 만든다.
 
 #### 2-2. 터널을 호스트 프로세스가 아니라 Pod로
 
@@ -112,65 +112,65 @@ petmint에는 Access 정책이 없고 앱 로그인이 신원을 받는다(1-3�
 | --- | --- | --- |
 | 장애 복구 | 죽으면 수동 재시작 | livenessProbe로 자동 재시작 |
 | 이중화 | 수동으로 프로세스 여러 개 | `replicas: 2` 한 줄 |
-| 설정 관리 | 호스트 파일 | ConfigMap — ronanlab-infra `apps/cloudflared`, ArgoCD Sync <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/configmap.yaml:5-10, apps/cloudflared/app.yaml:19-22 --> |
+| 설정 관리 | 호스트 파일 | ConfigMap: ronanlab-infra `apps/cloudflared`, ArgoCD Sync <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/configmap.yaml:5-10, apps/cloudflared/app.yaml:19-22 --> |
 
 RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한 흐름**이 되기도 한다.
 
-**터널 Application은 수동 Sync로 둔다(2026-11-11 결정, 다른 Application은 자동).** 터널이 깨지면 공개 주소 7개가 한꺼번에 안 보인다 — 상담원 화면뿐 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)까지 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 곧바로 그 상태를 만들지 않게 사람이 Sync를 누르고 롤링을 지켜본다. 새 설정이 깨지면 새 Pod가 Ready가 못 되어 롤링이 멈추고 옛 Pod 둘이 계속 받는다(14번 1-15절, ronanlab-infra `apps/cloudflared/README.md`). [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/app.yaml:4-8, apps/cloudflared/README.md:21-23, :44-45, 공개 주소 일곱은 apps/cloudflared/configmap.yaml:14-43 -->
+**터널 Application은 수동 Sync로 둔다(2026-11-11 결정, 다른 Application은 자동).** 터널이 깨지면 공개 주소 7개가 한꺼번에 안 보인다. 상담원 화면뿐 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)까지 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 곧바로 그 상태를 만들지 않게 사람이 Sync를 누르고 롤링을 지켜본다. 새 설정이 깨지면 새 Pod가 Ready가 못 되어 롤링이 멈추고 옛 Pod 둘이 계속 받는다(14번 1-15절, ronanlab-infra `apps/cloudflared/README.md`). [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/app.yaml:4-8, apps/cloudflared/README.md:21-23, :44-45, 공개 주소 일곱은 apps/cloudflared/configmap.yaml:14-43 -->
 
 #### 2-3. 터널 설정은 클러스터 단위, Access는 프로젝트 단위
 
-터널 ConfigMap은 **일곱 호스트(petmint·argocd·harbor·jenkins·runshoes, grafana, prometheus)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/configmap.yaml:1, :14-43 -->
+터널 ConfigMap은 **일곱 호스트(petmint, argocd, harbor, jenkins, runshoes, grafana, prometheus)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다. Harbor, Jenkins, ArgoCD, 터널은 펫민트의 것이 아니라 클러스터의 것이다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/configmap.yaml:1, :14-43 -->
 
 반면 **Access 정책은 호스트마다 따로 건다.** 프로젝트가 늘어나면 정책도 각각 추가하면 된다.
 
 #### 2-4. 체험 로그인 (2026-11-12)
 
-포트폴리오로 공개하면 보는 사람은 사번 · 비밀번호가 없다. 로그인 화면 아래에 **체험 카드**를 두고, 누르면 그 가상 직원으로 바로 들어온다. 구조는 런슈즈 체험 로그인(`runshoes docs/04_auth.md` 1-3절)과 같다 — 서버가 체험 풀 안의 사번만 받고, 비밀번호는 어디에도 없다. [code:app/services/auth.py:153-170] [code:app/config.py:94-96] [c:f613431]
+포트폴리오로 공개하면 보는 사람은 사번, 비밀번호가 없다. 로그인 화면 아래에 **체험 카드**를 두고, 누르면 그 가상 직원으로 바로 들어온다. 구조는 런슈즈 체험 로그인(`runshoes docs/04_auth.md` 1-3절)과 같다: 서버가 체험 풀 안의 사번만 받고, 비밀번호는 어디에도 없다. [code:app/services/auth.py:153-170] [code:app/config.py:94-96] [c:f613431]
 
 | 항목 | 설계 |
 | --- | --- |
-| 누구로 | **앱 계정이 있는** 가상 직원(퇴직 · 앱 중지 아닌 사람 — 지금 7명: 관리자 1 · 상담원 6). 2026-11-12 처음에는 퇴직자 말고 전부(10명)였고 누르면 계정이 생겼다 — 아래 「계정은 미리」. 계정이 없는 조현석 · 문태양 · 류채원(입사가 늦어 아직 계정이 없는 상황)과 퇴직자 황재민은 **카드에서 뺀다** — 카드는 그 계정으로 들어가는 단추라, 들어갈 수 없는 카드를 두고 누르면 안내하는 것보다 처음부터 없는 편이 헷갈리지 않는다. 사번을 직접 보내면 400. 전용 직원을 따로 만들지 않는다(사용자) — 전부 가상 데이터이고, 직원마다 인사 데이터가 달라(부장 25년 vs 수습 2개월, 휴직 · 자격증 · 계약직) 고르는 것 자체가 체험이다 [code:app/services/auth.py:95-106] [code:app/services/auth.py:156-158] [code:db/migrations/petmint/0012_accounts_precreated.sql:5-23] |
-| 나눔 | 「상담원으로 체험하기」 · 「관리자로 체험하기」(`accounts.role`). 관리자로 들어오면 헤더에 「관리」가 생겨 관리자 화면(2-5절)을 쓸 수 있다 [code:web/src/auth/Login.tsx] [code:app/routers/admin.py:21-29] |
-| 화면 | 런슈즈 체험 카드와 같은 동작(`web/src/auth/DemoCards.tsx` → 공용 `components/FlowCarousel`) — 상담원 카드가 2줄로 천천히 가로로 흐르고(초당 13px), 마우스를 올리면 멈추고, 끌면 따라오고 관성으로 미끄러진다. 움직임 줄이기 설정이면 흐르지 않는다. 관리자 카드(점선)는 폭과 상관없이 흐름 아래에 쌓는다. 휴대폰처럼 한 열만 들어가면 다음 카드가 살짝 보인다. 글씨는 새 크기 없이 있는 토큰만 쓴다 — 로그인 카드 · 체험 제목은 홈과 같은 본문 배율 토큰, 체험 카드는 업무특화 고객 카드와 같은 `.chat-text` 토큰(11번 1-5절 「로그인 화면 글씨」). 2026-11-12 여섯 폭(1920 · 1440 · 1280 · 1024 · 800 · 400)에서 페이지 가로 넘침 없음. 1440 · 1280 · 1024px은 관리자 카드가 한 화면 아래(스크롤) [code:web/src/auth/DemoCards.tsx:1-5] [code:web/src/auth/DemoCards.tsx:30-32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/auth/Login.module.css:40] [c:f613431] <!-- 확인 못 함: 여섯 폭 넘침은 그날 헤드리스 크롬으로 잰 값이고 그때 원자료가 남지 않음 --> |
-| 카드 | "권태호 부장 · 근속 25년 8개월 · 연차 14일 남음" + 이 계정으로 볼 수 있는 것(수습 중 · 계약직 · 경력 입사 · 1년 미만 · 휴직 이력 · 자격증 · 승진 대상). 숫자는 사내규정 개인화와 같은 계산(`hr_personal.profile`)이라 카드와 챗봇 답이 어긋나지 않는다. 급여 · 평가 등급은 싣지 않는다(본인 정보 블록과 같은 기준). `app/services/demo.py` [code:app/services/demo.py:1-8] [code:app/services/demo.py:27-53] [code:app/services/hr_personal.py:613] |
-| API | `GET /api/auth/demo-accounts`(카드) · `POST /api/auth/demo {employee_id}`(로그인과 같은 쿠키). 풀 밖 사번(퇴직 · 중지 · 없음) 400 [code:app/routers/auth.py:64-84] [code:app/services/auth.py:156-158] |
-| 비밀번호 | 화면 · 요청 · 코드 · git 어디에도 없다. 미리 만든 계정은 비밀번호가 없다(사번 · 비밀번호로는 들어올 수 없다. 사람이 쓰려면 `db.employees reset`) [code:db/migrations/petmint/0012_accounts_precreated.sql:5] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-19] [code:app/services/auth.py:124-126] |
-| 계정은 미리 | **가상 직원의 앱 계정은 마이그레이션(petmint `0012`)으로 미리 만든다(2026-11-12 사용자).** 전에는 체험 로그인을 누를 때 계정이 생겨(`INSERT IGNORE`), 체험할수록 관리자 화면 직원 목록의 「앱 계정 없음」이 줄었다 — 누가 계정이 있는지가 방문자 손에 달려 있었다. 이제 계정이 있는 사람은 0012가 정하고, 체험 로그인은 있는 계정만 쓴다. 0012는 권태호(관리자) · 송미경 · 임동욱 · 장민혁 · 노은비 · 배수정 · 신하늘(상담원)을 만들고(이미 있으면 역할 · 비밀번호를 그대로 둔다), 조현석 · 문태양 · 류채원 · 황재민의 계정은 지운다(로그인 세션도 같이 지워진다. 상담 기록은 남는다) [code:db/migrations/petmint/0012_accounts_precreated.sql:1-23] [code:app/services/auth.py:153-155] [c:a2ddb7f] |
-| 세션 표시 | `auth_sessions.demo`(petmint `0010`) — 계정이 아니라 로그인 세션에 찍는다. 같은 직원이 비밀번호로 들어오면 체험이 아니다. 체험 세션은 비밀번호 변경 403, 첫 로그인 비밀번호 변경을 묻지 않는다. 상단에 "체험 계정" [code:db/migrations/petmint/0010_auth_session_demo.sql:1-9] [code:app/services/auth.py:202-203] [code:app/services/auth.py:194] [code:web/src/api/types.ts:367] |
-| 잠금 | 체험 로그인은 실패 횟수 · 잠금을 보지도 바꾸지도 않는다 — 누가 그 사번에 비밀번호를 일부러 틀려도 체험은 막히지 않고, 잠금은 그대로 남는다 [code:app/services/auth.py:153-170] |
-| 시도 제한 | 같은 IP 15분에 30번(`PETMINT_DEMO_LOGIN_PER_IP`) 넘으면 429. IP는 `CF-Connecting-IP` — 운영은 터널 → ingress를 거쳐 `request.client`가 클러스터 Pod 주소다(2026-11-12 `auth_sessions.ip`가 전부 10.244.x). 비밀번호 로그인의 IP 기록도 같은 함수(`deps.client_ip`)로 바꿨다 [code:app/config.py:97] [code:app/services/auth.py:34] [code:app/services/auth.py:162-166] [code:app/deps.py:50-54] |
+| 누구로 | **앱 계정이 있는** 가상 직원(퇴직 또는 앱 중지 아닌 사람. 지금 7명: 관리자 1, 상담원 6). 2026-11-12 처음에는 퇴직자 말고 전부(10명)였고 누르면 계정이 생겼다(아래 「계정은 미리」). 계정이 없는 조현석, 문태양, 류채원(입사가 늦어 아직 계정이 없는 상황)과 퇴직자 황재민은 **카드에서 뺀다**. 카드는 그 계정으로 들어가는 단추라, 들어갈 수 없는 카드를 두고 누르면 안내하는 것보다 처음부터 없는 편이 헷갈리지 않는다. 사번을 직접 보내면 400. 전용 직원을 따로 만들지 않는다(사용자). 전부 가상 데이터이고, 직원마다 인사 데이터가 달라(부장 25년 vs 수습 2개월, 휴직, 자격증, 계약직) 고르는 것 자체가 체험이다 [code:app/services/auth.py:95-106] [code:app/services/auth.py:156-158] [code:db/migrations/petmint/0012_accounts_precreated.sql:5-23] |
+| 나눔 | 「상담원으로 체험하기」, 「관리자로 체험하기」(`accounts.role`). 관리자로 들어오면 헤더에 「관리」가 생겨 관리자 화면(2-5절)을 쓸 수 있다 [code:web/src/auth/Login.tsx] [code:app/routers/admin.py:21-29] |
+| 화면 | 런슈즈 체험 카드와 같은 동작(`web/src/auth/DemoCards.tsx` → 공용 `components/FlowCarousel`): 상담원 카드가 2줄로 천천히 가로로 흐르고(초당 13px), 마우스를 올리면 멈추고, 끌면 따라오고 관성으로 미끄러진다. 움직임 줄이기 설정이면 흐르지 않는다. 관리자 카드(점선)는 폭과 상관없이 흐름 아래에 쌓는다. 휴대폰처럼 한 열만 들어가면 다음 카드가 살짝 보인다. 글씨는 새 크기 없이 있는 토큰만 쓴다. 로그인 카드와 체험 제목은 홈과 같은 본문 배율 토큰, 체험 카드는 업무특화 고객 카드와 같은 `.chat-text` 토큰(11번 1-5절 「로그인 화면 글씨」). 2026-11-12 여섯 폭(1920, 1440, 1280, 1024, 800, 400)에서 페이지 가로 넘침 없음. 1440, 1280, 1024px은 관리자 카드가 한 화면 아래(스크롤) [code:web/src/auth/DemoCards.tsx:1-5] [code:web/src/auth/DemoCards.tsx:30-32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/auth/Login.module.css:40] [c:f613431] <!-- 확인 못 함: 여섯 폭 넘침은 그날 헤드리스 크롬으로 잰 값이고 그때 원자료가 남지 않음 --> |
+| 카드 | "권태호 부장 · 근속 25년 8개월 · 연차 14일 남음" + 이 계정으로 볼 수 있는 것(수습 중, 계약직, 경력 입사, 1년 미만, 휴직 이력, 자격증, 승진 대상). 숫자는 사내규정 개인화와 같은 계산(`hr_personal.profile`)이라 카드와 챗봇 답이 어긋나지 않는다. 급여, 평가 등급은 싣지 않는다(본인 정보 블록과 같은 기준). `app/services/demo.py` [code:app/services/demo.py:1-8] [code:app/services/demo.py:27-53] [code:app/services/hr_personal.py:613] |
+| API | `GET /api/auth/demo-accounts`(카드), `POST /api/auth/demo {employee_id}`(로그인과 같은 쿠키). 풀 밖 사번(퇴직, 중지, 없음) 400 [code:app/routers/auth.py:64-84] [code:app/services/auth.py:156-158] |
+| 비밀번호 | 화면, 요청, 코드, git 어디에도 없다. 미리 만든 계정은 비밀번호가 없다(사번, 비밀번호로는 들어올 수 없다. 사람이 쓰려면 `db.employees reset`) [code:db/migrations/petmint/0012_accounts_precreated.sql:5] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-19] [code:app/services/auth.py:124-126] |
+| 계정은 미리 | **가상 직원의 앱 계정은 마이그레이션(petmint `0012`)으로 미리 만든다(2026-11-12 사용자).** 전에는 체험 로그인을 누를 때 계정이 생겨(`INSERT IGNORE`), 체험할수록 관리자 화면 직원 목록의 「앱 계정 없음」이 줄었다. 누가 계정이 있는지가 방문자 손에 달려 있었다. 이제 계정이 있는 사람은 0012가 정하고, 체험 로그인은 있는 계정만 쓴다. 0012는 권태호(관리자), 송미경, 임동욱, 장민혁, 노은비, 배수정, 신하늘(상담원)을 만들고(이미 있으면 역할, 비밀번호를 그대로 둔다), 조현석, 문태양, 류채원, 황재민의 계정은 지운다(로그인 세션도 같이 지워진다. 상담 기록은 남는다) [code:db/migrations/petmint/0012_accounts_precreated.sql:1-23] [code:app/services/auth.py:153-155] [c:a2ddb7f] |
+| 세션 표시 | `auth_sessions.demo`(petmint `0010`). 계정이 아니라 로그인 세션에 찍는다. 같은 직원이 비밀번호로 들어오면 체험이 아니다. 체험 세션은 비밀번호 변경 403, 첫 로그인 비밀번호 변경을 묻지 않는다. 상단에 "체험 계정" [code:db/migrations/petmint/0010_auth_session_demo.sql:1-9] [code:app/services/auth.py:202-203] [code:app/services/auth.py:194] [code:web/src/api/types.ts:367] |
+| 잠금 | 체험 로그인은 실패 횟수, 잠금을 보지도 바꾸지도 않는다. 누가 그 사번에 비밀번호를 일부러 틀려도 체험은 막히지 않고, 잠금은 그대로 남는다 [code:app/services/auth.py:153-170] |
+| 시도 제한 | 같은 IP 15분에 30번(`PETMINT_DEMO_LOGIN_PER_IP`) 넘으면 429. IP는 `CF-Connecting-IP`. 운영은 터널 → ingress를 거쳐 `request.client`가 클러스터 Pod 주소다(2026-11-12 `auth_sessions.ip`가 전부 10.244.x). 비밀번호 로그인의 IP 기록도 같은 함수(`deps.client_ip`)로 바꿨다 [code:app/config.py:97] [code:app/services/auth.py:34] [code:app/services/auth.py:162-166] [code:app/deps.py:50-54] |
 | GPU 보호 | 체험 세션의 질문은 방문자(로그인 쿠키)마다 1분에 10번(`PETMINT_DEMO_TURNS_PER_MIN`). 넘으면 그 질문은 턴으로 남기지 않고 "체험 계정은 1분에 10번까지…"(`rate_limited`)를 보낸다. Pod 메모리에서 센다 [code:app/config.py:98] [code:app/routers/chat_ws.py:38-40] [code:app/routers/chat_ws.py:121-122] [code:app/services/rate_limit.py:14] |
-| 기록 | 방문자는 같은 계정을 함께 쓰므로 지난 대화 · 최근 상담이 서로 보인다 — 그대로 두고 안내 문구를 단다(사용자). 체험 대화는 그 직원의 `agent_email`로 남아 기존 시험 기록과 섞인다 [code:web/src/auth/Login.tsx:141-144] |
+| 기록 | 방문자는 같은 계정을 함께 쓰므로 지난 대화, 최근 상담이 서로 보인다. 그대로 두고 안내 문구를 단다(사용자). 체험 대화는 그 직원의 `agent_email`로 남아 기존 시험 기록과 섞인다 [code:web/src/auth/Login.tsx:141-144] |
 | 끄기 | `PETMINT_DEMO_LOGIN`(기본 0). 끄면 두 API가 404이고 화면에 체험 영역이 없다. `PETMINT_AUTH=access`에서도 404 [code:app/config.py:96] [code:app/routers/auth.py:59-61] |
 | 운영 값 | 운영은 켜 둔다(`PETMINT_DEMO_LOGIN`이 1) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:64 (942c440, 2026-11-12) --> |
 
-- **체험 계정은 방문자끼리 기록이 보인다(2-4절).** 같은 계정을 함께 쓰기 때문이다 — 안내 문구로 알린다. 방문자가 질문에 자기 개인 정보를 적으면 다음 방문자도 본다 [code:web/src/auth/Login.tsx:144]
+- **체험 계정은 방문자끼리 기록이 보인다(2-4절).** 같은 계정을 함께 쓰기 때문이다. 안내 문구로 알린다. 방문자가 질문에 자기 개인 정보를 적으면 다음 방문자도 본다 [code:web/src/auth/Login.tsx:144]
 
 #### 2-5. 관리자 화면 (2026-11-12)
 
 관리자(`accounts.role = 관리자`)가 **상담원별 상담을 열어 보고, 직원 목록을 읽는** 화면이다. 헤더 이름 옆 「관리자 화면」으로 들어간다(화면 모양은 11번 1-5절). [code:app/routers/admin.py:21-29] [code:web/src/pages/Admin.tsx] [c:06536d3]
 
-**왜 Grafana와 따로 두나.** Grafana 「petmint 운영」 대시보드는 **전체 추세**를 본다 — 모드별 질문 수, 거절률, 응답 시간, 규칙별 발동 수(15번). 관리자 화면은 **개별 건**을 본다 — Grafana에서 이상한 숫자(거절률이 올랐다)를 보고, 관리자 화면에서 그 상담을 찾아 실제로 무엇을 물었고 무엇을 답했는지 확인하는 흐름이다. 그래서 숫자 · 그래프는 다시 그리지 않는다 — 겹치면 이 화면을 만들 이유가 없다. 숫자는 상담원 목록의 건수(「오늘 3건, 고객 2명」)뿐이고, 거절은 수치가 아니라 턴마다 붙는 **표시**다(표시가 없으면 답을 하나하나 읽어야 찾는다).
+**왜 Grafana와 따로 두나.** Grafana 「petmint 운영」 대시보드는 **전체 추세**를 본다: 모드별 질문 수, 거절률, 응답 시간, 규칙별 발동 수(15번). 관리자 화면은 **개별 건**을 본다: Grafana에서 이상한 숫자(거절률이 올랐다)를 보고, 관리자 화면에서 그 상담을 찾아 실제로 무엇을 물었고 무엇을 답했는지 확인하는 흐름이다. 그래서 숫자, 그래프는 다시 그리지 않는다. 겹치면 이 화면을 만들 이유가 없다. 숫자는 상담원 목록의 건수(「오늘 3건, 고객 2명」)뿐이고, 거절은 수치가 아니라 턴마다 붙는 **표시**다(표시가 없으면 답을 하나하나 읽어야 찾는다).
 
-**왜 읽기만 하나.** 인사 원장은 기간계(insurance_core) 소유라 앱은 읽기만 한다 — 고객 원장과 같은 경계다(12번 1-1절). 직원 추가 · 계정 중지 · 비밀번호 초기화는 지금처럼 명령 `python -m db.employees`로 한다(아래 「계정 관리 명령」, 14번). 화면의 직원 목록 안내는 "인사 시스템에서 처리합니다"라고만 쓴다 — 명령은 운영자가 볼 문서에만 둔다. 관리자 화면에는 쓰기 기능이 없다 — API 넷이 모두 GET이고, 쓰는 것은 열람 기록(`admin_views`) 하나다. [code:app/routers/admin.py:50-75] [code:app/services/admin.py:150-155] [code:web/src/pages/Admin.tsx:306]
+**왜 읽기만 하나.** 인사 원장은 기간계(insurance_core) 소유라 앱은 읽기만 한다. 고객 원장과 같은 경계다(12번 1-1절). 직원 추가, 계정 중지, 비밀번호 초기화는 지금처럼 명령 `python -m db.employees`로 한다(아래 「계정 관리 명령」, 14번). 화면의 직원 목록 안내는 "인사 시스템에서 처리합니다"라고만 쓴다. 명령은 운영자가 볼 문서에만 둔다. 관리자 화면에는 쓰기 기능이 없다. API 넷이 모두 GET이고, 쓰는 것은 열람 기록(`admin_views`) 하나다. [code:app/routers/admin.py:50-75] [code:app/services/admin.py:150-155] [code:web/src/pages/Admin.tsx:306]
 
 | 항목 | 설계 |
 | --- | --- |
-| 상담 조회 | 상담원 목록(인사 원장 직원 — 고른 기간의 상담 건수 · 업무특화 고객 수) → 누르면 그 사람의 상담 목록(시각 · 고객 / 반려동물 또는 「(사내규정)」 · 턴 수 · 제목 · 거절 · 진행 중 · 목록에서 지움) → 펼치면 대화(질문 · 답 · 근거 조항 · 계산 카드 · 👍👎와 그 의견 · 턴마다 거절 표시). 대화는 지난 상담 창과 같은 읽기 전용 그림(`TurnView readOnly`)이다 [code:app/services/admin.py:87-107] [code:web/src/pages/Admin.tsx:3] [code:web/src/pages/Admin.tsx:236] |
+| 상담 조회 | 상담원 목록(인사 원장 직원: 고른 기간의 상담 건수, 업무특화 고객 수) → 누르면 그 사람의 상담 목록(시각, 고객 / 반려동물 또는 「(사내규정)」, 턴 수, 제목, 거절, 진행 중, 목록에서 지움) → 펼치면 대화(질문, 답, 근거 조항, 계산 카드, 👍👎와 그 의견, 턴마다 거절 표시). 대화는 지난 상담 창과 같은 읽기 전용 그림(`TurnView readOnly`)이다 [code:app/services/admin.py:87-107] [code:web/src/pages/Admin.tsx:3] [code:web/src/pages/Admin.tsx:236] |
 | 일반 모드 | **뺀다.** 개인적인 질문이라 관리자도 보지 않는다(사용자). SQL에서 `mode <> '일반'`으로 거르고, 일반 세션 id를 직접 넣어도 404 [code:app/services/admin.py:6] [code:app/services/admin.py:73] [code:app/services/admin.py:111] [code:app/routers/admin.py:66-70] |
-| 기간 | KST 날짜, 기본 오늘, 최대 31일(넘으면 422). 「오늘 · 7일 · 30일」과 시작 · 끝 날짜. 상담 목록은 최신 200건씩, 「더 보기」로 다음 200건 — 평가 실행이 하루 수천 건 쌓인 날이 있다 [code:app/services/admin.py:23-24] [code:app/routers/admin.py:39-46] |
-| 상담원 목록 | 인사 원장 직원 중 **앱 계정이 있는 사람만**(2026-11-12 사용자 — 계정이 없으면 상담이 생길 수 없어 늘 0건으로 남을 뿐이다. 계정 없는 직원은 직원 탭에 「앱 계정 없음」으로 있다). 원장 밖 이메일(평가 스크립트 `dev@local` — 개발 DB 1만 8천 건, 2026-11-19 19,667건)은 뺀다(사용자 — 진짜 상담이 묻힌다). 턴이 없는 세션은 세지 않는다. 상담원이 지난 채팅 목록에서 지운 세션(`deleted_at`)은 로그가 남으므로(12번 1-4절) 보이되 「목록에서 지움」을 붙인다 [code:app/services/admin.py:7] [code:app/services/admin.py:67-82] [code:app/services/admin.py:93] <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT(scratchpad devdb_count.py), dev@local 세션 19,667. 명부 밖 주소는 이것 하나 --> |
-| 직원 목록 | 사번 · 이름 · 직급 · 고용형태 · 입사일 · 근속(휴직 뺀 값, 퇴직자는 퇴직일까지 — 본인 정보 블록과 같은 `hr_personal.tenure_ym`) · 재직/퇴직일 · 앱 계정 역할(없음 · 중지). 표 머리를 누르면 오름차순 · 내림차순(직급은 가나다가 아니라 부장 > 차장 > 과장 > 대리 > 사원), 필터는 재직(전체 · 재직 · 퇴직) · 고용형태(원장에 있는 값) · 앱 계정(전체 · 있음 · 없음) 셋 — 11명이라 검색칸은 두지 않는다. **급여 · 평가 · 휴가 테이블은 쿼리에도 넣지 않는다** — 근속 계산에 휴직(`employee_absences`)만 읽는다 [code:app/services/admin.py:128-146] [code:app/services/hr_personal.py:166] [code:db/fixtures/employees.json] [code:web/src/pages/Admin.tsx] |
-| 권한 | 관리자만. 상담원 · access 모드는 **404**(403은 이 화면이 있다는 것을 알려 준다). 로그인 없음은 다른 API와 같이 401 [code:app/routers/admin.py:21-29] [code:app/deps.py:62-69] |
-| 직급과 권한 | **따로다.** 직급(부장 · 차장 · 과장 · 대리 · 사원)은 인사 원장 `employees.grade`, 권한(관리자 · 상담원)은 앱 계정 `accounts.role`이다. 관리자 화면에 들어오는지는 **`accounts.role` 칸으로만 판정한다** — 부장이라서 관리자인 것이 아니다. 권한을 설정 파일(관리자 사번 목록)로 빼는 것도 생각했지만, DB 칸은 바꾸면 다음 요청부터 바로 반영되고 재시작이 필요 없어 지금이 낫다(사용자). 화면에는 **이름 뒤 직급, 그 옆에 권한 배지**로 둘을 나눠 쓴다 — 「권태호 부장 [관리자]」 · 「송미경 차장 [상담원]」(헤더 상담원 표시 · 상담원 목록 · 상담 목록 머리, 2026-11-12 사용자. 같은 날 앞선 판은 권한만 「권태호 관리자」였다) [code:app/routers/admin.py:27] [code:db/migrations/insurance_core/0003_employees.sql:12] [code:db/migrations/petmint/0006_accounts.sql:8] [c:a2ddb7f] |
-| 체험 관리자 | **그대로 들어오고 체험 대화도 보인다(사용자).** 체험 계정은 이미 "누구나 함께 쓰는 계정이고 남긴 상담은 다른 방문자도 볼 수 있다"고 안내한다 — 관리자 화면에서 보이는 것도 같은 얘기라 새로 생기는 노출이 아니다. 가리면 체험 관리자로 들어왔을 때 상담이 하나도 없어 화면을 보여 주는 목적이 서지 않는다 [code:app/routers/admin.py:21-29] [code:web/src/auth/Login.tsx:144] |
-| 열람 기록 | 상담 목록 · 대화를 열 때마다 `admin_views`(petmint `0011`)에 연 사람 · 체험 여부 · 무엇(목록이면 대상 상담원과 기간, 대화면 세션) · IP · 시각을 남긴다. 목록에도 첫 질문 요약 제목이 보이므로 둘 다 남긴다. **보는 화면은 만들지 않는다(사용자)** — 조회 SQL은 12번 1-6절 [code:db/migrations/petmint/0011_admin_views.sql:1-19] [code:app/services/admin.py:150-155] [docs:02_pipeline/12_data_storage.md] |
-| API | `GET /api/admin/agents?from=&to=` · `GET /api/admin/agents/{사번}/sessions?from=&to=&offset=` · `GET /api/admin/sessions/{id}` · `GET /api/admin/employees` — `app/routers/admin.py`, `app/services/admin.py` [code:app/routers/admin.py:50-75] |
+| 기간 | KST 날짜, 기본 오늘, 최대 31일(넘으면 422). 「오늘 · 7일 · 30일」과 시작, 끝 날짜. 상담 목록은 최신 200건씩, 「더 보기」로 다음 200건. 평가 실행이 하루 수천 건 쌓인 날이 있다 [code:app/services/admin.py:23-24] [code:app/routers/admin.py:39-46] |
+| 상담원 목록 | 인사 원장 직원 중 **앱 계정이 있는 사람만**(2026-11-12 사용자: 계정이 없으면 상담이 생길 수 없어 늘 0건으로 남을 뿐이다. 계정 없는 직원은 직원 탭에 「앱 계정 없음」으로 있다). 원장 밖 이메일(평가 스크립트 `dev@local`, 개발 DB 1만 8천 건, 2026-11-19 19,667건)은 뺀다(사용자: 진짜 상담이 묻힌다). 턴이 없는 세션은 세지 않는다. 상담원이 지난 채팅 목록에서 지운 세션(`deleted_at`)은 로그가 남으므로(12번 1-4절) 보이되 「목록에서 지움」을 붙인다 [code:app/services/admin.py:7] [code:app/services/admin.py:67-82] [code:app/services/admin.py:93] <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT(scratchpad devdb_count.py), dev@local 세션 19,667. 명부 밖 주소는 이것 하나 --> |
+| 직원 목록 | 사번, 이름, 직급, 고용형태, 입사일, 근속(휴직 뺀 값, 퇴직자는 퇴직일까지, 본인 정보 블록과 같은 `hr_personal.tenure_ym`), 재직/퇴직일, 앱 계정 역할(없음, 중지). 표 머리를 누르면 오름차순, 내림차순(직급은 가나다가 아니라 부장 > 차장 > 과장 > 대리 > 사원), 필터는 재직(전체, 재직, 퇴직), 고용형태(원장에 있는 값), 앱 계정(전체, 있음, 없음) 셋. 11명이라 검색칸은 두지 않는다. **급여, 평가, 휴가 테이블은 쿼리에도 넣지 않는다**. 근속 계산에 휴직(`employee_absences`)만 읽는다 [code:app/services/admin.py:128-146] [code:app/services/hr_personal.py:166] [code:db/fixtures/employees.json] [code:web/src/pages/Admin.tsx] |
+| 권한 | 관리자만. 상담원, access 모드는 **404**(403은 이 화면이 있다는 것을 알려 준다). 로그인 없음은 다른 API와 같이 401 [code:app/routers/admin.py:21-29] [code:app/deps.py:62-69] |
+| 직급과 권한 | **따로다.** 직급(부장, 차장, 과장, 대리, 사원)은 인사 원장 `employees.grade`, 권한(관리자, 상담원)은 앱 계정 `accounts.role`이다. 관리자 화면에 들어오는지는 **`accounts.role` 칸으로만 판정한다**. 부장이라서 관리자인 것이 아니다. 권한을 설정 파일(관리자 사번 목록)로 빼는 것도 생각했지만, DB 칸은 바꾸면 다음 요청부터 바로 반영되고 재시작이 필요 없어 지금이 낫다(사용자). 화면에는 **이름 뒤 직급, 그 옆에 권한 배지**로 둘을 나눠 쓴다: 「권태호 부장 [관리자]」, 「송미경 차장 [상담원]」(헤더 상담원 표시, 상담원 목록, 상담 목록 머리, 2026-11-12 사용자. 같은 날 앞선 판은 권한만 「권태호 관리자」였다) [code:app/routers/admin.py:27] [code:db/migrations/insurance_core/0003_employees.sql:12] [code:db/migrations/petmint/0006_accounts.sql:8] [c:a2ddb7f] |
+| 체험 관리자 | **그대로 들어오고 체험 대화도 보인다(사용자).** 체험 계정은 이미 "누구나 함께 쓰는 계정이고 남긴 상담은 다른 방문자도 볼 수 있다"고 안내한다. 관리자 화면에서 보이는 것도 같은 얘기라 새로 생기는 노출이 아니다. 가리면 체험 관리자로 들어왔을 때 상담이 하나도 없어 화면을 보여 주는 목적이 서지 않는다 [code:app/routers/admin.py:21-29] [code:web/src/auth/Login.tsx:144] |
+| 열람 기록 | 상담 목록, 대화를 열 때마다 `admin_views`(petmint `0011`)에 연 사람, 체험 여부, 무엇(목록이면 대상 상담원과 기간, 대화면 세션), IP, 시각을 남긴다. 목록에도 첫 질문 요약 제목이 보이므로 둘 다 남긴다. **보는 화면은 만들지 않는다(사용자)**. 조회 SQL은 12번 1-6절 [code:db/migrations/petmint/0011_admin_views.sql:1-19] [code:app/services/admin.py:150-155] [docs:02_pipeline/12_data_storage.md] |
+| API | `GET /api/admin/agents?from=&to=`, `GET /api/admin/agents/{사번}/sessions?from=&to=&offset=`, `GET /api/admin/sessions/{id}`, `GET /api/admin/employees`: `app/routers/admin.py`, `app/services/admin.py` [code:app/routers/admin.py:50-75] |
 
 - **열람 기록을 보는 화면이 없다(2-5절).** 누가 무엇을 봤는지는 DB에서 SQL로만 본다(12번 1-6절)
 
-**계정 관리 명령** — 관리자 화면에는 없다. Pod 안(운영) 또는 리포 루트(개발)에서 진짜 터미널로 한다(비밀번호를 화면에 안 보이게 두 번 묻는다 — Claude Code의 `!` 실행에서는 묻는 데서 실패한다): [code:db/employees.py:24-42]
+**계정 관리 명령**: 관리자 화면에는 없다. Pod 안(운영) 또는 리포 루트(개발)에서 진짜 터미널로 한다(비밀번호를 화면에 안 보이게 두 번 묻는다. Claude Code의 `!` 실행에서는 묻는 데서 실패한다): [code:db/employees.py:24-42]
 
 ```bash
 python -m db.employees list                             # 계정 목록(역할 · 잠금 · 중지 · 마지막 로그인)
@@ -180,7 +180,7 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 # 운영: kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees …
 ```
 
-역할(관리자 · 상담원)을 바꾸는 명령은 없다 — `UPDATE accounts SET role = '관리자' WHERE employee_id = '…'`로 바꾸면 다음 요청부터 반영된다(위 「직급과 권한」). [code:db/employees.py:40-42] [code:app/services/auth.py:172-194]
+역할(관리자, 상담원)을 바꾸는 명령은 없다. `UPDATE accounts SET role = '관리자' WHERE employee_id = '…'`로 바꾸면 다음 요청부터 반영된다(위 「직급과 권한」). [code:db/employees.py:40-42] [code:app/services/auth.py:172-194]
 
 시드 상담(2026-11-12)을 넣은 기록은 `docs/archive/13_access_and_tunnel_log.md`로 옮겼다.
 
@@ -190,11 +190,11 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 
 상세한 트러블슈팅은 "03. Cloudflare Tunnel 연결" 문서에 있고, 요약하면 세 가지다.
 
-| 문제 | 원인·해결 |
+| 문제 | 원인, 해결 |
 | --- | --- |
 | 엉뚱한 터널로 CNAME이 연결됨 | `cloudflared`가 기본 config(`tunnel: ollama-tunnel`)를 읽어 명령줄 인자를 무시. `--config /dev/null`로 해결. **터널이 여러 개면 route dns 후 대시보드에서 Target을 반드시 확인** |
-| ImagePullBackOff | Vagrant 박스의 기본 DNS(4.2.2.1 등)가 응답하지 않음. VM 4대에 8.8.8.8·1.1.1.1 설정, DNSSEC 끄기 |
-| CrashLoopBackOff인데 에러가 없음 | Exit Code 0 — 에러가 아니라 "할 일을 마쳤다"고 종료. 전역 플래그(`--no-autoupdate`, `--config`)를 서브커맨드(`tunnel run`) 앞으로 옮겨 해결 |
+| ImagePullBackOff | Vagrant 박스의 기본 DNS(4.2.2.1 등)가 응답하지 않음. VM 4대에 8.8.8.8, 1.1.1.1 설정, DNSSEC 끄기 |
+| CrashLoopBackOff인데 에러가 없음 | Exit Code 0. 에러가 아니라 "할 일을 마쳤다"고 종료. 전역 플래그(`--no-autoupdate`, `--config`)를 서브커맨드(`tunnel run`) 앞으로 옮겨 해결 |
 
 > 세 번째가 가장 까다로웠다. 로그에는 "Environment is healthy"만 찍히고 에러가 없었다. **"CrashLoopBackOff = 에러"라고 단정하지 않고 `Exit Code`와 `Reason`을 확인한 것이 실마리였다.**
 > 
@@ -206,7 +206,7 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 ### 4. 남은 한계
 
 - **터널 ConfigMap을 쪼갤 수 없다.** 호스트가 늘면 한 파일이 계속 커진다. 까닭: 여러 호스트가 한 파일에 들어 있어 쪼갤 수 없다(2-3절)
-- **체험 질문 제한은 Pod마다 센다.** Pod가 둘이라 한 방문자가 두 Pod에 붙으면 분당 최대 20번까지 들어온다. 질문은 한 연결에서 차례로 처리되므로 실제로는 모델 답 하나가 수 초씩 걸려 분당 10번에 잘 닿지 않는다 — 여러 창을 열어 동시에 물을 때를 막는 장치다 [code:app/routers/chat_ws.py:38-40] [code:app/services/rate_limit.py:1-14] 까닭: 같은 줄(실제로는 분당 10번에 잘 닿지 않는다)
+- **체험 질문 제한은 Pod마다 센다.** Pod가 둘이라 한 방문자가 두 Pod에 붙으면 분당 최대 20번까지 들어온다. 질문은 한 연결에서 차례로 처리되므로 실제로는 모델 답 하나가 수 초씩 걸려 분당 10번에 잘 닿지 않는다. 여러 창을 열어 동시에 물을 때를 막는 장치다 [code:app/routers/chat_ws.py:38-40] [code:app/services/rate_limit.py:1-14] 까닭: 같은 줄(실제로는 분당 10번에 잘 닿지 않는다)
 
 ---
 
@@ -218,20 +218,20 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 - [ ]  헤더를 손으로 바꿔 남의 세션을 여는 요청이 엣지에서 막히는가
 - [ ]  로컬 개발에서 헤더가 없을 때 기본값으로 동작하는가
 - [x]  cloudflared Pod를 하나 지워도 서비스가 끊기지 않는가
-- [x]  (app 모드) 로그인 안 하면 `/api` 401·WS 4401, 다른 출처 POST 403·WS 4403 — `tests/test_auth.py`, 로컬 curl [code:tests/test_auth.py] [code:app/config.py:28] [code:app/main.py:80-86]
-- [x]  (app 모드) 임시 비밀번호 → 변경 강제 → 앱, 세션 행을 지우면 다음 요청에서 로그인 화면, 로그아웃 — 로컬 브라우저 1440·400px
+- [x]  (app 모드) 로그인 안 하면 `/api` 401, WS 4401, 다른 출처 POST 403, WS 4403: `tests/test_auth.py`, 로컬 curl [code:tests/test_auth.py] [code:app/config.py:28] [code:app/main.py:80-86]
+- [x]  (app 모드) 임시 비밀번호 → 변경 강제 → 앱, 세션 행을 지우면 다음 요청에서 로그인 화면, 로그아웃: 로컬 브라우저 1440, 400px
 - [x]  (app 모드) 로그인한 직원 이메일이 `sessions.agent_email`에 들어간다
-- [x]  (access 모드) 로그인 화면 없이 지금과 같다 — `/api/auth/login` 404, 헤더 이메일이 원장에 있으면 이름이 붙는다 [code:app/routers/auth.py:23-25] [code:app/routers/auth.py:33-44]
-- [x]  (체험) 꺼지면 두 API 404 · 화면에 없음, 켜면 카드 10장(상담원 9 · 관리자 1, 그날 0012 전 기록. 지금은 앱 계정이 있는 직원만이라 7장, 관리자 1과 상담원 6), 카드를 누르면 `is_demo` 세션, 비밀번호 변경 403, 퇴직 사번 400, 잠긴 계정도 체험은 됨(잠금은 남음), IP 15분 제한 429 — `tests/test_auth.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_auth.py] [c:f613431] [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
-- [x]  (체험) 같은 쿠키로 1분에 11번 물으면 11번째가 `rate_limited`이고 턴으로 남지 않는다 — 로컬 WS 2026-11-12(사내규정 개인화 질문 11번) [code:app/routers/chat_ws.py:121-122]
-- [x]  (체험) 로그인 화면 1280 · 400px — 카드 2열 · 1열, 관리자 따로
-- [x]  (체험) 운영에서 켠 뒤 바깥 주소로 카드 → 로그인 → 사내규정 개인화 답 — 2026-11-12 https://petmint.ronanlab.dev: 카드 10장(그날 0012 전 기록, 지금은 7장), 류채원 체험 로그인 200(`is_demo`, 쿠키 HttpOnly · Secure · SameSite=Lax), 비밀번호 변경 403, 사내규정 "제 연차 며칠 남았어요?" → 코드 답 "2일 남았습니다"(제17 · 18조, 4ms), 로그아웃 뒤 `/me` 401. 상단 "체험 계정" 표시는 화면으로 보지 않았다(응답의 `is_demo`까지) <!-- 2026-11-19 잼: scratchpad demo_probe.py로 운영 바깥 주소 체험 흐름 1회. 카드 7장, 체험 로그인 200, is_demo true, 쿠키 HttpOnly와 Secure와 SameSite=lax, 비밀번호 변경 403, 사내규정 같은 질문에 코드 답(9ms), 로그아웃 204 뒤 /me 401. 직원은 카드 첫 장(류채원 아님). 그날 4ms와 류채원 로그인은 지난 일 --> [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
-- [x]  (관리자) 관리자 · 체험 관리자 200, 상담원 · access 모드 404, 로그인 없음 401, 기간 31일 넘으면 422, 일반 세션 404, 원장 밖 사번 404, 열람 기록이 남는다(체험 여부 포함), 급여 · 평가 · 휴가 테이블을 쿼리에 넣지 않는다 — `tests/test_admin.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_admin.py] [c:06536d3]
-- [x]  (관리자) 여섯 폭(1920 · 1440 · 1280 · 1024 · 800 · 400) × 비밀번호 관리자 · 체험 관리자 · 상담원 — 페이지 가로 넘침 0, 헤더 높이 전과 같음, 상담원 화면에 「관리」 없음 · 관리자 API 넷 404 — 로컬 헤드리스 크롬 2026-11-12
-- [x]  (계정 미리 만들기) 0012 뒤 계정 7개(관리자 1 · 상담원 6), 조현석 · 문태양 · 류채원 · 황재민 계정 없음, 체험 카드 7장, 계정 없는 사번 체험 로그인 400이고 계정이 생기지 않는다 — `tests/test_auth.py`, 로컬 서버 2026-11-12 [code:tests/test_auth.py] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23] [c:a2ddb7f]
-- [x]  (관리자) 직원 표 정렬 — 직급 ▲ 사원 → 부장, ▼ 부장 → 사원, 근속 ▼ 권태호 25년 8개월부터. 필터 앱 계정 없음 → 황재민 · 문태양 · 조현석 · 류채원, + 재직 → 셋 — 로컬 헤드리스 크롬 1440px 2026-11-12
-- [x]  (시드 상담) 운영 챗봇으로 26세션 · 36턴 생성, 오류 0. 관리자 API로 상담 목록 · 대화(발췌 · 근거 조항 · 계산 카드 · 👎 의견 · 거절 표시)를 확인 — 2026-11-12
-- [x]  (정리 · 시드 2) 운영 업무특화 「진행 중」 0, 계정 없는 4명 기록 0(운영 · 개발), 상담원 목록에 그 4명 없음, 상담원 7명 8건씩(그날 기록, 2026-11-19 지금은 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30건) — 운영 SQL · 관리자 API 2026-11-12 <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 진행 중 0, 계정 없는 직원 세션 0, 계정 있는 7명 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, 직원이지만 앱 계정 없는 세션 0 -->
+- [x]  (access 모드) 로그인 화면 없이 지금과 같다: `/api/auth/login` 404, 헤더 이메일이 원장에 있으면 이름이 붙는다 [code:app/routers/auth.py:23-25] [code:app/routers/auth.py:33-44]
+- [x]  (체험) 꺼지면 두 API 404, 화면에 없음, 켜면 카드 10장(상담원 9, 관리자 1, 그날 0012 전 기록. 지금은 앱 계정이 있는 직원만이라 7장, 관리자 1과 상담원 6), 카드를 누르면 `is_demo` 세션, 비밀번호 변경 403, 퇴직 사번 400, 잠긴 계정도 체험은 됨(잠금은 남음), IP 15분 제한 429: `tests/test_auth.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_auth.py] [c:f613431] [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
+- [x]  (체험) 같은 쿠키로 1분에 11번 물으면 11번째가 `rate_limited`이고 턴으로 남지 않는다: 로컬 WS 2026-11-12(사내규정 개인화 질문 11번) [code:app/routers/chat_ws.py:121-122]
+- [x]  (체험) 로그인 화면 1280, 400px: 카드 2열, 1열, 관리자 따로
+- [x]  (체험) 운영에서 켠 뒤 바깥 주소로 카드 → 로그인 → 사내규정 개인화 답: 2026-11-12 https://petmint.ronanlab.dev: 카드 10장(그날 0012 전 기록, 지금은 7장), 류채원 체험 로그인 200(`is_demo`, 쿠키 HttpOnly, Secure, SameSite=Lax), 비밀번호 변경 403, 사내규정 "제 연차 며칠 남았어요?" → 코드 답 "2일 남았습니다"(제17, 18조, 4ms), 로그아웃 뒤 `/me` 401. 상단 "체험 계정" 표시는 화면으로 보지 않았다(응답의 `is_demo`까지) <!-- 2026-11-19 잼: scratchpad demo_probe.py로 운영 바깥 주소 체험 흐름 1회. 카드 7장, 체험 로그인 200, is_demo true, 쿠키 HttpOnly와 Secure와 SameSite=lax, 비밀번호 변경 403, 사내규정 같은 질문에 코드 답(9ms), 로그아웃 204 뒤 /me 401. 직원은 카드 첫 장(류채원 아님). 그날 4ms와 류채원 로그인은 지난 일 --> [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
+- [x]  (관리자) 관리자, 체험 관리자 200, 상담원, access 모드 404, 로그인 없음 401, 기간 31일 넘으면 422, 일반 세션 404, 원장 밖 사번 404, 열람 기록이 남는다(체험 여부 포함), 급여, 평가, 휴가 테이블을 쿼리에 넣지 않는다: `tests/test_admin.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_admin.py] [c:06536d3]
+- [x]  (관리자) 여섯 폭(1920, 1440, 1280, 1024, 800, 400) × 비밀번호 관리자, 체험 관리자, 상담원: 페이지 가로 넘침 0, 헤더 높이 전과 같음, 상담원 화면에 「관리」 없음, 관리자 API 넷 404: 로컬 헤드리스 크롬 2026-11-12
+- [x]  (계정 미리 만들기) 0012 뒤 계정 7개(관리자 1, 상담원 6), 조현석, 문태양, 류채원, 황재민 계정 없음, 체험 카드 7장, 계정 없는 사번 체험 로그인 400이고 계정이 생기지 않는다: `tests/test_auth.py`, 로컬 서버 2026-11-12 [code:tests/test_auth.py] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23] [c:a2ddb7f]
+- [x]  (관리자) 직원 표 정렬: 직급 ▲ 사원 → 부장, ▼ 부장 → 사원, 근속 ▼ 권태호 25년 8개월부터. 필터 앱 계정 없음 → 황재민, 문태양, 조현석, 류채원, + 재직 → 셋: 로컬 헤드리스 크롬 1440px 2026-11-12
+- [x]  (시드 상담) 운영 챗봇으로 26세션, 36턴 생성, 오류 0. 관리자 API로 상담 목록, 대화(발췌, 근거 조항, 계산 카드, 👎 의견, 거절 표시)를 확인: 2026-11-12
+- [x]  (정리, 시드 2) 운영 업무특화 「진행 중」 0, 계정 없는 4명 기록 0(운영, 개발), 상담원 목록에 그 4명 없음, 상담원 7명 8건씩(그날 기록, 2026-11-19 지금은 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30건): 운영 SQL, 관리자 API 2026-11-12 <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 진행 중 0, 계정 없는 직원 세션 0, 계정 있는 7명 모드별 일반 1~6, 사내규정 3~11, 업무특화 4~30 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, 직원이지만 앱 계정 없는 세션 0 -->
 
 ---
 

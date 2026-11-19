@@ -2,7 +2,7 @@
 다루는 곳: data/, db/, app/, web/, search_service/, deploy/, Dockerfile, .dockerignore, Jenkinsfile, .env.example, CLAUDE.md, KNOWN_ISSUES.md
 읽은 커밋: 6710b83
 -->
-> 상태: 00~04 데이터 구축 완료. 05~07 재구축은 rebuild5b까지 했고 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`, 07 11절). 08 Ragas는 파일럿 1회(2026-10-18) 뒤 멈춰 있다. 09~14 화면·세션 저장·터널·배포는 구현됐다(클러스터 이주 2026-10-16). 배포 Pod는 호스트 search-service(192.168.122.1:8100, `/health`의 corpora 강아지·고양이·인사규정 모두 true)와 rebuild4 모델을 쓴다(2026-11-09 확인). 15 모니터링은 매니페스트만 작성(2026-10-18, 적용 전). [code:deploy/host/petmint-search.service:21] [code:search_service/main.py:119-124] [docs:02_pipeline/07_finetuning.md:574] [docs:02_pipeline/08_ragas_eval.md] [docs:02_pipeline/15_monitoring.md] [c:2a895d7] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26, :30 --> <!-- 2026-11-19 잼: curl http://192.168.122.1:8100/health 의 corpora가 강아지, 고양이, 인사규정 모두 true -->
+> 상태: 00~04 데이터 구축 완료. 05~07 재구축은 rebuild5b까지 했고 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`, 07번 3-7절). 08 Ragas는 파일럿 1회(2026-10-18) 뒤 멈춰 있다. 09~14 화면, 세션 저장, 터널, 배포는 구현됐다(클러스터 이주 2026-10-16). 배포 Pod는 호스트 search-service(192.168.122.1:8100, `/health`의 corpora 강아지, 고양이, 인사규정 모두 true)와 rebuild4 모델을 쓴다(2026-11-19 인프라 답과 측정으로 확인). 15 모니터링은 설치됐다(2026-11-10, 노드 w4, 15번 상태 줄). 2026-11-19 코드와 맞춰 봄. [code:deploy/host/petmint-search.service:21] [code:search_service/main.py:119-124] [docs:02_pipeline/07_finetuning.md:574] [docs:02_pipeline/08_ragas_eval.md] [docs:02_pipeline/15_monitoring.md] [c:2a895d7] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26, :30 --> <!-- 2026-11-19 잼: curl http://192.168.122.1:8100/health 의 corpora가 강아지, 고양이, 인사규정 모두 true -->
 
 ### **1. 전체 파이프라인**
 
@@ -90,24 +90,24 @@ flowchart TD
     C -.조항 원문.-> MV
 ```
 
-**GPU를 쓰는 것은 전부 호스트에 둔다.** Ollama와 검색 모델(KURE + bge-reranker) 둘 다 호스트에 상주하고, Pod는 HTTP로 부른다. 검색 모델은 2026-11-11부터 런슈즈 챗봇과 같이 쓰는 model-service(`~/AI_programming/model-service`, systemd `model-service`, 192.168.122.1:8200)에 있고, search-service는 BM25 · Milvus 조회 · 정렬만 하며 GPU를 쓰지 않는다. 그래서 Pod를 롤링해도 모델이 다시 올라갈 일이 없고, uvicorn worker를 1개로 제한할 이유도 사라졌다(09번 1-15절). [code:data/model_client.py:3] [code:deploy/host/petmint-search.service:1-3] [code:deploy/host/petmint-search.service:33] [code:app/services/retrieval.py:1-4] [docs:02_pipeline/09_ui_design.md:632] [c:13f82da] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/model_service/main.py:32(192.168.122.1:8200), systemctl status model-service, nvidia-smi의 GPU 프로세스는 model-service 하나이고 petmint-search는 없음 -->
+**GPU를 쓰는 것은 전부 호스트에 둔다.** Ollama와 검색 모델(KURE + bge-reranker) 둘 다 호스트에 상주하고, Pod는 HTTP로 부른다. 검색 모델은 2026-11-11부터 런슈즈 챗봇과 같이 쓰는 model-service(`~/AI_programming/model-service`, systemd `model-service`, 192.168.122.1:8200)에 있고, search-service는 BM25, Milvus 조회, 정렬만 하며 GPU를 쓰지 않는다. 그래서 Pod를 롤링해도 모델이 다시 올라갈 일이 없고, uvicorn worker를 1개로 제한할 이유도 사라졌다(09번 1-15절). [code:data/model_client.py:3] [code:deploy/host/petmint-search.service:1-3] [code:deploy/host/petmint-search.service:33] [code:app/services/retrieval.py:1-4] [docs:02_pipeline/09_ui_design.md:632] [c:13f82da] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/model_service/main.py:32(192.168.122.1:8200), systemctl status model-service, nvidia-smi의 GPU 프로세스는 model-service 하나이고 petmint-search는 없음 -->
 
-**search-service는 청크 top-k만 돌려주고, 발췌 조립은 Pod가 한다.** 그래프를 따라 참조 조문을 붙이고 길이 예산에 맞춰 자르는 일은 GPU가 필요 없고, 그 규칙은 자주 바뀌는 부분이라 Pod에 두어야 앱만 롤링하면 된다. 그래프는 모델이 쓰는 것이 아니라 코드가 발췌를 조립할 때 쓴다(4-1절 "근거는 코드가 조립한다"). 근거 패널에서 조항을 눌렀을 때 보여주는 원문도 Pod가 Milvus에서 바로 읽어 온다 — Milvus를 검색만 보는 것이 아니다. [code:app/services/retrieval.py:6-8] [code:data/rag_context.py:313] [code:data/rag_context.py:387] [code:app/routers/articles.py:2-5]
+**search-service는 청크 top-k만 돌려주고, 발췌 조립은 Pod가 한다.** 그래프를 따라 참조 조문을 붙이고 길이 예산에 맞춰 자르는 일은 GPU가 필요 없고, 그 규칙은 자주 바뀌는 부분이라 Pod에 두어야 앱만 롤링하면 된다. 그래프는 모델이 쓰는 것이 아니라 코드가 발췌를 조립할 때 쓴다(4-1절 "근거는 코드가 조립한다"). 근거 패널에서 조항을 눌렀을 때 보여주는 원문도 Pod가 Milvus에서 바로 읽어 온다. Milvus를 검색만 보는 것이 아니다. [code:app/services/retrieval.py:6-8] [code:data/rag_context.py:313] [code:data/rag_context.py:387] [code:app/routers/articles.py:2-5]
 
-**search-service는 호스트에서 돈다.** `search_service/main.py`를 systemd 유닛(`deploy/host/petmint-search.service`, 192.168.122.1:8100)으로 띄우고, `PETMINT_MODEL_URL`로 model-service를 부른다(2026-11-11 전환, 14번 1-16절). model-service가 죽으면 search-service도 503이 된다(14번 4절).  `/health`의 corpora는 강아지·고양이·인사규정 모두 true다. 배포 설정의 주소는 `http://192.168.122.1:8100`, 업무특화 모델은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`다(2026-11-09 확인). [code:deploy/host/petmint-search.service:21] [code:deploy/host/petmint-search.service:33-38] [code:search_service/main.py:12-19] [code:search_service/main.py:41] [code:search_service/main.py:80-82] [code:search_service/main.py:119-124] [docs:02_pipeline/14_deployment.md:478] [c:13f82da] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26, :30 --> <!-- 2026-11-19 잼: curl http://192.168.122.1:8100/health 의 corpora가 강아지, 고양이, 인사규정 모두 true -->
+**search-service는 호스트에서 돈다.** `search_service/main.py`를 systemd 유닛(`deploy/host/petmint-search.service`, 192.168.122.1:8100)으로 띄우고, `PETMINT_MODEL_URL`로 model-service를 부른다(2026-11-11 전환, 14번 1-16절). model-service가 죽으면 search-service도 503이 된다(14번 4절).  `/health`의 corpora는 강아지, 고양이, 인사규정 모두 true다. 배포 설정의 주소는 `http://192.168.122.1:8100`, 업무특화 모델은 `kabyul-tri-7b-rag1-rebuild4-ckpt462`다(2026-11-09 확인). [code:deploy/host/petmint-search.service:21] [code:deploy/host/petmint-search.service:33-38] [code:search_service/main.py:12-19] [code:search_service/main.py:41] [code:search_service/main.py:80-82] [code:search_service/main.py:119-124] [docs:02_pipeline/14_deployment.md:478] [c:13f82da] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26, :30 --> <!-- 2026-11-19 잼: curl http://192.168.122.1:8100/health 의 corpora가 강아지, 고양이, 인사규정 모두 true -->
 
 ---
 
-### 3. 사용한 주요 모델·도구
+### 3. 사용한 주요 모델, 도구
 
 | 용도 | 선택 | 비고 |
 | --- | --- | --- |
-| LLM(생성) | Tri-7B | 한국어 중심 다국어 모델(ko·en·ja), Apache 2.0 [code:app/config.py:70-71] [docs:02_pipeline/00_model_setup.md] |
+| LLM(생성) | Tri-7B | 한국어 중심 다국어 모델(ko, en, ja), Apache 2.0 [code:app/config.py:70-71] [docs:02_pipeline/00_model_setup.md] |
 | 임베딩 | KURE-v1 | 한국어 특화, MIT [code:data/search_engine.py:23] |
 | 리랭커 | bge-reranker-v2-m3 | Hybrid Search 2차 재정렬, max_length 1024 + fp16 [code:data/search_engine.py:24-27] [code:data/search_engine.py:89] |
 | 벡터 DB | Milvus | 메타데이터 필터링 지원 [code:data/search_scope.py:192] [code:data/milvus_conn.py] |
 | 키워드 검색 | BM25(rank-bm25) | Dense 검색의 길이 편향 보완 [code:data/search_engine.py:13] [code:data/search_engine.py:141] |
-| PDF 파싱 | pymupdf | `sort=True`로 읽기 순서 보정 (인사규정은 sort=False — 쓰면 띄어쓰기를 잃는다) [code:data/hr_preprocess.py:9-10] [docs:02_pipeline/01_preprocessing.md] |
+| PDF 파싱 | pymupdf | `sort=True`로 읽기 순서 보정 (인사규정은 sort=False: 쓰면 띄어쓰기를 잃는다) [code:data/hr_preprocess.py:9-10] [docs:02_pipeline/01_preprocessing.md] |
 
 각 모델을 선택한 근거(대안 모델과의 비교 등)는 단계별 하위 문서 참고.
 
@@ -133,9 +133,9 @@ flowchart TD
 
 종은 고객 조회 단계에서 반려동물을 고르면 따라온다(여러 마리면 개체 선택). 그 값으로 검색 단계부터 해당 종의 컬렉션만 조회하도록 고정한다. 강아지와 고양이는 약관 자체가 다른데(강아지는 배상책임 특약이 있지만 고양이는 없음), 질문만 보고 모델이 스스로 판단하게 두면 틀릴 위험이 있다. 고객 데이터가 정해 주므로 그 추론 자체를 할 필요가 없다. [code:app/services/customers.py:64-66] [code:data/search_scope.py:127] [code:app/services/answer.py:183-189]
 
-**유형(Ⅰ·Ⅱ·Ⅲ) 구분을 별도 필드로 명시한다**
+**유형(Ⅰ, Ⅱ, Ⅲ) 구분을 별도 필드로 명시한다**
 
-이 약관에는 "통원의료비보장" 특약이 Ⅰ·Ⅱ·Ⅲ 세 버전으로 따로 존재하고 버전마다 한도가 다르다. 그런데 이름이 "통원의료비보장", "통원의료비Ⅱ보장", "통원의료비Ⅲ보장"처럼 거의 똑같이 생겨서, 코드가 다른 조항을 찾아올 때 엉뚱한 버전을 섞어 가져오는 오류가 있었다. `type` 필드로 구분을 명시해 해결했다. [code:data/search_scope.py:26-27] [code:data/search_scope.py:66] [docs:02_pipeline/01_preprocessing.md]
+이 약관에는 "통원의료비보장" 특약이 Ⅰ, Ⅱ, Ⅲ 세 버전으로 따로 존재하고 버전마다 한도가 다르다. 그런데 이름이 "통원의료비보장", "통원의료비Ⅱ보장", "통원의료비Ⅲ보장"처럼 거의 똑같이 생겨서, 코드가 다른 조항을 찾아올 때 엉뚱한 버전을 섞어 가져오는 오류가 있었다. `type` 필드로 구분을 명시해 해결했다. [code:data/search_scope.py:26-27] [code:data/search_scope.py:66] [docs:02_pipeline/01_preprocessing.md]
 
 **FAQ 생성과 실제 서비스의 역할을 분리한다**
 
@@ -155,20 +155,20 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 | --- | --- | --- |
 | `limit_table.py` | 등급×유형별 한도표와 지급액 산출 공식 | 05, 06 [code:data/limit_table.py] |
 | `search_engine.py` | Hybrid Search(BM25+Dense) + Reranker + 메타 필터 | 02, 04 [code:data/search_engine.py] |
-| `rag_context.py` | 참조 조문 조회·조립, 법령 박스 추출, 그래프 키 | 04, 05, 06, 앱 [code:data/rag_context.py] |
-| `faq_units.py` | FAQ 생성 단위 구성(조·등급 단위 묶기) | 05, 06 [code:data/faq_units.py] |
+| `rag_context.py` | 참조 조문 조회, 조립, 법령 박스 추출, 그래프 키 | 04, 05, 06, 앱 [code:data/rag_context.py] |
+| `faq_units.py` | FAQ 생성 단위 구성(조, 등급 단위 묶기) | 05, 06 [code:data/faq_units.py] |
 | `faq_verify.py` | 계산 재검산 (생성 직후 관문) | 05 [code:data/faq_verify.py] |
 | `faq_checks.py` | 결정적 품질 검사 | 06 [code:data/faq_checks.py] |
 | `faq_judge.py` | LLM 심판 (gemma4:12b) | 06 [code:data/faq_judge.py:19] |
-| `faq_style.py` | 질문 성질 측정 (라벨 누출·상황형·주제) | 05, 06, 재구축 [code:data/faq_style.py] |
+| `faq_style.py` | 질문 성질 측정 (라벨 누출, 상황형, 주제) | 05, 06, 재구축 [code:data/faq_style.py] |
 | `build_review.py` | 빌드 뒤 사람 표본 검수 | 빌드 [code:data/build_review.py] |
 | `ckpt_select.py` | 체크포인트 고르기 (30문항 선택 세트) | 학습 [code:data/ckpt_select.py:12] [code:data/eval/ckpt_select_set.json] |
-| `search_scope.py` | 검색 범위(메타 필터) — 가입 특약·등급으로 Milvus 식과 BM25 술어를 한 곳에서 만든다 | 04, 08, 09 [code:data/search_scope.py:106-209] |
+| `search_scope.py` | 검색 범위(메타 필터): 가입 특약, 등급으로 Milvus 식과 BM25 술어를 한 곳에서 만든다 | 04, 08, 09 [code:data/search_scope.py:106-209] |
 | `faq_rewrite.py` | 질문 재작성(문어체 → 구어체), 거부 조건 검사 | 재구축 [code:data/faq_rewrite.py] |
 | `na_judge.py` | no_answer 발췌에 답이 들어 있는지 LLM 판정 (원래 답변 기준) | 빌드 [code:data/na_judge.py] |
-| `na_qjudge.py` | 같은 판정을 질문 기준으로 — "이 발췌만 읽고 질문에 답할 수 있는가". 원래 판정기는 답변 전체를 요구해 너무 엄격했다 | 빌드 [code:data/na_qjudge.py] |
+| `na_qjudge.py` | 같은 판정을 질문 기준으로: "이 발췌만 읽고 질문에 답할 수 있는가". 원래 판정기는 답변 전체를 요구해 너무 엄격했다 | 빌드 [code:data/na_qjudge.py] |
 | `finetune_data.py` | train.jsonl 빌드, distractor 선정 | 빌드 [code:data/finetune_data.py] |
-| `topic_weights.py` | 주제 가중치·주제 회차 계산 | 05, 06 [code:data/topic_weights.py] |
+| `topic_weights.py` | 주제 가중치, 주제 회차 계산 | 05, 06 [code:data/topic_weights.py] |
 | `rebuild.py` | 전체 재구축 단일 진입점. A는 생성 → 06 → 재작성 → 빌드 → 학습 → select, B는 생성 → 재작성 → 06 → 빌드 → 검수 → 학습 → select → 평가 | 전체 [code:data/rebuild.py:79-82] |
 | `ref_usage.py` | 참조 조문 활용도 측정 | 분석 [code:data/ref_usage.py] |
 
@@ -176,7 +176,7 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 
 ---
 
-### 6. 문서 작성 원칙 — 단계별 문서를 고칠 때 먼저 읽을 것
+### 6. 문서 작성 원칙: 단계별 문서를 고칠 때 먼저 읽을 것
 
 모든 단계별 문서는 **"최종 설계 → 왜 이렇게 했나 → 시도했던 것들"** 순서로 쓴다.
 
@@ -187,11 +187,11 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 | 0. 한 줄 요약 | 이 단계가 하는 일 |
 | 1. 최종 설계 | 지금 어떻게 돌아가는가. 처음부터 그렇게 정한 것처럼 쓴다 |
 | 2. 왜 이렇게 했나 | 설계 판단의 근거 |
-| 3. 시도했던 것들 | 무엇을 해봤고 왜 접었는가 — **수치와 함께** |
+| 3. 시도했던 것들 | 무엇을 해봤고 왜 접었는가: **수치와 함께** |
 | 4. 남은 한계 | 알면서 못 고친 것 |
 | 5. 검증 항목 | 체크리스트 |
 
-**3번이 핵심이다.** 실패한 실험을 수치와 함께 적어두면 "이것저것 해봤다"가 아니라 "재보고 판단했다"로 읽힌다. 예: 참조 조문 활용을 두 번 시도했으나 질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%로 접었다 — 이렇게 써야 판단의 근거가 남는다. [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준)
+**3번이 핵심이다.** 실패한 실험을 수치와 함께 적어두면 "이것저것 해봤다"가 아니라 "재보고 판단했다"로 읽힌다. 예: 참조 조문 활용을 두 번 시도했으나 질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%로 접었다. 이렇게 써야 판단의 근거가 남는다. [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준)
 
 ---
 
@@ -227,9 +227,9 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 
 13. 외부 노출과 인증 (Cloudflare) [docs:02_pipeline/13_access_and_tunnel.md]
 
-14. 배포 인프라 (컨테이너·K8s·CI/CD) [docs:02_pipeline/14_deployment.md]
+14. 배포 인프라 (컨테이너, K8s, CI/CD) [docs:02_pipeline/14_deployment.md]
 
-15. 모니터링 (Prometheus·Grafana) [docs:02_pipeline/15_monitoring.md]
+15. 모니터링 (Prometheus, Grafana) [docs:02_pipeline/15_monitoring.md]
 
 16. 코드 답 규칙 [docs:02_pipeline/16_code_answers.md]
 
@@ -340,4 +340,4 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 ### 9. 다음에 반영할 개선 사항
 
 - vLLM 서빙 최적화 (까닭: vLLM은 00번의 Ollama를 택한 이유, 상담원이 여러 명 동시 접속하게 되면 그때 vLLM 전환을 검토한다) [docs:02_pipeline/00_model_setup.md:53-55]
-- **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다 [code:data/faq_generate.py:23] [code:data/faq_generate.py:211] [code:data/review/ref_usage_20261014_2008.md:7] [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준) (까닭: 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다, 같은 줄)
+- **참조 조문을 엮는 학습 데이터**: 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다. 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다 [code:data/faq_generate.py:23] [code:data/faq_generate.py:211] [code:data/review/ref_usage_20261014_2008.md:7] [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준) (까닭: 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다, 같은 줄)

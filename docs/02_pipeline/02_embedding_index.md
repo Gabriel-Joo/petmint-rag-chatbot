@@ -2,7 +2,7 @@
 다루는 곳: notebooks/02_임베딩_milvus색인.ipynb, data/search_engine.py, data/search_scope.py, data/hr_index.py, data/hr_preprocess.py, data/chunks_v2.py, search_service/main.py, app/services/hr_personal.py, tests/test_milvus_conn.py
 읽은 커밋: 6710b83
 -->
-> 상태: ✓ 강아지(petmint_dog, 928건)·고양이(petmint_cat, 850건) 색인과 하이브리드 검색·리랭커는 2026-10-13까지 구현(서빙은 v3: petmint_dog_v3 1065행 · petmint_cat_v3 976행, 그래프 data/graph/v3). ✓ 인사규정 컬렉션(hr_regulation, 49건) 적재·search-service 운영 중. 2026-10-28 인사규정 제25조 ① 개정을 PDF부터 다시 반영했다(기록: docs/archive/02_embedding_index_log.md). [code:data/search_engine.py:30-34] [code:data/chunks_v2.py:363-368] [code:data/hr_index.py:1-8] [code:search_service/main.py:47-48] [c:b719cdb] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:35-36, :40 (SEARCH_VARIANT=v3, CHUNKS_DIR와 GRAPH_DIR가 v3) --> <!-- 2026-11-19 잼: pymilvus get_collection_stats 로 petmint_dog_v3 1,065행, petmint_cat_v3 976행, hr_regulation 49행 --> [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 2절 서빙 판 레코드와 인사규정 청크, 5절 v3 그래프 -->
+> 상태(2026-11-19 코드와 맞춰 봄): ✓ 강아지(petmint_dog, 928건), 고양이(petmint_cat, 850건) 색인과 하이브리드 검색, 리랭커는 2026-10-13까지 구현(서빙은 v3: petmint_dog_v3 1065행, petmint_cat_v3 976행, 그래프 data/graph/v3). ✓ 인사규정 컬렉션(hr_regulation, 49건) 적재, search-service 운영 중. 2026-10-28 인사규정 제25조 ① 개정을 PDF부터 다시 반영했다(기록: docs/archive/02_embedding_index_log.md). [code:data/search_engine.py:30-34] [code:data/chunks_v2.py:363-368] [code:data/hr_index.py:1-8] [code:search_service/main.py:47-48] [c:b719cdb] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:35-36, :40 (SEARCH_VARIANT=v3, CHUNKS_DIR와 GRAPH_DIR가 v3) --> <!-- 2026-11-19 잼: pymilvus get_collection_stats 로 petmint_dog_v3 1,065행, petmint_cat_v3 976행, hr_regulation 49행 --> [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 2절 서빙 판 레코드와 인사규정 청크, 5절 v3 그래프 -->
 
 ### 0. 한 줄 요약
 
@@ -48,15 +48,15 @@ citations_raw  797 bytes  → 4000
 content       4940 bytes  → 12000
 ```
 
-#### 1-2. 등급·유형 메타데이터 필터
+#### 1-2. 등급, 유형 메타데이터 필터
 
 질문에 "기본형/고급형/실속형" 또는 "Ⅰ/Ⅱ/Ⅲ"가 명시돼 있으면 **Milvus 검색 시점에 메타데이터로 강제 필터링**하도록 추가했다. SearchScope가 의료비 특약 범위를 좁힌다. 등급이 비어 있는 청크는 통과시키고, 유형(type)으로는 거르지 않는다. 대신 검색 문장에서 등급 단어를 빼, 등급 때문에 엉뚱한 조항이 올라오는 것을 줄인다. [code:data/search_scope.py:21] [code:data/search_scope.py:84-88] [code:data/search_scope.py:156-176] [code:data/search_engine.py:159-162]
 
-- **등급·유형을 명시하지 않은 질문**에도 가입 정보로 범위가 정해진다(✓ 09번 1-6절 `SearchScope.for_policies`). 되묻기는 상위 결과가 서로 다른 (유형, 등급) 조합에 걸칠 때만 발동한다(09번 1-8절, ✓ 로컬·배포 서버 확인(2026-10-20·21, 검증 R3)). [code:data/search_scope.py:127-128] [docs:02_pipeline/09_ui_design.md]
+- **등급, 유형을 명시하지 않은 질문**에도 가입 정보로 범위가 정해진다(✓ 09번 1-6절 `SearchScope.for_policies`). 되묻기는 상위 결과가 서로 다른 (유형, 등급) 조합에 걸칠 때만 발동한다(09번 1-8절, ✓ 로컬과 배포 서버 확인(2026-10-20과 21, 검증 R3)). [code:data/search_scope.py:127-128] [docs:02_pipeline/09_ui_design.md]
 
 #### 1-3. 바꾸지 않는 것
 
-**바꾸지 않는 것(2026-10-18 사용자 결정)**: BM25 토크나이저(kiwi로 바꾸기)와 Dense·BM25 후보 비율은 검색 실험(`data.search_experiments`, docs/ops/저녁실행.md)에서 둘 다 손해라 지금 값을 둔다 — "BM25 토크나이저와 후보 비율은 건드리지 마라. 실험에서 둘 다 손해였다". 같은 실험의 리랭커 라벨·조항 중복 제거도 넣었다가 되돌렸다(커밋 `4797ae0`, 2026-10-21). 1차 후보 깊이(`PETMINT_SEARCH_POOL`, docs/14)는 이것과 별개다. [c:4797ae0] [code:data/search_engine.py:166-168] [docs:02_pipeline/14_deployment.md] <!-- data/search_experiments.py 는 다른 세션이 남긴 추적 안 하는 파일이라 git에 없다 -->
+**바꾸지 않는 것(2026-10-18 사용자 결정)**: BM25 토크나이저(kiwi로 바꾸기)와 Dense, BM25 후보 비율은 검색 실험(`data.search_experiments`, docs/ops/저녁실행.md)에서 둘 다 손해라 지금 값을 둔다. "BM25 토크나이저와 후보 비율은 건드리지 마라. 실험에서 둘 다 손해였다". 같은 실험의 리랭커 라벨, 조항 중복 제거도 넣었다가 되돌렸다(커밋 `4797ae0`, 2026-10-21). 1차 후보 깊이(`PETMINT_SEARCH_POOL`, docs/14)는 이것과 별개다. [c:4797ae0] [code:data/search_engine.py:166-168] [docs:02_pipeline/14_deployment.md] <!-- data/search_experiments.py 는 다른 세션이 남긴 추적 안 하는 파일이라 git에 없다 -->
 
 #### 1-4. search_engine.py로 모듈화
 
@@ -72,7 +72,7 @@ content       4940 bytes  → 12000
 
 벡터 검색은 문장을 "의미를 담은 숫자 벡터"로 바꿔서, 글자가 같은지가 아니라 **의미가 비슷한지**로 비교한다. "돈 돌려받다"와 "보험금 지급"은 겉보기엔 다른 단어지만 의미상 가까운 벡터로 변환되기 때문에 벡터 검색은 이 둘을 연결해 찾아낼 수 있다.
 
-실제 상담원이나 가입자는 약관의 전문 용어를 그대로 쓰지 않고 일상어로 질문할 가능성이 높다 — "통원 한도가 얼마예요?"가 아니라 "병원비 얼마나 받을 수 있어요?" 같은 식으로. 키워드 검색만으로는 이런 표현의 차이를 넘어서지 못한다.
+실제 상담원이나 가입자는 약관의 전문 용어를 그대로 쓰지 않고 일상어로 질문할 가능성이 높다. "통원 한도가 얼마예요?"가 아니라 "병원비 얼마나 받을 수 있어요?" 같은 식으로. 키워드 검색만으로는 이런 표현의 차이를 넘어서지 못한다.
 
 **전용 저장소가 필요한 이유**: 이 벡터는 숫자가 1024개(KURE-v1 기준)씩 들어있는 긴 배열이다. [code:notebooks/02_임베딩_milvus색인.ipynb:205] [code:data/search_engine.py:23] 수백~수천 개의 청크마다 이런 벡터가 있으면 "가장 비슷한 벡터를 빠르게 찾는" 전용 인덱스 구조가 필요하다. 일반 DB는 벡터 간 유사도 검색에 최적화돼 있지 않아 Milvus 같은 전용 벡터 DB를 썼다. [code:data/search_engine.py:22] [code:deploy/host/milvus/docker-compose.yml]
 
@@ -82,15 +82,15 @@ content       4940 bytes  → 12000
 
 Milvus의 차별점:
 
-- **다양한 인덱스 타입**(HNSW, IVF 등) — 데이터 규모와 성능 요구에 따라 전략을 바꿀 수 있다
-- **분산 처리·스케일링 전제 아키텍처** — 데이터나 트래픽이 늘어도 구조적으로 대응 가능하다
-- **메타데이터 필터링과 벡터 검색의 결합** — "강아지/고양이로 나누고, section·조 번호로 걸러내야 하는" 이 프로젝트의 요구에 잘 맞았다
+- **다양한 인덱스 타입**(HNSW, IVF 등): 데이터 규모와 성능 요구에 따라 전략을 바꿀 수 있다
+- **분산 처리, 스케일링 전제 아키텍처**: 데이터나 트래픽이 늘어도 구조적으로 대응 가능하다
+- **메타데이터 필터링과 벡터 검색의 결합**: "강아지/고양이로 나누고, section·조 번호로 걸러내야 하는" 이 프로젝트의 요구에 잘 맞았다
 
-실제로 이 프로젝트는 1인 개발·로컬 서버·수천 건 수준이라 Chroma로도 돌아간다. 다만 "실제 서비스로 배포한다"는 목표를 생각하면 지금부터 프로덕션 지향 도구에 익숙해지는 게 낫다고 판단했다.
+실제로 이 프로젝트는 1인 개발, 로컬 서버, 수천 건 수준이라 Chroma로도 돌아간다. 다만 "실제 서비스로 배포한다"는 목표를 생각하면 지금부터 프로덕션 지향 도구에 익숙해지는 게 낫다고 판단했다.
 
-**임베딩 — KURE-v1**
+**임베딩: KURE-v1**
 
-고려대 NLP&AI 연구실이 bge-m3를 한국어 query-document 쌍 200만 건으로 추가 학습한 모델이다. 기반이 같으므로 1024차원·8192토큰을 그대로 물려받고, 한국어 검색에서 기반 모델보다 낫다(MTEB-ko 검색 평균 80.76 대 79.30 (공개 페이지에서 출처를 못 찾음, 2026-11-19)). MIT 라이선스라 상업 이용에 걸림이 없다. 8192토큰은 이 프로젝트에 넉넉하다 — 가장 긴 청크가 4,940B다. 리랭커는 같은 계열의 bge-reranker-v2-m3를 쓴다. 임베딩과 기반이 같아 결과가 어긋날 여지가 적다. [code:data/search_engine.py:23-24] <!-- 잰 날짜 모름 --> <!-- 공개 출처: https://huggingface.co/nlpai-lab/KURE-v1 (2026-11-19 확인, 고려대 NLP&AI, bge-m3 미세조정, 2,000,000 examples, 1024차원, 8192토큰, MIT) -->
+고려대 NLP&AI 연구실이 bge-m3를 한국어 query-document 쌍 200만 건으로 추가 학습한 모델이다. 기반이 같으므로 1024차원, 8192토큰을 그대로 물려받고, 한국어 검색에서 기반 모델보다 낫다(MTEB-ko 검색 평균 80.76 대 79.30 (공개 페이지에서 출처를 못 찾음, 2026-11-19)). MIT 라이선스라 상업 이용에 걸림이 없다. 8192토큰은 이 프로젝트에 넉넉하다. 가장 긴 청크가 4,940B다. 리랭커는 같은 계열의 bge-reranker-v2-m3를 쓴다. 임베딩과 기반이 같아 결과가 어긋날 여지가 적다. [code:data/search_engine.py:23-24] <!-- 잰 날짜 모름 --> <!-- 공개 출처: https://huggingface.co/nlpai-lab/KURE-v1 (2026-11-19 확인, 고려대 NLP&AI, bge-m3 미세조정, 2,000,000 examples, 1024차원, 8192토큰, MIT) -->
 
 #### 2-3. 왜 강아지/고양이 컬렉션을 분리했나
 
@@ -103,13 +103,13 @@ Milvus의 차별점:
 
 즉 검색 정확도뿐 아니라 "실수를 원천 차단하는 안전장치" 설계였다. 강아지/고양이는 특약 구성 자체가 다르다는 걸 01번에서 확인했기 때문에 둘을 섞으면 안 되는 이유가 명확했다.
 
-**인사규정은 별도 컬렉션이다.** `hr_regulation`에 담고 스키마도 다르다 — 등급·유형·특약이 없는 문서라 `type`·`coverage_type`은 호환용으로만 두어 늘 비어 있고, 대신 `chapter_num`·`effective_date`가 있다. 같은 `SearchEngine`을 쓰되 코퍼스 이름으로만 갈린다(`hr_index.py`). [code:data/hr_index.py:6-8] [code:data/hr_index.py:34-46] [code:data/search_engine.py:30-34] [code:data/search_scope.py:10] [code:data/search_scope.py:39]
+**인사규정은 별도 컬렉션이다.** `hr_regulation`에 담고 스키마도 다르다. 등급, 유형, 특약이 없는 문서라 `type`, `coverage_type`은 호환용으로만 두어 늘 비어 있고, 대신 `chapter_num`, `effective_date`가 있다. 같은 `SearchEngine`을 쓰되 코퍼스 이름으로만 갈린다(`hr_index.py`). [code:data/hr_index.py:6-8] [code:data/hr_index.py:34-46] [code:data/search_engine.py:30-34] [code:data/search_scope.py:10] [code:data/search_scope.py:39]
 
 ---
 
 ### 3. 시도했던 것들
 
-#### 3-1. 1차 검증 — 검색 동작 확인
+#### 3-1. 1차 검증: 검색 동작 확인
 
 "통원 한도가 얼마인가요?" 질문으로 검색했을 때 상위 결과가 "안내_요약"(약관 요약서)으로 쏠렸다. 요약서가 "보장명/보장한도" 형식의 간결한 표라 질문과 표면적으로 더 유사하게 매칭된 것이다. <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
@@ -128,9 +128,9 @@ Milvus의 차별점:
 
 원인을 더 파보니, `coverage_type`이 메타데이터 필드로는 존재하지만 **청크 본문 텍스트 안에는 그 단어가 없었다**. 01번의 등급 분리 로직이 "① 고급형"을 구분자로만 쓰고 본문에 다시 넣지 않았기 때문이다. 임베딩 모델은 긴 한도표 청크가 "고급형에 관한 것"이라는 사실 자체를 알 길이 없었고, 반대로 그 단어만 담은 짧은 청크가 어휘적으로 일치해 역설적으로 더 높은 점수를 받았다. [code:notebooks/01_데이터_전처리.ipynb:372-376]
 
-#### 3-3. 1차 완화 — 임베딩 텍스트에 메타데이터 헤더 보강
+#### 3-3. 1차 완화: 임베딩 텍스트에 메타데이터 헤더 보강
 
-`content`는 원본 그대로 두되(사용자에게 보여줄 때 깨끗해야 하므로), **임베딩을 생성하는 텍스트만** 별도로 만들어 `section_name`·`type`·`coverage_type`·`article_title`을 헤더로 붙였다. [code:data/search_engine.py:48-70]
+`content`는 원본 그대로 두되(사용자에게 보여줄 때 깨끗해야 하므로), **임베딩을 생성하는 텍스트만** 별도로 만들어 `section_name`, `type`, `coverage_type`, `article_title`을 헤더로 붙였다. [code:data/search_engine.py:48-70]
 
 ```
 [펫퍼민트 반려견 통원의료비Ⅲ보장 특별약관 / 유형Ⅲ / 고급형 / 보험금의 지급사유]
@@ -138,7 +138,7 @@ Milvus의 차별점:
 회사가 보상하는 비용은 각 항목별 피보험자가 부담한...
 ```
 
-유사도 격차는 줄었으나(0.447→0.455, "① 고급형"도 0.618→0.499로 하락) 여전히 짧은 청크가 근소하게 앞섰다 — 임베딩 모델이 텍스트 길이에 따라 신호가 희석되는 경향 자체는 헤더 보강만으로 해결되지 않았다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+유사도 격차는 줄었으나(0.447→0.455, "① 고급형"도 0.618→0.499로 하락) 여전히 짧은 청크가 근소하게 앞섰다. 임베딩 모델이 텍스트 길이에 따라 신호가 희석되는 경향 자체는 헤더 보강만으로 해결되지 않았다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 #### 3-4. Hybrid Search(BM25+Dense) + Reranker
 
@@ -148,9 +148,9 @@ Milvus의 차별점:
 2. 그런데 1차 결합만으로는 "수술"처럼 여러 조항에 공통으로 등장하는 단어 때문에 엉뚱한 조항(용어 정의 등)이 끼어들었다. 가중치를 조정해봤지만 한쪽을 누르면 다른 쪽 노이즈가 느는 핑퐁이 이어져, 가중치 튜닝만으로는 한계가 있다고 판단했다.
 3. **Reranker**(`BAAI/bge-reranker-v2-m3`, Cross-encoder, Apache 2.0)를 추가해, BM25+Dense로 넉넉히 뽑은 후보를 쿼리와 직접 대조해 재정렬하도록 했다. 이 단계에서 "① 고급형" 같은 초단문 청크가 상위권에서 사라지고 실제 숫자가 담긴 한도표가 상위를 차지하기 시작했다. [code:data/search_engine.py:24] [code:data/search_engine.py:204-208]
 
-#### 3-5. 등급·유형 메타데이터 필터
+#### 3-5. 등급, 유형 메타데이터 필터
 
-5개 쿼리로 재현성 테스트를 해보니, Hybrid+Reranker만으로는 "고급형을 물었는데 기본형이 1등으로 나오는" 혼동이 남아 있었다 — 아홉 가지(등급×유형) 조합이 거의 동일한 문장 구조를 공유하기 때문에 의미 기반 재정렬만으로는 등급 자체를 구분하지 못했다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+5개 쿼리로 재현성 테스트를 해보니, Hybrid+Reranker만으로는 "고급형을 물었는데 기본형이 1등으로 나오는" 혼동이 남아 있었다. 아홉 가지(등급×유형) 조합이 거의 동일한 문장 구조를 공유하기 때문에 의미 기반 재정렬만으로는 등급 자체를 구분하지 못했다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 #### 3-6. 리랭커가 긴 청크의 뒷부분을 못 보던 문제
 
@@ -177,12 +177,12 @@ Milvus의 차별점:
 > 
 > 이 측정에 쓴 꼬리 질의 85개와 대조군 120개는 당시 임시로 만든 것이라 저장소에 남아 있지 않다. 이후 04번 2-6-1절의 회귀 세트가 그 역할을 대신한다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md]
 > 
-> 이 측정은 "512토큰 뒤쪽에서만 답할 수 있는 질의 85개"로 잰 것이다. 이후 04번 2-6절의 회귀 세트로 다시 재었을 때는 512 → 1024의 차이가 더 작았다(상위 5개 안 74 → 75, MRR 0.657 → 0.677). 세트 성격이 달라서다 — 회귀 세트는 꼬리 질의만 모은 게 아니다. fp16은 두 측정 모두에서 fp32와 순위가 같고 약 3배 빠르다. [docs:02_pipeline/04_rag_assembly.md] (2026-10-13 이후) [code:data/eval/search_regression.json:3] [code:KNOWN_ISSUES.md:368] [code:KNOWN_ISSUES.md:389]
+> 이 측정은 "512토큰 뒤쪽에서만 답할 수 있는 질의 85개"로 잰 것이다. 이후 04번 2-6절의 회귀 세트로 다시 재었을 때는 512 → 1024의 차이가 더 작았다(상위 5개 안 74 → 75, MRR 0.657 → 0.677). 세트 성격이 달라서다. 회귀 세트는 꼬리 질의만 모은 게 아니다. fp16은 두 측정 모두에서 fp32와 순위가 같고 약 3배 빠르다. [docs:02_pipeline/04_rag_assembly.md] (2026-10-13 이후) [code:data/eval/search_regression.json:3] [code:KNOWN_ISSUES.md:368] [code:KNOWN_ISSUES.md:389]
 > 
 
 #### 3-7. 중복 제거 키가 서로 다른 청크를 덮어쓰던 문제
 
-가장 큰 발견이었다. "고급형 수술 한도가 얼마인가요?"를 물으면 결과가 **전부 통원Ⅲ 고급형**이고 Ⅰ·Ⅱ유형이 하나도 나오지 않았다. 3위 점수는 0.0007로 급락해 사실상 유효 후보가 둘뿐이었다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+가장 큰 발견이었다. "고급형 수술 한도가 얼마인가요?"를 물으면 결과가 **전부 통원Ⅲ 고급형**이고 Ⅰ, Ⅱ유형이 하나도 나오지 않았다. 3위 점수는 0.0007로 급락해 사실상 유효 후보가 둘뿐이었다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 원인은 BM25와 Dense 후보를 합칠 때 쓰던 중복 제거 키였다.
 
@@ -190,13 +190,13 @@ Milvus의 차별점:
 candidates[c["content"][:80]] = c   # content 앞 80자를 키로
 ```
 
-한도표가 든 조항은 등급·유형과 무관하게 전부 같은 문장으로 시작한다.
+한도표가 든 조항은 등급, 유형과 무관하게 전부 같은 문장으로 시작한다.
 
 ```
 "회사가 보상하는 비용은 각 항목별 피보험자가 부담한 치료비에서..."
 ```
 
-즉 **통원/입원 × Ⅰ·Ⅱ·Ⅲ 여섯 개 한도표가 전부 같은 키**가 되어 서로 덮어썼고, 마지막에 쓰인 Ⅲ만 살아남았다. 측정해보니 28개 후보가 **6개로 붕괴**했고 22건이 덮어써졌다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+즉 **통원/입원 × Ⅰ, Ⅱ, Ⅲ 여섯 개 한도표가 전부 같은 키**가 되어 서로 덮어썼고, 마지막에 쓰인 Ⅲ만 살아남았다. 측정해보니 28개 후보가 **6개로 붕괴**했고 22건이 덮어써졌다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 고유 식별자 튜플로 교체했다.
 
@@ -204,9 +204,9 @@ candidates[c["content"][:80]] = c   # content 앞 80자를 키로
 (section, section_name, type, article_num, paragraph_num, coverage_type, chunk_index, content)
 ```
 
-`chunk_index`는 Milvus 스키마에 없던 필드라 함께 추가하고 재색인했다. `section`과 `type`도 키에 넣어, 같은 이름의 조가 다른 섹션·유형에 있을 때 섞이지 않게 했다. 마지막의 `content`는 3-8절에서 더한 것이다. [code:data/search_engine.py:143-151] [code:notebooks/02_임베딩_milvus색인.ipynb:215]
+`chunk_index`는 Milvus 스키마에 없던 필드라 함께 추가하고 재색인했다. `section`과 `type`도 키에 넣어, 같은 이름의 조가 다른 섹션, 유형에 있을 때 섞이지 않게 했다. 마지막의 `content`는 3-8절에서 더한 것이다. [code:data/search_engine.py:143-151] [code:notebooks/02_임베딩_milvus색인.ipynb:215]
 
-**결과**: 후보 6 → 21개로 복원되고, 통원·입원 × Ⅰ·Ⅱ·Ⅲ **여섯 유형이 전부 top-8**에 올라왔다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+**결과**: 후보 6 → 21개로 복원되고, 통원과 입원 × Ⅰ, Ⅱ, Ⅲ **여섯 유형이 전부 top-8**에 올라왔다. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 ```
 0.5675 Ⅰ/고급형/통원    0.5160 Ⅱ/고급형/입원
@@ -219,7 +219,7 @@ candidates[c["content"][:80]] = c   # content 앞 80자를 키로
 
 #### 3-8. 안내류 청크가 뭉개지던 문제
 
-3-7의 키 교체 후에도 문제가 남았다. 안내류(개인정보 안내문, 용어 해설 등) 청크는 `article_num`·`paragraph_num`·`coverage_type`이 전부 `None`이라, 키가 사실상 `(section_name, None, None, None, chunk_index)`로 축퇴한다. 같은 섹션 안의 청크들이 전부 같은 키가 되어 **종당 137개가 12개로 뭉개졌다**. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
+3-7의 키 교체 후에도 문제가 남았다. 안내류(개인정보 안내문, 용어 해설 등) 청크는 `article_num`, `paragraph_num`, `coverage_type`이 전부 `None`이라, 키가 사실상 `(section_name, None, None, None, chunk_index)`로 축퇴한다. 같은 섹션 안의 청크들이 전부 같은 키가 되어 **종당 137개가 12개로 뭉개졌다**. (2026-10-13까지) [c:ba373fe] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 01번 레코드의 다른 메타 필드(`item_num`, `sub_label`, `top_category`)를 더해봤지만 충돌이 12→7그룹으로 줄 뿐 남았고, 결정적으로 **그 필드들이 Milvus 스키마에 없어서** Dense 쪽 키와 BM25 쪽 키가 달라지는 문제가 있었다. [code:data/search_engine.py:148] (2026-10-13까지) [c:ba373fe]
 
@@ -239,7 +239,7 @@ Dense 색인은 3-3의 메타데이터 헤더를 붙여 임베딩했는데, 리�
 | 고급형 수술 한도 | 0.0553 → 0.0007 (급락) | 0.4645 → 0.0520 (단계 유지) (2026-10-13까지) [c:ba373fe] |
 | 통원Ⅱ 기본형 비수술 | 0.5017 → 0.0043 (평탄) | 0.8766 → 0.3938 (분리) (2026-10-13까지) [c:ba373fe] |
 
-본문만 주면 한도표가 등급·유형과 무관하게 거의 동일해서 리랭커가 변별하지 못했다. 헤더를 포함하니 점수가 4~170배 커지고 단계적으로 분리됐다. 임베딩·BM25·리랭커가 **같은 표현을 보도록** 통일했다. [code:data/search_engine.py:48-52] [code:data/search_engine.py:205] (2026-10-13까지) [c:ba373fe]
+본문만 주면 한도표가 등급, 유형과 무관하게 거의 동일해서 리랭커가 변별하지 못했다. 헤더를 포함하니 점수가 4~170배 커지고 단계적으로 분리됐다. 임베딩, BM25, 리랭커가 **같은 표현을 보도록** 통일했다. [code:data/search_engine.py:48-52] [code:data/search_engine.py:205] (2026-10-13까지) [c:ba373fe]
 
 ---
 
@@ -251,4 +251,4 @@ Dense 색인은 3-3의 메타데이터 헤더를 붙여 임베딩했는데, 리�
 
 ### 5. 검증 항목
 
-- **검증 쿼리 수가 적다**. 3-7·3-9는 10개 질문 × 2종으로 측정했다. 더 다양한 질문 패턴(복수 조건 조합, 등급+유형 동시 언급 등)에 대한 검증은 ✓ 04번 2-6-1절의 회귀 세트 103문항으로 한다. 생성 품질까지 포함한 정량 평가는 △ 08번(Ragas)에서 다룬다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [docs:02_pipeline/08_ragas_eval.md] (2026-10-13까지) [c:ba373fe]
+- **검증 쿼리 수가 적다**. 3-7, 3-9는 10개 질문 × 2종으로 측정했다. 더 다양한 질문 패턴(복수 조건 조합, 등급+유형 동시 언급 등)에 대한 검증은 ✓ 04번 2-6-1절의 회귀 세트 103문항으로 한다. 생성 품질까지 포함한 정량 평가는 △ 08번(Ragas)에서 다룬다. [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [docs:02_pipeline/08_ragas_eval.md] (2026-10-13까지) [c:ba373fe]
