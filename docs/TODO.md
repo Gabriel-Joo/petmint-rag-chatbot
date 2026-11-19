@@ -26,9 +26,6 @@
 - **petmint-6** 노션 기술문서 일곱 쪽(09, 11~16) 덮기를 FOREMAN 관리자에게 알리기 — 덮은 뒤 일곱 쪽이 다시 「사람 수정으로 멈춤」으로 서는지 보고 사람에게 알린다 (2026-11-19)
   언제: 펫퍼민트 docs를 다시 쓴 뒤. 지금은 FOREMAN 서기실에 일곱 쪽이 「사람 수정으로 멈춤」으로 뜬다. 고장이 아니라 미룬 상태다. 일곱 쪽 모두 노션에만 있는 글자는 없었다(11-19 글자 단위 비교)
   나온 곳: FOREMAN 사용자 결정 11-19(FOREMAN 관리자 전달, 「docs를 다시 쓴 뒤 덮습니다」) · 사람 말 11-19(「덮은 뒤 일곱 쪽이 다시 「사람이 고침」으로 멈추는지 보고 알려 주세요. 멈추면 덮기로 풀리는 문제가 아닙니다」) [c:68ed76d]
-- **petmint-7** 이 파일을 FOREMAN 번호 꼴로 바꾸기 — `- **petmint-N** 제목 (YYYY-MM-DD)`, 다음 줄 본문, 「나온 곳:」 줄. 지금 표의 줄도 모두 옮긴다 (2026-11-19)
-  언제: 펫퍼민트 docs를 다시 쓸 때 함께. 꼴은 FOREMAN `docs/TODO.md`를 따른다. 접두어는 `petmint`. 표인 동안은 FOREMAN 포스트잇 [TODO로] 단추가 번호를 못 붙여 거부된다
-  나온 곳: FOREMAN 사용자 결정 11-19(FOREMAN 관리자 전달) · 사람 말 11-19(「접두어는 petmint로 두세요」) [c:68ed76d]
 - **petmint-8** 재부팅 순서 확인 — `model-service` → Milvus 대기 → `petmint-search`가 순서대로 뜨는지, model-service가 늦거나 Restart될 때 petmint-search가 기다리는지, virbr0가 늦을 때 bind 실패 뒤 Restart로 회복하는지 (2026-11-11)
   언제: 다음 서버 재부팅 때. 재부팅은 사람이 정한다(이 세션은 재부팅하지 않는다). 볼 명령은 model-service 런북 8절 [code:deploy/host/petmint-search.service]
   나온 곳: 사람 말 11-11("실제 재부팅 시험은 아직 안 했다") · `docs/02_pipeline/14_deployment.md` 1-16절 [c:26bee9f]
