@@ -258,7 +258,8 @@
 > 영상 단계에서 색과 옷을 한꺼번에 바꾸면 캐릭터 생김새가 셋 다 달라진다. 정지 이미지를 먼저 만들고 그걸 입력으로 써야 닮은 채로 남는다.
 > 
 
-- **모드 선택 화면 아래 소개 영역** ✓ 2026-10-16 구현. 세 모드를 지그재그로 소개하고, 기술 구성 카드 8장과 아키텍처 구성도, 아코디언 설명을 붙였다 [code:web/src/pages/ModeSelect.module.css:76-99] [code:web/src/pages/ModeSelect.tsx:203-230] [code:web/src/components/ArchDiagram.tsx]
+- **모드 선택 화면 아래 소개 영역** ✓ 2026-10-16 구현. 세 모드를 지그재그로 소개하고, 기술 구성 카드 8장과 아키텍처 구성도, 아코디언 설명을 붙였다 [code:web/src/pages/ModeSelect.module.css:76-99] [code:web/src/components/ArchDiagram.tsx]
+  - 2026-11-19 글과 구성도를 통째로 새로 썼다. 맨 위에 서비스 소개 한 단락과 구성도 아래 「쓴 기술」 표를 더했고, 구성도는 검색 서버를 「예정」으로 그리던 것을 지금 구조(앱 두 벌, 호스트의 검색 서버, 공용 모델 서버, Milvus, NFS, Ollama)로 바꿨다. 글은 docs가 아니라 운영 코드와 운영 설정을 보고 썼고, 서버 주소와 포트, 실제 사람 이름, 하지 않는 것은 넣지 않는다. 화면 글에 줄표와 가운뎃점을 쓰지 않는다(사용자) [code:web/src/pages/ModeSelect.tsx:135-246] [code:web/src/pages/ModeSelect.module.css:169-173]
 
 ---
 
