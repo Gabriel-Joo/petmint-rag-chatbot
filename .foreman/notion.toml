@@ -6,9 +6,10 @@
 # 2026-11-19 게시 원고 폴더를 notion/ 으로 바꿨다(사용자 결정, 문서 정리 F단계, 런슈즈 · 인프라 · FOREMAN 과 같은 꼴).
 #   notion/ 의 폴더 나무가 [기술문서] 아래 페이지 나무가 된다. docs/ 는 개발자 문서라 노션에 올리지 않는다.
 #   docs/ 를 올리던 때의 칸(new_parent, new_title, order, keep_notion, skip)은 원고 폴더에 맞지 않아 뺐다. 옛 값은 이 파일의 git 이력에 있다.
-#   처음에는 manual 로 두고 한 편씩 올린 뒤 auto 로 켠다(한 번에 여러 편을 이어 올리면 런슈즈 때처럼 겹친다).
+#   처음에는 manual 로 두고 한 편씩 올린 뒤(원고 25편, 포트폴리오 9편, 2026-11-19 dad768d) auto 로 켰다.
+#   한 번에 여러 편을 이어 올리면 런슈즈 때처럼 겹쳐 「Can't edit block that is archived」가 난다.
 
-docs = "manual"
+docs = "auto"
 src = "notion/"     # 원고 폴더. 게시기가 머리 주석, 근거 표시, 저장소 링크를 떼고 올린다
 quiet_min = 30
 create = true       # 짝 없는 원고는 새 페이지로 만든다
