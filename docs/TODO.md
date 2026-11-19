@@ -1,5 +1,5 @@
 <!--
-다루는 곳: app/services/followup.py, deploy/host/petmint-search.service, README.md
+다루는 곳: app/services/followup.py, deploy/host/petmint-search.service, README.md, deploy/README.md
 읽은 커밋: 6710b83
 -->
 # 나중에 할 일 (정해 두고 미룬 것)
@@ -32,3 +32,18 @@
 - **petmint-8** 재부팅 순서 확인 — `model-service` → Milvus 대기 → `petmint-search`가 순서대로 뜨는지, model-service가 늦거나 Restart될 때 petmint-search가 기다리는지, virbr0가 늦을 때 bind 실패 뒤 Restart로 회복하는지 (2026-11-11)
   언제: 다음 서버 재부팅 때. 재부팅은 사람이 정한다(이 세션은 재부팅하지 않는다). 볼 명령은 model-service 런북 8절 [code:deploy/host/petmint-search.service]
   나온 곳: 사람 말 11-11("실제 재부팅 시험은 아직 안 했다") · `docs/02_pipeline/14_deployment.md` 1-26절 [c:26bee9f]
+- **petmint-9** 모드 검증의 거절 판정을 운영과 같은 기준으로 (2026-11-19)
+  언제: 정하지 않음. 모드 검증(`scripts/verify_modes.py`)은 C안 함수 `data.refusal.refused`를 쓰지 않고 거절 문구 목록 전체로 거절을 가린다. 그래서 맺음말 문구만 있어도 거절로 친다. 운영 집계(`turns.refused`)와 서빙 평가는 C안이라 모드 검증만 기준이 다르다. 일부러 그렇게 둔 것인지는 문서에 없다 [code:scripts/verify_modes.py:93-95]
+  나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), `docs/02_pipeline/12_data_storage.md` turns 표, `docs/02_pipeline/15_monitoring.md` 4-1절
+- **petmint-10** 대화 기록에 색인 버전이 남지 않음 (2026-11-19)
+  언제: 정하지 않음. `INDEX_VERSION`이 "unset" 그대로라 턴 기록의 색인 버전으로 로그를 비교할 수 없다. 주석은 「재색인 때 올린다」이다 [code:app/config.py:80]
+  나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), `docs/02_pipeline/09_ui_design.md` 6절
+- **petmint-11** 지금 동작보다 뒤처진 코드 주석 (2026-11-19)
+  언제: 정하지 않음. 동작은 문서와 같고 주석만 낡았다. `data/faq_rag.py:7` 「그 질문도 되살려 쓴다」(실제로는 `full()`이 되살린 incomplete를 뺀다), `data/answer_eval.py:220` 「answer.fit_to_budget」(실제로는 `prompts.fit_to_budget`), `data/faq_verify.py:4` 「74개 중 19개 오류, 26%」(KNOWN_ISSUES는 고친 검증기로 26/74, 35%. 같은 측정인지 확인 필요), `app/services/article_display.py:4` 「ArticleOut.blocks」(칸 이름은 sections), 같은 파일 8줄 「91.0%」(최종 93.8%), `web/src/styles/tokens.css:1` 「10번 10절」(지금은 11번), 같은 파일 14줄 「전화 전용」(진행 중 상담 표시에도 쓴다), 같은 파일 69줄과 `web/src/styles/global.css:13` 「헤더 로고만 완주대둔산체」(로그인 화면 등 여러 곳에 쓴다), `app/services/answer.py:19` 「아직 없는 것: 부담보 배너」(이미 있다) [code:data/faq_rag.py:7] [code:data/answer_eval.py:220] [code:data/faq_verify.py:4] [code:app/services/article_display.py:4] [code:app/services/article_display.py:8] [code:web/src/styles/tokens.css:1] [code:web/src/styles/tokens.css:14] [code:web/src/styles/tokens.css:69] [code:web/src/styles/global.css:13] [code:app/services/answer.py:19]
+  나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), 07, 05, 10, 11, 09편 안 맞음 대조
+- **petmint-12** `deploy/README.md`의 배포 흐름이 옛 그대로 (2026-11-19)
+  언제: 정하지 않음. 「Jenkins petmint-app (2분 폴링)」, 「사람이 Sync (지금은 수동)」으로 적혀 있다. 지금은 웹훅과 안전망 폴링 15분이고 ArgoCD는 자동 Sync다(2026-11-11~) [code:deploy/README.md:21] [code:deploy/README.md:23] [code:Jenkinsfile:3] [docs:02_pipeline/14_deployment.md]
+  나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), `docs/02_pipeline/14_deployment.md` 1-25절
+- **petmint-13** 홈 모드 카드 넘김 화살표의 `font-size: 22px`가 「크기는 새로 만들지 않는다」에 걸리는지 (2026-11-19)
+  언제: 정하지 않음. 규칙 원문은 「새 배율 · px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다」(11번 1절, 2026-11-12)라 새 크기를 막는 뜻과 토큰 밖 값을 막는 뜻이 한 문장에 함께 있어 가를 수 없다. 22px는 같은 날 넘김 화살표를 더한 커밋에서 들어왔고, 글자가 아니라 44px 단추 안 화살표 글리프다 [code:web/src/pages/ModeSelect.module.css:229] [c:f30cf58] [docs:02_pipeline/11_design_system.md:77]
+  나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), `docs/02_pipeline/11_design_system.md`
