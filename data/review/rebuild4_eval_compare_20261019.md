@@ -3,6 +3,7 @@
 - rebuild4: `models/lora_adapter/rag-1_7376건_rebuild4` (select가 최종본 선택, 5점)
 - 결과: `data/eval/results/answer_eval_20261019_0838_…rebuild4.json`(정답 발췌), `…_1004_…rebuild4_search.json`(검색)
 - 같은 검색 코드로 rebuild3 재측정: `…_1131_rag-1_7099건_rebuild3@checkpoint-150_search.json` (발췌 117/117 동일)
+- 위 두 줄의 결과 파일(`data/eval/results/`)은 git 밖에 있다.
 - 네 갈래 판정: `data/review/answer_judge97_rebuild4_20261019.json` (답이 rebuild3와 글자까지 같으면 rebuild3 판정 승계, 다르면 같은 기준으로 새로 판정)
 
 ## 판정 기준 넷

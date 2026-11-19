@@ -7,6 +7,7 @@
 스크립트: `data/review/refusal_overlap_20261015_probe1.py`(길이·겹침·조 커버리지), `..._probe2.py`(경계·구간별·재작성 전후).
 결과 파일: `data/eval/results/answer_eval_20261015_1920_rag-1_6806건_rebuild.json`,
 대조 `data/review/answer_eval_compare_20261015_1920_answer_eval_20261014_1011_rag-1_4811건_vs_answer_eval_20261015_1920_rag-1_6806건_rebuild.md`.
+이 결과 파일(`data/eval/results/`)은 git 밖에 있다. 대조 파일은 git 안에 있다.
 
 **겹침 지표**: `finetune_data.question_overlap` — 질문의 글자 바이그램(공백·기호 제외) 중 프롬프트의 [약관 발췌] 전체에도 있는 비율.
 build 로그의 `distract 0.51 / gold_only 0.548 / no_answer 0.351`과 같은 정의다.

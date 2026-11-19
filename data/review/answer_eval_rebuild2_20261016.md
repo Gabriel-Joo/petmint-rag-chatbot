@@ -2,6 +2,7 @@
 
 측정: 2026-10-16. 4-bit nf4 + LoRA, greedy 300토큰, 청크 선택 수정(5806a6d) 반영 코드. 베이스는 모든 실행에서 같은 답(117/117).
 결과 파일: `data/eval/results/answer_eval_20261016_*`, 문항별 답은 `data/review/answer_eval_20261016_*.md`.
+이 결과 파일(`data/eval/results/`)은 git 밖에 있다.
 
 ## 0. 측정 사고 — 첫 어댑터가 베이스로 잰 결과(고침)
 
