@@ -2,8 +2,8 @@
 다루는 곳: db/migrations/petmint/, db/migrations/insurance_core/, db/bootstrap.py, db/conn.py, db/migrate.py, db/seed_insurance_core.py, db/fixtures/employees.json, db/fixtures/make_employees.py, app/services/turn_log.py, app/services/sessions.py, app/services/titles.py, app/routers/sessions.py, deploy/host/dev-mysql-backup.sh, deploy/scripts/host-nfs-backup-setup.sh
 읽은 커밋: 6710b83
 -->
-> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 그 뒤 0005 후속 판별·0006 로그인·0007 상담원 이메일 옮기기·0008 code_rule·0009 refused·search_ms(2026-11-11). 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료. [code:db/migrations/petmint/] [c:327c913] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 클러스터 이주 완료는 클러스터 쪽 -->
-> 검색 결과·계산 카드·되묻기를 턴 로그에 쓰는 경로는 search-service 연결(2026-10-21) 뒤 운영에서 돈다. [code:app/services/turn_log.py:91-115] <!-- 확인 못 함: 운영에서 도는지는 운영 로그 -->
+> 상태: 설계 확정, 구현 중. 스키마(마이그레이션 0001~0004)는 2026-10-15 완료, 그 뒤 0005 후속 판별·0006 로그인·0007 상담원 이메일 옮기기·0008 code_rule·0009 refused·search_ms(2026-11-11). 클러스터 MySQL(StatefulSet + PVC) 이주는 2026-10-16 완료. [code:db/migrations/petmint/] [c:327c913] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml(65b9abb 2026-10-16), docs/history/build_log/07_project_deploy.md:5 -->
+> 검색 결과·계산 카드·되묻기를 턴 로그에 쓰는 경로는 search-service 연결(2026-10-21) 뒤 운영에서 돈다. [code:app/services/turn_log.py:91-115] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 DB retrieved 545행, 2026-10-22 뒤 turns 141 가운데 retrieved가 붙은 턴 130, 마지막 2026-11-17 -->
 > 
 
 ---
@@ -150,12 +150,12 @@ sessions (상담 1건)
 
 **이주 때 할 일** (상세는 14번)
 
-- ✓ StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입(2026-10-16) <!-- 확인 못 함: 클러스터 -->
+- ✓ StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입(2026-10-16) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:36-41, :63-71 (65b9abb) -->
 - ✓ 스키마 초기화 Job 또는 마이그레이션 실행(2026-10-16) [code:db/migrate.py] [code:db/bootstrap.py]
 - ✗ `mysqldump`로 개발 데이터를 넣는다. 다만 **개발 중 쌓인 로그를 가져갈지는 그때 정한다** — 테스트 대화가 섞여 있으면 버리는 편이 낫다
 - ✓ 환경변수만 바꾸고 연결 확인(2026-10-16) [code:db/conn.py:50]
 
-실제로는 `mysqldump`를 쓰지 않았다. 클러스터 DB는 픽스처 시드로 새로 시작했고, 개발 중 쌓인 테스트 대화는 가져가지 않았다. [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 클러스터 DB를 어떻게 채웠는지는 클러스터 쪽 기록 -->
+실제로는 `mysqldump`를 쓰지 않았다. 클러스터 DB는 픽스처 시드로 새로 시작했고, 개발 중 쌓인 테스트 대화는 가져가지 않았다. [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 픽스처 시드는 apps/petmint/jobs/init-db.yaml:5, :42 --> <!-- 확인 못 함: mysqldump를 안 쓴 것과 테스트 대화를 안 가져간 것은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
 
 #### 1-3. 인스턴스 구성
 
@@ -173,20 +173,20 @@ UI 라벨은 "삭제"가 아니라 **"목록에서 제거"**다. 사내 도구�
 
 #### 1-5. 백업과 복구 (2026-11-10)
 
-클러스터 MySQL(`petmint/mysql-0`)을 **하루 한 번 `mysqldump`로 떠서 호스트에 둔다.** [c:74397ed] <!-- 확인 못 함: CronJob은 다른 저장소(ronanlab-infra) -->
+클러스터 MySQL(`petmint/mysql-0`)을 **하루 한 번 `mysqldump`로 떠서 호스트에 둔다.** [c:74397ed] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:1, :16, :94, apps/petmint/mysql/service.yaml:10-11 -->
 
 | 항목 | 값 |
 | --- | --- |
-| 무엇을 | CronJob `petmint/mysql-backup` — ronanlab-infra `apps/petmint/backup/cronjob.yaml` <!-- 확인 못 함: 다른 저장소(ronanlab-infra) --> |
-| 언제 | 매일 03:30 KST(`timeZone: Asia/Seoul`). 겹치면 건너뛴다(`concurrencyPolicy: Forbid`) <!-- 확인 못 함: 다른 저장소(ronanlab-infra) --> |
-| 대상 | `petmint`·`insurance_core` 두 데이터베이스. `mysql` 시스템 DB(계정)는 뜨지 않는다 — 계정·권한은 초기화 Job(`db.bootstrap`)이 Secret 값으로 다시 만든다 [code:db/bootstrap.py] <!-- 확인 못 함: CronJob 대상은 다른 저장소(ronanlab-infra) --> |
-| 방식 | `mysqldump --single-transaction --quick --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF --hex-blob` → gzip. 모든 테이블이 InnoDB라 일관 스냅샷이 되고 테이블 락이 없다 — 앱이 계속 쓴다 [code:db/migrations/petmint/] [code:db/migrations/insurance_core/] <!-- 확인 못 함: CronJob 명령은 다른 저장소(ronanlab-infra) --> |
+| 무엇을 | CronJob `petmint/mysql-backup` — ronanlab-infra `apps/petmint/backup/cronjob.yaml` <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:10-12, apps/petmint/kustomization.yaml:27 --> |
+| 언제 | 매일 03:30 KST(`timeZone: Asia/Seoul`). 겹치면 건너뛴다(`concurrencyPolicy: Forbid`) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:16-18 (schedule 30 3 * * *, timeZone Asia/Seoul, 한국 시각 매일 03:30. 마지막 성공 2026-11-18T18:30:03Z) --> |
+| 대상 | `petmint`·`insurance_core` 두 데이터베이스. `mysql` 시스템 DB(계정)는 뜨지 않는다 — 계정·권한은 초기화 Job(`db.bootstrap`)이 Secret 값으로 다시 만든다 [code:db/bootstrap.py] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:2-3, :58 --> |
+| 방식 | `mysqldump --single-transaction --quick --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF --hex-blob` → gzip. 모든 테이블이 InnoDB라 일관 스냅샷이 되고 테이블 락이 없다 — 앱이 계속 쓴다 [code:db/migrations/petmint/] [code:db/migrations/insurance_core/] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:57-59 --> |
 | 어디에 | 호스트 `~/backup/mysql/petmint/petmint-YYYYMMDD-HHMMSS.sql.gz`(+ `.sha256`). 클러스터에서는 NFS 쓰기 export `/srv/nfs/backup/petmint`(호스트 설정 `deploy/scripts/host-nfs-backup-setup.sh`, sudo로 사람이 한 번)로 붙는다 [code:deploy/scripts/host-nfs-backup-setup.sh:2-16] [c:74397ed] |
-| 보존 | 30일. 단 최신 7개는 날짜와 상관없이 남긴다 — CronJob이 오래 멈췄다가 다시 돌아도 백업이 한꺼번에 사라지지 않는다 <!-- 확인 못 함: 다른 저장소(ronanlab-infra) --> |
-| 비밀번호 | Secret `mysql-root`를 환경변수 `MYSQL_PWD`로 받는다. 명령 인자에 넣지 않는다 <!-- 확인 못 함: 다른 저장소(ronanlab-infra) --> |
-| 실패 | 반쯤 쓴 파일을 남기지 않는다. `.part`로 쓰고 `gzip -t`와 끝 줄 `-- Dump completed`를 확인한 뒤 이름을 바꾼다. 확인이 안 되면 Job이 실패한다 <!-- 확인 못 함: 다른 저장소(ronanlab-infra) --> |
+| 보존 | 30일. 단 최신 7개는 날짜와 상관없이 남긴다 — CronJob이 오래 멈췄다가 다시 돌아도 백업이 한꺼번에 사라지지 않는다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:7, :45-48, :65-68 --> |
+| 비밀번호 | Secret `mysql-root`를 환경변수 `MYSQL_PWD`로 받는다. 명령 인자에 넣지 않는다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:5, :40-42 --> |
+| 실패 | 반쯤 쓴 파일을 남기지 않는다. `.part`로 쓰고 `gzip -t`와 끝 줄 `-- Dump completed`를 확인한 뒤 이름을 바꾼다. 확인이 안 되면 Job이 실패한다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/backup/cronjob.yaml:6, :52, :59-62 --> |
 
-크기는 하루 약 136KB다(2026-11-10, 19개 테이블). 30일을 남겨도 5MB가 안 된다. [c:74397ed] <!-- 확인 못 함: 운영 백업 파일 크기는 호스트 파일 -->
+크기는 하루 약 136KB다(2026-11-10, 19개 테이블, 2026-11-19 지금은 20개). 지금은 하루 약 188KB, 30일이면 약 5.6MB다(2026-11-19). [c:74397ed] <!-- 2026-11-19 잼: ls -l ~/backup/mysql/petmint/ (2026-11-10과 11-11 파일 135,938~135,942바이트, 2026-11-19 03:30 파일 187,673바이트) --> <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 테이블 20개(petmint 9, insurance_core 11) -->
 
 **수동으로 뜨기** — 호스트에서 한다. CronJob과 같은 옵션을 쓴다:
 
@@ -198,7 +198,7 @@ $K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_
   && mv "$F.part" "$F" && (cd "$(dirname "$F")" && sha256sum "$(basename "$F")" > "$(basename "$F").sha256")
 ```
 
-CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cronjob/mysql-backup mysql-backup-manual-$(date +%s)`. <!-- 확인 못 함: 클러스터 -->
+CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cronjob/mysql-backup mysql-backup-manual-$(date +%s)`. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/10_database.md:108, apps/petmint/backup/cronjob.yaml:16-19 -->
 
 **복구 절차** — 운영 DB 전체를 백업 시점으로 되돌린다. 아래 `$K`는 위와 같다.
 
@@ -207,12 +207,12 @@ CronJob을 지금 한 번 돌리려면 `kubectl -n petmint create job --from=cro
 3. **지금 상태를 먼저 뜬다.** 위 "수동으로 뜨기"를 그대로 한다(파일 이름에 `-before-restore`를 붙여 두면 보존 정리에서 헷갈리지 않는다). 복구를 되돌릴 유일한 길이다
 4. **두 데이터베이스를 지운다.** `$K 'kubectl -n petmint exec mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" mysql -uroot -e \"DROP DATABASE petmint; DROP DATABASE insurance_core\""'`. 덤프는 테이블마다 `DROP TABLE IF EXISTS`만 하므로, 지우지 않으면 백업 뒤에 생긴 테이블이 남고 `schema_migrations`와 어긋난다. 계정 권한(`mysql` DB)은 데이터베이스를 지워도 남는다 [code:db/migrate.py]
 5. **넣는다.** `zcat petmint-<시각>.sql.gz | $K 'kubectl -n petmint exec -i mysql-0 -c mysql -- sh -c "MYSQL_PWD=\"\$MYSQL_ROOT_PASSWORD\" exec mysql -uroot"'`
-6. **ArgoCD에서 petmint를 Sync한다.** 초기화 Job이 돈다 — `db.bootstrap`이 계정·권한을 맞추고, `db.migrate`가 백업 뒤에 생긴 마이그레이션만 적용하고, 시드는 비어 있지 않으므로 건너뛴다. Deployment가 replicas 2로 돌아온다. 확인(7)이 끝나면 자동 Sync를 다시 켠다 [code:db/bootstrap.py] [code:db/migrate.py] [code:db/seed_insurance_core.py:9-17] <!-- 확인 못 함: 초기화 Job 순서와 replicas는 다른 저장소(ronanlab-infra) -->
+6. **ArgoCD에서 petmint를 Sync한다.** 초기화 Job이 돈다 — `db.bootstrap`이 계정·권한을 맞추고, `db.migrate`가 백업 뒤에 생긴 마이그레이션만 적용하고, 시드는 비어 있지 않으므로 건너뛴다. Deployment가 replicas 2로 돌아온다. 확인(7)이 끝나면 자동 Sync를 다시 켠다 [code:db/bootstrap.py] [code:db/migrate.py] [code:db/seed_insurance_core.py:9-17] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:39-42, apps/petmint/app/deployment.yaml:17, apps/petmint/README.md:35 -->
 7. **확인한다.** 테이블별 행 수가 백업 시점과 같은지(아래 복구 시험과 같은 방법), 화면에서 지난 대화·고객 조회가 열리는지, 로그인이 되는지
 
-**로컬 개발 DB(호스트 도커 `mysql`, 127.0.0.1:3306)는 주 1회 뜬다.** 클러스터에서 닿지 않으므로 CronJob이 아니라 호스트 사용자 crontab이 `deploy/host/dev-mysql-backup.sh`를 일요일 05:00에 돌린다(FOREMAN 백업 04:30과 겹치지 않게). 같은 두 데이터베이스, 같은 옵션이고, `~/backup/mysql/petmint-dev/`에 최신 4개를 남긴다(로그 `backup.log`). 평가·측정 기록이 쌓여 운영보다 크다 — `petmint` 198MB, 백업 22MB, 4초(2026-11-10). 운영 백업과 디렉터리를 나눈 것은 CronJob의 보존 정리가 `petmint-*.sql.gz`를 지우기 때문이다. 복구는 위 4·5를 `docker exec -i mysql …`로 한다(앱을 멈추고, 지금 상태를 먼저 뜬다). [code:deploy/host/dev-mysql-backup.sh:1-30] [c:5f999de] <!-- 확인 못 함: crontab 등록, FOREMAN 백업 04:30, 198MB와 22MB와 4초는 호스트 상태 -->
+**로컬 개발 DB(호스트 도커 `mysql`, 127.0.0.1:3306)는 주 1회 뜬다.** 클러스터에서 닿지 않으므로 CronJob이 아니라 호스트 사용자 crontab이 `deploy/host/dev-mysql-backup.sh`를 일요일 05:00에 돌린다(FOREMAN 백업 04:30과 겹치지 않게). 같은 두 데이터베이스, 같은 옵션이고, `~/backup/mysql/petmint-dev/`에 최신 4개를 남긴다(로그 `backup.log`). 평가·측정 기록이 쌓여 운영보다 크다 — `petmint` 198MB, 백업 22MB, 4초(2026-11-10). 운영 백업과 디렉터리를 나눈 것은 CronJob의 보존 정리가 `petmint-*.sql.gz`를 지우기 때문이다. 복구는 위 4·5를 `docker exec -i mysql …`로 한다(앱을 멈추고, 지금 상태를 먼저 뜬다). [code:deploy/host/dev-mysql-backup.sh:1-30] [c:5f999de] <!-- 2026-11-19 잼: crontab -l 백업 줄(0 5 * * 0 dev-mysql-backup.sh, FOREMAN 30 4 * * *), ls -l ~/backup/mysql/petmint-dev/ (2026-11-15 자동 백업 22,180,731바이트), backup.log 끝 줄(05:00:01 시작, 05:00:05 끝, 4초) --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 트랜잭션에서 information_schema.tables의 data_length+index_length 합으로 petmint 199MB(어림값, 18:34) -->
 
-**복구 시험(2026-11-10).** 첫 수동 백업(`petmint-20261110-173427.sql.gz`)을 호스트의 빈 임시 컨테이너(`mysql:8.0.46`, 네트워크 없음)에 넣었다. 두 데이터베이스 19개 테이블의 행 수가 운영과 모두 같았다(sessions 169, turns 162, retrieved 464 등). CronJob 스크립트는 같은 이미지·uid 999로 돌려 보았다. 정상이면 파일과 `.sha256`이 생기고, 30일 지난 가짜 파일 10개 중 최신 7개만 남았으며, 비밀번호가 틀리면 exit 2로 실패하고 완성 파일을 만들지 않았다. 개발 DB 첫 백업도 같은 방법으로 19개 테이블 행 수가 같았다(sessions 21,473, turns 24,603, retrieved 87,394). 임시 컨테이너는 초기화 뒤 서버를 한 번 다시 띄우므로, 로그에 `ready for connections … port: 3306`이 찍힌 뒤에 넣는다 — 먼저 넣으면 `Lost connection`으로 끊긴다. [c:74397ed] <!-- 확인 못 함: 행 수는 운영 DB와 임시 컨테이너에서 센 값 -->
+**복구 시험(2026-11-10).** 첫 수동 백업(`petmint-20261110-173427.sql.gz`)을 호스트의 빈 임시 컨테이너(`mysql:8.0.46`, 네트워크 없음)에 넣었다. 두 데이터베이스 19개 테이블(그날 기록, 2026-11-19 지금은 운영과 개발 모두 20개: petmint 9, insurance_core 11)의 행 수가 운영과 모두 같았다(sessions 169, turns 162, retrieved 464 등). CronJob 스크립트는 같은 이미지·uid 999로 돌려 보았다. 정상이면 파일과 `.sha256`이 생기고, 30일 지난 가짜 파일 10개 중 최신 7개만 남았으며, 비밀번호가 틀리면 exit 2로 실패하고 완성 파일을 만들지 않았다. 개발 DB 첫 백업도 같은 방법으로 19개 테이블 행 수가 같았다(sessions 21,473, turns 24,603, retrieved 87,394). 임시 컨테이너는 초기화 뒤 서버를 한 번 다시 띄우므로, 로그에 `ready for connections … port: 3306`이 찍힌 뒤에 넣는다 — 먼저 넣으면 `Lost connection`으로 끊긴다. [c:74397ed] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 테이블 20개(petmint 9, insurance_core 11) --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT(scratchpad devdb_count.py), 테이블 20개. 백업 파일 petmint-20261110-173427.sql.gz 있음(ls -l, 135,942바이트) --> <!-- 확인 못 함: 그날 행 수와 가짜 파일 시험은 지난 일이라 다시 잴 수 없음(개발 DB는 2026-11-12 정리 뒤 sessions 21,161, turns 24,260, retrieved 86,917) -->
 
 #### 1-6. 관리자 화면 열람 기록 (2026-11-12)
 
@@ -306,8 +306,8 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 - **중복이 있다.** 같은 scope가 턴마다 반복된다. 정확성과 바꿔 받은 것이다
 - **보관 정책이 없다.** 일단 전부 남기고, 데이터가 쌓인 뒤에 오래된 본문을 비우는 정책을 붙인다
 - **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다) [code:app/services/auth.py:84-125]
-- **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절. [code:db/migrations/insurance_core/0001_init.sql:1-4] [code:db/bootstrap.py:8] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 고객 픽스처는 git 밖(저장소에는 app/fixtures/customers.example.json 1명뿐) -->
-- **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. 바깥 사본은 아직 없다(1-5절) <!-- 확인 못 함: 호스트 디스크 배치 -->
+- **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절. [code:db/migrations/insurance_core/0001_init.sql:1-4] [code:db/bootstrap.py:8] [docs:02_pipeline/14_deployment.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 insurance_core.customers 10행 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, customers 10행 --> <!-- 확인 못 함: 고객 픽스처 파일 app/fixtures/customers.json은 개인정보가 들 수 있어 열지 않음 -->
+- **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. 바깥 사본은 아직 없다(1-5절) <!-- 2026-11-19 잼: df -h, lsblk, findmnt -T, virsh domblklist k8s-cluster_w1-k8s. ~/backup, /srv/nfs/backup/petmint, w1 VM 디스크가 모두 /dev/nvme0n1p2 -->
 - **백업은 root 계정으로 뜬다.** 백업 전용 계정(SELECT·SHOW VIEW·TRIGGER·EVENT만)을 만들면 Secret이 하나 늘고 `db.bootstrap`을 고쳐야 해 미뤘다 [code:db/bootstrap.py]
 - **백업 실패를 알리지 않는다.** Job 실패는 `kubectl -n petmint get jobs`와 ArgoCD에서만 보인다
 - **하루 단위다.** 바이너리 로그로 특정 시각까지 되감는 복구(PITR)는 없다 — 마지막 백업 뒤의 대화는 잃는다
@@ -327,6 +327,6 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 - [ ]  검색 행(via_graph=FALSE)에 graph_key 없이 들어가는 쓰기가 CHECK에 막히는가
 - [ ]  취소된 턴이 `status`로 구분되어 08 평가 입력에서 빠지는가
 - [ ]  약관 개정 후에도 과거 턴의 계산 카드가 당시 금액으로 보이는가
-- [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19) [c:74397ed] <!-- 확인 못 함: 운영 DB와 임시 컨테이너에서 센 값 -->
-- [x]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가 — 2026-11-11 03:30:00 KST `petmint-20261111-033000.sql.gz`(135,942바이트, 3초). sha256 OK, 끝 줄 `Dump completed`, 소유자 uid 1000(all_squash), 권한 640 [code:deploy/scripts/host-nfs-backup-setup.sh:8] <!-- 확인 못 함: 호스트 백업 파일 -->
+- [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19, 2026-11-19 지금 테이블은 20개) [c:74397ed] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 테이블 20개(petmint 9, insurance_core 11) --> <!-- 확인 못 함: 그날 복구 시험의 행 수는 지난 일이라 다시 잴 수 없음 -->
+- [x]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가 — 2026-11-11 03:30:00 KST `petmint-20261111-033000.sql.gz`(135,942바이트, 3초). sha256 OK, 끝 줄 `Dump completed`, 소유자 uid 1000(all_squash), 권한 640 [code:deploy/scripts/host-nfs-backup-setup.sh:8] <!-- 2026-11-19 잼: ls -l, sha256sum -c, zcat | tail -1, stat -c '%u %a' (135,942바이트, mtime 03:30:00, sha256 OK, 끝 줄 Dump completed, uid 1000, 640) --> <!-- 확인 못 함: 3초는 지난 일이라 다시 잴 수 없음 -->
 - [ ]  복구 절차 1~7을 운영 DB에 그대로 해 본 적이 있는가(지금은 임시 컨테이너 시험만)

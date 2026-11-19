@@ -4,7 +4,7 @@
 -->
 ---
 
-> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18). ✓ search-service 연결·업무특화 모델 rebuild4 운영(10-21, 14번 1-4절) — 검색 경로·되묻기·계산 카드가 운영에서 돈다. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). ✓ 앱 로그인(7-4절, 10-28). △ cancel·가정 질문 배너는 코드 없음. [code:data/search_scope.py:105-200] [code:app/services/sessions.py] [code:app/config.py:70-71] [code:app/services/answer.py:390] [c:4ed4946] [code:data/review/verify_modes_20261021.md:53] [code:app/services/followup.py:25-36] [code:app/services/context.py:115-156] [code:app/routers/auth.py] [code:app/routers/chat_ws.py:14] [code:app/routers/chat_ws.py:166-167] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 배포 서버 확인과 rebuild4 운영은 클러스터 상태 -->
+> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18). ✓ search-service 연결·업무특화 모델 rebuild4 운영(10-21, 14번 1-4절) — 검색 경로·되묻기·계산 카드가 운영에서 돈다. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). ✓ 앱 로그인(7-4절, 10-28). △ cancel·가정 질문 배너는 코드 없음. [code:data/search_scope.py:105-200] [code:app/services/sessions.py] [code:app/config.py:70-71] [code:app/services/answer.py:390] [c:4ed4946] [code:data/review/verify_modes_20261021.md:53] [code:app/services/followup.py:25-36] [code:app/services/context.py:115-156] [code:app/routers/auth.py] [code:app/routers/chat_ws.py:14] [code:app/routers/chat_ws.py:166-167] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26, :30 (4d4328c 2026-10-21) --> <!-- 확인 못 함: 배포 서버에서 확인한 날은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
 > 
 
 ---
@@ -123,7 +123,7 @@
 > **종 조합으로 나누던 카드 3종(둘 다 보유 / 강아지만 / 고양이만)은 화면에서 폐기했다 (2026-10-14).** 고객 응답의 `card` 값은 백엔드에 남아 있고 화면이 쓰지 않는다. 세 분류의 유일한 차이는 "종 토글을 띄우느냐"였는데, 토글이 종이 아니라 **반려동물 개체 선택**으로 바뀐다(2-3절). 개체를 고르면 종이 따라오고 거기서 약관이 정해지므로, 고객을 종 조합으로 나눌 이유가 없다. 강아지 2마리를 기르는 고객이 어느 분류에도 제대로 들어가지 않았던 것도 같은 이유다. [code:web/src/api/types.ts:38] [code:web/src/components/SpeciesToggle.tsx] [code:app/schemas.py:86-93]
 > 
 > 
-> 다만 **샘플 고객 10명은 여러 경우를 덮어야 한다** — 한 종만, 두 종 보유, 같은 종 여러 마리, 통원·입원 등급이 다른 경우, 부담보가 있는 경우. 이것은 픽스처 구성의 문제지 UI 분류의 문제가 아니다. <!-- 확인 못 함: 실제 고객 픽스처는 git 밖이다(app/fixtures/customers.example.json은 1명) -->
+> 다만 **샘플 고객 10명은 여러 경우를 덮어야 한다** — 한 종만, 두 종 보유, 같은 종 여러 마리, 통원·입원 등급이 다른 경우, 부담보가 있는 경우. 이것은 픽스처 구성의 문제지 UI 분류의 문제가 아니다. <!-- 확인 못 함: 실제 고객 픽스처(app/fixtures/customers.json)는 개인정보가 들 수 있어 열지 않음 -->
 > 
 
 | 카드 | 상황 | 상담 화면에서 |
@@ -205,7 +205,7 @@ coverage_type == "고급형" and type == "Ⅱ"
 → 강아지 928건 중 약 750건
 ```
 
-Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않는다. BM25 쪽도 마찬가지다. 의료비 특약 안에서도 등급 없는 행이 섹션마다 8~13건 있다(제2조 이후 조문). <!-- 잰 날짜 모름 --> <!-- 확인 못 함: 청크 파일(data/chunks)이 git 밖이라 건수를 대조할 수 없다 -->
+Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않는다. BM25 쪽도 마찬가지다. 의료비 특약 안에서도 등급 없는 행이 섹션마다 8~13건 있다(제2조 이후 조문). <!-- 잰 날짜 모름 --> [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 2절 62줄(섹션마다 8, 9, 8, 9, 12, 13), 위 코드 블록의 164건과 약 750건은 64, 65줄 -->
 
 **결과**: 고급형Ⅱ 가입자가 "계약 해지하면 환급금 있나요?"를 물으면 보통약관이 한 건도 안 나오고 의료비 특약 제1조만 돌아온다. [code:data/search_scope.py:178-194] [docs:02_pipeline/04_rag_assembly.md]
 
@@ -323,7 +323,7 @@ SearchScope    species, medical, excluded
 - 부담보 대조는 화면 배너와 같은 글자 대조(공백 무시 전체 일치 또는 3글자 이상 낱말, 특정질병 분류표에서 그 분류에 든 질병 이름, 같은 부위 다른 이름). 배너도 후속 턴은 기준 질문까지 본다 [code:app/services/payout.py:668-681] [code:app/services/answer.py:236]
 - 응답: 모델을 부르지 않아 0.19~0.39초(전엔 첫 토큰 0.75~2.3초). 처음엔 되묻기 직후 턴만 코드가 답했고, 2026-10-21부터는 의료비 카드가 계산되는 모든 턴을 코드가 답한다 — R2 같은 단독 금액 질문도(`payout.question_turn`, 2-3절·16번 ⑦) [c:2d01d0f] [c:fb31d25] [code:app/services/payout.py:276] [docs:02_pipeline/16_code_answers.md]
 
-✓ 되묻기 판정·`clarify`·`clarify_answer`로 잇기(answer.py `clarify_options`·`resume_clarified`) — 로컬·배포 서버 확인(10-20·21, 검증 R3). ✓ 금액 되묻기(10-21, 검증 R14·R15). ✓ 여러 날 입원·여러 번 통원 — 날짜별 입력 카드·범위·청구 이력(10-21, 검증 R18~R29). △ 가정 질문 판정(`is_hypothetical`)과 "가입 계약 기준 아님" 배너는 코드 없음 — 가입과 다른 등급·유형의 한도 질문은 가정 등급 한도표(`payout.hypothetical_card`, 2026-10-21, 16번 ⑤)가 답한다. [code:app/services/answer.py:268] [code:app/services/answer.py:310] [code:data/review/verify_modes_20261021.md:21] [code:app/services/answer.py:19] [code:app/services/payout.py:462] <!-- 확인 못 함: 배포 서버 확인은 클러스터 상태 -->
+✓ 되묻기 판정·`clarify`·`clarify_answer`로 잇기(answer.py `clarify_options`·`resume_clarified`) — 로컬·배포 서버 확인(10-20·21, 검증 R3). ✓ 금액 되묻기(10-21, 검증 R14·R15). ✓ 여러 날 입원·여러 번 통원 — 날짜별 입력 카드·범위·청구 이력(10-21, 검증 R18~R29). △ 가정 질문 판정(`is_hypothetical`)과 "가입 계약 기준 아님" 배너는 코드 없음 — 가입과 다른 등급·유형의 한도 질문은 가정 등급 한도표(`payout.hypothetical_card`, 2026-10-21, 16번 ⑤)가 답한다. [code:app/services/answer.py:268] [code:app/services/answer.py:310] [code:data/review/verify_modes_20261021.md:21] [code:app/services/answer.py:19] [code:app/services/payout.py:462] <!-- 확인 못 함: 배포 서버 확인 기록은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답). 다시 재려면 서비스가 끊길 수 있어 사람 승인이 필요함 -->
 
 ---
 
@@ -374,7 +374,7 @@ WS: 후속이면 `sources` 앞에 `{"type": "context", "kind": "rewrite|concat|h
 | 모드 | 단독 첫 토큰 · 전체 | 후속 첫 토큰 · 전체 | 늘어난 것 |
 | --- | --- | --- | --- |
 | 일반 | 268ms · 3.6초 | 40ms · 3.5초 | 없음(이력만큼 입력이 늘 뿐) [code:data/review/multiturn_design_20261021.md:60] |
-| 사내규정 | 173ms · 465ms | 224ms · 428ms | 첫 토큰 약 +50ms(재작성 호출) [code:data/review/multiturn_design_20261021.md:60] <!-- 확인 못 함: 465ms와 428ms 전체 시간은 기록 파일에 없다 --> |
+| 사내규정 | 173ms · 465ms | 224ms · 428ms | 첫 토큰 약 +50ms(재작성 호출) [code:data/review/multiturn_design_20261021.md:60] <!-- 확인 못 함: 465ms와 428ms 전체 시간은 그때 원자료가 남지 않음 --> |
 | 업무특화 | 721ms · 1.05초 | 778ms · 1.02초 | 첫 토큰 약 +60ms(앞 턴 조회·이어 붙인 검색어) [code:data/review/multiturn_design_20261021.md:60-61] |
 
 **"더 짧게", "고객에게 말하듯이 다시"** 같은 고쳐쓰기는 검색 질의 문제가 아니라 직전 답변을 입력으로 받는 다른 작업이다. UI 버튼으로 받아 베이스 모델에 넘긴다. 약관 사실은 이미 직전 답변 안에 있으므로 베이스 모델로도 된다. ✗ 코드 없음.
@@ -468,7 +468,7 @@ WS: 후속이면 `sources` 앞에 `{"type": "context", "kind": "rewrite|concat|h
 
 **로더가 검증한다.** `section_name`이 실제 청크에 있는 값인지 확인하고, 하나라도 어긋나면 기동을 실패시킨다. 오타가 나면 필터가 조용히 0건이 되기 때문이다. [code:app/services/customers.py:92-94] [code:app/main.py:42]
 
-**샘플 고객 10명 중 1~2명은 통원·입원 등급을 다르게 넣는다.** 실제로 불가능한 조합이라도 구조가 처리할 수 있는지 시험하는 용도다. <!-- 확인 못 함: 실제 고객 픽스처는 git 밖이다 -->
+**샘플 고객 10명 중 1~2명은 통원·입원 등급을 다르게 넣는다.** 실제로 불가능한 조합이라도 구조가 처리할 수 있는지 시험하는 용도다. <!-- 확인 못 함: 실제 고객 픽스처(app/fixtures/customers.json)는 개인정보가 들 수 있어 열지 않음 -->
 
 #### 6-2. 세션
 
@@ -548,7 +548,7 @@ customer_id · agent_email · mode는 sessions에 있으므로 턴에 중복해 
 
 **인덱스는 화면이 정한다.** 상세는 12번 1-1절에 있다. 지난 대화 목록은 `(agent_email, mode, deleted_at, started_at)`, 최근 상담 탭은 `started_at`, 고객별 내역은 `customer_id`다. [code:db/migrations/petmint/0001_init.sql:17-20]
 
-**MySQL 인스턴스는 클러스터에 하나만 둔다.** StatefulSet + PVC. 데이터베이스를 petmint · insurance_core · runshoes로 나누고, 계정도 셋으로 나눠 각자 자기 데이터베이스만 접근하게 한다. insurance_core는 고객 원장이고 petmint 계정은 SELECT만 가진다(12번 4절). Secret은 네임스페이스별로 둔다. [code:db/bootstrap.py:1-46] [docs:02_pipeline/12_data_storage.md] <!-- 확인 못 함: StatefulSet, PVC, Secret은 인프라 저장소(ronanlab-infra)에 있다 -->
+**MySQL은 petmint 네임스페이스에 Primary(mysql)와 Replica(mysql-replica)를 둔다. 런슈즈는 자기 runshoes-mysql을 쓴다.** StatefulSet + PVC. 데이터베이스를 petmint · insurance_core · runshoes로 나누고(runshoes는 bootstrap에 자리만 있다), 계정도 셋으로 나눠 각자 자기 데이터베이스만 접근하게 한다. insurance_core는 고객 원장이고 petmint 계정은 SELECT만 가진다(12번 4절). Secret은 네임스페이스별로 둔다. [code:db/bootstrap.py:1-46] [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:7, apps/petmint/mysql/replica.yaml:26-30, apps/petmint/app/configmap.yaml:79, docs/runbooks/mysql-replica.md:7-9 -->
 
 > 인스턴스를 나누지 않는 이유: 데이터베이스가 다르면 데이터는 섞이지 않지만, 같은 프로세스라 한쪽이 죽으면 둘 다 죽는다. 그런데 둘 다 포트폴리오고 트래픽도 없으므로, 16GB에 GPU 모델들이 올라가는 것을 생각하면 인스턴스 둘은 아깝다. 계정 분리로 최소 권한은 지킨다.
 > 
@@ -633,7 +633,7 @@ GET    /api/me/profile             사내규정 본인 정보 블록 — 근속�
 
 **`cancel`을 처음부터 넣는다**: 생성 중에 새 질문이 오거나 상담이 끝나면 Ollama 스트림을 취소해야 한다. △ 서버 처리는 코드 없음 — 턴이 수신 루프 안에서 돌아 생성 중에는 cancel을 받지 못한다(스트림 쪽 취소 확인은 llm.py에 있다). [code:app/routers/chat_ws.py:14] [code:app/routers/chat_ws.py:166-167] [code:app/services/llm.py:27-37] [code:app/schemas.py:442-443]
 
-**스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다. [code:app/services/answer.py:363-367] <!-- 확인 못 함: 5~10초와 0.5초는 이 문장에 잰 날짜와 기록이 없다 -->
+**스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다. [code:app/services/answer.py:363-367] <!-- 확인 못 함: 5~10초와 0.5초는 그때 원자료가 남지 않음 -->
 
 **답변은 Markdown으로 그린다 — 원시 HTML은 넣지 않는다(2026-10-20 사용자 지시, 커밋 `eaa93cb`)**: 세 모드와 과거 상담 모두 `web/src/components/AnswerMarkdown.tsx`(react-markdown 10.1.0 · remark-gfm 4.0.1 · remark-breaks 4.0.0, 버전 고정)로 그린다. 모델 출력이라 HTML 문자열을 넣지 않고 React 요소로만 만든다 — 원시 HTML(rehype-raw)을 붙이지 않아 `<script>`·`<img onerror>`는 글자로 보이고, `javascript:` 같은 링크 주소는 지우고, 이미지는 그리지 않고(외부 요청), 허용 목록(`ALLOWED`) 밖 요소는 내용만 남긴다. 스트리밍 중에는 덜 닫힌 ``` · ** · `를 그릴 때만 임시로 닫는다(`closeOpenMarks`) — 중간 상태 305개에서 기호가 글자째 보인 것 48 → 0(커밋 당시 측정). (2026-10-20~2026-10-21 사이) [code:web/src/components/AnswerMarkdown.tsx:8-10] [code:web/src/components/AnswerMarkdown.tsx:38] [code:web/src/components/AnswerMarkdown.tsx:56-57] [code:web/package.json:15-17] [c:eaa93cb] [c:0432050]
 
@@ -668,20 +668,20 @@ GPU 패스스루를 하지 않기로 했으므로 K8s Pod에서는 GPU를 쓸 �
 
 | 모델 | 상주 여부 |
 | --- | --- |
-| KURE 임베딩 | 상시 (model-service). fp32, 2.12GB(`torch.cuda.memory_allocated`) — 빠듯하면 fp16으로 내릴 수 있다 (2026-11-11 기준) [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: model-service는 다른 저장소다 --> |
+| KURE 임베딩 | 상시 (model-service). fp32, 2.12GB(`torch.cuda.memory_allocated`) — 빠듯하면 fp16으로 내릴 수 있다 (2026-11-11 기준) [docs:02_pipeline/14_deployment.md] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/README.md:29, 8200/health의 KURE dtype float32 --> |
 | bge-reranker-v2-m3 (fp16, 1024) | 상시 (model-service). 1.06GB (2026-11-11 기준) [docs:02_pipeline/14_deployment.md] |
 | Tri-7B 원본 (Q4_K_M) | 일반·사내규정 모드, 재작성기 [code:app/config.py:70] [code:app/services/answer.py:192-193] |
 | Tri-7B 파인튜닝 (Q4_K_M) | 업무특화 모드 [code:app/config.py:71] |
 
-**검색 모델 둘은 상시 상주이고 Ollama 모델만 갈아 끼우는 구조다.** 따라서 `OLLAMA_MAX_LOADED_MODELS`와 `keep_alive`는 16GB에서 검색 모델 몫을 먼저 뺀 나머지로 정해야 한다. <!-- 확인 못 함: OLLAMA_MAX_LOADED_MODELS와 keep_alive는 호스트 Ollama 컨테이너 설정이다 -->
+**검색 모델 둘은 상시 상주이고 Ollama 모델만 갈아 끼우는 구조다.** 따라서 `OLLAMA_MAX_LOADED_MODELS`와 `keep_alive`는 16GB에서 검색 모델 몫을 먼저 뺀 나머지로 정해야 한다. <!-- 2026-11-19 잼: docker inspect ollama 환경변수의 OLLAMA_ 키는 OLLAMA_HOST 하나, MAX_LOADED_MODELS와 KEEP_ALIVE는 없음(아직 정하지 않은 상태) -->
 
 **둘이 함께 올라갈 수 있는지는 모드 전환 때만의 문제가 아니다.** 업무특화는 재작성을 하지 않지만(5절) 병명 되묻기 판정(`name_check`, `PETMINT_ASK_DISEASE_LLM`)에서 같은 턴에 베이스 모델을 부른다. 둘 다 상주가 가능하면 `OLLAMA_MAX_LOADED_MODELS=2`로 두고, 불가능하면 갈아 끼우는 지연을 `first_token_ms`로 측정한다. [code:app/services/name_check.py:1-5] [code:app/config.py:57-58]
 
-실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, model-service 기동 직후와 Ollama 생성 중을 나눠 측정한다. 검색 모델 몫은 2026-11-11 실측(`nvidia-smi`)으로 model-service 기동 직후 3,498MiB, 검색 부하 뒤 6,408MiB다(늘어난 몫은 PyTorch 추론 캐시). 분리 전 search-service는 6,216MiB였다(14번 1-26절). Ollama 생성 중과 겹친 값은 아직 재지 않았다. [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: nvidia-smi 측정 원자료는 저장소 밖이다 -->
+실측 전까지 수치를 단정하지 않는다. `nvidia-smi`(전체·프로세스별)와 `docker exec ollama ollama ps`로 재고, model-service 기동 직후와 Ollama 생성 중을 나눠 측정한다. 검색 모델 몫은 2026-11-11 실측(`nvidia-smi`)으로 model-service 기동 직후 3,498MiB, 검색 부하 뒤 6,408MiB다(늘어난 몫은 PyTorch 추론 캐시). 분리 전 search-service는 6,216MiB였다(14번 1-26절). Ollama 생성 중과 겹친 값은 아직 재지 않았다. [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 2026-11-11 값은 지난 일이라 다시 잴 수 없음(2026-11-19 nvidia-smi로 잰 지금 값은 model-service 하나 6,424MiB) -->
 
-**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02). 2026-11-11부터는 그 앞에 model-service가 선다 — 순서는 `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search`이고, petmint-search는 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다(`TimeoutStartSec=540`). 실제 재부팅 시험은 아직 하지 않았다(14번 1-26절). [code:deploy/host/petmint-search.service:12-17] [code:deploy/host/petmint-search.service:22-23] [code:deploy/host/petmint-search.service:35-37] [code:deploy/host/petmint-search.service:45] [c:56cb2aa] [c:6d1aeeb] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: Ollama 컨테이너 재시작 정책과 Milvus compose는 호스트 상태다 -->
+**재부팅 대응**: Ollama 컨테이너를 unless-stopped로 두었다. Milvus는 외부 etcd compose로 etcd가 준비된 뒤 뜨고, search-service는 systemd 유닛(`deploy/host/petmint-search.service`)이 Milvus healthz를 최대 240초 기다린 뒤 띄운다(2026-11-02). 2026-11-11부터는 그 앞에 model-service가 선다 — 순서는 `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search`이고, petmint-search는 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다(`TimeoutStartSec=540`). 실제 재부팅 시험은 아직 하지 않았다(14번 1-26절). [code:deploy/host/petmint-search.service:12-17] [code:deploy/host/petmint-search.service:22-23] [code:deploy/host/petmint-search.service:35-37] [code:deploy/host/petmint-search.service:45] [c:56cb2aa] [c:6d1aeeb] [docs:02_pipeline/14_deployment.md] <!-- 2026-11-19 잼: docker inspect 재시작 정책(ollama, milvus-standalone, milvus-etcd 모두 unless-stopped)과 compose 라벨(deploy/host/milvus/docker-compose.yml), systemctl cat petmint-search와 저장소 유닛 파일 diff(같음) -->
 
-K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. <!-- 확인 못 함: Deployment와 probe는 인프라 저장소(ronanlab-infra)에 있다 --> Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
+K8s 배포 후에는 Deployment와 probe가 이 역할을 한다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:86-95, apps/petmint/app/configmap.yaml:23 --> Ollama는 GPU 호스트에 그대로 두고 Pod가 네트워크로 호출하므로, 컨테이너화 대상은 FastAPI 앱과 React 빌드물뿐이다.
 
 > **파인튜닝 모델은 GGUF 변환이 필요하다.**
 > 
@@ -800,10 +800,10 @@ web/                  React + TypeScript (Vite)
 
 #### 9. 정하지 못한 것
 
-- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번). <!-- 잰 날짜 모름 --> [code:data/hr_preprocess.py] [code:data/hr_index.py:1-8] [code:data/eval/search_regression_hr.json] [code:data/review/eval_results_summary.md:111] [docs:02_pipeline/02_embedding_index.md] <!-- 확인 못 함: 청크와 그래프 파일과 Milvus 행 수는 git 밖과 실행 상태다 -->
+- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번). <!-- 잰 날짜 모름 --> [code:data/hr_preprocess.py] [code:data/hr_index.py:1-8] [code:data/eval/search_regression_hr.json] [code:data/review/eval_results_summary.md:111] [docs:02_pipeline/02_embedding_index.md] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 2절 60줄(인사규정 청크 49), 5절 102줄(인사규정 6 노드 7 엣지) --> <!-- 확인 못 함: Milvus hr_regulation 행 수는 실행 상태라 요약 파일로 셀 수 없음 -->
 - **멀티턴 재작성의 실제 품질** — 재작성이 충분한지 측정하지 않았다. 부족하면 재작성기만 따로 학습할 수 있다.
 - **LangChain 사용 여부** — 재작성 → 검색 → 생성을 LCEL로 묶을지, 직접 짤지.
-- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-4절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 확인 못 함: 운영 ConfigMap 값은 인프라 저장소와 클러스터에 있다 -->
+- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-4절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 (4d4328c 2026-10-21), 값을 바꾸면 Sync 뒤 rollout restart가 따른다(configmap.yaml:28) -->
 
 ---
 
@@ -822,7 +822,7 @@ web/                  React + TypeScript (Vite)
 
 - [x]  `scope.allows()` 개수 = Milvus `query(filter=milvus_expr())` 개수 [code:data/search_scope.py:166-194]
 - [x]  `SearchScope.from_query`로 04번 테스트 질문을 돌려 기존 결과와 같은지 [code:data/search_scope.py:143-150]
-- [x]  필터 결함 재현: 고급형Ⅱ 가입자 scope로 "해지하면 환급금?" 검색 → 수정 전 보통약관 0건, 수정 후 상위권 [code:data/search_scope.py:126-141] <!-- 확인 못 함: 검증 실행 기록이 저장소에 없다 -->
+- [x]  필터 결함 재현: 고급형Ⅱ 가입자 scope로 "해지하면 환급금?" 검색 → 수정 전 보통약관 0건, 수정 후 상위권 [code:data/search_scope.py:126-141] <!-- 확인 못 함: 검증 실행 기록은 그때 원자료가 남지 않음 -->
 - [ ]  세션 3개 동시 질문 — 수신이 막히지 않고 토큰이 섞이지 않는지
 - [ ]  상담 중 과거 상담 모달을 열고 닫았을 때 진행 중인 세션과 WS 연결이 그대로인지
 - [ ]  고객 등급을 바꾼 뒤 과거 상담을 열었을 때 당시 등급·자기부담금으로 보이는지

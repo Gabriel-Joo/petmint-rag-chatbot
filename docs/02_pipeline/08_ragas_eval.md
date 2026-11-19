@@ -55,11 +55,11 @@ RAG 답변의 품질을 숫자로 잰다. 원본/LoRA × RAG 있음/없음 네 �
 
 | 일 | 상태 |
 | --- | --- |
-| 평가 결과에 모델이 본 발췌(contexts)를 남긴다 | ✓ 구현(2026-10-18) — `answer_eval.contexts_of`가 렌더된 user 메시지(fit_to_budget 뒤, 참조 포함)를 블록으로 되돌려 rows의 `contexts`에 넣는다. 학습 프롬프트 8,464개로 바이트 단위 왕복 일치 확인, 실제 평가 실행 전 [code:data/answer_eval.py:299-324] [code:data/answer_eval.py:584-589] [c:c5a11f5] <!-- 확인 못 함: 8,464개 왕복 확인은 실행 결과라 저장소에 원자료가 없다 --> |
-| Ragas 설치 | △ 전용 venv `~/ragas_env`에 ragas 0.4.3(고정 목록 `data/eval/requirements-ragas.txt`), import·`pip check` 확인. 판정 실행 전 [code:data/eval/requirements-ragas.txt:1-4] [code:data/eval/requirements-ragas.txt:76] <!-- 확인 못 함: ~/ragas_env는 저장소 밖 --> |
+| 평가 결과에 모델이 본 발췌(contexts)를 남긴다 | ✓ 구현(2026-10-18) — `answer_eval.contexts_of`가 렌더된 user 메시지(fit_to_budget 뒤, 참조 포함)를 블록으로 되돌려 rows의 `contexts`에 넣는다. 학습 프롬프트 8,464개로 바이트 단위 왕복 일치 확인, 실제 평가 실행 전 [code:data/answer_eval.py:299-324] [code:data/answer_eval.py:584-589] [c:c5a11f5] <!-- 확인 못 함: 그때 원자료가 남지 않음(8,464개 왕복 확인은 실행 결과) --> |
+| Ragas 설치 | △ 전용 venv `~/ragas_env`에 ragas 0.4.3(고정 목록 `data/eval/requirements-ragas.txt`), import·`pip check` 확인. 판정 실행 전 [code:data/eval/requirements-ragas.txt:1-4] [code:data/eval/requirements-ragas.txt:76] <!-- 2026-11-19 잼: ~/ragas_env/bin/pip show ragas 는 0.4.3, pip check 는 No broken requirements found. --> |
 | 파일럿(심판이 한국어를 제대로 판정하나) | △ 1회 실행(2026-10-18, `data/ragas_pilot.py` 6절) — 90회 중 55회 파싱 실패, 6절 확인 항목은 아직 채우지 않았다 [code:data/review/ragas_pilot_20261018_2243.json] [code:data/ragas_pilot.py:133-135] |
 | Ollama 생성 러너(네 조합 생성 → rows에 질문·답·contexts) | △ 코드 없음 — 파일럿 통과 뒤 |
-| LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 8절 절차, Ollama 등록, 운영 모델) [docs:02_pipeline/10_consultation_flow.md:164] <!-- 확인 못 함: Modelfile(models/gguf/)이 git 밖이고 운영 모델은 클러스터 설정 --> |
+| LoRA 어댑터 GGUF 변환 | ✓ rebuild4 체크포인트 462 → `kabyul-tri-7b-rag1-rebuild4-ckpt462`(10번 8절 절차, Ollama 등록, 운영 모델) [docs:02_pipeline/10_consultation_flow.md:164] [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.kabyul-tri-7b-rag1-rebuild4-ckpt462 --> <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 --> |
 | answer_relevancy 임베딩 | △ 정하지 않았다(8절) |
 
 **Ragas를 llm_env에 넣지 않은 이유**: ragas 0.4.3이 끌어오는 instructor 1.3.2가 `openai<2`·`rich<14`·`tenacity<9`를 요구해, llm_env의 openai 3.13.0·rich 15.0.0·tenacity 9.1.4·langchain-openai 1.6.2를 내린다(최신 instructor 1.17.0은 `rich<15`라 llm_env와 안 맞는다). 학습·서비스 환경을 건드리지 않게 따로 둔다. 같은 venv에서 langchain-community 0.4는 `chat_models.vertexai`가 빠져 ragas import가 깨지므로 0.3.31로 고정했다. [code:data/eval/requirements-ragas.txt:1-3] [code:data/eval/requirements-ragas.txt:34] [code:data/eval/requirements-ragas.txt:40] [code:data/eval/requirements-ragas.txt:76]
@@ -135,7 +135,7 @@ python -m data.ragas_pilot prepare                        # llm_env — Milvus �
 
 - partial·flawed 처리(7절)
 - answer_relevancy 임베딩 — KURE-v1을 쓰려면 ~/ragas_env에 sentence-transformers·torch를 더 넣거나(무겁다), 공용 model-service의 `/embed`(192.168.122.1:8200, 2026-11-11부터)를 부르거나, Ollama 임베딩 모델을 새로 받는다 [code:data/model_client.py:3] [code:data/model_client.py:36] [c:13f82da]
-- 생성 온도 — 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가를 재현하려면 0으로 고정할지 <!-- 확인 못 함: Modelfile(models/gguf/)이 git 밖이라 근거로 걸 수 없다 -->
+- 생성 온도 — 서비스는 Modelfile 값(tri-7b 0.3)을 따른다. 평가를 재현하려면 0으로 고정할지 [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.tri7b 3줄 PARAMETER temperature 0.3 -->
 - RAG 없음 조합의 입력 — 질문만 보낼지(일반 모드와 같음), `build_messages(question, [])`로 "(검색된 발췌 없음)"을 넣을지 [code:data/prompts.py:63]
 - RAG 조합의 발췌 조립 — 서비스와 answer_eval `--search`(2026-10-21부터) 모두 `build_full_context`(참조 조문 포함). 예전 경로(`search_with_graph`, 참조 없음)는 `--search-legacy`로만 남았다 [code:data/answer_eval.py:217-224] [code:data/answer_eval.py:243] [code:data/answer_eval.py:277] [code:data/answer_eval.py:529-530] [code:app/services/answer.py:14] [c:cf7f368]
 - 목표치(2절) — 파일럿 뒤

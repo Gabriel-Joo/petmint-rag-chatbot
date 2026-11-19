@@ -15,16 +15,16 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 **선정 절차**: 네 단계로 후보를 좁혔다.
 
 1. **상업 라이선스** — 상업적 배포가 가능한 모델만 남긴다 (사내 서비스용이므로 필수 조건)
-2. **16GB VRAM에서 QLoRA 가능한 크기** — 보유 GPU(RTX 5070 Ti 16GB) 한 장으로 추론과 파인튜닝을 모두 돌려야 하므로 모델 크기에 상한선을 둔다 <!-- 확인 못 함: 호스트 GPU 사양은 저장소 밖 -->
+2. **16GB VRAM에서 QLoRA 가능한 크기** — 보유 GPU(RTX 5070 Ti 16GB) 한 장으로 추론과 파인튜닝을 모두 돌려야 하므로 모델 크기에 상한선을 둔다 <!-- 2026-11-19 잼: nvidia-smi --query-gpu=name,memory.total 로 NVIDIA GeForce RTX 5070 Ti, 16303 MiB, 한 장 -->
 3. **Ollama 서빙 가능** — GGUF로 변환 가능하고 llama.cpp 계열에서 지원하는 구조인지 확인 [code:notebooks/00_모델_준비.ipynb:148]
-4. **한국어 지표 비교** — 위 조건을 통과한 후보들 중 한국어 대화 품질(KO-MT-Bench, 10점 만점)과 KMMLU(한국어 지식 평가)를 비교해 최종 선정 <!-- 확인 못 함: 한국어 지표는 외부 공개 수치(모델 카드 등)라 저장소 밖 -->
+4. **한국어 지표 비교** — 위 조건을 통과한 후보들 중 한국어 대화 품질(KO-MT-Bench, 10점 만점)과 KMMLU(한국어 지식 평가)를 비교해 최종 선정 <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인, KO-MT-Bench 10점 척도와 KMMLU를 쓴다) -->
 
 | 모델 | 라이선스 | 크기·문맥 | 한국어 대화 | KMMLU | 판단 |
 | --- | --- | --- | --- | --- | --- |
-| EXAONE 3.5 7.8B | EXAONE 1.1 NC (비상업) | 6.98B, 32K | 7.96 | 45.30 | 배제 (상업 배포 금지 조항 확인) <!-- 확인 못 함: 외부 공개 수치 --> |
-| Kanana 1.5 8B | Apache 2.0 | 8B, 32K | 7.63 | 48.28 | 후보 <!-- 확인 못 함: 외부 공개 수치 --> |
-| **Tri-7B** | **Apache 2.0** | **7.76B, 32K** | **7.64** | **53.51** | **최종 선정** [code:notebooks/00_모델_준비.ipynb:44] <!-- 확인 못 함: 외부 공개 수치 --> |
-| Qwen 2.5 7B | Apache 2.0 | 7.61B, 128K | 5.19~6.31 | 50.15 | 한국어 대화 열세로 제외 (파인튜닝용 데이터 생성 단계에서도 중국어 혼입 확인) <!-- 확인 못 함: 외부 공개 수치 --> |
+| EXAONE 3.5 7.8B | EXAONE 1.1 NC (비상업) | 6.98B, 32K | 7.96 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 45.30 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 배제 (상업 배포 금지 조항 확인) <!-- 공개 출처: https://huggingface.co/LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct (2026-11-19 확인, 라이선스와 크기와 문맥) --> |
+| Kanana 1.5 8B | Apache 2.0 | 8B, 32K | 7.63 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 48.28 | 후보 <!-- 공개 출처: https://huggingface.co/kakaocorp/kanana-1.5-8b-instruct-2505 (2026-11-19 확인, 라이선스와 크기와 문맥과 KMMLU) --> |
+| **Tri-7B** | **Apache 2.0** | **7.76B, 32K** | **7.64** | **53.51** | **최종 선정** [code:notebooks/00_모델_준비.ipynb:44] <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인, 카드는 KMMLU를 「51.74 (53.51)」로 쓰고 괄호 뜻은 적지 않음) --> |
+| Qwen 2.5 7B | Apache 2.0 | 7.61B, 128K | 5.19~6.31 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 50.15 (공개 페이지에서 출처를 못 찾음, 2026-11-19) | 한국어 대화 열세로 제외 (파인튜닝용 데이터 생성 단계에서도 중국어 혼입 확인) <!-- 공개 출처: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct (2026-11-19 확인, 라이선스와 크기와 문맥 131,072) --> |
 
 최종 후보는 Kanana와 Tri-7B였으나, Tri-7B가 한국어 지식(KMMLU)에서 약 5점 우위를 보여 최종적으로 Tri-7B를 선택했다. [code:app/config.py:70]
 
@@ -40,9 +40,9 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 ### 2. Tri-7B
 
-한국 AI 스타트업 Trillion Labs가 개발한 7.76B 파라미터 언어모델로, 전작 Trillion-7B-preview의 다음 세대 버전이다. [code:notebooks/00_모델_준비.ipynb:44] <!-- 확인 못 함: 파라미터 수와 개발사 소개는 외부 모델 카드 -->
+한국 AI 스타트업 Trillion Labs가 개발한 7.76B 파라미터 언어모델로, 전작 Trillion-7B-preview의 다음 세대 버전이다. [code:notebooks/00_모델_준비.ipynb:44] <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인) -->
 
-가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어·일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다 — 그 덕분에 전체 학습 데이터의 10%만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: 학습 기법과 다국어 비율은 외부 모델 카드 -->
+가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어·일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다 — 그 덕분에 전체 학습 데이터의 10% (공개 페이지에서 출처를 못 찾음, 2026-11-19)만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: XLDA는 https://huggingface.co/trillionlabs/Tri-7B 카드에 없고 기술 보고서는 읽지 않음(2026-11-19) -->
 
 구조 자체는 표준적인 Transformer Decoder(RoPE, SwiGLU, RMSNorm)라 llama.cpp 계열 도구와의 호환성도 좋다(4절 트러블슈팅 참고). [code:notebooks/00_모델_준비.ipynb:148]
 
@@ -81,9 +81,9 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 #### 4-4. 컨테이너 재시작 정책 누락 (운영 이슈)
 
-서버를 재부팅했더니 Ollama·Milvus 컨테이너가 올라오지 않았다. `docker run` 시 재시작 정책을 지정하지 않아 기본값인 `no` 상태였기 때문이다. <!-- 확인 못 함: 그때 컨테이너 상태는 호스트 실행 기록이라 저장소 밖 -->
+서버를 재부팅했더니 Ollama·Milvus 컨테이너가 올라오지 않았다. `docker run` 시 재시작 정책을 지정하지 않아 기본값인 `no` 상태였기 때문이다. <!-- 확인 못 함: 지난 재부팅 때 상태 -->
 
-**해결**: `docker update --restart unless-stopped`로 변경. `always`가 아니라 `unless-stopped`를 고른 이유는, 의도적으로 멈춘 컨테이너는 재부팅 후에도 꺼진 채로 두는 쪽이 자연스럽기 때문이다. [code:deploy/host/milvus/docker-compose.yml:24] [code:deploy/host/milvus/docker-compose.yml:49] <!-- 확인 못 함: Ollama 컨테이너 설정은 저장소에 없다 -->
+**해결**: `docker update --restart unless-stopped`로 변경. `always`가 아니라 `unless-stopped`를 고른 이유는, 의도적으로 멈춘 컨테이너는 재부팅 후에도 꺼진 채로 두는 쪽이 자연스럽기 때문이다. [code:deploy/host/milvus/docker-compose.yml:24] [code:deploy/host/milvus/docker-compose.yml:49] <!-- 2026-11-19 잼: docker inspect ollama 의 RestartPolicy 가 unless-stopped -->
 
 > 함께 겪은 것: Milvus는 재부팅으로 내장 etcd 데이터가 손상돼 `panic: etcdserver: leader changed`로 기동 실패했다. 볼륨을 비우고 재색인해 복구했는데, 2026-11-02부터는 etcd를 Milvus 밖의 별도 컨테이너로 띄우고, Milvus는 etcd `/health`가 true(리더 있음)일 때까지 기다린 뒤 시작한다. [code:deploy/host/milvus/docker-compose.yml:1-8] [code:deploy/host/milvus/docker-compose.yml:21-24] [code:deploy/host/milvus/docker-compose.yml:62]
 > 

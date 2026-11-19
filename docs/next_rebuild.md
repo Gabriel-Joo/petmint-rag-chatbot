@@ -96,9 +96,9 @@
 
 #### 3. 진행 순서 — 21시간을 다시 쓰지 않도록
 
-지난 재구축 소요 시간(`data/faq/rebuild/logs/pipeline.log`): gen 6.96 + check 5.89 + rewrite 2.96 + build 0.99 + train 4.36 = **약 21.2시간**. [c:14ba033] (2026-10-15 기준) <!-- 확인 못 함: pipeline.log는 git 밖 -->
+지난 재구축 소요 시간(`data/faq/rebuild/logs/pipeline.log`): gen 6.96 + check 5.89 + rewrite 2.96 + build 0.99 + train 4.36 = **약 21.2시간**. [c:14ba033] [c:dcdecd9] (2026-10-15 기준) <!-- 요약: data/review/faq_build_summary.md 4절 117~122줄 -->
 
-2-1과 2-4는 **build 단계만** 바꾼다. 기존 `data/faq/rebuild/rewrite/final`을 그대로 입력으로 쓸 수 있어서 gen·check·rewrite(약 15.8시간)를 다시 돌릴 필요가 없다. [code:data/rebuild.py:79] [c:14ba033] <!-- 확인 못 함: data/faq/ 산출물과 pipeline.log는 git 밖 -->
+2-1과 2-4는 **build 단계만** 바꾼다. 기존 `data/faq/rebuild/rewrite/final`을 그대로 입력으로 쓸 수 있어서 gen·check·rewrite(약 15.8시간)를 다시 돌릴 필요가 없다. [code:data/rebuild.py:79] [c:14ba033] [c:dcdecd9] <!-- 요약: data/review/faq_build_summary.md 4절 123줄, 5절 137줄 -->
 
 | 단계 | 할 일 | 비용 |
 | --- | --- | --- |
@@ -116,7 +116,7 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
 #### 4. 판정 — 학습 후
 
 - 같은 조건으로 잰다: `python -m data.answer_eval --adapter <새 어댑터>`(양자화 전 4-bit nf4 + LoRA, greedy, 300토큰). 베이스 답 117/117 동일이 입력 동일의 확인이다. [code:data/answer_eval.py:53] [code:data/answer_eval.py:156] [code:data/answer_eval.py:527] [code:data/review/refusal_overlap_20261015.md:4]
-- no_answer 20건은 `data/finetune/val.jsonl`(2026-10-13)에서 계속 뽑는다. 새 빌드의 val로 바꾸면 비교가 끊긴다. [code:data/answer_eval.py:199] <!-- 확인 못 함: val.jsonl은 git 밖 -->
+- no_answer 20건은 `data/finetune/val.jsonl`(2026-10-13)에서 계속 뽑는다. 새 빌드의 val로 바꾸면 비교가 끊긴다. [code:data/answer_eval.py:199] [c:3f49bb5] <!-- 올린 파일: data/finetune/val.jsonl -->
 - 대조: `python -m data.answer_eval --compare <rebuild 결과 json> <새 결과 json>` — 어댑터 대조 모드(2026-10-15 추가)로 해소·새 거절이 문항 단위로 나온다. [code:data/answer_eval.py:538]
 - 세 모델(베이스·4811건·rebuild)을 **새 어댑터와 같은 코드로 한 번에** 다시 잰다. answer_eval 청크 선택 수정(2026-10-15, 제목 줄 제외)으로 [code:data/answer_eval.py:75-76]
   R004·R009·R062·R063·R090의 입력이 바뀌었다 — 그 전 결과와는 이 5건을 비교할 수 없다. [code:data/answer_eval.py:75-76] [code:data/answer_eval.py:487-492]
@@ -167,22 +167,22 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
 | 확인 검사 처리 | 답이 있다고 본 no_answer 비율 > 15%면 빌드 중단, 아니면 그 샘플과 쌍을 뺀다 | 두 판정기 중 하나라도 답이 있다고 본 발췌는 no_answer로 쓰지 않는다. 15%는 사용자가 정한 판정 수정 기준선과 같게 [code:data/finetune_data.py:76] [code:data/finetune_data.py:718-719] |
 | 2-4 검사 중 겹침 구간 NA 비율·겹침 0.2 미만 양성 | 이번 build에서는 **끔(기록만)** | 이 두 항목은 2-2(짧은 구어체)·2-3(등급 어구) — rewrite 단계 — 로 맞추는 기준이다. 이번은 build 단계 변경(쌍·가까운 오답·판정)만의 효과를 재는 3절 C단계다. 켜 두면 확정적으로 미달이라 학습이 시작되지 않는다. 수치는 pipeline.log에 남는다 [code:data/rebuild.py:122-123] [c:c8d9211] |
 | 2-4 쌍 비율 | 켬(0.9) | 이번 변경의 대상 [code:data/rebuild.py:124] |
-| 가까운 오답 | 같은 조 제외 규칙을 풀고 proximity 순(같은 조 → 인접 조 → 같은 문서 → 다른 문서) | 지금까지 no_answer 방해 발췌 1,351개 중 다른 문서 970(72%), 같은 조 0. 같은 조 옆 청크는 답을 담기 쉬우므로 답 섞임은 q2·확인 검사가 거른다 [code:data/finetune_data.py:225-232] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 방해 발췌 개수는 git 밖 학습 데이터로 센 값 --> |
-| 체크포인트 | 07 `save_total_limit=None` | rebuild는 3개(350·400·426)만 남아 100~250은 잴 수 없다. rebuild2부터 50 step마다 전부 남긴다(어댑터 193MB/개) [code:data/ckpt_select.py:116] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 어댑터 폴더는 git 밖 --> |
+| 가까운 오답 | 같은 조 제외 규칙을 풀고 proximity 순(같은 조 → 인접 조 → 같은 문서 → 다른 문서) | 지금까지 no_answer 방해 발췌 1,351개 중 다른 문서 970(72%), 같은 조 0. 같은 조 옆 청크는 답을 담기 쉬우므로 답 섞임은 q2·확인 검사가 거른다 [code:data/finetune_data.py:225-232] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 방해 발췌 개수는 data/finetune/ 학습 데이터로 센 값인데 너무 커서(약 1.5GB) 올리지 않음 --> |
+| 체크포인트 | 07 `save_total_limit=None` | rebuild는 3개(350·400·426)만 남아 100~250은 잴 수 없다. rebuild2부터 50 step마다 전부 남긴다(어댑터 193MB/개) [code:data/ckpt_select.py:116] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 어댑터는 165GB 모델 가중치(models/)라 올리지 않음 --> |
 
 학습 뒤 할 것: 세 모델(베이스·4811·rebuild)+rebuild2를 같은 코드로(청크 선택 수정 반영) 정답 발췌 입력·검색 입력(top 3) 두 가지로 잰다. [code:data/answer_eval.py:214] [c:c8d9211]
 rebuild 체크포인트 350·400·426, rebuild2 체크포인트 전부를 잰다. [c:c8d9211]
 검색 입력 사전 확인(모델 없이): gold 97건 중 정답 조문이 top 3 안 81건(1위 66), answerable 69/85. [code:data/review/answer_eval_rebuild2_20261016.md:35-43] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 출처 기록을 찾지 못함(81건, 1위 66. 69/85만 걸어 둔 기록이 받친다) -->
 
-**build 결과(22:08)** — 첫 실행은 확인 검사에서 멈췄다(qwen3:14b가 no_answer 760건 중 162건 = 21.3%를 답 있음으로 봄, 상한 15%). [code:data/review/na_confirm_qwen_check12_20261015.md:3] [code:data/finetune_data.py:76] (2026-10-15 기준)
+**build 결과(22:08)** — 첫 실행은 확인 검사에서 멈췄다(qwen3:14b가 no_answer 760건 중 162건 = 21.3%를 답 있음으로 봄, 상한 15%). [code:data/review/na_confirm_qwen_check12_20261015.md:3] [code:data/finetune_data.py:76] [c:dcdecd9] (2026-10-15 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 185줄 -->
 12건을 읽어 보니 과함 8 · 맞음 3 · 애매 1(`data/review/na_confirm_qwen_check12_20261015.md`) — 비율 대부분이 확인 모델의 과잉 판정이다. [code:data/review/na_confirm_qwen_check12_20261015.md:20] (2026-10-15 기준)
 보수적으로 정했다: 162건과 그 쌍을 빼고(`--confirm-max-bad=1`) 다시 빌드, 이 build에 한해 `--gate-min-no-answer-ratio=0.07`·`--gate-max-na-judge-bad=0.25`. [code:data/review/na_confirm_qwen_check12_20261015.md:22] [code:data/rebuild.py:772] [c:c8d9211]
 
 | 항목 | rebuild | rebuild2 |
 |---|---|---|
-| 전체 | 7,598 | 8,034 (train 7,192) [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: build 통계(stats.json, pipeline.log)는 git 밖 --> |
+| 전체 | 7,598 | 8,034 (train 7,192) [c:c8d9211] [c:dcdecd9] (2026-10-15 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 178~184줄(rebuild 칸의 겹침 구간 셋은 rebuild/stats.json에 없어 셀 수 없음) --> |
 | no_answer | 760 (10.0%) | 598 (7.4%) [c:c8d9211] (2026-10-15 기준) |
-| q2 판정(라벨링) | — | 새 호출 2,061 · yes 893 / no 1,349 / unclear 1 (가까운 오답이라 yes가 많다) [c:c8d9211] (2026-10-15 기준) |
+| q2 판정(라벨링) | — | <!-- 「새 호출 2,061」은 stats.json(na_judge_new_calls 0)에도 다른 기록에도 없어 지웠다(2026-11-19) -->yes 893 / no 1,349 / unclear 1 (가까운 오답이라 yes가 많다) [c:c8d9211] (2026-10-15 기준) |
 | 겹침 0.1~0.2 구간 NA 비율 | 41.2% | 37.2% [c:c8d9211] (2026-10-15 기준) |
 | 겹침 0.2~0.3 구간 NA 비율 | 27.2% | 22.9% [c:c8d9211] (2026-10-15 기준) |
 | 겹침 0.2 미만 양성 | 1.8% | 1.8% [c:c8d9211] (2026-10-15 기준) |
@@ -192,7 +192,7 @@ rebuild 체크포인트 350·400·426, rebuild2 체크포인트 전부를 잰다
 이 구간은 2-2(짧은 구어체 양성)로 맞춰야 한다는 것이 확인됐다. [c:c8d9211]
 확인 모델로서 qwen3:14b는 이대로 부적합 — 다음 재구축 전에 확인 검사 방식을 다시 정한다. [code:data/review/na_confirm_qwen_check12_20261015.md:23]
 
-**train 결과(2026-10-16 02:51)** — 어댑터 `rag-1_7192건_rebuild2`, 4.71시간(예상 6.2), 450 step, 체크포인트 50~450 아홉 개(최종 = checkpoint-450). [c:55eb4bb] <!-- 확인 못 함: 학습 로그와 어댑터는 git 밖 -->
+**train 결과(2026-10-16 02:51)** — 어댑터 `rag-1_7192건_rebuild2`, 4.71시간(예상 6.2), 450 step, 체크포인트 50~450 아홉 개(최종 = checkpoint-450). [c:55eb4bb] <!-- 확인 못 함: 학습 로그와 어댑터는 165GB 모델 가중치(models/)와 함께 있어 올리지 않음 -->
 eval_loss는 끝까지 내려갔다(과적합 신호 없음). val 세트가 rebuild와 달라 두 줄의 절대값은 비교하지 않는다. [c:55eb4bb]
 
 | step | 50 | 100 | 150 | 200 | 250 | 300 | 350 | 400 | 최종 |
@@ -225,18 +225,18 @@ B-1: rebuild의 학습용 final(7,598 QA)에 새 build 설정만 적용(`--name=
 
 | 항목 | rebuild2 | B-1 | 기준 |
 |---|---|---|---|
-| 전체 샘플 | 8,034 | 5,667 | — [c:657dcab] (2026-10-16 기준) <!-- 확인 못 함: build 통계는 git 밖 --> |
+| 전체 샘플 | 8,034 | 5,667 | — [c:657dcab] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 186~191줄 --> |
 | 방해 후보가 없어 버린 QA | — | **2,691 / 7,598 (35%)**(특별약관 2,555) | — [code:data/finetune_data.py:107] [c:657dcab] (2026-10-16 기준) |
 | no_answer 비율 | 7.4% | 13.4% | — [c:657dcab] (2026-10-16 기준) |
 | 겹침 0.1~0.2 구간 NA | 37.2% | **56.9%** | ≤ 전체 × 1.5 = 20.1% [code:data/rebuild.py:122] [c:657dcab] (2026-10-16 기준) |
-| 겹침 0.2~0.3 구간 NA | 22.9% | **33.6%** | ≤ 20.1% [c:657dcab] (2026-10-16 기준) |
+| 겹침 0.2~0.3 구간 NA | 22.9% | **33.5%** | ≤ 20.1% [c:657dcab] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 190줄(207/617) --> |
 | 겹침 0.2 미만 양성 | 1.8% | **1.3%** | ≥ 10% [code:data/rebuild.py:123] [c:657dcab] (2026-10-16 기준) |
 | 쌍 | 100% | 100% | ≥ 90% [code:data/rebuild.py:124] [c:657dcab] (2026-10-16 기준) |
 
 → **미달. 본 실행 전에 멈춤.** [c:657dcab]
 - 버린 2,691건은 검색 top 6이 전부 정답 단위이거나 답이 글자로 든 발췌였다. 60건 표본을 다시 검색해 보니 top 12에서 40건, [code:data/rebuild.py:38] [c:657dcab] (2026-10-16 기준)
   top 20에서 47건이 방해 후보를 얻었다. [c:657dcab] (2026-10-16 기준)
-- B-1은 rebuild의 질문을 썼다. 이 중 실제로 재작성된 것은 4,007/7,598뿐이다. 순서 B에서는 05 QA 전부를 재작성하므로 [c:657dcab] (2026-10-16 기준)
+- B-1은 rebuild의 질문을 썼다. 이 중 실제로 재작성된 것은 4,007/7,598뿐이다. 순서 B에서는 05 QA 전부를 재작성하므로 [c:657dcab] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 5절 138줄 -->
   질문과 정답 발췌의 겹침이 낮아진다. 실험 G(n≈40)에서 겹침 0.2 미만 비율은 rebuild final 5.3%, A(재작성 없음) 2.3%, [c:657dcab] (2026-10-16 기준) <!-- 확인 못 함: 출처 기록을 찾지 못함 -->
   B_qwen(qwen 재작성) 11.1%였다. B-1은 이 변화를 반영하지 못해 비관적인 쪽으로 기운 예측이다. [c:657dcab] <!-- 확인 못 함: 출처 기록을 찾지 못함 -->
 
@@ -245,13 +245,13 @@ B-1: rebuild의 학습용 final(7,598 QA)에 새 build 설정만 적용(`--name=
 
 #### 8-1. B-1′ — rebuild 06 final 7,598건을 qwen3:14b로 재작성한 뒤 build(2026-10-16)
 
-재작성(106분, 0.84초/건): 실패 7.0%(rejected 531 · unchanged 96), 등급 어구 738건(9.7%), 상황형 57.6%, 질문 길이 중앙 48자. [c:026a7b9] (2026-10-16 기준) <!-- 확인 못 함: 재작성 요약은 git 밖 산출물 -->
-요약의 `label_leak` 10.3%는 "답변 누출"이 아니라 질문 속 `약관·특약·제N조·별표` 표현 비율이다. 784건 모두 원래 질문에 있던 것이고 [code:data/faq_rewrite.py:120-123] [c:026a7b9] (2026-10-16 기준)
+재작성(106분, 0.84초/건): 실패 7.0%(rejected 531 · unchanged 96), 등급 어구 738건(9.7%), 상황형 57.6%, 질문 길이 중앙 48자. [c:026a7b9] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 7절 208~211줄(원자료 data/faq/rebuild3_b1p/rewrite_summary.json) -->
+요약의 `label_leak` 10.3%는 "답변 누출"이 아니라 질문 속 `약관·특약·제N조·별표` 표현 비율이다. 784건 모두 원래 질문에 있던 것이고 [code:data/faq_rewrite.py:120-123] [c:026a7b9] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 7절 212줄 -->
 재작성이 새로 넣은 것은 0건(재작성 전 23.3%). [c:026a7b9] (2026-10-16 기준)
 
 | 항목 | B-1 | B-1′ | 기준 |
 |---|---|---|---|
-| 전체 샘플 | 5,667 | 8,358 (train 7,500 · val 858) | — [c:026a7b9] (2026-10-16 기준) <!-- 확인 못 함: build 통계는 git 밖 --> |
+| 전체 샘플 | 5,667 | 8,358 (train 7,500 · val 858) | — [c:026a7b9] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 192~196줄 --> |
 | gold_only(top 20에도 방해 후보 없음) | — | 331 (4.0%) | — [code:data/rebuild.py:38] [c:026a7b9] (2026-10-16 기준) |
 | no_answer 비율 | 13.4% | 9.1% | — [c:026a7b9] (2026-10-16 기준) |
 | 겹침 0.0~0.1 구간 NA | — | 67.6% (25/37) | ≤ 13.6% [c:026a7b9] (2026-10-16 기준) |
@@ -262,14 +262,14 @@ B-1: rebuild의 학습용 final(7,598 QA)에 새 build 설정만 적용(`--name=
 → **미달.** 학습 시간 예측: 학습 데이터 글자 수가 rebuild2의 1.28배(4.71시간) → 약 6시간. [c:026a7b9] (2026-10-16 기준)
 
 **답변 누출 검사 추가**(사용자 확정): 재작성 질문에 원래 질문에 없던 답변의 숫자, 또는 명사형 4자 이상 어구가 들어가면 거절 [code:data/faq_rewrite.py:144-149] [c:026a7b9]
-(`faq_rewrite.answer_leak`). B-1′ 재작성 6,971건 중 120건(1.7%)이 걸린다. 숫자 46건 중 29건이 실제 누출("연간 총 보상한도는 [code:data/faq_rewrite.py:126-129] [c:026a7b9] (2026-10-16 기준)
+(`faq_rewrite.answer_leak`). B-1′ 재작성 6,971건 중 120건(1.7%)이 걸린다. 숫자 46건 중 29건이 실제 누출("연간 총 보상한도는 [code:data/faq_rewrite.py:126-129] [c:026a7b9] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 7절 213줄(6,971건) -->
 750만원인가요?"), 17건은 고객 상황 숫자다. 거절해도 원래 질문이 06으로 가므로 QA는 잃지 않는다(구어체만 잃는다). [code:data/faq_rewrite.py:127] (2026-10-16 기준)
 4자 조각 규칙은 1,611건(23%)이 걸려 너무 넓었다. [code:data/faq_rewrite.py:129] (2026-10-16 기준)
 
 #### 8-2. 짧은 구어체 재작성 예측(10-7절 3번, 300건)
 
 B-1′ final에서 등급 어구가 아닌 QA 300건(seed 42)을 20~35자·원문 표현 피하기 프롬프트로 qwen3:14b 재작성 → 06 심판(gemma4:12b) [code:data/faq_judge.py:19] [c:026a7b9]
-→ B-1′ 빌드 샘플의 발췌는 그대로 두고 질문만 바꿔 겹침 재계산. 스크립트·결과는 저장소 밖(세션 scratchpad). [c:026a7b9] <!-- 확인 못 함: 예측 스크립트와 결과는 저장소 밖 -->
+→ B-1′ 빌드 샘플의 발췌는 그대로 두고 질문만 바꿔 겹침 재계산. 스크립트·결과는 저장소 밖(세션 scratchpad). [c:026a7b9] <!-- 확인 못 함: 그때 원자료가 남지 않음(예측 스크립트와 결과는 세션 scratchpad에만 있었음) -->
 
 - 재작성 ok 270 · 06 통과 237(79%, incomplete 14 · wrong_term 9 · clause_mix 6). **길이 중앙 44자** — 20~35자 지시를 거의 따르지 않았다. [c:026a7b9] (2026-10-16 기준)
 - 양성 겹침 평균 0.435 → 0.445. 거의 그대로다. 대체 비율을 100%로 해도 0.1~0.2 구간 NA 30.9%, 겹침 0.2 미만 양성 2.8%. [c:026a7b9] (2026-10-16 기준)
@@ -283,7 +283,7 @@ B-1′ final에서 등급 어구가 아닌 QA 300건(seed 42)을 20~35자·원�
 
 | 항목 | B-1′ | B-1″ | 기준 |
 |---|---|---|---|
-| 겹침 0.0~0.1 구간 NA | 67.6% | 63.6% (21/33) | ≤ 13.6% [c:026a7b9] (2026-10-16 기준) <!-- 확인 못 함: build 통계는 git 밖 --> |
+| 겹침 0.0~0.1 구간 NA | 67.6% | 63.6% (21/33) | ≤ 13.6% [c:026a7b9] [c:dcdecd9] (2026-10-16 기준) <!-- 요약: data/review/faq_build_summary.md 6-1절 197~200줄(발췌 3개인 샘플 중 no_answer 8.5%는 stats.json에 없어 셀 수 없음) --> |
 | 겹침 0.1~0.2 구간 NA | 48.0% | **43.8%** (124/283) | ≤ 13.6% [c:026a7b9] (2026-10-16 기준) |
 | 겹침 0.2~0.3 구간 NA | 21.5% | **19.4%** (203/1,047) | ≤ 13.6% [c:026a7b9] (2026-10-16 기준) |
 | 겹침 0.2 미만 양성 | 2.2% | 2.2% | ≥ 10% [c:026a7b9] (2026-10-16 기준) |
@@ -315,7 +315,7 @@ B-1′ final에서 등급 어구가 아닌 QA 300건(seed 42)을 20~35자·원�
 
 재학습·재구축이 다시 열릴 때마다 나온 사용자 결정 중 문서에 없던 것(세션 압축으로 빠진 것을 원문에서 되살림). [c:1cf1479]
 
-- **모델 셋은 고정한다.** 생성 모델(Tri-7B + LoRA)·임베딩(KURE-v1)·리랭커(bge-reranker-v2-m3)는 교체하지 않는다(2026-10-21: "생성 모델 교체, 임베딩 교체, 리랭커 교체는 하지 않는다"). 8-1절의 qwen3:14b 재작성은 rebuild3 때의 실험 기록이고 기본값이 아니다 [code:data/search_engine.py:23-24] [code:app/config.py:70-71] [c:1cf1479] <!-- 확인 못 함: 사용자 결정 원문은 세션 기록이라 저장소 밖 -->
+- **모델 셋은 고정한다.** 생성 모델(Tri-7B + LoRA)·임베딩(KURE-v1)·리랭커(bge-reranker-v2-m3)는 교체하지 않는다(2026-10-21: "생성 모델 교체, 임베딩 교체, 리랭커 교체는 하지 않는다"). 8-1절의 qwen3:14b 재작성은 rebuild3 때의 실험 기록이고 기본값이 아니다 [code:data/search_engine.py:23-24] [code:app/config.py:70-71] [c:1cf1479] <!-- 확인 못 함: 사용자 결정 원문은 세션 대화 기록이라 저장소에 남지 않음 -->
 - **구현 → 소규모 시험 → 본 실행 순서로 한다.** 시험(`--smoke`)에서 무엇을 확인할지 먼저 알리고, 시험이 실패하면 본 실행(전량 생성·학습) 전에 멈추고 보고한다(2026-10-16: "구현 → 소규모 시험 → 본 실행 순서로 진행해라. 소규모 시험에서 무엇을 확인할지 먼저 알려 달라") [code:data/rebuild.py:54] [code:data/rebuild.py:782] [c:1cf1479]
 - **체크포인트는 select가 고른 것을 쓴다.** 변동 폭 안의 차이를 보고 눈으로 뒤집지 않는다 — 고르는 방식은 docs/07 11-2절(평가 220 보이는 세트 점수)(2026-10-16: "눈으로 뒤집으면 select 단계를 만든 의미가 없다") [code:scripts/ckpt_select220.py:3-9] [docs:02_pipeline/07_finetuning.md:589] [c:1cf1479]
 - 판정 선은 rebuild4 체크포인트 표다(같은 114턴 정확 51 · 틀림 10 · 거절 31, docs/07 11-4절) — 거절만 줄이는 것으로는 채택하지 않는다 [docs:02_pipeline/07_finetuning.md:635-639] [c:1cf1479]

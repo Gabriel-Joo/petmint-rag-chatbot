@@ -2,7 +2,7 @@
 다루는 곳: web/src/App.tsx, web/src/hooks/useCallSimulator.ts, web/src/components/CallAlert.tsx, web/src/components/TopBar.tsx, web/src/components/ChatHistory.tsx, web/src/components/ChatHistory.module.css, web/src/components/PastConsultations.tsx, web/src/components/CustomerCard.tsx, web/src/components/SpeciesToggle.tsx, web/src/components/SourcePanel.tsx, web/src/components/ArticleText.tsx, web/src/components/ArticleText.module.css, web/src/pages/Chat.tsx, web/src/pages/Consultation.tsx, web/src/pages/CustomerSelect.tsx, app/routers/sessions.py, app/routers/chat_ws.py, app/routers/articles.py, app/services/sessions.py, app/services/titles.py, app/services/article_display.py, app/config.py, scripts/article_display_survey.py, tests/test_article_display.py, tests/test_articles_route.py
 읽은 커밋: 6710b83
 -->
-> 상태: 설계 확정, 구현 중. ✓ 전화 알림(상담 중 안 울림·10초 무응답 거절)·받기 → 업무특화 상담 전환(10-18 배포 서버 확인)·종료 전 모드 잠금, 모델 이름 환경변수(10-18). △ 종료 후 읽기 전용·지난 채팅·과거 상담 모달은 코드 있음, 확인 전(9절). △ 약관 날짜 표시·`keep_alive` 설정은 코드 없음. 8절 모델 교체는 ConfigMap으로 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)로 했다(2026-10-21, 14번 1-4절). [code:web/src/hooks/useCallSimulator.ts:8-11] [code:web/src/App.tsx:101-111] [code:web/src/App.tsx:136] [code:web/src/components/TopBar.tsx:58-60] [code:app/config.py:70-71] [c:0e0944e] [code:web/src/components/CustomerCard.tsx:15] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 배포 서버 확인과 ConfigMap 값은 클러스터 쪽 -->
+> 상태: 설계 확정, 구현 중. ✓ 전화 알림(상담 중 안 울림·10초 무응답 거절)·받기 → 업무특화 상담 전환(10-18 배포 서버 확인)·종료 전 모드 잠금, 모델 이름 환경변수(10-18). △ 종료 후 읽기 전용·지난 채팅·과거 상담 모달은 코드 있음, 확인 전(9절). △ 약관 날짜 표시·`keep_alive` 설정은 코드 없음. 8절 모델 교체는 ConfigMap으로 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)로 했다(2026-10-21, 14번 1-4절). [code:web/src/hooks/useCallSimulator.ts:8-11] [code:web/src/App.tsx:101-111] [code:web/src/App.tsx:136] [code:web/src/components/TopBar.tsx:58-60] [code:app/config.py:70-71] [c:0e0944e] [code:web/src/components/CustomerCard.tsx:15] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 -->
 > 
 
 ---
@@ -171,14 +171,14 @@
 
 | 단계 | 위치 | 할 일 |
 | --- | --- | --- |
-| 1 | 호스트 | 어댑터 병합 → GGUF 변환 → Q4_K_M 양자화 → ollama create [docs:02_pipeline/00_model_setup.md] <!-- 확인 못 함: 호스트 Ollama 작업 --> |
-| 2 | Pod |  ConfigMap의 PETMINT_MODEL_RAG를 바꾸고 Sync 뒤 rollout restart. 이미지 재빌드가 필요 없다 [code:app/config.py:71] [c:0e0944e] [docs:02_pipeline/14_deployment.md:73] <!-- 확인 못 함: ConfigMap은 인프라 저장소 --> |
+| 1 | 호스트 | 어댑터 병합 → GGUF 변환 → Q4_K_M 양자화 → ollama create [docs:02_pipeline/00_model_setup.md] <!-- 2026-11-19 잼: docker exec ollama ollama list 로 결과물(rebuild4, rebuild5, rebuild5b 모델)이 있음을 봄. 만드는 과정은 지난 일이라 다시 잴 수 없음 --> |
+| 2 | Pod |  ConfigMap의 PETMINT_MODEL_RAG를 바꾸고 Sync 뒤 rollout restart. 이미지 재빌드가 필요 없다 [code:app/config.py:71] [c:0e0944e] [docs:02_pipeline/14_deployment.md:73] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:27-28, apps/petmint/README.md:26 --> |
 
 **모델 이름에 버전을 박는다**(예: `petmint-ft-v2`). `latest` 태그를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다. [code:app/config.py:71]
 
-1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다. <!-- 확인 못 함: 실행 중 Ollama와 클러스터 상태 -->
+1번이 끝나면 두 모델이 Ollama에 공존한다. 롤링 중 구 Pod는 v1을, 신 Pod는 v2를 부르면서도 둘 다 동작한다. 문제가 생기면 설정만 되돌린다. <!-- 2026-11-19 잼: docker exec ollama ollama list 로 업무특화 모델 셋(rebuild4, rebuild5, rebuild5b)과 tri-7b가 함께 등록된 것을 봄(Ollama 쪽만) -->
 
-**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 7-3절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 롤링 값은 인프라 저장소 apps/petmint/app/deployment.yaml(읽기만 해서 maxSurge 0, maxUnavailable 1을 봄) --> <!-- 확인 못 함: keep_alive는 app/, search_service/, web/src/, deploy/ 에 없음(git grep), Ollama 쪽 설정은 호스트 -->
+**롤링은 한 Pod씩 한다** (`maxSurge: 0, maxUnavailable: 1`). VRAM 16GB에 검색 모델 둘이 상주하고, 업무특화는 재작성을 하지 않지만 병명 되묻기 판정에서 베이스를 함께 부를 수 있다(09번 7-3절). 롤링 중에는 여기에 구 버전까지 셋이 될 수 있다. `keep_alive`를 짧게 두어 쓰지 않는 모델이 빨리 내려가게 한다. △ 설정 전 — VRAM 실측과 함께 정한다. [code:app/config.py:56-58] [docs:02_pipeline/09_ui_design.md:632] [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17-23 --> <!-- 2026-11-19 잼: docker inspect ollama 환경변수에 OLLAMA_KEEP_ALIVE 없음 -->
 
 ---
 

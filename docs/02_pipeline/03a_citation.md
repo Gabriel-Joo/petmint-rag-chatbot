@@ -67,8 +67,8 @@ flowchart TD
 
 | 표기 | 건수(강아지) | 예 |
 | --- | --- | --- |
-| 낫표 안 | 75 | 「반려동물 비용손해 관련 특별약관 일반조항」제15조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] <!-- 확인 못 함: 센 원자료는 저장소에 없다 --> |
-| 괄호 없음 | 약 32 | 보통약관 제35조 / 해당계약 보통약관 제29조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] <!-- 확인 못 함: 센 원자료는 저장소에 없다 --> |
+| 낫표 안 | 75 | 「반려동물 비용손해 관련 특별약관 일반조항」제15조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] [code:notebooks/01_데이터_전처리.ipynb:684-685] |
+| 괄호 없음 | 약 32 | 보통약관 제35조 / 해당계약 보통약관 제29조 (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71] [code:notebooks/01_데이터_전처리.ipynb:684-685] |
 
 **낫표만 잡으면 부족했다.** 그리고 측정해보니 낫표 75건이 지금 "맞게" 연결돼 있던 것도 문서명을 읽은 결과가 아니었다 — 인용한 문서에 그 조가 없어서 다음 후보로 넘어간 **우연**이었다. [code:notebooks/03-1_citation_해석.ipynb:355-381] (2026-10-12까지) [code:KNOWN_ISSUES.md:68-71]
 
@@ -107,11 +107,11 @@ flowchart TD
 
 ### 5. 단독 항 참조를 실제로 연결하기
 
-"제1항에도 불구하고"처럼 **조번호 없이 항만** 참조하는 경우가 citation 전체의 약 52%였다. 기존에는 `self_block`이라는 라벨만 붙이고 **실제로 그 항이 어느 청크인지 찾지 않았다.** (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 52%를 센 원자료는 저장소에 없다 -->
+"제1항에도 불구하고"처럼 **조번호 없이 항만** 참조하는 경우가 citation 전체의 약 52%였다. 기존에는 `self_block`이라는 라벨만 붙이고 **실제로 그 항이 어느 청크인지 찾지 않았다.** (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
 
 01번에서 `article_block_id`가 "섹션+조 단위"로 바뀌면서 같은 조의 여러 항이 같은 id를 공유하게 됐고, 그 덕에 "같은 block_id 안에서 paragraph_num이 일치하는 청크"를 찾을 수 있게 됐다. [code:notebooks/03-1_citation_해석.ipynb:92-97]
 
-당시 측정에서는 397건 중 **385건(97%)이 같은 조 안에 해당 항이 실재**했다. 실제 연결로 바꿨고, 못 찾은 12건은 별도 scope로 두어 그래프에서 제외했다. 이후 01번 citation 추출을 고치면서 그 12건도 해소돼 지금은 0건이다. [code:notebooks/03-1_citation_해석.ipynb:323-339] [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 397, 385, 12건은 당시 측정으로 원자료가 저장소에 없다 -->
+당시 측정에서는 397건 중 **385건(97%)이 같은 조 안에 해당 항이 실재**했다. 실제 연결로 바꿨고, 못 찾은 12건은 별도 scope로 두어 그래프에서 제외했다. 이후 01번 citation 추출을 고치면서 그 12건도 해소돼 지금은 0건이다. [code:notebooks/03-1_citation_해석.ipynb:323-339] [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 397, 385, 12건은 그때 원자료가 남지 않음 -->
 
 ---
 
@@ -121,7 +121,7 @@ flowchart TD
 
 01번에서 section_name("【법규6】 민사소송법")에서 법명을 뽑아 채우도록 했다. 이때 **다른 법을 인용하는 건 덮어쓰지 않는다** — 금융소비자보호법 제17조가 「전자서명법」 제2조를 인용하면 그건 그대로 둔다. [code:notebooks/01_데이터_전처리.ipynb:1650-1653]
 
-다만 법규는 **발췌본**이라 참조 대상 조문이 수록되지 않은 경우가 많다(민사소송법은 254·266·269·393·399·402·412·425만 수록, 제249조는 없음). 이런 경우를 `not_found`와 구분해 `law_not_in_excerpt`로 분류했다 — "찾기 실패"와 "애초에 미수록"은 성격이 다르기 때문이다. [code:notebooks/03-1_citation_해석.ipynb:209-213] [code:notebooks/03-1_citation_해석.ipynb:239-246] <!-- 확인 못 함: 법규 발췌에 수록된 조 번호는 git 밖 PDF와 청크 -->
+다만 법규는 **발췌본**이라 참조 대상 조문이 수록되지 않은 경우가 많다(민사소송법은 254·266·269·393·399·402·412·425만 수록, 제249조는 없음). 이런 경우를 `not_found`와 구분해 `law_not_in_excerpt`로 분류했다 — "찾기 실패"와 "애초에 미수록"은 성격이 다르기 때문이다. [code:notebooks/03-1_citation_해석.ipynb:209-213] [code:notebooks/03-1_citation_해석.ipynb:239-246] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 4절 민사소송법 수록 조 -->
 
 ---
 
@@ -135,7 +135,7 @@ flowchart TD
 
 이 문장의 조문들이 **참조로 붙고 있었다.** 그 결과 적용되지 않는 조항을 적용되는 것처럼 설명하는 FAQ가 만들어졌다(해당 9개 전부). [code:notebooks/03-1_citation_해석.ipynb:176] (2026-10-12 기준)
 
-✓ 제외 목록 안의 조문은 참조에서 빼도록 수정했다(강아지 17건, 고양이 11건). "단, 제15조(재가입)에 따라 … 적용하지 않습니다"처럼 **조건을 설명하는** 인용은 그대로 둔다. [code:notebooks/03-1_citation_해석.ipynb:178-187] [code:notebooks/03-1_citation_해석.ipynb:283-288] [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) [code:KNOWN_ISSUES.md:170] <!-- 확인 못 함: 고양이 11건은 노트북 출력에 없다 -->
+✓ 제외 목록 안의 조문은 참조에서 빼도록 수정했다(강아지 17건, 고양이 11건). "단, 제15조(재가입)에 따라 … 적용하지 않습니다"처럼 **조건을 설명하는** 인용은 그대로 둔다. [code:notebooks/03-1_citation_해석.ipynb:178-187] [code:notebooks/03-1_citation_해석.ipynb:283-288] [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) [code:KNOWN_ISSUES.md:170] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 3절 고양이 matched_scope 분포(excluded_reference 11) -->
 
 > 이 버그는 04번 검색 답변에도 같은 영향을 준다. 상담원이 "이 조항이 적용됩니다"라고 안내하면 틀린 안내가 된다.
 > 
@@ -150,7 +150,7 @@ flowchart TD
 cit["matched_scope"] = f"cross_section({section}/{section_name})"
 ```
 
-03-2번이 이걸 다시 파싱해 참조 대상을 꺼냈는데, `cross_section(보통약관/None)`에서 `split("/")[-1]`이 문자열 `"None"`을 만들어냈다(41건). 04번이 `section_name == "None"`으로 필터링해 조회가 실패했다. (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 고치기 전 코드와 41건은 저장소 첫 커밋 전 -->
+03-2번이 이걸 다시 파싱해 참조 대상을 꺼냈는데, `cross_section(보통약관/None)`에서 `split("/")[-1]`이 문자열 `"None"`을 만들어냈다(41건). 04번이 `section_name == "None"`으로 필터링해 조회가 실패했다. (2026-10-12까지) [code:notebooks/03-1_citation_해석.ipynb:9] <!-- 확인 못 함: 고치기 전 코드는 저장소 첫 커밋(ba373fe, 2026-10-13) 전 코드라 git에 없고, 41건은 그때 원자료가 남지 않음 -->
 
 `matched_scope`는 분류값만 담고, 참조 대상은 `ref_section`·`ref_section_name` 별도 필드로 분리했다. [code:notebooks/03-1_citation_해석.ipynb:294-297]
 

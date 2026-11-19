@@ -2,7 +2,7 @@
 다루는 곳: data/prompts.py, data/finetune_data.py, data/rebuild.py, data/answer_eval.py, data/ckpt_select.py, data/faq_rag.py, data/faq_units.py, data/eval/answer_eval_labels.json, data/eval220.py, scripts/rebuild5_chain.sh, scripts/rebuild5b_chain.sh, scripts/ckpt_select220.py, scripts/rebuild5_verdict.py, scripts/eval_judge.py, scripts/prod_measure.sh, notebooks/07_파인튜닝.ipynb, scripts/eval_serving.py, scripts/eval_check_prompts.py, scripts/stage_eval.sh, scripts/stage6_chain.sh, scripts/stage7_pre.sh, scripts/probe_length.py, scripts/probe_train_gold.py, tests/test_stage4.py, tests/test_stage5.py
 읽은 커밋: 6710b83
 -->
-> 학습·평가 완료. 재구축은 rebuild(2026-10-15, 10절)부터 rebuild5b까지 했고, 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)다. rebuild5·5b는 불채택(11절). [code:data/rebuild.py:1-3] [code:scripts/prod_measure.sh:6] [code:data/review/rebuild5_verdict.md] [code:data/review/rebuild5b_verdict.md] [c:c5c1ca7] <!-- 확인 못 함: 운영에서 도는 모델은 클러스터 설정(ronanlab-infra)이라 저장소에서 볼 수 없다 -->
+> 학습·평가 완료. 재구축은 rebuild(2026-10-15, 10절)부터 rebuild5b까지 했고, 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)다. rebuild5·5b는 불채택(11절). [code:data/rebuild.py:1-3] [code:scripts/prod_measure.sh:6] [code:data/review/rebuild5_verdict.md] [code:data/review/rebuild5b_verdict.md] [c:c5c1ca7] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:30 -->
 > 
 
 ---
@@ -28,13 +28,13 @@ system 프롬프트:  "발췌에 있는 내용만 근거로 답하라"
 학습 데이터:      발췌 없음. question → answer
 ```
 
-발췌를 주지 않으면서 "발췌만 보라"고 지시한 셈이다. 모델은 **사실을 가중치에 외우는 법**을 배웠고, 테스트에서 원문에 없는 "특별약관은 5영업일 이내"를 단정했다. <!-- 확인 못 함: 이전 시도의 테스트 기록은 저장소에 없다(노트북 설정 칸 주석에 요지만 있다) -->
+발췌를 주지 않으면서 "발췌만 보라"고 지시한 셈이다. 모델은 **사실을 가중치에 외우는 법**을 배웠고, 테스트에서 원문에 없는 "특별약관은 5영업일 이내"를 단정했다. <!-- 확인 못 함: 그때 원자료가 남지 않음(이전 시도의 테스트 기록, 노트북 설정 칸 주석에 요지만 있다) -->
 
 "말투만 배우고 사실은 RAG가 담당한다"는 역할 분담과 정반대 결과다.
 
 #### 1-2. 고정 패딩으로 계산의 2/3가 낭비됐다
 
-모든 샘플을 768토큰으로 패딩했는데 실제 길이는 평균 250 정도였다. 동적 패딩과 `group_by_length`로 바꾸면 그만큼이 줄어든다. <!-- 확인 못 함: 이전 시도의 768토큰 패딩과 평균 250은 옛 작업 기록이라 저장소에 없다 -->
+모든 샘플을 768토큰으로 패딩했는데 실제 길이는 평균 250 정도였다. 동적 패딩과 `group_by_length`로 바꾸면 그만큼이 줄어든다. <!-- 확인 못 함: 그때 원자료가 남지 않음(이전 시도의 768토큰 패딩과 평균 250) -->
 
 #### 1-3. loss를 전체에 걸면 안 된다
 
@@ -174,7 +174,7 @@ clause_mix (예외·단서 섞기)  17%
 
 **재작성기는 베이스 모델을 쓴다.** 파인튜닝 모델은 "발췌를 읽고 상담 말투로 답하기" 하나만 배우므로, 재작성을 시키면 질문을 다시 쓰지 않고 답을 해버릴 가능성이 크다(추정, 미측정). [code:app/services/context.py:159-169]
 
-> 부수 효과: 학습 질문은 FAQ 질문이라 완결된 문장이다(중앙 53자). <!-- 확인 못 함: 중앙 53자는 학습 데이터(data/finetune, git 밖)를 잰 값이라 원자료가 없다 --> 상담원이 실제로 칠 짧은 질문("슬개골 돼요?")도 재작성기가 다듬으면 학습 때와 같은 꼴이 된다. 멀티턴이 아니어도 얻는 이득이다.
+> 부수 효과: 학습 질문은 FAQ 질문이라 완결된 문장이다(중앙 53자). <!-- 확인 못 함: 중앙 53자는 학습 데이터(data/finetune)를 잰 값이고, 그 폴더는 너무 커서(1.5GB) 올리지 않음 --> 상담원이 실제로 칠 짧은 질문("슬개골 돼요?")도 재작성기가 다듬으면 학습 때와 같은 꼴이 된다. 멀티턴이 아니어도 얻는 이득이다.
 > 
 
 **"더 짧게", "고객에게 말하듯이 다시" 같은 고쳐쓰기**는 검색 질의 문제가 아니라 직전 답변을 입력으로 받는 다른 작업이다. UI 버튼으로 받아 베이스 모델에 넘긴다. 약관 사실은 이미 직전 답변 안에 있으므로 베이스 모델로도 된다.
@@ -209,7 +209,7 @@ clause_mix (예외·단서 섞기)  17%
     while trying to map 20971520 bytes (free: 7864320, total: 16608133120)
 ```
 
-2분 동안 step 2에 머물렀고 free 메모리가 7.8MB → 3.6MB로 줄었다. GPU에 다른 프로세스는 없었다. (2026-10-13 기준) <!-- 확인 못 함: 첫 실행 로그는 저장소에 없다 -->
+2분 동안 step 2에 머물렀고 free 메모리가 7.8MB → 3.6MB로 줄었다. GPU에 다른 프로세스는 없었다. (2026-10-13 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음(첫 실행 로그) -->
 
 **원인 ① 설정 실수**: 사전 점검(최대 할당 14.1GiB / 예약 15.1GiB)은 `expandable_segments` 없이 측정했는데, 그 뒤에 이 설정을 테스트 없이 넣었다. 여유가 0.4GiB뿐이라 메모리 매핑에 실패해도 OOM으로 멈추지 않고 재시도를 반복하며 진행하지 못했다. (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:337]
 
@@ -235,7 +235,7 @@ loss 정의는 바꾸지 않았다. HF 기본 loss와 `tail_loss`를 같은 샘�
 |  | 수정 전 | 수정 후 |
 | --- | --- | --- |
 | GPU 최대 할당 | 14.1GiB | 9.89GiB (2026-10-13 기준) |
-| 예약 | 15.1GiB | 10.67GiB (2026-10-13 기준) <!-- 확인 못 함: 예약 10.67GiB는 노트북 출력에 없다 --> |
+| 예약 | 15.1GiB | 10.67GiB (2026-10-13 기준) <!-- 확인 못 함: 그때 원자료가 남지 않음(예약 10.67GiB는 노트북 출력에 없다) --> |
 | 메모리 경고 | 반복 | 0건 |
 
 > `gradient_checkpointing`을 켜는 것이 첫 대응이었지만, 확인해보니 이미 켜져 있었다(셀 4와 `prepare_model_for_kbit_training` 양쪽에서). [code:notebooks/07_파인튜닝.ipynb:394] [code:notebooks/07_파인튜닝.ipynb:167] 증상만 보고 흔한 처방을 하기 전에 **실제로 무엇이 메모리를 쓰는지** 확인해야 했다.
@@ -383,7 +383,7 @@ no_answer의 방해 발췌를 `pick_distractors`가 "답변 핵심 명사 50% �
 
 "고급형"이 발췌에 없다는 이유로 거절한다. 바로 옆에 "3영업일"이 적혀 있는데도. [code:data/review/answer_eval_20261014_1011_rag-1_4811건.md:15-25] [code:data/review/answer_eval_20261014_1011_rag-1_4811건.md:911-923]
 
-거절 분포에서도 등급언급_타섹션이 15/19(78.9%)로 가장 높다. 반대로 한도·별표·꼬리는 0%다 — 계산·표 기반 질문은 멀쩡하다. (2026-10-14 기준) <!-- 확인 못 함: 4811건 평가의 카테고리별 거절 표는 git 밖 결과 파일에 있다. 재구축 뒤 평가에서는 17/19였다(data/review/refusal_overlap_20261015.md:86) -->
+거절 분포에서도 등급언급_타섹션이 15/19(78.9%)로 가장 높다. 반대로 한도·별표·꼬리는 0%다 — 계산·표 기반 질문은 멀쩡하다. (2026-10-14 기준) [c:c82e6dc] <!-- 요약: data/review/eval_results_summary.md 1절 표 아래 「10-14 10:11 4811건 줄의 갈래별 FT 거절」(원자료에서 다시 세어 15/19, 한도 0/5, 별표 0/5, 꼬리 0/10 맞음). 재구축 뒤 평가에서는 17/19였다(data/review/refusal_overlap_20261015.md:86) -->
 
 #### 실험 B — 발췌에 공통 적용 표기 추가 (폐기)
 
@@ -428,7 +428,7 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
 |  | 1인칭·상황형 비율 |
 | --- | --- |
 | 통과 5,343건 | 1.10% (2026-10-14 기준) |
-| 탈락 8,417건 | 1.07% (2026-10-14 기준) <!-- 확인 못 함: 통과와 탈락을 나눈 비율은 data/review에 없다(전체 1.1%만 있다) --> |
+| 탈락 8,417건 | 1.07% (2026-10-14 기준) [c:c82e6dc] <!-- 요약: data/review/faq_build_summary.md 2절 끝 「1인칭 상황형 질문 비율」. 그때 쓴 판별 정의는 git에 없어 이 값은 다시 낼 수 없다. 지금 판별 함수 data.faq_style.is_situational(2026-10-15 8ebacfc에 처음 들어옴)로 checked_all 13,760건을 세면 통과 66/5,343 = 1.24%, 탈락 89/8,417 = 1.06%(2026-11-19) --> |
 
 **차이가 없다.** `question_quality` 탈락도 62건뿐이다. [code:data/review/exp_c_compare_20261014_1450.md:29] (2026-10-14 기준) 심판이 거른 것이 아니라 **05가 애초에 만들지 않았다.**
 
@@ -451,7 +451,7 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
     638  judge: wrong_value     숫자 틀림
 ```
 
-심판이 품질로 버린 것만 6천 건이 넘는다. 라운드를 10번 돌려야 했던 이유다. [code:data/review/exp_c_compare_20261014_1450.md:29] (2026-10-14 기준) <!-- 확인 못 함: 위 울타리 안 duplicate 2,024, unit_cap 739, 통과 5,013, flag 330은 data/review에 없다. 심판 사유 수(incomplete 1,928 등)는 같은 파일 29줄과 맞는다 -->
+심판이 품질로 버린 것만 6천 건이 넘는다. 라운드를 10번 돌려야 했던 이유다. [code:data/review/exp_c_compare_20261014_1450.md:29] (2026-10-14 기준) [c:dcdecd9] <!-- 요약: data/review/faq_build_summary.md 45, 46, 49, 50줄(duplicate 2,024, unit_cap 739, 통과 pass 2,623 + 2,390 = 5,013, flag 330). 심판 사유 수(incomplete 1,928 등)는 exp_c_compare 29줄과 맞는다 -->
 
 **질문을 구어체로 바꾸면 이 비율이 더 나빠질 수 있다.** 생성기가 거의 해보지 않은 형태이기 때문이다. 특히 고객 질문은 조문 하나에 갇히지 않아 `clause_mix`가 늘 위험이 있다.
 
@@ -459,7 +459,7 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
 
 #### 미반영 사항
 
-`train.jsonl`은 사람 대상 조항 제외 규칙 이전에 만들어졌다. 제외 대상 863건(18%)이 그대로 들어 있다 — 보통약관 제24조 14건, 장해분류표 561건 등. 코드(`faq_units.EXCLUDE_ARTICLES`)에는 반영됐으나 데이터는 재빌드되지 않았다. [code:data/faq_units.py:25] [code:data/faq_units.py:29-32] [code:data/finetune_data.py:13] (2026-10-13~2026-10-15 사이) <!-- 확인 못 함: 863건, 14건, 561건은 git 밖 train.jsonl을 센 값 -->
+`train.jsonl`은 사람 대상 조항 제외 규칙 이전에 만들어졌다. 제외 대상 863건(18%)이 그대로 들어 있다 — 보통약관 제24조 14건, 장해분류표 561건 등. 코드(`faq_units.EXCLUDE_ARTICLES`)에는 반영됐으나 데이터는 재빌드되지 않았다. [code:data/faq_units.py:25] [code:data/faq_units.py:29-32] [code:data/finetune_data.py:13] (2026-10-13~2026-10-15 사이) [c:dcdecd9] <!-- 요약: data/review/faq_build_summary.md 226~228줄 -->
 
 #### 다음 — distractor 선정 방식
 
@@ -485,9 +485,9 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
 | 심판 | 5.89h | 7,598건 (2026-10-15 기준) |
 | 재작성 | 2.96h | 7,598건 (상황형 1.7% → 30.3%) (2026-10-15 기준) |
 | 빌드 | 0.99h | train 6,806 / val 792 (2026-10-15 기준) |
-| 학습 | 4.36h | 어댑터 `rag-1_6806건_rebuild` [docs:next_rebuild.md:95] (2026-10-15 기준) <!-- 확인 못 함: 단계별 건수는 git 밖 로그(data/faq/rebuild/logs)에 있다. 시간만 next_rebuild 95줄과 맞는다 --> |
+| 학습 | 4.36h | 어댑터 `rag-1_6806건_rebuild` [docs:next_rebuild.md:95] (2026-10-15 기준) [c:dcdecd9] <!-- 요약: data/review/faq_build_summary.md 117~121줄 --> |
 
-구성은 distract 4,097 / gold_only 2,741 / no_answer 760(10.0%)이다. **no_answer 중 판정이 `no`가 아닌 것은 0건**이다 — 이전 데이터는 25.2%에 실제로 답이 들어 있었다. [code:data/finetune_data.py:39-44] (2026-10-15 기준) <!-- 확인 못 함: 구성 수와 25.2%는 git 밖 빌드 출력(stats.json, na_judge_summary)에 있다 -->
+구성은 distract 4,097 / gold_only 2,741 / no_answer 760(10.0%)이다. **no_answer 중 판정이 `no`가 아닌 것은 0건**이다 — 이전 데이터는 25.2%에 실제로 답이 들어 있었다. [code:data/finetune_data.py:39-44] (2026-10-15 기준) [c:dcdecd9] <!-- 요약: data/review/faq_build_summary.md 176, 177, 124줄 -->
 
 #### 10-2. 재평가 — 숫자는 그대로, 분별은 올랐다
 
@@ -658,7 +658,7 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 - 체크포인트는 11-2절 점수로 select가 고른 것을 쓰고, 눈으로 뒤집지 않는다(2026-10-16 사용자 결정, docs/next_rebuild.md 10절) [docs:next_rebuild.md:310] [code:scripts/ckpt_select220.py:82]
 - 학습 발췌를 서빙과 맞추는 것만으로는 "정답이 있는데 거절"이 풀리지 않는다. 거절이 줄어든 만큼 틀림이 늘었다. 이 지표 하나만 목표로 삼지 않는다
 - 거절 신호는 같은 질문의 짝(정답 있음/없음)으로 가르쳐야 하고, 짝이 없는 거절 샘플을 늘리면 맞히던 답까지 거절한다(5b)
-- 코드: `data/faq_rag.py`(C 생성·판정·5b), `scripts/rebuild5_chain.sh`·`rebuild5b_chain.sh`(생성부터 판정까지 연쇄), `scripts/ckpt_select220.py`, `scripts/rebuild5_verdict.py`. 모델 `kabyul-tri-7b-rag1-rebuild5-ckpt250`·`-rebuild5b-ckpt250`은 Ollama에 등록만 되어 있다 [code:data/faq_rag.py] [code:scripts/rebuild5_chain.sh] [code:scripts/rebuild5b_chain.sh] [code:scripts/ckpt_select220.py] [code:scripts/rebuild5_verdict.py] <!-- 확인 못 함: Ollama 등록 상태는 실행 중 상태라 저장소에서 볼 수 없다 -->
+- 코드: `data/faq_rag.py`(C 생성·판정·5b), `scripts/rebuild5_chain.sh`·`rebuild5b_chain.sh`(생성부터 판정까지 연쇄), `scripts/ckpt_select220.py`, `scripts/rebuild5_verdict.py`. 모델 `kabyul-tri-7b-rag1-rebuild5-ckpt250`·`-rebuild5b-ckpt250`은 Ollama에 등록만 되어 있다 [code:data/faq_rag.py] [code:scripts/rebuild5_chain.sh] [code:scripts/rebuild5b_chain.sh] [code:scripts/ckpt_select220.py] [code:scripts/rebuild5_verdict.py] <!-- 2026-11-19 잼: docker exec ollama ollama list 에 둘 다 있고(각 4.6GB) ollama ps 는 비어 있음 -->
 
 #### 11-6. 측정 흔들림 기준 — 3회 평균 차이 4 안쪽은 효과로 보지 않는다 (2026-10-24)
 
@@ -679,7 +679,7 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 | 판정 예외누락 | 5.7 | 8.0 | +2.3 (2026-10-24 기준) |
 | 자동 통과 | 164.0 | 162.0 | −2.0 [code:data/review/age_measure.md:5] [code:data/review/age_measure.md:10] [code:data/review/age_measure.md:12] (2026-10-24 기준) |
 
-생성(temperature 0.3)과 판정 모델이 흔들린 것이다. 11-2의 실행별 SD(정확 1.8)로 보면 평균 하나의 흔들림은 1 정도지만, 독립된 두 3회 평균 사이는 4까지 벌어졌다. [code:data/review/rebuild5_stage7_config.md:50] [code:data/review/age_measure.md:69] <!-- 확인 못 함: temperature 0.3은 Modelfile(models/gguf/, git 밖) 값이다 -->
+생성(temperature 0.3)과 판정 모델이 흔들린 것이다. 11-2의 실행별 SD(정확 1.8)로 보면 평균 하나의 흔들림은 1 정도지만, 독립된 두 3회 평균 사이는 4까지 벌어졌다. [code:data/review/rebuild5_stage7_config.md:50] [code:data/review/age_measure.md:69] [c:3f49bb5] <!-- 근거 파일: models/gguf/Modelfile.kabyul-tri-7b-rag1-rebuild4-ckpt462 3줄 PARAMETER temperature 0.3 -->
 
 **효과로 인정하는 것**은 세 가지다.
 1. 프롬프트가 바뀐 턴만 따로 본 변화다. 서버 프롬프트 기록(`PETMINT_PROMPT_LOG`)으로 바뀐 턴을 가린다 [code:app/config.py:76]
@@ -714,7 +714,7 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 
 평가 서버가 실제 날짜로 대기기간·보험연도를 셌다. 그래서 같은 문항의 정답이 날마다 바뀌었다. 예를 들어 망고의 30일 창은 10-23에 끝났고, 별이는 10-30에 끝난다.
 
-- 평가 전용 `PETMINT_TODAY`(`payout.today()`)를 두었다. 평가는 평가 파일의 기준일 2026-10-21로 돈다(`scripts/prod_measure.sh`). 운영은 비워 두어 실제 날짜를 쓴다 [code:app/config.py:64] [code:app/services/payout.py:120-121] [code:scripts/prod_measure.sh:6] [code:data/eval220.py:21] [c:80bfebe] <!-- 확인 못 함: 운영에서 PETMINT_TODAY를 비워 두는지는 클러스터 ConfigMap이라 볼 수 없다 -->
+- 평가 전용 `PETMINT_TODAY`(`payout.today()`)를 두었다. 평가는 평가 파일의 기준일 2026-10-21로 돈다(`scripts/prod_measure.sh`). 운영은 비워 두어 실제 날짜를 쓴다 [code:app/config.py:64] [code:app/services/payout.py:120-121] [code:scripts/prod_measure.sh:6] [code:data/eval220.py:21] [c:80bfebe] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml 에 PETMINT_TODAY 키 없음, apps/petmint/app/deployment.yaml:77-83 -->
 - S09·S10·S20·S27·M14(면책 단서 문항)를 별이에서 콩이로 바꿨다. 콩이는 Ⅰ 통원 고급형이고 2026-08-11에 가입했다 [code:data/eval220.py:133-134]
   - 별이는 기준일에 30일 대기기간 안이라, 질병이면 참고 답("보장된다")과 결론이 뒤집혔다 [code:data/eval220.py:133-134]
   - 대기기간은 C축이 잰다 [code:data/eval220.py:134]

@@ -2,7 +2,7 @@
 다루는 곳: notebooks/03-2_참조관계_그래프.ipynb, data/rag_context.py, data/hr_preprocess.py
 읽은 커밋: 6710b83
 -->
-> 상태: ✓ 참조 그래프는 2026-10-13까지 구현 — 강아지 446노드·745엣지, 고양이 408·686, 인사규정 6·7(data/graph/*_graph.json. 서빙 그래프 data/graph/v3는 강아지 447·747, 고양이 409·688). ✗ 2~3단계 다단계 탐색은 하지 않는다(1단계 조회만). [code:notebooks/03-2_참조관계_그래프.ipynb:168-169] [code:notebooks/03-2_참조관계_그래프.ipynb:177-184] [code:data/hr_preprocess.py:21] [code:data/chunks_v2.py:15-16] [c:12a4e2b] <!-- 확인 못 함: 엣지 수와 인사규정, v3 그래프 수는 git 밖 그래프 파일로 센 것 -->
+> 상태: ✓ 참조 그래프는 2026-10-13까지 구현 — 강아지 446노드·745엣지, 고양이 408·686, 인사규정 6·7(data/graph/*_graph.json. 서빙 그래프 data/graph/v3는 강아지 447·747, 고양이 409·688). ✗ 2~3단계 다단계 탐색은 하지 않는다(1단계 조회만). [code:notebooks/03-2_참조관계_그래프.ipynb:168-169] [code:notebooks/03-2_참조관계_그래프.ipynb:177-184] [code:data/hr_preprocess.py:21] [code:data/chunks_v2.py:15-16] [c:12a4e2b] [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 5절 참조 그래프(기본, v3) -->
 
 ### 0. 목표
 
@@ -30,15 +30,14 @@ Neo4j가 빛나는 건 "A를 참조하는 B를 참조하는 C"처럼 **다단계
 
 **1차 — 조 단위**: `section|section_name|article|coverage`
 
-문제는 **같은 조의 다른 항이 인용한 조문까지 딸려 왔다**는 것이다. 제1조 4항을 검색했는데 7항이 인용한 제18조가 참조로 붙는 식이다. FAQ 입력 기준으로 보면 참조 본문이 검색 본문의 5.5배(285k자 vs 52k자)까지 부풀었다. [code:notebooks/03-2_참조관계_그래프.ipynb:69-70] (2026-10-12 기준) [code:KNOWN_ISSUES.md:80-82] <!-- 확인 못 함: 285k, 52k자 측정 원자료는 저장소에 없다 -->
-
+문제는 **같은 조의 다른 항이 인용한 조문까지 딸려 왔다**는 것이다. 제1조 4항을 검색했는데 7항이 인용한 제18조가 참조로 붙는 식이다. FAQ 입력 기준으로 보면 참조 본문이 검색 본문의 5.5배(285k자 vs 52k자)까지 부풀었다. [code:notebooks/03-2_참조관계_그래프.ipynb:69-70] (2026-10-12 기준) [code:KNOWN_ISSUES.md:80-82]
 **2차 — 항 단위**: `... |paragraph_num` 추가
 
-항을 추가했더니 05번(FAQ 생성)에서 단위 22개가 어긋났다. 05번은 여러 레코드를 묶어 하나의 단위로 쓰는데, **한 항이 여러 조각으로 나뉘어 여러 단위에 흩어지면** 각 단위가 다른 단위의 조각이 인용한 조문까지 받았다. [code:data/rag_context.py:62-64] (2026-10-12까지) [code:KNOWN_ISSUES.md:103] <!-- 확인 못 함: 22개 측정 원자료는 저장소에 없다 -->
+항을 추가했더니 05번(FAQ 생성)에서 단위 22개가 어긋났다. 05번은 여러 레코드를 묶어 하나의 단위로 쓰는데, **한 항이 여러 조각으로 나뉘어 여러 단위에 흩어지면** 각 단위가 다른 단위의 조각이 인용한 조문까지 받았다. [code:data/rag_context.py:62-64] (2026-10-12까지) [code:KNOWN_ISSUES.md:103] <!-- 확인 못 함: 22개는 그때 원자료가 남지 않음 -->
 
 **3차(최종) — 조각 단위**: `section|section_name|article|coverage|paragraph|chunk_index` [code:notebooks/03-2_참조관계_그래프.ipynb:84-85] [code:data/rag_context.py:65-66]
 
-검증 결과 05번 단위 698개와 04번 청크 1,778개 모두 차이 0건. 노드는 149→446개로 늘었지만 정확성이 우선이다. [code:notebooks/03-2_참조관계_그래프.ipynb:62] (2026-10-12 기준) [code:KNOWN_ISSUES.md:103-105] <!-- 확인 못 함: 698, 1,778, 149는 당시 검증으로 원자료가 저장소에 없다 -->
+검증 결과 05번 단위 698개와 04번 청크 1,778개 모두 차이 0건. 노드는 149→446개로 늘었지만 정확성이 우선이다. [code:notebooks/03-2_참조관계_그래프.ipynb:62] (2026-10-12 기준) [code:KNOWN_ISSUES.md:103-105] <!-- 확인 못 함: 698과 149는 KNOWN_ISSUES.md:103-105에 있으나 그 기록은 1779청크, 노드 449/410이라 문서의 1,778, 446과 다르다(B단계에서 정함). 검증 원자료는 그때 남지 않음 -->
 
 > 이 과정에서 배운 것: 그래프의 노드 단위는 "데이터의 자연스러운 단위"가 아니라 **"조회하는 쪽의 단위"에 맞춰야 한다**. 04번은 청크 단위로, 05번은 묶음 단위로 조회하는데, 둘 다 조각 단위 키의 합집합으로 표현할 수 있어야 했다. [code:data/rag_context.py:62-64]
 > 
@@ -63,7 +62,7 @@ Neo4j가 빛나는 건 "A를 참조하는 B를 참조하는 C"처럼 **다단계
 | --- | --- |
 | `not_found` | 가리키는 대상이 없음 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] |
 | `law_not_in_excerpt` | 약관에 수록되지 않은 외부법 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] |
-| `inline_law_*` | 같은 조 본문의 박스에서 직접 추출하므로 이동 불필요. 다만 04번이 못 찾는 경우가 종별 15건 있다 — 박스가 다른 조각에 있는 것 6건, 정규식 차이 3건, `inline_law_nearby`(이웃 조의 박스라 04번이 찾지 않는다) 6건 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] [code:data/rag_context.py:228-232] [code:data/rag_context.py:468-470] <!-- 잰 날짜 모름 --> <!-- 확인 못 함: 15건과 그 갈래 수는 측정 원자료가 저장소에 없다 --> |
+| `inline_law_*` | 같은 조 본문의 박스에서 직접 추출하므로 이동 불필요. 다만 04번이 못 찾는 경우가 종별 15건 있다 — 박스가 다른 조각에 있는 것 6건, 정규식 차이 3건, `inline_law_nearby`(이웃 조의 박스라 04번이 찾지 않는다) 6건 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] [code:data/rag_context.py:228-232] [code:data/rag_context.py:468-470] <!-- 잰 날짜 모름 --> <!-- 확인 못 함: 15건과 그 갈래 수는 그때 원자료가 남지 않음 --> |
 | `self_item` | 같은 항 안의 호 — 자기 본문 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] |
 | `self_paragraph_not_found` | 해당 항을 못 찾음 — 01번 citation 추출을 고친 뒤 0건 [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] [code:notebooks/03-1_citation_해석.ipynb:266] (2026-10-12 기준) [c:3878691] |
 | `excluded_reference` | 준용에서 제외된 조문 — 적용되지 않으므로 뺀다 (강아지 17, 고양이 11) [code:notebooks/03-2_참조관계_그래프.ipynb:74-77] [code:notebooks/03-1_citation_해석.ipynb:266] [docs:02_pipeline/03a_citation.md] (2026-10-12 기준) [code:KNOWN_ISSUES.md:170] |
@@ -76,7 +75,7 @@ Neo4j가 빛나는 건 "A를 참조하는 B를 참조하는 C"처럼 **다단계
 
 |  | 강아지 | 고양이 | 인사규정 |
 | --- | --- | --- | --- |
-| 노드 | 446 | 408 | 6 [code:notebooks/03-2_참조관계_그래프.ipynb:168-169] (2026-10-12 기준) <!-- 확인 못 함: 인사규정 6은 git 밖 그래프 파일로 센 것 --> |
-| 엣지 | 745 | 686 | 7 <!-- 잰 날짜 모름 --> <!-- 확인 못 함: 엣지 수는 git 밖 그래프 파일로 센 것 --> |
+| 노드 | 446 | 408 | 6 [code:notebooks/03-2_참조관계_그래프.ipynb:168-169] (2026-10-12 기준) [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 5절 참조 그래프 기본 판 --> |
+| 엣지 | 745 | 686 | 7 <!-- 잰 날짜 모름 --> [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 5절 참조 그래프 기본 판 --> |
 
 ✓ 인사규정도 같은 구조의 그래프를 만든다(`hr_preprocess.py`). 조립 코드는 코퍼스 이름으로만 나뉘고 나머지는 같다. [code:data/hr_preprocess.py:18-21] [code:data/hr_preprocess.py:214] [code:data/rag_context.py:61-66]
