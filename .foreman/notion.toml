@@ -2,20 +2,17 @@
 # 이 파일이 있으면 저장소 몫 칸은 모두 이 파일 것을 쓰고 FOREMAN config/notion.toml [petmint-rag-chatbot] 의 같은 칸은 보지 않는다.
 # root, docs_page, portfolio_page, ref, github 은 FOREMAN 쪽에만 둔다.
 #
-# 2026-11-19 게시를 멈췄다(사용자). 원고 폴더를 notion/ 으로 바꿀 때까지 멈춘다.
-#   문서 정리 A단계에서 docs/ 에 머리 주석과 근거 표시를 달았는데, 게시기는 notion/ 아래 원고일 때만 그것을 떼고 올린다.
-#   지금처럼 docs/ 를 그대로 올리면 노션에 그대로 나가므로 manual 로 둔다. F단계에서 src 를 notion/ 으로 바꾸고 다시 켠다.
-# 아래 docs 밖의 칸은 FOREMAN [petmint-rag-chatbot] 의 값을 바꾸지 않고 옮겼다(그 칸들의 까닭은 FOREMAN 쪽 주석과 log/petmint_docsync_dryrun_20261109.md).
+# 2026-11-19 게시를 멈췄다(사용자). 문서 정리 A단계에서 docs/ 에 머리 주석과 근거 표시를 달았는데, 게시기는 원고(notion/)일 때만 떼고 올린다.
+# 2026-11-19 게시 원고 폴더를 notion/ 으로 바꿨다(사용자 결정, 문서 정리 F단계, 런슈즈 · 인프라 · FOREMAN 과 같은 꼴).
+#   notion/ 의 폴더 나무가 [기술문서] 아래 페이지 나무가 된다. docs/ 는 개발자 문서라 노션에 올리지 않는다.
+#   docs/ 를 올리던 때의 칸(new_parent, new_title, order, keep_notion, skip)은 원고 폴더에 맞지 않아 뺐다. 옛 값은 이 파일의 git 이력에 있다.
+#   처음에는 manual 로 두고 한 편씩 올린 뒤 auto 로 켠다(한 번에 여러 편을 이어 올리면 런슈즈 때처럼 겹친다).
 
 docs = "manual"
+src = "notion/"     # 원고 폴더. 게시기가 머리 주석, 근거 표시, 저장소 링크를 떼고 올린다
 quiet_min = 30
-create = true
-archive = false
-headings = "md"
-new_parent = "folder"
-new_title = "numbered"
-title = "keep"
-order = "keep"
-header = "footer"
-keep_notion = ["inline_code", "image", "heading", "shape"]
-skip = ["docs/README.md", "docs/next_rebuild.md", "docs/ops/"]
+create = true       # 짝 없는 원고는 새 페이지로 만든다
+archive = false     # 원본이 사라져도 페이지를 휴지통으로 보내지 않는다(기본은 보낸다). 사람이 보고 정한다
+headings = "md"     # 원고의 ## 를 노션 머리 2단계로
+title = "h1"        # 페이지 제목 = 원고의 첫 # 줄(예: 「00 전체 그림」)
+header = "footer"   # 맨 위 사본 상자 대신 맨 아래 갱신 줄에 읽은 커밋을 적는다
