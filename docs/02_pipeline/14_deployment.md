@@ -2,8 +2,8 @@
 다루는 곳: Dockerfile, .dockerignore, Jenkinsfile, app/config.py, app/main.py, app/services/policy_data.py, app/fixtures/customers.example.json, db/conn.py, db/bootstrap.py, db/migrate.py, db/employees.py, db/rule_report.py, db/seed_insurance_core.py, db/migrations/, db/fixtures/employees.json, deploy/host/petmint-search.service, deploy/scripts/host-nfs-setup.sh, search_service/, data/model_client.py, scripts/search_parity.py, scripts/rollout_measure.sh, scripts/rollout_table.py, scripts/coverage_measure.sh, scripts/coverage_chain.sh, scripts/coverage_table.py, scripts/crowding_count.py, scripts/pool_chain.sh, scripts/sibling_sim.py, scripts/offtarget_probe.py, scripts/rejudge_chain.sh, tests/test_coverage_code.py, tests/test_rule_first.py
 읽은 커밋: 6710b83
 -->
-> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-25절). 남은 것은 4절의 한계. [code:Dockerfile] [code:Jenkinsfile] [c:afefd07] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/06_jenkins.md:448, docs/history/build_log/04_argocd.md:377, :379, bootstrap/root-app.yaml:1, apps/petmint/app.yaml:4-6 -->
-> search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다. 검색 모델(KURE · 리랭커)은 2026-11-11부터 공용 model-service(192.168.122.1:8200)에 있다(1-26절). [code:deploy/host/petmint-search.service:1-2] [code:deploy/host/petmint-search.service:33] [code:search_service/main.py:39-41] [c:0e31e94] <!-- 2026-11-19 잼: 공개 주소 체험 로그인으로 사내규정 질문 1회를 WS로 보내 답이 옴(코드 답 경로라 생성 모델과 검색은 타지 않음), curl 로 192.168.122.1:8100/health 와 :8200/health ok -->
+> 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-15절). 남은 것은 4절의 한계. [code:Dockerfile] [code:Jenkinsfile] [c:afefd07] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/06_jenkins.md:448, docs/history/build_log/04_argocd.md:377, :379, bootstrap/root-app.yaml:1, apps/petmint/app.yaml:4-6 -->
+> search-service는 호스트 systemd 유닛 `petmint-search`(192.168.122.1:8100)로 돌고, 클러스터 WS는 실제 답변을 돌려준다. 검색 모델(KURE · 리랭커)은 2026-11-11부터 공용 model-service(192.168.122.1:8200)에 있다(1-16절). [code:deploy/host/petmint-search.service:1-2] [code:deploy/host/petmint-search.service:33] [code:search_service/main.py:39-41] [c:0e31e94] <!-- 2026-11-19 잼: 공개 주소 체험 로그인으로 사내규정 질문 1회를 WS로 보내 답이 옴(코드 답 경로라 생성 모델과 검색은 타지 않음), curl 로 192.168.122.1:8100/health 와 :8200/health ok -->
 
 #### 0. 한 줄 요약
 
@@ -18,7 +18,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | 프로세스 | 위치 | 이유 |
 | --- | --- | --- |
 | Ollama | GPU 호스트 | 모델 추론에 GPU [code:app/config.py:66] |
-| model-service(공용) | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✓ 호스트 systemd `model-service`(192.168.122.1:8200, 2026-11-11부터). 런슈즈 챗봇도 같이 쓴다. 저장소 `~/AI_programming/model-service`(1-26절) [code:deploy/host/petmint-search.service:2] [code:deploy/host/petmint-search.service:33] [code:search_service/main.py:12-15] [c:0e31e94] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/model_service/main.py:32, systemctl status model-service 로 2026-11-11 17:34:19부터 active. 런슈즈는 runshoes chatbot/search/embed.py:3, :18 이 MODEL_SERVICE_URL 을 씀(읽기만) --> |
+| model-service(공용) | GPU 호스트 | KURE 임베딩 + bge-reranker가 GPU. ✓ 호스트 systemd `model-service`(192.168.122.1:8200, 2026-11-11부터). 런슈즈 챗봇도 같이 쓴다. 저장소 `~/AI_programming/model-service`(1-16절) [code:deploy/host/petmint-search.service:2] [code:deploy/host/petmint-search.service:33] [code:search_service/main.py:12-15] [c:0e31e94] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/model_service/main.py:32, systemctl status model-service 로 2026-11-11 17:34:19부터 active. 런슈즈는 runshoes chatbot/search/embed.py:3, :18 이 MODEL_SERVICE_URL 을 씀(읽기만) --> |
 | search-service | 호스트 | BM25 · Milvus 조회 · 정렬. 모델은 model-service를 부른다 — 2026-11-11부터 GPU를 쓰지 않는다. ✓ 호스트 systemd `petmint-search`(192.168.122.1:8100, 2026-11-02부터 유닛). 코드는 `search_service/` [code:search_service/main.py:1-21] [code:deploy/host/petmint-search.service:1-5] [code:deploy/host/petmint-search.service:20-48] |
 | Milvus | 호스트 도커 → Pod 가능 | GPU를 쓰지 않는다. search-service와 함께 판단한다 [code:deploy/host/milvus/docker-compose.yml] |
 | MySQL | 호스트 도커 → Pod | GPU를 쓰지 않는다(12번 1-2절). ✓ 2026-10-16 Pod로 이주 [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml (65b9abb, 2026-10-16), docs/history/build_log/07_project_deploy.md:5 --> |
@@ -61,6 +61,9 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 
 개발 중에는 `docker run -v`로 호스트 경로를 붙이고, 클러스터에서는 **NFS 읽기 전용 PV**로 붙인다. 호스트의 `data/chunks`·`data/graph`·`app/fixtures`를 `/srv/nfs/petmint/`에 읽기 전용 bind mount하고 사설망(192.168.122.0/24)에만 NFSv4로 공유한다. 복사본이 없으므로 재색인해도 어긋나지 않는다. [code:Dockerfile:8-9] [code:deploy/scripts/host-nfs-setup.sh:7-17] [code:deploy/scripts/host-nfs-setup.sh:39] [c:afefd07]
 
+- [ ]  **약관을 바꾸면 앱 재시작이 필요하다.** 파일은 Pod에서 바로 보이지만 앱이 기동할 때 메모리에 올린다. 재색인 뒤에는 `rollout restart`가 필요하다 [code:app/main.py:41] [code:app/services/policy_data.py:28-43]
+- [ ]  **클러스터 DB는 픽스처 시드로 새로 시작했다.** 로컬 도커 MySQL의 개발 데이터는 옮기지 않았다
+
 #### 1-4. 접속 정보는 전부 환경변수
 
 | 변수 | 가리키는 곳 |
@@ -96,11 +99,11 @@ ArgoCD           변경을 보고 클러스터에 반영
 Harbor           이미지를 당겨 Pod 교체
 ```
 
-**앱 코드와 매니페스트를 다른 저장소에 둔다.** 한 저장소에 합치면 Jenkins가 태그를 바꿔 push할 때마다 빌드가 다시 돌아 무한루프가 된다. 매니페스트는 클러스터 공용 설정이 있는 `ronanlab-infra`의 `apps/petmint/`에 둔다(1-10절). [code:Jenkinsfile:12-13] [code:Jenkinsfile:60-61]
+**앱 코드와 매니페스트를 다른 저장소에 둔다.** 한 저장소에 합치면 Jenkins가 태그를 바꿔 push할 때마다 빌드가 다시 돌아 무한루프가 된다. 매니페스트는 클러스터 공용 설정이 있는 `ronanlab-infra`의 `apps/petmint/`에 둔다(1-9절). [code:Jenkinsfile:12-13] [code:Jenkinsfile:60-61]
 
 **이미지 태그에 버전을 박는다.** `latest`를 쓰지 않는다 — 롤링 중에 어느 Pod가 무엇을 부르는지 알 수 없게 된다(10번 8절). [code:Jenkinsfile:10] [code:Jenkinsfile:69] [docs:02_pipeline/10_consultation_flow.md]
 
-push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋 → 클러스터 반영**까지 자동으로 간다. 반영은 2026-11-10까지 ArgoCD에서 Sync를 눌러 했고, 매니페스트가 의도대로 들어가는 것을 확인한 뒤 2026-11-11 자동(`automated`)으로 바꿨다(1-25절). [code:Jenkinsfile:1] [code:Jenkinsfile:95-154] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6, :25-28 -->
+push 하나로 **빌드 → Harbor → 매니페스트 태그 커밋 → 클러스터 반영**까지 자동으로 간다. 반영은 2026-11-10까지 ArgoCD에서 Sync를 눌러 했고, 매니페스트가 의도대로 들어가는 것을 확인한 뒤 2026-11-11 자동(`automated`)으로 바꿨다(1-15절). [code:Jenkinsfile:1] [code:Jenkinsfile:95-154] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6, :25-28 -->
 
 ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containerd가 Harbor에서 직접 당기고, 경로는 `/etc/hosts`에 박은 `192.168.122.240`(MetalLB VIP)이다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:32-36, platform/ingress-nginx/overlay/service-patch.yaml:11-12 -->
 
@@ -111,7 +114,7 @@ ArgoCD는 매니페스트만 본다. 이미지는 각 노드의 kubelet/containe
 | Jenkins → Harbor | 클러스터 내부 Service | 거치지 않음 [code:Jenkinsfile:8-9] |
 | ArgoCD → Harbor | 부르지 않는다(ArgoCD는 매니페스트만 보고, 이미지는 노드가 Harbor에서 당긴다. 1-5절) | 해당 없음 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): ArgoCD가 Harbor에 붙는 설정은 인프라 저장소에 없음. 클러스터 안 Pod가 harbor.ronanlab.dev 를 ingress-nginx 내부 Service로 푸는 것은 platform/coredns/configmap.yaml:3-5, :22-25 --> |
 | ArgoCD → GitHub | 공개 인터넷 | 무관 |
-| GitHub → ArgoCD · Jenkins 웹훅 | 공개 호스트명의 웹훅 경로만 | Bypass — 서명(HMAC SHA-256)이 지킨다(1-22절, 13번 1-3절) [code:Jenkinsfile:3] [docs:02_pipeline/13_access_and_tunnel.md] <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
+| GitHub → ArgoCD · Jenkins 웹훅 | 공개 호스트명의 웹훅 경로만 | Bypass — 서명(HMAC SHA-256)이 지킨다(1-12절, 13번 1-3절) [code:Jenkinsfile:3] [docs:02_pipeline/13_access_and_tunnel.md] <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 --> |
 | 사람 → ArgoCD·Harbor·Jenkins | 브라우저 | Access(운영자만) [docs:02_pipeline/13_access_and_tunnel.md] |
 
 기계가 공개 호스트명으로 나갔다 들어오면 Access에 막힌다. 그래서 자동화는 전부 내부 주소로 간다. 사람이 브라우저로 들어가는 경로만 Access가 막는다(13번 1-3절). [docs:02_pipeline/13_access_and_tunnel.md]
@@ -139,24 +142,13 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 **ingress-nginx는 kustomize 로 묶는다.** 업스트림 매니페스트를 base 에 원본 그대로 두고 Service 패치를 overlay 로 얹는다. base 만 apply 하면 NodePort 로 돌아가므로 양쪽 주석에 "overlay 만 apply"를 적어 두었다. 패치에 `protocol: TCP` 가 없으면 Service ports 의 병합 키(port+protocol)가 맞물리지 않아 nodePort 가 무작위로 뽑힌다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/ingress-nginx/base/kustomization.yaml:1-4, platform/ingress-nginx/overlay/kustomization.yaml:1-2, platform/ingress-nginx/overlay/service-patch.yaml:3, :18, :22 -->
 
-#### 1-8. 이주 때 할 일
-
-- ✓ MySQL을 StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입 [code:db/conn.py:1-8] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:5, :36-41, :63-71 -->
-- ✓ 스키마는 초기화 Job으로 — 앱 이미지로 `python -m db.migrate`를 그대로 돌린다 [code:Dockerfile:10] [code:db/migrate.py]
-- ✓ 환경변수만 바꾸고 연결 확인 [code:db/conn.py:20-24]
-- ✓ `insurance_core`의 마이그레이션과 시드도 초기화 Job에 넣는다 [code:db/migrate.py:7] [code:db/seed_insurance_core.py:7-13] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:41-42 -->
-
-실제 이주(2026-10-16)에서는 약관 청크와 그래프를 **NFS 읽기 전용 PV**로 붙였다. 호스트의 `/srv/nfs/petmint/`를 모든 Pod가 같은 파일로 읽으므로 replicas를 늘려도 드리프트가 없다. DB는 `mysqldump`를 쓰지 않고 픽스처 시드 Job으로 새로 시작했다. [c:afefd07] [code:deploy/scripts/host-nfs-setup.sh:7] [code:db/seed_insurance_core.py:7-13]
-
-#### 1-9. 파이프라인 — CI (2026-10-15)
-
-✓ 1-5절의 흐름 중 **빌드→push→pull 까지가 이 단계에서 돌아갔다. 배포 자동화는 1-10절이다.** [code:Jenkinsfile:95-121]
+#### 1-8. 파이프라인 — CI (2026-10-15)
 
 | 항목 | 값 |
 | --- | --- |
 | 빌드 | BuildKit rootless v0.33.1. 특권 컨테이너 대신 seccomp·AppArmor만 푼다 [code:Jenkinsfile:6-7] [code:Jenkinsfile:28-39] |
 | 태그 | 커밋 해시(예: 4e81fa250169). latest를 쓰지 않는다 [code:Jenkinsfile:10] [code:Jenkinsfile:69] |
-| 트리거 | ~~SCM 폴링 2분. webhook 은 Access 에 막힌다~~ 2026-11-03부터 GitHub 웹훅(githubPush) + 폴링 15분 안전망 — 1-22절 [code:Jenkinsfile:3] [code:Jenkinsfile:173-178] |
+| 트리거 | ~~SCM 폴링 2분. webhook 은 Access 에 막힌다~~ 2026-11-03부터 GitHub 웹훅(githubPush) + 폴링 15분 안전망 — 1-12절 [code:Jenkinsfile:3] [code:Jenkinsfile:173-178] |
 | Jenkins 설정 | JCasC + job-dsl. 자격 증명과 Job 을 Helm values 가 만든다 [code:Jenkinsfile:3] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:54-110, :182 --> |
 | Harbor 계정 | robot 둘로 나눔 — jenkins(push+pull), pull(pull 전용, petmint 네임스페이스의 imagePullSecret harbor-pull) [code:Jenkinsfile:100-101] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/05_harbor.md:133, platform/jenkins/values.yaml:30, :75-76, apps/petmint/scripts/create-secrets.sh:8, :31-36, apps/petmint/app/deployment.yaml:34 --> <!-- 확인 못 함: jenkins robot 의 pull 권한은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
 
@@ -164,13 +156,9 @@ MetalLB(L2)로 사설망에 VIP를 하나 두고, ingress-nginx를 LoadBalancer�
 
 **robot 계정을 둘로 나눈 이유**는 역할이 다르기 때문이다. Jenkins 는 push 하고 노드는 pull 만 한다. 노드 Secret 에 push 권한이 들어가면 Pod 가 레지스트리를 덮어쓸 수 있고, 하나를 바꿀 때 다른 쪽까지 영향받는다.
 
-✓ **앱이 클러스터에서 돈다 (2026-10-16).** MySQL StatefulSet → 약관·시드 적재 → 초기화 Job → 앱 순으로 올렸고, Ingress 경유로 화면·고객 조회·조항 원문·WS 한 턴까지 응답한다. ✗ 약관 적재는 API 서버를 거쳐 Pod 안으로 tar를 흘려 넣어, m-k8s 디스크에 파일이 남지 않는다(아래 — 같은 날 NFS로 바꿨다). [c:afefd07] <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
+- [x]  ~~앱 리포의 어떤 푸시에도 빌드가 돈다. docs만 고쳐도 새 이미지와 배포 커밋이 생긴다.~~ 2026-11-09 해결 — 바뀐 파일(직전 성공 빌드의 커밋 → 이번 커밋)이 모두 `docs/`·`data/review/`·루트 `*.md`이면 빌드는 SUCCESS로 끝나되 이미지 빌드·태그 커밋을 건너뛴다(빌드 설명 "건너뜀 — 문서만", FOREMAN 끝 알림 `"skipped": true`). 손으로 누른 빌드, 직전 성공 커밋이 없거나 못 찾을 때는 늘 빌드한다. 이 경로들은 Dockerfile이 COPY하지 않고 `.dockerignore`로도 뺀다(`Jenkinsfile` 머리 주석) [code:Jenkinsfile:14-18] [code:Jenkinsfile:71-89] [code:Jenkinsfile:180-184] [code:.dockerignore:30] [code:.dockerignore:32-34] [c:9a72e2a]
 
-약관 데이터를 tar로 넣던 절차는 같은 날 NFS 읽기 전용 PV로 바꿨다(1-8절). ✓ 일반 모드는 클러스터에서 실제 답변을 확인했다(2026-10-18). ✓ search-service가 붙어 업무특화·사내규정도 답이 나온다(호스트 `petmint-search`). [c:afefd07] [code:deploy/host/petmint-search.service] <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-
-#### 1-10. GitOps — ArgoCD (2026-10-16)
-
-✓ 1-5절의 흐름이 **끝까지 돌아간다.** push 하나로 빌드·Harbor·매니페스트 커밋까지 가고, 반영은 Sync를 눌러 한다. [code:Jenkinsfile:123-151]
+#### 1-9. GitOps — ArgoCD (2026-10-16)
 
 **매니페스트 저장소는 `ronanlab-infra` 를 쓴다.** 새 저장소를 만들지 않는다. [code:Jenkinsfile:60-61]
 
@@ -186,7 +174,7 @@ ronanlab-infra/
 
 | 항목 | 값 |
 | --- | --- |
-| Sync 방식 | 자동(2026-11-11~, 그 전 수동 — 1-25절). prune·selfHeal 꺼두고 finalizer 없음 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-8, :25-28 --> |
+| Sync 방식 | 자동(2026-11-11~, 그 전 수동 — 1-15절). prune·selfHeal 꺼두고 finalizer 없음 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-8, :25-28 --> |
 | Namespace | ArgoCD 관리에서 제외. CreateNamespace=false <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:9, :29-30 --> |
 | 인증 | deploy key 둘 — argocd-read(읽기), jenkins-write(쓰기) [code:Jenkinsfile:124] [code:Jenkinsfile:128] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): scripts/make-deploy-keys.sh:29, :39, :50-51, apps/petmint/app.yaml:10 --> <!-- 확인 못 함: GitHub 쪽 키 등록은 GitHub 저장소 설정이라 저장소와 서버에서 읽을 수 없음 --> |
 | 매니페스트 수신 | Jenkinsfile 에서 `sh 'git clone'` 으로 받는다 [code:Jenkinsfile:12-13] [code:Jenkinsfile:137] |
@@ -210,23 +198,12 @@ ronanlab-infra/
 | 자식 syncPolicy | 덮지 않는다(ignoreDifferences + RespectIgnoreDifferences) — 자동 Sync 켜고 끄기는 지금처럼 클러스터에서 patch 가 스위치다. 그러지 않으면 Jenkins 태그 커밋 하나에 루트가 다시 Sync 해 스키마 배포 중 꺼 둔 자동 Sync 를 도로 켠다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): bootstrap/root-app.yaml:8-10, :33-43 --> |
 | monitoring | app.yaml 자리만. 루트 `exclude: 'monitoring/app.yaml'` 한 줄을 지우면 만들어진다(2026-11-02 판. 2026-11-10에 그 줄을 지워 지금은 monitoring Application이 있다) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): bootstrap/root-app.yaml:29, apps/monitoring/app.yaml:2, docs/history/build_log/04_argocd.md:381 --> |
 
-전환은 중단 없이 넘어갔다. 기존 Application 셋을 지우지 않고 같은 이름 · 같은 spec 을 루트가 apply 했다. cloudflared 만 path 가 `platform/cloudflared` → `apps/cloudflared` 로 바뀌었는데, 두 경로의 `kubectl kustomize` 출력이 0줄 차이라 Sync 없이 Synced 였다. 전환 뒤 세 앱의 파드 UID · 시작 시각, deploy · sts · cm · svc · ingress resourceVersion 이 전과 같고 자식 Sync 작업은 일어나지 않았다. 터널 커넥터 4/4, petmint · runshoes 공개 주소 200. 되돌리기와 전후 기록은 호스트 `~/k8s-cluster/backup/2026-11-02-app-of-apps/`. 폴더만으로 되는지는 시험 앱 `apps/zz-smoke/`(리소스 0개, 수동 Sync)를 push 해 확인했다 — 손대지 않아도 루트가 조회 주기(3분) 안에 Application `zz-smoke` 를 만들었다. 지울 때는 폴더를 지우는 커밋을 push 한 뒤 `kubectl -n argocd delete application zz-smoke` 를 따로 한다(prune 끔). (2026-11-02 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): zz-smoke 추가 1bce3fe, 지움 d6ad706, 호스트 ~/k8s-cluster/backup/2026-11-02-app-of-apps/ROLLBACK.md 와 pods-before, pods-after 가 같음 --> <!-- 확인 못 함: kustomize 출력 0줄 차이, 터널 커넥터 4/4, 공개 주소 200 은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-
 배포는 이제 **ArgoCD 가 독점한다.** `kubectl apply` 나 `apply.sh` 를 쓰면 상태가 엇갈린다 — 실제로 `kubectl scale --replicas=3` 을 하자 즉시 OutOfSync 로 잡혔고 Sync 하니 Git 값인 2 로 돌아왔다. (2026-10-16 기준) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답), 다시 재려면 서비스가 끊길 수 있어 사람 승인이 필요함 -->
 
+- [ ]  **ArgoCD는 `ssl-passthrough`를 뺀 상태다.** 나중에 그 플래그를 켜면 붙인 인증서가 쓰이지 않는다
 
-#### 1-11. 검색·답 표시 플래그 운영 반영 (2026-10-23)
 
-✓ **운영이 이미지 `f7991c90f22e` + 아래 플래그로 돈다.**(2026-10-23 판. 2026-11-19 지금 운영 이미지는 `39d2d6bb5ab8`) 그 전 운영 이미지(b6a7399)는 평가 220 기준선(자동 통과 117) 시점의 코드였다. 같은 평가에서 지금 코드는 플래그를 모두 끄고도 159, 모두 켜면 163이다(rebuild4, 3회 평균 — `data/review/rollout_measure.md`). 117 → 159는 코드(고객 사실·되묻기 정리·코드 답 카드)에서 오고, 플래그가 그 위에 판정 정확 +9.4·판정 거절 −8.3을 더한다. 틀림은 늘지 않았다. [code:data/review/rollout_measure.md] [c:f7991c9] [c:b6a7399] (2026-10-23 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/kustomization.yaml:31-32 (지금 39d2d6bb5ab8). 2026-10-23 플래그를 켠 7d05ff4 때 f7991c90f22e 였음 -->
-
-| ConfigMap 키 | 값 | 하는 일 | 측정(그 플래그만 끈 것과 비교) |
-| --- | --- | --- | --- |
-| `PETMINT_CHUNKS_DIR`·`PETMINT_GRAPH_DIR` | `/var/lib/petmint/chunks/v3`·`graph/v3` | 청크 v3(약관 호·법령박스 분할). NFS 공유 안의 v3 폴더 | 아래 둘과 함께 [code:app/config.py:19-21] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:35-36 (7d05ff4, 2026-10-23) --> |
-| `PETMINT_SEARCH_VARIANT` | `v3` | search-service가 Milvus `petmint_*_v3`로 찾는다(약관만) | 정확 +3.0, 예외누락 −1.3, 거절 −1.0 [code:app/config.py:38] [code:app/services/retrieval.py:23-24] [code:data/review/rollout_measure.md] (2026-10-23 기준) |
-| `PETMINT_DISPLAY_PARENT` | `1` | v3 조각으로 찾고 모델에게는 부모(원래 청크) 글을 보여 준다 | (v3와 함께) [code:app/config.py:40-41] |
-| `PETMINT_SEARCH_EXPAND` | `1` | 질의 확장(고객 말 → 약관 말, BM25·리랭커 질의에만) | 정답이 프롬프트에 든 턴 62 → 73, 판정 거절 37.3 → 30.7, 정확 +5.0 [code:app/config.py:34] [code:data/review/rollout_measure.md] (2026-10-23 기준) |
-| `PETMINT_EXPAND_DICT` | `v2` | 동의어 사전 v2(62항목) | 검색 회귀 hit@3 92 → 95, MRR 0.866 → 0.880. 답은 흔들림 안 [code:app/config.py:35] [code:data/query_expansion.py:17] [code:data/synonyms.py:41] [code:data/review/rollout_measure.md] (2026-10-23 기준) |
-| `PETMINT_ANSWER_TABLES` | `1` | 답이 쓴 발췌의 표를 답 아래에 붙인다 | 답에는 영향 없음(답 뒤에 붙는다). 표 붙은 턴 회당 8.7 [code:app/config.py:36] [code:data/review/rollout_measure.md] (2026-10-23 기준) |
+#### 1-10. 운영 플래그 반영
 
 플래그는 코드 기본값을 바꾸지 않고 ConfigMap에서만 켠다 — 되돌릴 때 ConfigMap만 고치면 된다. 모델(rebuild4)·고객 사실·숫자 가드레일은 그대로다. [code:app/config.py:34-41] [code:app/config.py:39] [code:app/config.py:65]
 
@@ -236,94 +213,20 @@ ronanlab-infra/
 2. ronanlab-infra에서 `git pull --rebase`로 그 태그 커밋을 받은 뒤 ConfigMap 변경을 push
 3. ArgoCD Sync → 초기화 Job(청구 이력 테이블 0002_claims, 비어 있을 때만 시드) → 앱 롤링 재시작. 이미지 태그가 같이 바뀌므로 `rollout restart`는 따로 하지 않는다 [code:db/migrations/insurance_core/0002_claims.sql] [code:db/seed_insurance_core.py:9-13] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:15-17, :42, apps/petmint/app/deployment.yaml:15 -->
 
-호스트는 할 일이 없었다. search-service(질의 확장·variant·사전 판 인자), Milvus v3 컬렉션, NFS의 v3 폴더가 이미 있었다. [code:search_service/main.py:55-63] <!-- 2026-11-19 잼: pymilvus list_collections 에 petmint_dog_v3, petmint_cat_v3 있음, ls 로 /srv/nfs/petmint/chunks/v3 와 /srv/nfs/petmint/graph/v3 있음 -->
-
-**되돌리기.** ConfigMap의 다섯 키를 지우고 청크·그래프 경로를 `/var/lib/petmint/chunks`·`graph`로 돌린 뒤 Sync하고 `rollout restart`하면 "코드만" 상태(159)가 된다. 이미지 태그까지 b6a7399로 돌리면 반영 전 운영이다. [code:data/review/rollout_measure.md] [c:b6a7399]
-
-✗ **반영 점검에서 찾은 결함 두 개.**
-
-- variant를 켜면 **사내규정 검색이 503**이었다. Milvus에 `hr_regulation_v3` 컬렉션이 없다(v3는 약관만 다시 잘랐다). 평가 220에는 사내규정 턴이 없어 측정에 드러나지 않았다. Retriever가 variant를 강아지·고양이 검색에만 붙이게 고쳤다(f7991c9, `tests/test_retrieval_variant.py`) [c:f7991c9] [code:app/services/retrieval.py:23-24] [code:app/services/retrieval.py:53] [code:tests/test_retrieval_variant.py]
-- **사내규정 답의 근거 조항을 열면 422**였다(반영 직후 운영 로그). 조항 원문 API가 처음부터 강아지·고양이만 받았다 — 이번 반영과 무관한 예전 버그다. 사내규정 코퍼스도 받게 고쳤다(f0279c2, `tests/test_articles_route.py`). 이 수정은 다음 push부터 운영에 들어간다 [c:f0279c2] [code:app/schemas.py:24] [code:app/routers/articles.py:25-26] [code:tests/test_articles_route.py]
-
-✓ **반영 확인.** Pod 2개 Running, 로그에 오류 0. Pod 안에서 시험 스크립트로 모드마다 질문을 보냈다(시험 세션이 운영 DB에 남는다 — 사용자 허락). (2026-10-23 기준) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-
-| 모드 | 질문 | 결과 |
-| --- | --- | --- |
-| 업무특화 | 보험금이 지급기일보다 40일 늦게 나오면 이자 얼마나 붙어요? | 답 + 【별표1】 적립이율 표가 붙음 <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
-| 업무특화 | 보험수익자가 정확히 누구예요? | 답 + 용어 정의 표, 해당 행 강조 <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
-| 사내규정 | 연차 개수는 얼마나 있어요?(사용자) · 지각을 몇 번 하면 징계를 받나요? | 답 + 근거 조항(제17·18·33조, 제13조) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
-| 일반 | 반려견 산책은 하루에 몇 번이 좋아요? | 답 <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
-
-#### 1-12. 보장 여부 질문 플래그 (2026-10-23, d64aea0)
-
-1-11 위에 두 키를 더 켠다. 측정은 평가 220 보이는 세트 3회 평균이다(`data/review/coverage_measure.md`). 판정 정확과 틀림은 판정 대상 턴에 대한 비율로 쓴다. 코드 답이 늘면 판정 대상 턴이 줄기 때문이다. [code:data/review/coverage_measure.md]
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_RULE_FIRST` | `1` | 보험금 지급사유·보상하는 손해 조에서, 같은 조의 원칙(제1항)이 참조에만 있으면 본문 앞으로 옮긴다(1안) | 자동 통과 157.0 → 159.7. 정확 47.7% → 52.6%. 틀림 12.4% → 11.6%. 원칙이 참조에만 있던 턴은 회당 15 → 1 [code:app/config.py:42-43] [code:data/review/coverage_measure.md] [c:d64aea0] (2026-10-23 기준) |
-| `PETMINT_COVERAGE_CODE` | `1` | 그 반려동물의 부담보에 걸리는 보장 질문은 코드가 특약 제2조 ①②④로 답한다. 대기기간에도 걸리면 그 줄을 붙인다. 분류 질문은 모델에게 남긴다(3안′) | 둘 다 켜면 자동 통과 163.0. 정확 53.5%, 틀림 12.1%. 부담보 대상 8문항은 거절 3.3 → 0, 예외누락 1.3 → 0. N축은 16/16 그대로 [code:app/config.py:44-45] [code:app/services/code_rules.py:86] [code:app/services/customer_facts.py:142] [code:data/review/coverage_measure.md] [c:d64aea0] (2026-10-23 기준) |
-
-대기기간 결론까지 코드로 내던 첫 3안은 버렸다. 가입 30일 안인 반려동물의 질병 질문을 모두 "30일 이내" 답으로 가져가, 면책 질문(유전병·예방접종·치과)에서 오답이 났다. 그 코드(`customer_facts.waiting_answer`)는 남아 있지만 쓰지 않는다. [code:app/services/customer_facts.py:272] [code:tests/test_coverage_code.py:42-49] [code:data/review/coverage_measure.md]
-
-표 청크의 깨진 글자를 정리한 청크 v4도 쟀지만 채택하지 않았다. 가입 나이 4문항(C51·C52·P09·S42)이 그대로였다. Milvus `petmint_*_v4`와 `data/chunks/v4`는 측정용으로만 남아 있다. [code:data/review/coverage_measure.md] [c:d64aea0] (2026-10-23 기준) [c:dcdecd9] <!-- 요약: data/review/chunks_graph_summary.md 30~32줄(v4 청크 파일)과 105줄(v4 그래프) --> <!-- 2026-11-19 잼: pymilvus list_collections 에 v4 컬렉션 있음 -->
-
-**반영 순서.** 1-11과 같다. 앱(d64aea0까지)을 먼저 push하고 infra를 나중에 push한다. 옛 이미지는 두 키를 모르므로 순서가 바뀌어도 해는 없다. **되돌리기:** 두 키를 지우고 Sync한 뒤 `rollout restart`한다. [c:d64aea0] [code:app/config.py:42-45]
-
-#### 1-13. 후보 깊이 50·신규 가입 나이 코드 답 (2026-10-24, f331617)
-
-1-12 위에 두 키를 더 켠다. 비교는 07번 11-6의 흔들림 기준(3회 평균 차이 4 안쪽은 효과로 보지 않음)으로 판단했다. [docs:02_pipeline/07_finetuning.md]
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_SEARCH_POOL` | `50` | search-service 1차 후보 깊이(Dense·BM25 각각) 20 → 50 | 검색 회귀 78·95·95 / MRR 0.880 → 80·97·97 / 0.897. 발췌가 바뀐 평가 문항은 S05 살처분·P47 소음 배상이 거절 3 → 정확 3, S11 상병명 모름이 정확 3 → 거절 3. 판정 지표 변화는 흔들림 폭 안. 모델 턴 지연 중앙값 872 → 1,028ms (`data/review/pool_measure.md`) [code:app/config.py:37] [code:data/search_engine.py:154] [code:data/search_engine.py:165-167] [code:data/review/pool_measure.md:57-60] [c:f331617] (2026-10-24 기준) |
-| `PETMINT_AGE_CODE` | `1` | 신규 가입 나이를 숫자로 묻는 질문은 코드가 약관 기준(일반조항 제2조 '반려동물' 1호: 만 8세, 실속형 만 10세 초과는 가입 대상 아님)과 비교해 답한다 | 코드가 답하는 조건은 셋이다: 나이 숫자가 있다, 신규 가입을 묻는다, 재가입·갱신이 아니다. 평가·회귀 307문장 중 P09·C51·C52에만 걸린다. 세 문항의 거절 3/3이 코드 답 3/3으로 바뀌었다. N축은 16/16 그대로다. 대상 밖 모델 턴 318개는 프롬프트가 같다 (`data/review/age_measure.md`) [code:app/config.py:46-47] [code:data/review/age_measure.md:59-60] [c:f331617] (2026-10-24 기준) |
-
-**반영 순서.**
-1. 앱(f331617까지)을 push한다 [c:f331617]
-2. 새 이미지 태그 커밋을 받는다
-3. ConfigMap을 push하고 Sync한다
-
 옛 이미지는 `PETMINT_AGE_CODE`를 모르므로 먼저 들어가도 해가 없다. 이미지 태그가 함께 바뀌면 재시작은 따로 하지 않는다. ConfigMap만 바뀌는 경우에는 Sync 뒤 `kubectl -n petmint rollout restart deploy/petmint-app`이 필요하다. [code:app/config.py:46-47]
-
-**되돌리기.** 두 키를 지우고 Sync한 뒤 `rollout restart`한다.
-
-
-#### 1-14. 면책 단서 코드 답 (2026-10-24, cbc78bf)
-
-1-13 위에 키 하나를 더 켠다.
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_PROVISO_CODE` | `1` | 의료비 특약 제2조 면책 항목의 단서가 질문의 경우를 보장 쪽으로 빼 주면 코드가 답한다(⑫ 침술, ② 1년 이내 예방접종, ⑲ Ⅰ 유형의 치아 외 구강질환) | 평가 220에서 코드 답으로 바뀐 턴은 S10·S20·S27·M14-2뿐이다. 대상 밖 모델 턴 306개는 프롬프트가 같다. N축 16/16 그대로. 자동 통과 164.0 → 166.7. 탐침 대상 9턴은 직접 정답 0/27 → 27/27 (`data/review/proviso_measure.md`) [code:app/config.py:48-49] [code:data/review/proviso_measure.md:75] [code:data/review/proviso_measure.md:82] [c:cbc78bf] (2026-10-24 기준) |
-
-코드가 답하는 조건은 두 가지다.
-- 병명이나 치료를 가리키는 말이 지금 질문에 있어야 한다. "한약은요?"·"이빨 뽑는 건요?" 같은 후속은 모델이 답한다
-- 예방접종은 질문에 접종 사실(시기 또는 미접종)이 있을 때만 답한다
 
 평가 전용 `PETMINT_TODAY`는 운영 ConfigMap에 넣지 않는다. 운영은 실제 날짜를 쓴다. [code:app/config.py:62-64]
 
-**반영 순서.** 1-13과 같다. 앱(cbc78bf까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. 옛 이미지는 이 키를 모르므로 먼저 들어가도 해가 없다. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`. [c:cbc78bf]
+집계는 Pod 안에서 숫자만 낸다(질문·답 글, 세션·상담원·고객 값은 어떤 옵션으로도 찍지 않는다 — 16번 5절): [code:db/rule_report.py] [docs:02_pipeline/16_code_answers.md]
 
-#### 1-15. 같은 제목 의료비 특약 조 올리기 (2026-10-28, 5f1d48a)
+```bash
+kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report                                       # 0008 적용 시각부터
+kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report --since 2026-11-01 --until 2026-11-08 --json
+```
 
-1-14 위에 키 하나를 더 켠다.
+모드별 턴·코드 답·모델 거절, 규칙별 발동·되묻기·👍/👎·다음 턴(없음/코드/모델(거절)/실패), 모델이 거절한 턴의 놓침 후보 갈래(병명 되묻기 앞 조건 중 어디서 막혔나, 상해 낱말, 사내규정 개인화 주제 낱말)를 낸다. 모델은 부르지 않는다. **되돌리기:** 이미지만 되돌리면 된다 — 칸은 NULL 허용이라 옛 이미지가 쓰지 않아도 그대로 돈다. [code:db/rule_report.py] [code:db/migrations/petmint/0008_turn_code_rule.sql] [c:82d86f0]
 
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_TWIN_ARTICLE` | `1` | 업무특화 검색에서 질문에 특약 낱말(통원·입원·치료·진료·수술·의료비·병원·질병·특약)이 없고 상위 3에 보통약관 제3조·제5조가 있으면, 후보 20 안의 같은 제목 의료비 특약 조(제1조 보험금의 지급사유·제2조 보험금을 지급하지 않는 사유)를 그 앞으로 올린다. 보통약관은 사람 상해보험 약관이라 이 두 조는 반려동물 보장의 근거가 아니다 | 평가 220에서 발동 0(프롬프트 변화 0), N축 16/16, 검색 회귀 80·97·97 / MRR 0.897 그대로. 평가 밖 탐침 135턴에서 사람 보험 면책("자신을 해친 경우·임신·출산")을 답한 턴 16 → 0, 거절 32 → 30 (`data/review/human_article_measure.md`) [code:app/config.py:50-52] [code:data/rag_context.py:560-566] [code:data/rag_context.py:581-596] [code:app/services/answer.py:53] [code:app/services/answer.py:222-225] [code:data/review/human_article_measure.md:54-55] [c:5f1d48a] (2026-10-28 기준) |
-
-같이 만든 `PETMINT_HUMAN_DEMOTE`(보통약관 제3·4·5조 점수 × 0.5)는 켜지 않는다. 탐침에서 "보장 안 되는 질병은 뭔가요?"를 거절 0/9 → 8/9로 바꿨다. 세 번째 발췌가 제5조 → 제19조로 바뀐 것만으로 모델이 거절했다. [code:app/config.py:51] [code:data/rag_context.py:563-564] [code:data/rag_context.py:582-586] [code:data/review/human_article_measure.md] [c:5f1d48a] (2026-10-28 기준)
-
-효과는 "보험금 안 나오는 경우는?"·"지급 안 되는 사유가 뭐예요?" 같은 질문뿐이다. 의료비 질문이 보통약관 제19조·일반조항으로 가는 평가 9문항(회당 거절 7턴)은 이 키로 풀리지 않는다(`data/review/offtarget_search.md`). [code:data/review/offtarget_search.md] (2026-10-28 기준)
-
-**반영 순서.** 1-14와 같다. 앱(5f1d48a까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`. [c:5f1d48a]
-
-#### 1-16. 직원 원장과 앱 로그인 (2026-10-28)
-
-코드와 스키마만 들어간다. **기본은 지금 그대로(`PETMINT_AUTH=access`)** — ConfigMap을 바꾸지 않으면 동작이 같다. [code:app/config.py:87-91]
-
-- 초기화 Job이 하는 일이 늘어난다(매니페스트는 그대로): `db.migrate`가 petmint `0006_accounts`, `db.migrate --app insurance_core`가 `0003_employees`를 적용하고, `db.seed_insurance_core --if-empty`가 직원 테이블이 비어 있으면 가상 직원 11명(`db/fixtures/employees.json`, 이미지 안)을 깐다 [code:db/migrations/petmint/0006_accounts.sql] [code:db/migrations/insurance_core/0003_employees.sql] [code:db/migrate.py:7] [code:db/seed_insurance_core.py:16-17] [code:db/fixtures/employees.json] [code:Dockerfile:35] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:40-42 -->
-- 앱 의존성에 `argon2-cffi`가 더해진다(이미지 재빌드) [code:app/requirements.txt:12]
+#### 1-11. 앱 로그인
 
 앱 로그인을 켤 때(`PETMINT_AUTH: "app"`): [code:app/config.py:87-89]
 
@@ -342,65 +245,9 @@ kubectl -n petmint exec -it deploy/petmint-app -- python -m db.employees list
 
 Access 정책은 그대로 둘 수 있다(로그인 두 번). 외부 데모로 열 때는 petmint 호스트의 Access 정책을 풀어야 앱 로그인 화면이 바로 보인다 — 이것은 Cloudflare 대시보드에서 사람이 한다(13번 1-3절). [docs:02_pipeline/13_access_and_tunnel.md] <!-- 확인 못 함: Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
 
-#### 1-17. 사내규정 개인화 (2026-10-28)
-
-1-16 위에 키 하나를 더 켠다. 앱 로그인(`PETMINT_AUTH: "app"`)과 같이 켠다 — 신원이 직원 이메일이어야 원장을 찾는다(access 모드의 헤더 없음·dev@local은 원장에 없어 모델이 답한다). [code:app/config.py:53-54] [code:app/config.py:85] [code:app/services/answer.py:212-218]
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_HR_PERSONAL` | `1` | 사내규정 모드에서 본인 지칭 + 연차 잔여·연차수당·퇴직금·자격수당·승진·급여·통상임금이면 인사 원장으로 코드가 답한다(2026-10-28 급여·통상임금 추가, 지급일은 개정 제25조) | 개인 탐침 32문항 96/96(기준은 우연 일치 19/96), 대상 밖 프롬프트(음성 8·HR 18) 78/78 같음. 업무특화·검색은 경로 밖 (`data/review/hr_personal_measure.md`) [code:app/config.py:53-54] [code:app/services/hr_personal.py] [code:data/review/hr_personal_measure.md:24-25] [c:13c1734] [c:7cfa08b] |
-
-**반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
-
-2026-10-28 운영 피드백으로 고쳤다(키는 같다, 이미지만): 본인 지칭 없는 후속("연차 미사용분은 얼마 받나요?")이 바로 앞 개인화 질문을 이어받는다, 미사용 연차수당 금액, 코드 답의 근거 조항은 검색 결과가 아니라 코드가 쓴 조항. 후속 15/15(전 2/15), 대상 밖 프롬프트 93/93 같음. 이어서 퇴직 예정일("퇴직 날짜가 2026년 12월 30일 입니다")을 받아 그날 기준으로 퇴직금·연차수당을 계산하고, 이어받기를 개인화 사슬 + 퇴직 예정일 정보로 넓혔다 — 후속 18/36 → 36/36, 모델로 가야 하는 후속 0/33 그대로, 대상 밖 프롬프트 114/114 같음(`data/review/hr_personal_measure.md`). [code:data/review/hr_personal_measure.md:53] [code:data/review/hr_personal_measure.md:86-88] [c:f91fb19] [c:33323cd]
-
-#### 1-18. 가상 직원 이름·팀 바꾸기 (2026-10-28)
-
-키는 그대로, 이미지와 마이그레이션 둘이다. 초기화 Job이 Sync 때 돌린다.
-- insurance_core `0004_employee_rename`: 가상 직원 11명의 이름·이메일을 예시 이름(홍길동 등)에서 고객과 성까지 겹치지 않는 이름으로, 팀을 고객상담팀 하나로. **사번은 그대로**(입사연도 + 순번 — 이름과 상관없고 로그인 ID다) [code:db/migrations/insurance_core/0004_employee_rename.sql] [code:db/fixtures/employees.json] [c:4d3a65d]
-- petmint `0007_agent_email_rename`: 상담 기록의 상담원 이메일(`sessions.agent_email`)을 새 이메일로 옮긴다 — 지난 채팅·세션 소유권이 이어진다. 로그인(accounts·auth_sessions)은 사번으로 묶여 있어 다시 로그인할 필요가 없다 [code:db/migrations/petmint/0007_agent_email_rename.sql:1-5]
-
-로컬에서 확인: 바꾸기 전후로 직원별 세션 수가 같고(148·111·99…), 같은 비밀번호로 로그인해 지난 채팅이 그대로 보인다. [c:4d3a65d] (2026-10-28 기준) <!-- 확인 못 함: 지난 일이라 다시 잴 수 없음(2026-11-19 개발 DB 읽기 전용 COUNT 로 직원별 세션 수는 582, 288, 239, 211, 144, 30) -->
-
-#### 1-19. 병명 되묻기 (2026-10-28)
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_ASK_DISEASE` | `1` | 업무특화에서 병명 없이 보장을 묻는 질문("○○가 입원했어요. 보장되나요?")은 가입 의료비 특약 원칙 + 병명 되묻기를 코드가 답한다(다섯 조건, 대기기간 안이면 발병일도) | 탐침 되묻기 0/24 → 24/24(거절 17 → 0), 되묻지 말아야 42/42 그대로, 후속 5/12 → 8/12. 평가 220: 바뀐 턴 L02·L14뿐(통과), 대상 밖 프롬프트 100개 같음, N축 16/16 (`data/review/disease_ask_measure.md`) [code:app/config.py:55-56] [code:data/review/disease_ask_measure.md:18-20] [c:2a13182] (2026-10-28 기준) |
-
-**반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋을 받는다 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
-
-같은 키로 되물은 뒤 상해로 답한 턴도 코드가 답한다(2026-10-28, 이미지만): 상해 보상 원칙·대기기간 없음·금액 되묻기. 탐침 후속 12/24 → 21/24(상해 0/9 → 9/9), 평가 220 프롬프트 100개 같음. [code:data/review/disease_ask_measure.md:34] [c:ed150c6]
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_ASK_DISEASE_LLM` | `1` | 병명 되묻기의 "병명·증상 이름이 있는가"를 베이스 모델(tri-7b)이 본다. 면책 사실은 코드가 막고, 모델 실패 시 정규식 | gemma 말투 무병명 되묻기 7/60 → 39/60(거절 46 → 16), 병명 잘못 되묻기 0, 평가 220 프롬프트·코드 답 같음 (`data/review/disease_ask_llm_measure.md`) [code:app/config.py:57-58] [code:app/services/name_check.py] [code:data/review/disease_ask_llm_measure.md:29] [c:130b1d6] (2026-10-28 기준) |
-
-#### 1-20. 코드 답 규칙 운영 집계 (2026-10-29)
-
-키는 없다 — 이미지와 마이그레이션 하나다. 초기화 Job이 Sync 때 petmint `0008_turn_code_rule`(`turns.code_rule` 칸 하나, 기존 행 그대로)을 적용하고, 그다음 턴부터 답한 규칙 이름이 남는다(모델 답은 NULL). [code:db/migrations/petmint/0008_turn_code_rule.sql] [code:db/rule_report.py:32]
-
-집계는 Pod 안에서 숫자만 낸다(질문·답 글, 세션·상담원·고객 값은 어떤 옵션으로도 찍지 않는다 — 16번 5절): [code:db/rule_report.py] [docs:02_pipeline/16_code_answers.md]
-
-```bash
-kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report                                       # 0008 적용 시각부터
-kubectl -n petmint exec deploy/petmint-app -- python -m db.rule_report --since 2026-11-01 --until 2026-11-08 --json
-```
-
-모드별 턴·코드 답·모델 거절, 규칙별 발동·되묻기·👍/👎·다음 턴(없음/코드/모델(거절)/실패), 모델이 거절한 턴의 놓침 후보 갈래(병명 되묻기 앞 조건 중 어디서 막혔나, 상해 낱말, 사내규정 개인화 주제 낱말)를 낸다. 모델은 부르지 않는다. **되돌리기:** 이미지만 되돌리면 된다 — 칸은 NULL 허용이라 옛 이미지가 쓰지 않아도 그대로 돈다. [code:db/rule_report.py] [code:db/migrations/petmint/0008_turn_code_rule.sql] [c:82d86f0]
-
-
-#### 1-21. 병명 보장 대조 (2026-10-29)
-
-| ConfigMap 키 | 값 | 하는 일 | 측정 |
-| --- | --- | --- | --- |
-| `PETMINT_NAMED_COVER` | `1` | 업무특화에서 병명이 있는 보장 질문("감기도 보장되나요?")은 그 반려동물 의료비 특약 제2조 면책 목록과 대조해 코드가 답한다 — 목록에 없으면 원칙 보상 + 단서, 있으면 그 조항. 금액 되묻기 뒤 "감기도 돼요?"는 금액 되묻기를 되풀이하지 않는다 | 내 탐침 47/81 → 81/81, gemma 80문항 거절 63 → 24, 평가 220 프롬프트가 바뀐 턴은 대상 8개뿐(대상 5/8 → 8/8), N축 16/16, 병명 되묻기 탐침 그대로 (`data/review/named_cover_measure.md`) [code:app/config.py:59-61] [code:app/services/named_cover.py] [code:data/review/named_cover_measure.md:29-31] [c:d3a8706] (2026-10-29 기준) |
-
-**반영 순서.** 앱(이 커밋까지) push → 이미지 태그 커밋 → ConfigMap push → Sync. **되돌리기:** 키를 지우고 Sync한 뒤 `rollout restart`.
-
 ---
 
-#### 1-22. GitHub 웹훅 — ArgoCD · Jenkins (2026-11-03)
+#### 1-12. GitHub 웹훅 — ArgoCD · Jenkins (2026-11-03)
 
 push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 않고 바로 반영된다. [code:Jenkinsfile:3] [c:62216c0]
 
@@ -412,13 +259,10 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 | 하는 일 | 저장소가 맞는 앱을 refresh 만 한다. Sync 는 각 앱 설정대로 | 저장소 URL 이 맞는 잡에 SCM 조회 한 번(githubPush). 안전망 pollSCM 15분 [code:Jenkinsfile:3] [code:Jenkinsfile:173-178] |
 
 - 시크릿은 둘로 나눴다(ArgoCD 하나, Jenkins 하나). 하나가 새도 다른 쪽은 받지 않는다 — 서로의 값으로 서명한 요청이 거부되는 것을 확인했다 (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 두 시크릿이 다른 값 docs/history/build_log/04_argocd.md:59, docs/history/build_log/06_jenkins.md:76, :470 --> <!-- 확인 못 함: 서로의 값으로 서명한 요청이 거부된 시험 결과는 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-- Jenkins 는 github 플러그인 1.47.0 을 더했다(helm revision 6, 재시작 46초). 새 플러그인은 github · github-api · json-path-api · token-macro 넷이고, 기존 10개(workflow-cps · workflow-job 등)가 작은 버전으로 같이 올랐다 — 차트가 재시작마다 `--latest true` 로 하는 것이다(github 없이 풀어도 같다). 받아 둔 asm-api 새 버전은 적용되지 않았다. 이 때문에 같은 날 플러그인을 고정했다(1-23절) (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:172-173, :184, :203, :216, :241, 호스트 ~/k8s-cluster/backup/2026-11-03-webhooks/ROLLBACK.md:6, :16 --> <!-- 확인 못 함: asm-api 새 버전이 적용되지 않은 것은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
 - **ArgoCD 는 웹훅 시크릿을 argocd-server 가 뜰 때 한 번 읽는다**(v2.13 `NewHandler`). 키를 넣은 뒤 재시작 전에는 같은 본문이 한 번 맞게 들어온 뒤 틀린 서명(`00`)도 200 으로 처리됐다. `rollout restart deploy/argocd-server` 뒤에는 맞는 서명 10/10, 틀린 · 다른 값 · 무작위 · 없는 서명 0/40 통과(Jenkins 도 같은 시험 10/10 · 0/40). **시크릿을 바꾸면 argocd-server 를 다시 띄운다** (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/04_argocd.md:387-391, docs/06_gitops.md:96, 호스트 ~/k8s-cluster/backup/2026-11-03-webhooks/ROLLBACK.md:17-18 -->
-- 잰 값: infra 빈 커밋 push → argocd-server 가 push 이벤트를 받고 **6.2초 뒤** 루트가 새 커밋(217f81c)을 봤다. 같은 push 에 petmint(수동 Sync, OutOfSync 그대로) · cloudflared(수동) 는 Sync 되지 않았다 — 마지막 Sync 시각 · 파드 UID · resourceVersion 이 push 전과 같다 (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 호스트 ~/k8s-cluster/backup/2026-11-03-webhooks/watch-2f1141b.txt(21:43:05.504 수신, 21:43:11.737 루트 새 커밋), 같은 폴더 ROLLBACK.md:20. 그때 해시 2f1141b 는 지금 main 217f81c -->
-- 잰 값(Jenkins, 펫퍼민트 push 62216c0): Jenkins 웹훅 수신 21:45:32.1 → 잡 조회 · 변경 감지 · #46 트리거 21:45:34.7(2.6초) → 빌드 시작 21:45:42 · 60초 · SUCCESS("Started by GitHub push") → 태그 커밋 3bfdd06 21:46:37 → ArgoCD 웹훅 수신 21:46:42 → petmint OutOfSync. 앱 push 에서 OutOfSync 까지 약 70초(빌드 60초 포함) — 전에는 폴링 2분 + 빌드 + 조회 3분이었다. Sync 는 수동 그대로(사람이 21:47:24 에 눌렀다) [c:62216c0] (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 호스트 ~/k8s-cluster/backup/2026-11-03-webhooks/ROLLBACK.md:21, docs/history/build_log/06_jenkins.md:457. 그때 해시 167ed37 은 지금 main 3bfdd06 -->
 - Access 는 웹훅 경로만 Bypass 한다(13번 1-3절). 되돌리기와 측정 기록은 호스트 `~/k8s-cluster/backup/2026-11-03-webhooks/` [docs:02_pipeline/13_access_and_tunnel.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 호스트 백업 폴더 ~/k8s-cluster/backup/2026-11-03-webhooks/ROLLBACK.md 있음 --> <!-- 확인 못 함: Access Bypass 는 Cloudflare 대시보드 설정이라 저장소와 서버에서 읽을 수 없음 -->
 
-#### 1-23. Jenkins 플러그인 버전 고정 (2026-11-03)
+#### 1-13. Jenkins 플러그인 버전 고정 (2026-11-03)
 
 차트 기본(`installLatestPlugins: true` → `jenkins-plugin-cli --latest true`)은 재시작할 때마다 의존 플러그인을 최신으로 올린다. 빌드가 어느 날 깨져도 무엇이 바뀌었는지 알 수 없어서 고정했다(helm revision 7, infra 770979a). <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:172-173, 호스트 ~/k8s-cluster/backup/2026-11-03-jenkins-pin/ROLLBACK.md:3. 그때 해시 5f4c6c3 은 지금 main 770979a -->
 
@@ -428,13 +272,11 @@ push 하면 주기 조회(ArgoCD 3분 · Jenkins 폴링 2분)를 기다리지 �
 | `installLatestPlugins` | false | 목록에 없는 의존이 생기면 최신이 아니라 요구 최소 버전. 목록이 빠짐없어 받을 것이 없다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:175 --> |
 | `overwritePlugins` | true | 기동마다 `JENKINS_HOME/plugins` 를 비우고 목록으로 다시 채운다 — 설치 = 목록 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:176 --> |
 
-- 고정 전 확인: 렌더된 `plugins.txt` 73개 = 실행 중 73개, 빈 디렉터리에서 `--latest false` 로 풀어도 결과가 같은 73개(더 받는 의존 없음) (2026-11-03 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 실행 중 73개는 호스트 ~/k8s-cluster/backup/2026-11-03-jenkins-pin/plugins-rev6.txt, 2026-11-03-webhooks/jenkins-plugins-running.txt --> <!-- 확인 못 함: 빈 디렉터리에서 --latest false 로 푼 시험은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-- 적용 뒤: 재시작 35초, pluginManager API 73개 모두 활성이고 고정 목록과 한 줄도 다르지 않다. JCasC · githubPush 트리거 · 서명 설정 그대로, 웹훅 서명 시험 맞음 200 · 틀림 400 · 없음 400 (2026-11-03 기준) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
 - **찾은 것:** 그 전에는 `JENKINS_HOME/plugins` 에 `.jpi.pinned` 표시가 있어 받아 둔 새 버전이 적용되지 않는 경우가 있었다(asm-api). 받은 것(ref)과 실행 중인 것이 달라 "무엇이 깔려 있나"를 디스크로는 알 수 없었다 — 이제 overwritePlugins 로 둘이 같다. 목록은 디스크가 아니라 API(`/pluginManager/api/json`)로 뽑는다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 설치 = 목록은 platform/jenkins/values.yaml:176 --> <!-- 확인 못 함: .jpi.pinned 표시는 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
 - **되돌리기:** 고정한 뒤로는 `helm rollback <이전 rev>` 가 플러그인 버전까지 되돌린다(overwritePlugins). 고정 전(rev6)으로 되돌리면 다시 `--latest true` 라 그때의 최신으로 오른다 — rev6 때 파일 그대로가 필요하면 호스트 `~/k8s-cluster/backup/2026-11-03-jenkins-pin/` 의 `JENKINS_HOME/plugins` 묶음(ROLLBACK.md) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:176, 호스트 ~/k8s-cluster/backup/2026-11-03-jenkins-pin/ROLLBACK.md 와 jenkins-home-plugins-rev6.tgz -->
 - 플러그인을 올릴 때: 올릴 것과 그 의존을 목록에서 같이 고치고 helm upgrade. 재시작마다 73개를 업데이트 센터에서 다시 받는다(전에도 ref 는 emptyDir 이라 매번 받았다) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:174 -->
 
-#### 1-24. 가용성 — 워커 4대 · 8GB, 노드가 하나 죽으면 (2026-11-10)
+#### 1-14. 가용성 — 워커 4대 · 8GB, 노드가 하나 죽으면 (2026-11-10)
 
 인프라 가용성 묶음 1(사용자 2026-11-10). 상세 원본은 ronanlab-infra `docs/history/build_log/08_scale_out.md` — 여기는 펫퍼민트에 닿는 것만 둔다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/02_availability.md 는 2026-11-12 docs/08_scale_out.md, 2026-11-16 docs/history/build_log/08_scale_out.md 로 옮겨짐(그 파일 :8) -->
 
@@ -449,9 +291,6 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
 | Harbor DB 백업(infra `apps/harbor-backup/`, 매일 03:45 KST) | Harbor가 망가져도 프로젝트 · robot 계정(`robot$petmint+pull`)이 돌아온다. 이미지 레이어는 백업하지 않는다 — 다시 빌드한다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/harbor-backup/cronjob.yaml:3-4, :17-18, docs/07_registry.md:129 --> |
 
 - **이미 있던 것 그대로**: replicas 2 · required anti-affinity · PDB minAvailable 1 — 매니페스트와 클러스터를 Sync 없이 읽어 같음을 확인했다. 런슈즈도 같은 구성으로 맞췄다 [c:afefd07] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:17, :45-51, apps/petmint/app/pdb.yaml:11 -->
-- **증설 중 확인(호스트 → VIP, 1초마다)**: w2 · w3 정비 동안 `/` 실패 0. 앱 Pod는 Harbor가 살아 있을 때 먼저 옮겼다(w3 → w2, w1 → w4). (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:200, :224-225 --> <!-- 확인 못 함: 옮긴 방향(w3 에서 w2, w1 에서 w4)은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-  w1 정비 때 MySQL(`mysql-0`, PV가 w1)이 19:35:15~19:36:59 KST 약 1분 40초 멈췄다 — `/`는 200이었지만 DB를 쓰는 API는 실패(사용자가 받아들인 중단). (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:228-229 (끝 시각은 기록대로 19:36:59) -->
-  그 전 19:27:20~31 약 12초는 ingress-nginx 등을 재시작할 때 모든 호스트가 응답하지 않았다(원인 미확인, infra `docs/history/build_log/08_scale_out.md` 4절) (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:226, :249-253, :441 -->
 - **정비 중에는 Sync하지 않는다**(사용자) — 워커가 하나 빠진 동안이다. 이번 증설 중 펫퍼민트 Sync는 없었다(08:54 UTC 사람이 한 Sync가 마지막) (2026-11-10 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:105, :213 --> <!-- 확인 못 함: 08:54 UTC 사람 Sync 가 마지막인지는 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답, ArgoCD 이력은 최근 10번만) -->
 - **묶음 2(같은 날 저녁)** — 노드마다 역할을 고정했다. 상세는 infra `docs/history/build_log/08_scale_out.md` · `docs/runbooks/mysql-replica.md` <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:12-35, :255, docs/runbooks/mysql-replica.md -->
 
@@ -462,24 +301,20 @@ m-k8s 4GB (컨트롤 플레인)   w1 · w2 · w3 4 → 8GB   w4 8GB(새로)   �
 | Harbor · Jenkins · ArgoCD는 w3, 모니터링은 w4 | 배포 · 빌드는 w3가, 모니터링은 w4가 죽어도 상담은 돈다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/harbor/values.yaml:56-72, platform/jenkins/values.yaml:21-22, platform/argocd/pin-infra.sh:7, apps/monitoring/kustomization.yaml:11, cluster/label-nodes.sh:6-8 --> <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 실제 배치가 이와 같음 --> |
 | 모니터링(15번) | Grafana가 턴 로그를 **Replica에서** 읽는다 — 계정 `grafana_ro`는 컬럼 단위 SELECT만(질문 · 답 · 코멘트 · 고객 · 상담원 컬럼 권한 없음) [docs:02_pipeline/15_monitoring.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): grafana_ro 는 USAGE 와 feedback, sessions, turns 의 글 아닌 칼럼에 대한 열 단위 SELECT 뿐, 글 칼럼 권한 없음 --> |
 
-- 펫퍼민트 Sync를 두 번 했다(Replica 추가 bda8638, 배치 고정 2298d61) — 사람 대신 인프라 세션이 했고, 그 Sync마다 초기화 Job이 다시 돌았다(멱등) [code:db/seed_insurance_core.py:9-13] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:400-403, apps/petmint/jobs/init-db.yaml:15-16. 그때 해시 72d0716, 684774a 는 지금 main bda8638, 2298d61 --> <!-- 확인 못 함: 인프라 세션이 두 번 Sync 한 것은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
-
-
-#### 1-25. 자동 Sync (2026-11-11)
+#### 1-15. 자동 Sync (2026-11-11)
 
 petmint Application을 자동 Sync로 바꿨다(사용자 지시). 앱 push → Jenkins 빌드 → 태그 커밋까지 오면 ArgoCD가 Sync를 누르지 않아도 반영한다. 2026-10-16부터 11-10까지는 수동으로 두고 반영 결과를 눈으로 확인했다. <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6, docs/history/build_log/07_project_deploy.md:260 -->
 
 | 항목 | 값 |
 | --- | --- |
 | 설정 | `automated: {prune: false, selfHeal: false}` — runshoes와 같다. git에서 지운 리소스는 남고, kubectl로 바꾼 것을 되돌리지 않는다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:25-28, apps/runshoes/app.yaml:28-31 --> |
-| 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-10절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:5, bootstrap/root-app.yaml:8-10 --> |
-| 켠 때 | 켜기 전 Synced(git 최신 `f2c28e6`과 같음) — 켜는 순간 반영될 것이 없었다. 켠 뒤 Synced · Healthy, 앱 Pod 재시작 없음 (2026-11-11 기준) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 그때 해시 cd4ee1f 는 지금 main f2c28e6(2026-11-11 16:07:31), 자동 Sync 를 적은 a9cea97(16:23:42)보다 앞선 최신 --> <!-- 확인 못 함: 켜기 전후 Synced, Healthy 와 Pod 재시작 없음은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) --> |
-| 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(4절 해결 항목) 배포가 일어나지 않는다 [code:Jenkinsfile:14-18] [code:Jenkinsfile:71-89] [code:Jenkinsfile:96] [code:Jenkinsfile:125] [code:db/migrate.py] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:15-16, apps/petmint/README.md:31, :65, apps/petmint/app.yaml:25-28 --> |
+| 스위치 | 클러스터의 `kubectl -n argocd patch application petmint …`가 실제 스위치다. 루트가 자식 `syncPolicy`를 덮지 않으므로(1-9절) ronanlab-infra `apps/petmint/app.yaml`은 기록이다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:5, bootstrap/root-app.yaml:8-10 --> |
+| 바뀌는 것 | **초기화 Job(마이그레이션)도 Sync마다 돈다.** 마이그레이션이 든 앱 커밋은 push만으로 운영 DB에 적용된다. 문서만 바꾼 커밋은 이미지 빌드부터 건너뛰므로(1-8절) 배포가 일어나지 않는다 [code:Jenkinsfile:14-18] [code:Jenkinsfile:71-89] [code:Jenkinsfile:96] [code:Jenkinsfile:125] [code:db/migrate.py] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/jobs/init-db.yaml:15-16, apps/petmint/README.md:31, :65, apps/petmint/app.yaml:25-28 --> |
 | monitoring | 같은 날 같은 설정으로 자동 Sync를 켰다 — petmint가 자동인데 대시보드만 수동인 것은 맞지 않고, 대시보드는 깨져도 서비스에 영향이 없고 되돌리기 쉽다. 켤 때 밀려 있던 대시보드 ConfigMap 하나가 바로 반영됐다 [docs:02_pipeline/15_monitoring.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/monitoring/app.yaml:5-6 (17fadc7, 2026-11-11), docs/history/build_log/09_monitoring.md:200 --> |
 | cloudflared | **수동으로 둔다(2026-11-11 사용자 결정).** 클러스터 터널 하나가 공개 주소 7개(petmint · runshoes · argocd · harbor · jenkins · grafana · prometheus)를 모두 낸다. 터널이 깨지면 서비스만 멈추는 게 아니라 고칠 도구(ArgoCD UI)와 볼 도구(Grafana)도 같이 사라지고, 되돌리기는 m-k8s에서 kubectl로만 된다. 잘못된 커밋이 사람 손을 거치지 않고 그 상태를 만들지 않게, 사람이 Sync를 누르고 롤링을 지켜본다(13번 2-2절, ronanlab-infra `apps/cloudflared/README.md`) [docs:02_pipeline/13_access_and_tunnel.md] [c:46454fe] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/cloudflared/app.yaml:4-8, apps/cloudflared/README.md:21-23 --> |
 | 끌 때 | 사람이 지켜보며 넣어야 하는 배포(되돌리기 어려운 스키마 변경, DB 복구 — 12번 1-5절)는 먼저 끄고 끝나면 켠다. 명령은 ronanlab-infra `apps/petmint/README.md` [docs:02_pipeline/12_data_storage.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/README.md:32-36 --> |
 
-#### 1-26. 검색 모델을 공용 model-service로 (2026-11-11, 0e31e94)
+#### 1-16. 검색 모델을 공용 model-service로 (2026-11-11, 0e31e94)
 
 KURE-v1 · bge-reranker-v2-m3를 search-service에서 떼어 공용 model-service로 옮겼다(사용자 결정). 런슈즈 챗봇도 같은 model-service를 쓴다. 모델 셋은 그대로이고 도는 자리만 바뀌었다. [c:0e31e94] [code:search_service/main.py:12-15] [code:deploy/host/petmint-search.service:1-4]
 
@@ -487,15 +322,10 @@ KURE-v1 · bge-reranker-v2-m3를 search-service에서 떼어 공용 model-servic
 | --- | --- |
 | model-service | 독립 저장소 `~/AI_programming/model-service`(28717bc, 원격 없음), systemd `model-service`, 192.168.122.1:8200에만 bind. 유닛 원본은 그 저장소에 있다. 모델 판은 HF 캐시 스냅숏으로 고정(KURE `8b418a58…`, 리랭커 `953dc6f6…`), 유닛에 `HF_HUB_OFFLINE=1` [code:deploy/host/petmint-search.service:2] [code:deploy/host/petmint-search.service:33] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service HEAD 28717bc, git remote 없음, model_service/main.py:32, :37-38, deploy/model-service.service:29 (설치된 유닛과 같은 파일) --> |
 | search-service | `PETMINT_MODEL_URL`이 있으면 model-service를 부르고(`data/model_client.py`), 없으면 예전처럼 로컬에 모델을 올린다(노트북 · 오프라인 스크립트 · 되돌리기). `/health`의 `models`는 model-service 장치를 옮기고 `"model_service"` 키가 붙는다. 전환 뒤 GPU를 쓰지 않는다 [code:search_service/main.py:12-15] [code:search_service/main.py:41] [code:search_service/main.py:103-124] [code:data/model_client.py] [code:data/search_engine.py:78] |
-| 전환 | model-service 등록 17:34:19 → petmint-search 재시작 17:38:24 정지 · 17:38:25 시작. 원격 모드라 모델을 올리지 않아 끊긴 시간은 약 6초(import 5.3초 + 청크 · BM25 0.1초) (2026-11-11 기준) <!-- 2026-11-19 잼: systemctl status 로 model-service 는 2026-11-11 17:34:19, petmint-search 는 2026-11-11 17:38:25 부터 active(문서의 등록과 시작 시각과 같음) --> <!-- 확인 못 함: logs/search_service.log 는 질문 원문이 들 수 있어 열지 않음, 끊긴 시간 약 6초는 지난 일이라 다시 잴 수 없음 --> |
-| 전후 대조 | `scripts/search_parity.py`, 전환 전 운영(8100) ↔ 전환 뒤 391건 다름 0 — `/search` 258건(회귀 세트 약관 103 + 인사규정 26 × 운영 설정 · 기본 설정, top_k 200이라 리랭커 후보 전부) + `/embed` 133건. 값으로 비교한다(순서 · 필드 · float ==). Milvus가 청크 필드 키 순서를 호출마다 바꿔 바이트 비교는 쓸 수 없다 [code:scripts/search_parity.py:1-16] [code:scripts/search_parity.py:30] (2026-11-11 기준) <!-- 확인 못 함: 대조 결과 원자료 logs/parity/ 는 로컬에도 없음 --> |
-| 검색 회귀 | 전후 같다(문항별 순위 · 상위 결과가 다른 문항 0). 약관 103: hit@1 80 · hit@3 97 · hit@5 97 · MRR 0.897 · 범위 위반 0. 인사규정 26: 25 · 26 · 26 · 0.981 · 0 [code:data/eval/search_regression.json] [code:data/eval/search_regression_hr.json] [code:data/review/pool_measure.md:57] (2026-11-11 기준) <!-- 확인 못 함: 전환 전후 회귀 결과는 그때 원자료가 남지 않음(data/eval/results/ 에 2026-11-11 판이 없음) --> |
-| GPU(nvidia-smi) | 전환 전 search-service 6,216MiB. 전환 직후 model-service 3,498MiB 하나(전체 3,537MiB), 대조 부하 뒤 6,408MiB(늘어난 몫은 PyTorch 추론 캐시). 모델 무게는 KURE-v1 fp32 2.12GB · 리랭커 fp16 1.06GB (2026-11-11 기준) <!-- model-service 확인(2026-11-19): 8200/health 의 dtype 은 KURE float32, 리랭커 float16, 무게는 ~/AI_programming/model-service/README.md:29-30 의 2.12GB, 1.06GB --> <!-- 확인 못 함: 그날 MiB 값은 지난 일이라 다시 잴 수 없음(2026-11-19 nvidia-smi 로 model-service 6,424MiB, 전체 6,463MiB) --> |
 | 되돌리기 | 분리 전 유닛 판은 46454fe의 `deploy/host/petmint-search.service`. 런북은 model-service 저장소 `docs/runbook-cutover.md` [c:46454fe] [code:deploy/host/petmint-search.service:3-4] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/docs/runbook-cutover.md:99-111 --> |
 
 **재부팅 순서가 한 단계 늘었다.**
 
-- 전: `network → docker · libvirtd → Milvus 대기 → petmint-search`
 - 후: `network → docker · libvirtd → model-service → Milvus 대기 → petmint-search` [code:deploy/host/petmint-search.service:12]
 
 model-service는 `After=libvirtd`이고 `ExecStartPost`가 `/health` 200을 기다린다 — "시작됨"이 곧 모델이 올라온 때다. petmint-search는 `After`/`Wants=model-service`(Requires가 아니라 model-service를 재시작해도 따라 내려가지 않는다)이고, `ExecStartPre`가 model-service `/health`를 최대 240초 기다린 뒤 Milvus를 기다린다. `TimeoutStartSec=540`. [code:deploy/host/petmint-search.service:12-15] [code:deploy/host/petmint-search.service:22-23] [code:deploy/host/petmint-search.service:35-37] [code:deploy/host/petmint-search.service:45] <!-- model-service 확인(2026-11-19): ~/AI_programming/model-service/deploy/model-service.service:17, :32 -->
@@ -568,10 +398,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 **deploy key 를 읽기·쓰기로 나눈다.** 토큰(fine-grained PAT)은 만료일이 있어 만료되면 배포가 **조용히 멈춘다** — 2-4절의 "조용한 실패를 만들지 않는다"와 어긋난다. 읽기와 쓰기를 나누는 것은 Harbor robot 을 pull 전용과 push 용으로 나눈 것과 같은 논리다. ArgoCD 키가 새도 저장소를 고칠 수 없다. [code:Jenkinsfile:124] [code:Jenkinsfile:128]
 
-**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다(2026-11-11 바꿨다, 1-25절). 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절). [code:web/vite.config.ts] [code:app/config.py:99-102] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6 -->
-
-넘겨받는 순간은 안전했다. 처음 상태는 OutOfSync 였고, 14개 리소스의 diff 가 모두 ArgoCD 추적 라벨 하나뿐이었다. Sync 뒤에도 앱 Pod 와 mysql-0 의 UID 가 같아 교체되지 않았다. (2026-10-16~2026-10-18 사이) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답, 호스트 백업에는 2026-10-16-argocd/petmint-before.yaml 만 있음) -->
-
+**처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다(2026-11-11 바꿨다, 1-15절). 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절). [code:web/vite.config.ts] [code:app/config.py:99-102] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app.yaml:4-6 -->
 ---
 
 #### 3. 시도했던 것들
@@ -597,25 +424,20 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 #### 4. 남은 한계
 
-- [ ]  **단일 클러스터, 단일 환경이다.** 개발·스테이징·운영을 나누지 않았다. 네임스페이스로 가를 수 있지만 VM 합 36GB(2026-11-10 증설 뒤) 한 대에 다 올리는 것은 무리다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:4-9 (4096 + 8192 x 4 = 36GB) -->
-- [ ]  **GPU 호스트가 단일 장애점이다.** Ollama·model-service·search-service·Milvus가 모두 한 대에 있다. 그 머신이 죽으면 Pod가 멀쩡해도 서비스가 안 된다
-- [ ]  **model-service가 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다. 전에는 펫퍼민트만 멈췄다(2026-11-11 분리 뒤).** 이때 search-service는 `/search` · `/embed` · `/health`가 503(models "unreachable")이 되고 앱은 `search_unavailable`을 낸다. model-service 없이 search-service를 띄우면 기동이 실패하고 systemd Restart가 다시 시도한다(시험에서 확인) [code:search_service/main.py:14] [code:search_service/main.py:81-82] [code:search_service/main.py:98-99] [code:search_service/main.py:106-124] [code:app/services/answer.py:226-228] [code:deploy/host/petmint-search.service:41-42]
-- [ ]  **재부팅 순서가 한 단계 늘었는데 실제 재부팅 시험은 하지 않았다(2026-11-11 사용자).** 확인할 것은 1-26절 [code:deploy/host/petmint-search.service:12]
-- [ ]  **Milvus는 아직 호스트 도커다.** GPU를 쓰지 않으므로 Pod로 옮길 수 있으나, standalone이라도 etcd와 MinIO가 따라붙어 자원을 더 먹는다. search-service와 함께 옮길지 판단한다.
-- [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다 [code:app/requirements.txt] [code:data/rag_context.py:15] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답), 레이어 크기는 Harbor에서 봐야 함 -->
-- [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다
-- [ ]  **libvirt 관리망(192.168.121.x)은 DHCP다.** VM을 다시 만들면 주소가 바뀐다. 노드 설정에는 고정 IP인 사설망(192.168.122.x)을 쓴다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/02_nodes.md:34, platform/metallb/pool.yaml:12, cluster/Vagrantfile:17 -->
-- [ ]  **ArgoCD는 `ssl-passthrough`를 뺀 상태다.** 나중에 그 플래그를 켜면 붙인 인증서가 쓰이지 않는다
-- [x]  ~~**Jenkins 플러그인이 재시작마다 최신으로 올라간다.**~~ 2026-11-03 해결 — 73개 버전 고정(1-23절) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/jenkins/values.yaml:172-177 -->
-- [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다
-- [ ]  **약관을 바꾸면 앱 재시작이 필요하다.** 파일은 Pod에서 바로 보이지만 앱이 기동할 때 메모리에 올린다. 재색인 뒤에는 `rollout restart`가 필요하다 [code:app/main.py:41] [code:app/services/policy_data.py:28-43]
-- [ ]  **클러스터 DB는 픽스처 시드로 새로 시작했다.** 로컬 도커 MySQL의 개발 데이터는 옮기지 않았다
-- [ ]  **app 노드가 둘이다(2026-11-10 배치 고정).** 롤링은 옛 Pod 하나를 먼저 내리고 새 Pod를 띄운다 — 롤링 동안 잠깐 Pod 하나. app 노드 하나가 빠지면 두 번째 Pod는 Pending이고 롤링도 멈춘다(남은 하나가 받는다). 그 전(워커 3대, 2+1 롤링)에는 워커 하나만 빠져도 롤링이 멈췄다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/deployment.yaml:4-7 -->
-- [x]  ~~앱 리포의 어떤 푸시에도 빌드가 돈다. docs만 고쳐도 새 이미지와 배포 커밋이 생긴다.~~ 2026-11-09 해결 — 바뀐 파일(직전 성공 빌드의 커밋 → 이번 커밋)이 모두 `docs/`·`data/review/`·루트 `*.md`이면 빌드는 SUCCESS로 끝나되 이미지 빌드·태그 커밋을 건너뛴다(빌드 설명 "건너뜀 — 문서만", FOREMAN 끝 알림 `"skipped": true`). 손으로 누른 빌드, 직전 성공 커밋이 없거나 못 찾을 때는 늘 빌드한다. 이 경로들은 Dockerfile이 COPY하지 않고 `.dockerignore`로도 뺀다(`Jenkinsfile` 머리 주석) [code:Jenkinsfile:14-18] [code:Jenkinsfile:71-89] [code:Jenkinsfile:180-184] [code:.dockerignore:30] [code:.dockerignore:32-34] [c:9a72e2a]
+- [ ]  **단일 클러스터, 단일 환경이다.** 개발·스테이징·운영을 나누지 않았다. 네임스페이스로 가를 수 있지만 VM 합 36GB(2026-11-10 증설 뒤) 한 대에 다 올리는 것은 무리다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): cluster/Vagrantfile:4-9 (4096 + 8192 x 4 = 36GB) --> 까닭: 한 대에 다 올리는 것은 무리다(이 줄)
+- [ ]  **model-service가 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다. 전에는 펫퍼민트만 멈췄다(2026-11-11 분리 뒤).** 이때 search-service는 `/search` · `/embed` · `/health`가 503(models "unreachable")이 되고 앱은 `search_unavailable`을 낸다. model-service 없이 search-service를 띄우면 기동이 실패하고 systemd Restart가 다시 시도한다(시험에서 확인) [code:search_service/main.py:14] [code:search_service/main.py:81-82] [code:search_service/main.py:98-99] [code:search_service/main.py:106-124] [code:app/services/answer.py:226-228] [code:deploy/host/petmint-search.service:41-42] 까닭: 1-16절 「공용 model-service로 옮겼다(사용자 결정)」
+- [ ]  **재부팅 순서가 한 단계 늘었는데 실제 재부팅 시험은 하지 않았다(2026-11-11 사용자).** 확인할 것은 1-16절 [code:deploy/host/petmint-search.service:12] 까닭: 2026-11-11 사용자 지시(이 줄)
+- [ ]  **Milvus는 아직 호스트 도커다.** GPU를 쓰지 않으므로 Pod로 옮길 수 있으나, standalone이라도 etcd와 MinIO가 따라붙어 자원을 더 먹는다. search-service와 함께 옮길지 판단한다. 까닭: etcd와 MinIO가 따라붙어 자원을 더 먹는다(이 줄)
+- [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다 [code:app/requirements.txt] [code:data/rag_context.py:15] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답), 레이어 크기는 Harbor에서 봐야 함 --> 까닭: 3절 표 pymilvus 줄(평가와 서비스가 같은 코드를 쓴다는 원칙)
+- [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다 까닭: 깨는 변경이 생기면 그때 정한다(이 줄)
+- [ ]  **NFS가 호스트 단일 장애점에 더해진다.** 다만 Ollama·Milvus가 이미 거기 있어 호스트가 죽으면 어차피 서비스가 안 된다 까닭: 호스트가 죽으면 어차피 서비스가 안 된다(이 줄)
 - [x]  ~~ArgoCD 초기 admin 비밀번호 Secret이 남아 있다.~~ 지워졌다(2026-11-09 확인 — 없음) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/04_argocd.md:18, :234 (argocd-initial-admin-secret 없음, 기록은 2026-11-12 조회) -->
-- [x]  ~~**`PETMINT_TITLE_LLM`이 0이다.**~~ 지금 1이다(일반·사내규정은 LLM 제목, 업무특화는 첫 질문 첫 줄) [code:app/config.py:74] [code:app/services/titles.py:40] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:67 -->
-- [ ]  단일 장애점이 노드마다 흩어져 있다. MySQL · harbor-redis는 w1, harbor-registry는 w2, harbor-database · Jenkins는 w3의 local-path에 묶여 있다(2026-11-10 확인). 노드 하나가 죽으면 그 서비스가 멈춘다 — 배치 고정은 인프라 묶음 2. 위 배치는 2026-11-10 이사 전이고, 지금(2026-11-19)은 Harbor 전부(redis, registry, database)와 Jenkins, ArgoCD가 w3, MySQL Primary가 w1(Replica w2, 수동 승격), 모니터링이 w4다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): platform/harbor/values.yaml:56-72, platform/harbor/pvc-w3.yaml:1-6, docs/07_registry.md:16, docs/history/build_log/08_scale_out.md:121-122(이사 전), :400-405(지금) --> <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 실제 배치가 이와 같음 -->
-- [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica(w2, 2026-11-10) + 수동 승격을 택했다. w1이 죽으면 사람이 런북(infra `docs/runbooks/mysql-replica.md`)대로 승격한다 — 기계 쪽 약 2분, 나머지는 알아채고 판단하는 시간. 앱 트래픽까지 옮기는 전환은 아직 해 보지 않았다. Replica는 백업이 아니다(지운 것은 Replica에서도 지워진다) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:79, :371, :432, docs/runbooks/mysql-replica.md:3-4 -->
+- [ ]  **MySQL 자동 장애 전환이 없다.** Operator가 필요한데 자원 제약으로 Replica(w2, 2026-11-10) + 수동 승격을 택했다. w1이 죽으면 사람이 런북(infra `docs/runbooks/mysql-replica.md`)대로 승격한다 — 기계 쪽 약 2분, 나머지는 알아채고 판단하는 시간. 앱 트래픽까지 옮기는 전환은 아직 해 보지 않았다. Replica는 백업이 아니다(지운 것은 Replica에서도 지워진다) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/history/build_log/08_scale_out.md:79, :371, :432, docs/runbooks/mysql-replica.md:3-4 --> 까닭: Operator가 필요한데 자원 제약(이 줄)
+
+**조건: 우리가 고르지 않은 것**
+
+- [ ]  **GPU 호스트가 단일 장애점이다.** Ollama·model-service·search-service·Milvus가 모두 한 대에 있다. 그 머신이 죽으면 Pod가 멀쩡해도 서비스가 안 된다
+- [ ]  **libvirt 관리망(192.168.121.x)은 DHCP다.** VM을 다시 만들면 주소가 바뀐다. 노드 설정에는 고정 IP인 사설망(192.168.122.x)을 쓴다 <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): docs/02_nodes.md:34, platform/metallb/pool.yaml:12, cluster/Vagrantfile:17 -->
 - [ ]  **백업이 운영 DB와 같은 물리 디스크에 있다.** 백업 NFS(`~/backup/mysql/petmint`)와 MySQL PV(VM 디스크)가 같은 호스트 · 같은 NVMe다(12번 1-5절) [docs:02_pipeline/12_data_storage.md] [code:deploy/scripts/host-nfs-backup-setup.sh] <!-- 2026-11-19 잼: findmnt, virsh domblklist, lsblk 로 ~/backup, /srv/nfs/backup/petmint, w1 VM 디스크가 모두 /dev/nvme0n1p2 -->
 - [ ]  **VM이 모두 같은 물리 서버에 있다.** 노드 분산은 VM · kubelet 장애만 막는다 — 서버 자체가 죽으면 전부 멈춘다(위 GPU 호스트 단일 장애점과 같은 머신)
 
@@ -648,8 +470,11 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [x]  Pod에서 호스트의 Ollama·Milvus·search-service에 닿는가
 - [x]  롤링 중 HTTP 요청이 실패하지 않는가 — drain 5,621건 실패 0. WS는 1012로 한 번 끊기고 다시 연결된다 [c:afefd07] (2026-10-16 기준) <!-- 확인 못 함: 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답, 펫퍼민트 쪽 기록은 afefd07 의 deploy/README.md), 다시 재려면 서비스가 끊길 수 있어 사람 승인이 필요함 -->
 
-### 다음에 할 일
+#### 옛 절 번호 (코드 주석이 가리키는 것)
 
-**1. search-service** — ✓ 호스트 systemd `petmint-search`로 기동, ConfigMap 주소 `http://192.168.122.1:8100`. 클러스터 WS가 실제 답변을 돌려준다. [code:deploy/host/petmint-search.service] [code:search_service/main.py:39-40] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/app/configmap.yaml:26 --> <!-- 2026-11-19 잼: 공개 주소 체험 로그인으로 WS 질문 1회에 답이 옴(코드 답 경로) -->
-
-**2. 08번 Ragas** — △ 파일럿 1회(2026-10-18) 뒤 멈춰 있다(08번 상태 줄). Context Recall을 제대로 보려면 이것이 필요하다. 지금 검색 지표는 1-13절의 검색 회귀다. [docs:02_pipeline/08_ragas_eval.md] [code:data/ragas_pilot.py] [code:data/review/ragas_pilot_20261018_2243.json]
+| 옛 번호 | 새 번호 | 가리키는 곳 |
+| --- | --- | --- |
+| 1-4절 | 1-4절 | search_service/main.py:20 |
+| 1-5절 | 1-5절 | Jenkinsfile:1, deploy/README.md:14 |
+| 1-6절 | 1-6절 | Jenkinsfile:9 |
+| 1-26절 | 1-16절 | deploy/README.md:10 |

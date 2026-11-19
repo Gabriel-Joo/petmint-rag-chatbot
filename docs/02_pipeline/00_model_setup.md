@@ -4,13 +4,36 @@
 -->
 > 상태: 완료. Tri-7B 원본을 GGUF 변환·Q4_K_M 양자화해 Ollama에 `tri-7b`로 등록하고 응답을 확인했다. 파인튜닝 모델의 GGUF 변환은 10번 8절에서 다룬다. [code:notebooks/00_모델_준비.ipynb:563] [code:notebooks/00_모델_준비.ipynb:922] [code:notebooks/00_모델_준비.ipynb:1304] [code:app/config.py:70] [docs:02_pipeline/10_consultation_flow.md]
 
-### 0. 목표
+### 0. 한 줄 요약
 
 Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자화해 Ollama에 등록하고 동작을 확인한다. [code:notebooks/00_모델_준비.ipynb:43-44]
 
 ---
 
-### 1. LLM 모델 선정 근거
+### 1. 최종 설계
+
+#### 1-1. Tri-7B
+
+한국 AI 스타트업 Trillion Labs가 개발한 7.76B 파라미터 언어모델로, 전작 Trillion-7B-preview의 다음 세대 버전이다. [code:notebooks/00_모델_준비.ipynb:44] <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인) -->
+
+가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어·일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다 — 그 덕분에 전체 학습 데이터의 10% (공개 페이지에서 출처를 못 찾음, 2026-11-19)만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: XLDA는 https://huggingface.co/trillionlabs/Tri-7B 카드에 없고 기술 보고서는 읽지 않음(2026-11-19) -->
+
+구조 자체는 표준적인 Transformer Decoder(RoPE, SwiGLU, RMSNorm)라 llama.cpp 계열 도구와의 호환성도 좋다(3절 트러블슈팅 참고). [code:notebooks/00_모델_준비.ipynb:148]
+
+#### 1-2. 필요했던 도구
+
+| 도구 | 용도 |
+| --- | --- |
+| `huggingface_hub.snapshot_download` | Tri-7B 원본 다운로드 (29GB) [code:notebooks/00_모델_준비.ipynb:43] [code:notebooks/00_모델_준비.ipynb:61] (2026-09-29까지) |
+| `llama.cpp/convert_hf_to_gguf.py` | HF 포맷 → GGUF(f16) 변환 [code:notebooks/00_모델_준비.ipynb:563] |
+| `llama.cpp/build/bin/llama-quantize` | f16 GGUF → Q4_K_M 양자화 (4.4GB) [code:notebooks/00_모델_준비.ipynb:909] [code:notebooks/00_모델_준비.ipynb:922] (2026-09-29까지) |
+| Docker + Ollama | 컨테이너 내부에서 Tri-7B 서빙 [code:notebooks/00_모델_준비.ipynb:1304] |
+
+---
+
+### 2. 왜 이렇게 했나
+
+#### 2-1. LLM 모델 선정 근거
 
 **선정 절차**: 네 단계로 후보를 좁혔다.
 
@@ -28,7 +51,7 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 최종 후보는 Kanana와 Tri-7B였으나, Tri-7B가 한국어 지식(KMMLU)에서 약 5점 우위를 보여 최종적으로 Tri-7B를 선택했다. [code:app/config.py:70]
 
-#### 1-1. 탈락한 Kanana의 재등장
+#### 2-2. 탈락한 Kanana의 재등장
 
 이후 06번(FAQ 품질 검증)에서 FAQ의 오류를 판정할 심판 모델이 필요해졌는데, 요구 조건이 생성 모델과 정반대였다 — **생성 모델과 달라야 한다**. 같은 모델은 자기가 틀린 곳에서 똑같이 틀리기 때문이다. [docs:02_pipeline/06_quality_check.md]
 
@@ -36,19 +59,7 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 그래서 여기서 탈락했던 Kanana 1.5 8B가 심판 후보로 다시 올라왔고, Qwen3-14B·Gemma 4 12B와 함께 같은 정답지로 평가했다(상세는 06번 문서 참고). [docs:02_pipeline/06_quality_check.md]
 
----
-
-### 2. Tri-7B
-
-한국 AI 스타트업 Trillion Labs가 개발한 7.76B 파라미터 언어모델로, 전작 Trillion-7B-preview의 다음 세대 버전이다. [code:notebooks/00_모델_준비.ipynb:44] <!-- 공개 출처: https://huggingface.co/trillionlabs/Tri-7B (2026-11-19 확인) -->
-
-가장 큰 특징은 **XLDA(Cross-lingual Document Attention)** 라는 자체 기법으로, 영어처럼 학습 데이터가 풍부한 언어의 지식을 한국어·일본어 같은 상대적으로 데이터가 적은 언어로 효율적으로 전이시킨다 — 그 덕분에 전체 학습 데이터의 10% (공개 페이지에서 출처를 못 찾음, 2026-11-19)만 다국어였는데도 한국어 성능이 강하게 나온다. <!-- 확인 못 함: XLDA는 https://huggingface.co/trillionlabs/Tri-7B 카드에 없고 기술 보고서는 읽지 않음(2026-11-19) -->
-
-구조 자체는 표준적인 Transformer Decoder(RoPE, SwiGLU, RMSNorm)라 llama.cpp 계열 도구와의 호환성도 좋다(4절 트러블슈팅 참고). [code:notebooks/00_모델_준비.ipynb:148]
-
----
-
-### 3. 서빙 방식 선정 근거
+#### 2-3. 서빙 방식 선정 근거
 
 **GGUF 변환 이유**: llama.cpp/Ollama가 서빙할 수 있는 포맷이 GGUF다. HF 원본(safetensors)은 Ollama가 직접 읽지 못해 변환이 필수였다.
 
@@ -56,30 +67,28 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 **Ollama를 택한 이유(vLLM 대신)**: 지금 단계는 1인 개발·로컬 실험 단계라, "동시에 여러 사람이 접속해도 빠르게" 처리해야 하는 vLLM의 강점(Continuous Batching, PagedAttention)이 아직 필요 없다. 반면 Ollama는 GGUF를 네이티브로 바로 읽고, 여러 모델을 쉽게 바꿔가며 실험할 수 있어 개발 단계에 더 적합했다.
 
-**나중에 바뀔 수 있음**: 상담원이 여러 명 동시 접속하게 되면 그때 vLLM 전환을 검토한다.
-
 ---
 
-### 4. 과정에서 겪은 문제
+### 3. 시도했던 것들
 
-#### 4-1. GGUF 변환 — EXAONE 때와 달리 인자 패치 없이 성공
+#### 3-1. GGUF 변환 — EXAONE 때와 달리 인자 패치 없이 성공
 
 EXAONE 3.5는 특수 구조라 변환 과정에서 추가 패치가 필요했는데, Tri-7B는 **llama 구조**를 그대로 따르고 있어 `convert_hf_to_gguf.py`의 표준 변환 경로와 바로 호환된다. f16 GGUF(15.1GB) 변환이 추가 조치 없이 한 번에 성공했다. [code:notebooks/00_모델_준비.ipynb:148] [code:notebooks/00_모델_준비.ipynb:554-556] (2026-09-29까지)
 
-#### 4-2. 양자화(Q4_K_M) — `--override-kv` 생략 시도 → 성공
+#### 3-2. 양자화(Q4_K_M) — `--override-kv` 생략 시도 → 성공
 
 EXAONE은 `exaone.attention.layer_norm_rms_epsilon`이라는 비표준 키 이름 때문에 `--override-kv`로 명시적으로 키를 지정해야만 양자화가 돌았다. Tri-7B는 llama 구조라 이 문제가 없을 거라고 판단해 override 없이 먼저 시도했고, 실제로 문제없이 성공했다(14357MB → 4411MB, 4.92 BPW). [code:notebooks/00_모델_준비.ipynb:908-909] [code:notebooks/00_모델_준비.ipynb:918-922] (2026-09-29까지)
 
 > 이 두 결정은 "EXAONE에서 필요했던 우회책이, 모델 구조가 다르면 필요 없을 수 있다"는 가설을 먼저 세우고 그 가설을 검증하는 순서로 진행했다.
 > 
 
-#### 4-3. Ollama 등록 실패 → 경로 문제
+#### 3-3. Ollama 등록 실패 → 경로 문제
 
 Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해 `ollama create` 실행 시 `Error: 400 Bad Request: invalid model name` 발생. 원인은 Ollama가 Docker 컨테이너 내부에서 도는데 호스트 경로는 컨테이너 안에서 보이지 않기 때문. [code:notebooks/00_모델_준비.ipynb:971] [code:notebooks/00_모델_준비.ipynb:977-979]
 
 **해결**: GGUF 파일과 Modelfile을 `docker cp`로 컨테이너 내부(`/tmp/...`)에 복사하고, Modelfile의 FROM도 그 내부 경로로 재작성해 등록 성공. [code:notebooks/00_모델_준비.ipynb:1042] [code:notebooks/00_모델_준비.ipynb:1302-1304]
 
-#### 4-4. 컨테이너 재시작 정책 누락 (운영 이슈)
+#### 3-4. 컨테이너 재시작 정책 누락 (운영 이슈)
 
 서버를 재부팅했더니 Ollama·Milvus 컨테이너가 올라오지 않았다. `docker run` 시 재시작 정책을 지정하지 않아 기본값인 `no` 상태였기 때문이다. <!-- 확인 못 함: 지난 재부팅 때 상태 -->
 
@@ -90,21 +99,16 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 ---
 
-### 5. 동작 확인
+### 4. 남은 한계
+
+**나중에 바뀔 수 있음**: 상담원이 여러 명 동시 접속하게 되면 그때 vLLM 전환을 검토한다. 까닭: 지금은 1인 개발, 로컬 실험 단계라 vLLM의 강점(동시 접속 처리)이 아직 필요 없다(2-3절)
+
+---
+
+### 5. 검증 항목
 
 한국어 응답 정상, 응답 속도 1.8~3.0초 (측정 2회) [code:notebooks/00_모델_준비.ipynb:1318] [code:notebooks/00_모델_준비.ipynb:1321] (2026-09-29~2026-10-13 사이)
 
 단, 파인튜닝 전(원본) 상태라 우리 약관의 세부 내용은 알지 못한다 — "보험금 청구서류 접수 후 얼마나 빠르게 받을 수 있나요?"라는 질문에 "1~2주일" 같은 일반적인 보험 상식으로 답한다(실제 펫퍼민트 약관의 정확한 지급기일은 반영하지 못함). [code:notebooks/00_모델_준비.ipynb:1334]
 
 모델 자체의 언어 능력이 부족한 게 아니라 이 도메인 지식을 모르는 것뿐이고, 이것이 이후 RAG+파인튜닝이 반드시 필요한 실증적 근거가 된다.
-
----
-
-### 6. 필요했던 도구
-
-| 도구 | 용도 |
-| --- | --- |
-| `huggingface_hub.snapshot_download` | Tri-7B 원본 다운로드 (29GB) [code:notebooks/00_모델_준비.ipynb:43] [code:notebooks/00_모델_준비.ipynb:61] (2026-09-29까지) |
-| `llama.cpp/convert_hf_to_gguf.py` | HF 포맷 → GGUF(f16) 변환 [code:notebooks/00_모델_준비.ipynb:563] |
-| `llama.cpp/build/bin/llama-quantize` | f16 GGUF → Q4_K_M 양자화 (4.4GB) [code:notebooks/00_모델_준비.ipynb:909] [code:notebooks/00_모델_준비.ipynb:922] (2026-09-29까지) |
-| Docker + Ollama | 컨테이너 내부에서 Tri-7B 서빙 [code:notebooks/00_모델_준비.ipynb:1304] |

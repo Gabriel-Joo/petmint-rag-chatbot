@@ -2,12 +2,12 @@
 다루는 곳: web/src/styles/, web/src/assets/fonts/, web/src/assets/characters/, web/src/components/TopBar.tsx, web/src/components/TopBar.module.css, web/src/components/CallAlert.tsx, web/src/components/CallAlert.module.css, web/src/components/Badges.tsx, web/src/components/Badges.module.css, web/src/components/FlowCarousel.tsx, web/src/components/FlowCarousel.module.css, web/src/components/ArchDiagram.tsx, web/src/components/ArchDiagram.module.css, web/src/hooks/useReducedMotion.ts, web/src/components/CalcCard.tsx, web/src/components/CalcCard.module.css, web/src/components/CustomerCard.module.css, web/src/components/EmployeeCard.tsx, web/src/components/ArticleText.module.css, web/src/components/SourcePanel.module.css, web/src/components/ChatHistory.module.css, web/src/components/PastConsultations.module.css, web/src/auth/Login.tsx, web/src/auth/Login.module.css, web/src/auth/DemoCards.tsx, web/src/pages/ModeSelect.tsx, web/src/pages/ModeSelect.module.css, web/src/pages/CustomerSelect.tsx, web/src/pages/CustomerSelect.module.css, web/src/pages/Admin.tsx, web/src/pages/Admin.module.css, web/src/pages/Chat.tsx, web/src/pages/Consultation.tsx, web/src/policySummary.ts
 읽은 커밋: 6710b83
 -->
-> 상태: 설계 확정, 구현 중. 09·10번에서 정한 화면·흐름을 어떻게 보이게 할 것인가. ✓ 토큰·글꼴·캐릭터 영상·모드 선택 아래 소개 섹션(10-16)·전화 수신 카드(크기·광륜을 카드 안으로·남은 시간 숫자와 막대, 10-18) 구현, 11절 검증 5건 확인. 11절의 받기 대비·카드 질감·누름 효과는 확인 전(대비는 미달로 알려져 있다). △ 다크 모드는 코드 없음. [code:web/src/styles/tokens.css] [code:web/src/styles/global.css:3-20] [code:web/src/pages/ModeSelect.tsx:42-121] [code:web/src/components/CallAlert.tsx:20-37] [code:web/src/components/CallAlert.module.css:21-30] [c:8b1272e] [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
+> 상태: 설계 확정, 구현 중. 09·10번에서 정한 화면·흐름을 어떻게 보이게 할 것인가. ✓ 토큰·글꼴·캐릭터 영상·모드 선택 아래 소개 섹션(10-16)·전화 수신 카드(크기·광륜을 카드 안으로·남은 시간 숫자와 막대, 10-18) 구현, 5절 검증 5건 확인. 5절의 받기 대비·카드 질감·누름 효과는 확인 전(대비는 미달로 알려져 있다). △ 다크 모드는 코드 없음. [code:web/src/styles/tokens.css] [code:web/src/styles/global.css:3-20] [code:web/src/pages/ModeSelect.tsx:42-121] [code:web/src/components/CallAlert.tsx:20-37] [code:web/src/components/CallAlert.module.css:21-30] [c:8b1272e] [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
 > 
 
 ---
 
-### 0. 이 문서가 다루는 것
+### 0. 한 줄 요약
 
 09번은 "무엇을 보여줄 것인가", 10번은 "상담원이 하루를 어떻게 보내는가"를 정했다. [docs:02_pipeline/09_ui_design.md] [docs:02_pipeline/10_consultation_flow.md]
 
@@ -15,16 +15,14 @@
 
 ---
 
-### 1. 방향 — 라이트 보라
+### 1. 최종 설계
+#### 1-1. 방향 — 라이트 보라
 
 라이트 단일 모드로 간다. 상담원이 사무실에서 하루 종일 쓰는 도구라 흰 바탕이 눈에 편하다. [code:web/src/styles/tokens.css:1-4]
 
-> **처음에는 다크 보라 그라데이션으로 갔다가 바꿨다 (2026-10-14).** 유리 카드와 빛 덩어리를 올린 안이었는데, 구현해 보니 화면이 칙칙하고 정보 밀도가 낮았다. 평면 카드에 그림자만 주는 쪽이 상담 도구에 맞는다.
-> 
-
 ---
 
-### 2. 색 — 흰 바탕에 보라 포인트
+#### 1-2. 색 — 흰 바탕에 보라 포인트
 
 바탕은 흰색·연회색이고, 보라는 버튼·선택된 항목·강조에만 쓴다. 진한 보라와 연한 보라 둘을 나눠 쓴다 — 진한 쪽은 채우고, 연한 쪽은 배경이나 선택 표시다. [code:web/src/styles/global.css:49-54] [code:web/src/styles/global.css:74-86]
 
@@ -52,14 +50,9 @@
 
 전화를 초록에 전용하는 원칙은 그대로다. 진행 중인 상담 표시에만 예외로 쓰는데, 그것도 "지금 통화 중"이라는 같은 뜻이다. [code:web/src/components/PastConsultations.module.css:37] [code:web/src/pages/Admin.module.css:64]
 
-> 바탕을 그린 계열로 하는 안은 버렸다. 전화 알림이 같은 계열에 묻히고, 경고로 쓸 주황도 초록의 이웃이라 애매해진다. 청록(틸)도 초록과 30~40도밖에 안 떨어져 같은 문제가 있다.
-> 
-
-**검증**: 버튼 글자와 바탕의 대비를 확인한다. 현재 "받기" 버튼(흰 글자 위 `--call`)이 일반 글자 기준 4.5:1에 미달이다. 한 단계 더 어둡게 하거나 버튼용·링용 값을 나눈다. [code:web/src/components/CallAlert.module.css:84-92] [code:web/src/styles/tokens.css:14] (2026-10-14~2026-10-18 사이) [c:d833182]
-
 ---
 
-### 3. 글꼴 — 제목과 본문을 나눈다
+#### 1-3. 글꼴 — 제목과 본문을 나눈다
 
 시스템 기본 글꼴은 멋이 없다. 둘을 쓰임에 따라 나눈다.
 
@@ -68,19 +61,17 @@
 | 완주대둔산체 | 헤더 로고, 모드 선택 화면 제목과 카드 제목, 소개 섹션의 모드 이름과 "기술 구성" 제목 [code:web/src/components/TopBar.module.css:56] [code:web/src/pages/ModeSelect.module.css:13] [code:web/src/pages/ModeSelect.module.css:69] [code:web/src/pages/ModeSelect.module.css:100] [code:web/src/pages/ModeSelect.module.css:169] |
 | Wanted Sans 가변 (400/500/700/800/900) | 그 외 전부 — 화면 제목, 카드 제목, 본문, 대사, 메뉴, 고객 정보, 대화 내용 [code:web/src/styles/global.css:3-11] [code:web/src/styles/tokens.css:72] [code:web/src/styles/tokens.css:74-79] |
 
-**특정 곳에만 완주대둔산체를 쓴 이유**: 지자체 폰트는 개성이 강해 긴 글에 쓰면 읽기 피곤하다. 짧은 단어는 개성이 읽기를 방해하지 않고, 그 화면은 포트폴리오 성격이라 인상이 중요하다. 상담 화면은 그대로 Wanted Sans다.
-
 **라이선스**: 완주대둔산체는 완주군청 저작물로 공공누리 제1유형(공개 페이지에서 출처를 못 찾음, 2026-11-19)이다. 개인·기업 모두 무료, 상업적 이용과 웹 임베딩 모두 허용된다. [code:web/src/styles/global.css:13] [code:web/src/assets/fonts/WanjuDaedunsan-Bold.woff2] <!-- 공개 출처: https://www.kogl.or.kr/info/licenseType1.do (2026-11-19 확인, 1유형 조건만: 출처 표시, 상업 이용 가능, 변형 가능) -->
 
 `--font-logo`, `--font-body` 변수로 잡고 컴포넌트는 변수만 참조한다. [code:web/src/styles/tokens.css:71-72]
 
-**크기는 새로 만들지 않는다(2026-11-12 사용자 — "새 크기를 만들지 말고 이미 있는 토큰을 쓰는 쪽으로").** 새 배율 · px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다. 화면끼리 같은 계단을 맞춘다 — 제목 52 · 섹션 40 · 묶음 30 · 본문 26 · 보조 24px(본문 배율, 1440px 기준), 카드 안은 `.chat-text` 토큰. 화면별 자리는 5절 「로그인 화면 글씨」 · 「홈 글씨」. [code:web/src/styles/tokens.css:49] [code:web/src/styles/tokens.css:55-65] [code:web/src/styles/tokens.css:90-102] [code:web/src/auth/Login.module.css:1-7] [c:7532eb8]
+**크기는 새로 만들지 않는다(2026-11-12 사용자 — "새 크기를 만들지 말고 이미 있는 토큰을 쓰는 쪽으로").** 새 배율 · px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다. 화면끼리 같은 계단을 맞춘다 — 제목 52 · 섹션 40 · 묶음 30 · 본문 26 · 보조 24px(본문 배율, 1440px 기준), 카드 안은 `.chat-text` 토큰. 화면별 자리는 1-5절 「로그인 화면 글씨」 · 「홈 글씨」. [code:web/src/styles/tokens.css:49] [code:web/src/styles/tokens.css:55-65] [code:web/src/styles/tokens.css:90-102] [code:web/src/auth/Login.module.css:1-7] [c:7532eb8]
 
 무게는 다섯 단계 토큰이다 — `--font-weight-caption` 400(부연·보조), `--font-weight-body` 500(본문·대화·발췌), `--font-weight-label` 700(메뉴·버튼·탭·라벨, 대화 화면 인사 말풍선), `--font-weight-title` 800(화면·카드 제목, 고객 이름), `--font-weight-heavy` 900(작은 크기로 쓰는 화면 제목을 옆 글씨보다 더 굵게 — 고객 조회 제목, 2026-10-23 추가). [code:web/src/styles/tokens.css:74-79] [code:web/src/pages/CustomerSelect.module.css:6]
 
 ---
 
-### 4. 질감 — 그림자로 띄운다
+#### 1-4. 질감 — 그림자로 띄운다
 
 그라데이션과 유리 효과는 쓰지 않는다. 평면 카드에 그림자만으로 깊이를 만든다. [code:web/src/styles/tokens.css:31-40]
 
@@ -93,7 +84,7 @@
 
 ---
 
-### 5. 헤더와 크기
+#### 1-5. 헤더와 크기
 
 - 헤더는 **스크롤해도 상단에 고정**한다(`sticky`). 배경은 `--primary-soft` [code:web/src/components/TopBar.module.css:6-20]
 - 헤더 제목은 "펫퍼민트 상담", 그 옆에 작게 "약관 안내 챗봇" [code:web/src/components/TopBar.tsx:50-51]
@@ -129,7 +120,6 @@
     | 라벨 · 안내 · 체험 안내 · 사번 기억하기 | `--font-xs` 캡션 `--text-dim` | 24 · 24 · 14px | 상단바 메뉴 · 부제 [code:web/src/auth/Login.module.css:13-15] [code:web/src/auth/Login.module.css:34] [code:web/src/auth/Login.module.css:45] |
     | 체험 카드 이름 · 근속 · 칩 | `.chat-text` 안 `--font-sm` 800 · `--font-xs` · `--font-2xs` 700 | 16.9 · 15.6 · 14.3px | 업무특화 고객 카드(`CustomerSelect`) — `.raised .lift` 면 · 그림자 · 호버, 안쪽 12/14px, 칩은 테두리 · 모서리 6px [code:web/src/auth/Login.module.css:51-64] |
     묶음 사이(로그인 카드 ↔ 체험 제목 ↔ 상담원 ↔ 관리자)는 56 · 40 · 48 · 56px(휴대폰 36 · 28 · 32 · 36) — 붙어 보였다(사용자). 한 화면에 다 담지 않는다(스크롤). [code:web/src/auth/Login.module.css:8] [code:web/src/auth/Login.module.css:42] [code:web/src/auth/Login.module.css:46-47] [code:web/src/auth/Login.module.css:67-73]
-    같은 날 앞선 판: 1배 전용 배율(`.base-text`, 새 크기라 지움) → 대화 배율(`.chat-text`) 전체 → 이 판 [code:web/src/auth/Login.module.css:1-7]
   - **비밀번호 보기(2026-11-12)** — 비밀번호 칸마다 오른쪽 끝에 눈 단추를 겹친다(런슈즈 로그인과 같은 방식 · 같은 그림). 가렸을 때 사선 그은 눈, 보일 때 눈. `aria-pressed` · 「비밀번호 보기/가리기」. 색 `--text-dim`, 호버 · 켬 `--text`. 칸마다 따로 켠다(변경 화면의 새 비밀번호 · 확인) [code:web/src/auth/Login.tsx:168-193] [code:web/src/auth/Login.module.css:27-29] <!-- 확인 못 함: 런슈즈 로그인은 다른 저장소라 code 표시로 걸 수 없음 -->
   - **체험 카드(2026-11-12, 13번 2-4절)** — 로그인 카드 아래 구분선(`--line`), 「사번 없이 체험하기」, 상담원 카드 2줄이 가로로 흐른다(공용 `components/FlowCarousel` — 런슈즈 `DemoCards`와 같은 동작 — 초당 13px, 호버 멈춤, 끌기 · 관성, 움직임 줄이기면 멈춤). 흐르는 동안 양 끝 32px을 흐리게(mask) — 걸쳐 지나가는 카드가 잘린 것이 아니라 흘러가는 것으로 보이게. 상담원 → 관리자를 **세로로 쌓는다**(흐름이 화면 전체 폭을 쓴다 — 나란히 두면 1280px에서 끝 카드가 반쯤 잘렸다). 카드 300px(칩이 한 줄에 둘), 관리자 카드는 `.raised` 테두리를 점선(`--text-dim`)으로. 칩은 고객 카드 칩 모양에 `--primary`. 카드 그림자 · 호버 들림이 잘리지 않게 흐름 칸 위아래에 여유(8 · 14px). 1920px은 다 보여 흐르지 않고 가운데 선다 [code:web/src/auth/DemoCards.tsx:1-8] [code:web/src/auth/DemoCards.tsx:32] [code:web/src/components/FlowCarousel.tsx:10] [code:web/src/components/FlowCarousel.tsx:16] [code:web/src/components/FlowCarousel.tsx:78-88] [code:web/src/components/FlowCarousel.module.css:2-8] [code:web/src/auth/Login.module.css:38-58] [c:cc346b8] [docs:02_pipeline/13_access_and_tunnel.md]
   - 확인(2026-11-12, 헤드리스 크롬 1920 · 1440 · 1280 · 1024 · 800 · 400): 페이지 가로 넘침 0, 흐름 칸이 페이지 안, 비밀번호 보기 — 입력 뒤 눌러 `text`, 다시 눌러 `password`. 세로로 쌓아 1440 · 1280 · 1024px은 관리자 카드가 한 화면 아래(스크롤) [c:cc346b8] <!-- 확인 못 함: 그때 원자료가 남지 않음 -->
@@ -161,7 +151,7 @@
 
 ---
 
-### 6. 화면마다 밀도를 달리한다
+#### 1-6. 화면마다 밀도를 달리한다
 
 | 화면 | 밀도 |
 | --- | --- |
@@ -181,7 +171,7 @@
 
 ---
 
-### 7. 전화 알림 애니메이션
+#### 1-7. 전화 알림 애니메이션
 
 초록 원 바깥으로 링이 퍼져나가며 투명해지는 것을 반복한다. 두세 개를 시차를 두고 겹치면 파장처럼 보인다. CSS만으로 되고 부하도 없다. [code:web/src/components/CallAlert.tsx:22] [code:web/src/components/CallAlert.module.css:44-53]
 
@@ -204,7 +194,7 @@
 
 ---
 
-### 8. 캐릭터 3종 — 같은 도마뱀, 다른 역할
+#### 1-8. 캐릭터 3종 — 같은 도마뱀, 다른 역할
 
 3D 렌더 도마뱀 캐릭터. 큰 둥근 눈, 2~3등신, 말려 올라간 꼬리, 부드러운 질감. 정면, 전신, 흰 배경.
 
@@ -216,13 +206,11 @@
 | 사내규정 | 민트 | 흰 셔츠 + 네이비 넥타이, 사원증 | 인사·복무 규정을 정확히 짚어주는 에이스 선배 |
 | 업무특화 | 딥 퍼플 + 골드 포인트 | 딥 퍼플 수트 베스트, 태블릿 | 약관을 근거까지 찾아주는 베테랑 실무자. 셋 중 가장 갖춰 입은 쪽 |
 
-**색 배치의 이유**: 셋이 색상환에서 고르게 퍼져 있어 구분이 쉽다. 초록과 가까운 것은 민트뿐이고, 채도를 낮추면 전화 알림과 충분히 갈린다. 빨간 넥타이는 네이비로 바꿨다 — 팔레트에 빨강이 없고 경고색(주황)과 혼동된다.
-
 **소품은 손에 든 것만.** 공중에 뜨는 홀로그램이나 발광 아이콘은 AI 영상에서 프레임마다 모양이 바뀌어 반복 재생할 때 어색해진다.
 
 ---
 
-### 9. 캐릭터 영상
+#### 1-9. 캐릭터 영상
 
 모드 선택 카드에서는 평소 정지 이미지, **마우스를 올리면 영상**이 재생된다. 뗄 때 정지 이미지로 돌아간다. 평소에 움직이면 산만하다 — 상담원이 고객 전화를 받으며 쓰는 도구다. [code:web/src/pages/ModeSelect.tsx:46-88] [code:web/src/pages/ModeSelect.module.css:60-65]
 
@@ -238,14 +226,11 @@
 
 **제작**: Tripo3D로 기본 모델을 뽑고, Gemini로 색·옷을 바꾼 정지 이미지 셋을 만든 뒤, Kling으로 각각 영상으로 돌렸다. 828x1108, 투명 webm + Safari용 mp4 [code:web/src/pages/ModeSelect.module.css:60] [code:web/src/pages/ModeSelect.tsx:18] [code:web/src/assets/characters/] <!-- 확인 못 함: 제작 도구(Tripo3D, Gemini, Kling) 사용은 기록이 남지 않음 -->
 
-> 영상 단계에서 색과 옷을 한꺼번에 바꾸면 캐릭터 생김새가 셋 다 달라진다. 정지 이미지를 먼저 만들고 그걸 입력으로 써야 닮은 채로 남는다.
-> 
-
 파일은 `web/src/assets/characters/`에 모드 키 이름으로 둔다 — `general`, `hr`, `domain`. 모드마다 png·webm·mp4 셋이고, 작은 아이콘용 `*-icon.png`가 따로 있다. [code:web/src/assets/characters/] [code:web/src/pages/ModeSelect.tsx:3-11]
 
 ---
 
-### 10. 구현
+#### 1-10. 구현
 
 - CSS 파일을 직접 쓴다(컴포넌트별 CSS Modules). Tailwind나 UI 라이브러리를 쓰지 않는다 — 화면이 넷이라 복잡하지 않다 [code:web/package.json] [code:web/src/components/] [code:web/src/pages/]
 - 위 토큰을 `:root`에 CSS 변수로 정의하고 컴포넌트는 변수만 참조한다. 하드코딩한 색을 두지 않는다 [code:web/src/styles/tokens.css:1-4]
@@ -253,7 +238,31 @@
 
 ---
 
-### 11. 검증 항목
+### 2. 왜 이렇게 했나
+
+**특정 곳에만 완주대둔산체를 쓴 이유**: 지자체 폰트는 개성이 강해 긴 글에 쓰면 읽기 피곤하다. 짧은 단어는 개성이 읽기를 방해하지 않고, 그 화면은 포트폴리오 성격이라 인상이 중요하다. 상담 화면은 그대로 Wanted Sans다.
+
+**색 배치의 이유**: 셋이 색상환에서 고르게 퍼져 있어 구분이 쉽다. 초록과 가까운 것은 민트뿐이고, 채도를 낮추면 전화 알림과 충분히 갈린다. 빨간 넥타이는 네이비로 바꿨다 — 팔레트에 빨강이 없고 경고색(주황)과 혼동된다.
+
+### 3. 시도했던 것들
+
+> **처음에는 다크 보라 그라데이션으로 갔다가 바꿨다 (2026-10-14).** 유리 카드와 빛 덩어리를 올린 안이었는데, 구현해 보니 화면이 칙칙하고 정보 밀도가 낮았다. 평면 카드에 그림자만 주는 쪽이 상담 도구에 맞는다.
+> 
+
+> 바탕을 그린 계열로 하는 안은 버렸다. 전화 알림이 같은 계열에 묻히고, 경고로 쓸 주황도 초록의 이웃이라 애매해진다. 청록(틸)도 초록과 30~40도밖에 안 떨어져 같은 문제가 있다.
+> 
+
+> 영상 단계에서 색과 옷을 한꺼번에 바꾸면 캐릭터 생김새가 셋 다 달라진다. 정지 이미지를 먼저 만들고 그걸 입력으로 써야 닮은 채로 남는다.
+> 
+
+- **모드 선택 화면 아래 소개 영역** ✓ 2026-10-16 구현. 세 모드를 지그재그로 소개하고, 기술 구성 카드 8장과 아키텍처 구성도, 아코디언 설명을 붙였다 [code:web/src/pages/ModeSelect.module.css:76-99] [code:web/src/pages/ModeSelect.tsx:203-230] [code:web/src/components/ArchDiagram.tsx]
+
+### 4. 남은 한계
+
+- **다크 모드** △ 코드 없음 — 토큰으로 잡아두었으므로 필요해지면 추가할 수 있다 [code:web/src/styles/tokens.css:1]
+  까닭: 1-1절 「라이트 단일 모드로 간다」(상담원이 사무실에서 하루 종일 쓰는 도구라 흰 바탕이 눈에 편하다)
+
+### 5. 검증 항목
 
 UI를 바꾸면 1920 · 1440 · 1280 · 1024 · 800 · 400px 여섯 폭에서 가로 넘침 · 겹침 0을 확인하고, 결과(폭별 수치)를 이 문서의 해당 절에 적는다(2026-10-23 사용자 지시). [c:1cf1479]
 
@@ -268,7 +277,22 @@ UI를 바꾸면 1920 · 1440 · 1280 · 1024 · 800 · 400px 여섯 폭에서 �
 
 ---
 
-### 12. 아직 정하지 않은 것
+#### 옛 절 번호 (코드 주석이 가리키는 것)
 
-- **모드 선택 화면 아래 소개 영역** ✓ 2026-10-16 구현. 세 모드를 지그재그로 소개하고, 기술 구성 카드 8장과 아키텍처 구성도, 아코디언 설명을 붙였다 [code:web/src/pages/ModeSelect.module.css:76-99] [code:web/src/pages/ModeSelect.tsx:203-230] [code:web/src/components/ArchDiagram.tsx]
-- **다크 모드** △ 코드 없음 — 토큰으로 잡아두었으므로 필요해지면 추가할 수 있다 [code:web/src/styles/tokens.css:1]
+코드 주석(`web/src/`)이 이 편의 옛 절 번호를 가리킨다. 2026-11-19 문서 정리 B단계에서 절을 옮겼고 코드는 고치지 않았다.
+
+| 옛 절 | 새 자리 |
+|---|---|
+| 0 | 0 |
+| 1 | 1-1, 3 시도했던 것들(다크 보라 그라데이션) |
+| 2 | 1-2, 3 시도했던 것들(그린 계열 바탕) |
+| 3 | 1-3, 2 왜 이렇게 했나(완주대둔산체를 쓴 이유) |
+| 4 | 1-4 |
+| 5 | 1-5 |
+| 6 | 1-6 |
+| 7 | 1-7 |
+| 8 | 1-8, 2 왜 이렇게 했나(색 배치의 이유) |
+| 9 | 1-9, 3 시도했던 것들(영상 단계에서 색과 옷) |
+| 10 | 1-10 |
+| 11 | 5 |
+| 12 | 3 시도했던 것들(소개 영역), 4 남은 한계(다크 모드) |

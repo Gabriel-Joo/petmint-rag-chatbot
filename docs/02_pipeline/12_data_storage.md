@@ -148,18 +148,14 @@ sessions (상담 1건)
 
 **이주를 설정 변경 수준으로 만드는 것은 환경변수다.** 호스트·포트·사용자·비밀번호·DB 이름을 전부 환경변수로 뺀다. 코드에 접속 정보를 하드코딩하지 않는다. [code:db/conn.py:21] [code:db/conn.py:50]
 
-**이주 때 할 일** (상세는 14번)
-
-- ✓ StatefulSet + PVC로 올리고, 계정 정보를 Secret으로 주입(2026-10-16) <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): apps/petmint/mysql/statefulset.yaml:36-41, :63-71 (65b9abb) -->
-- ✓ 스키마 초기화 Job 또는 마이그레이션 실행(2026-10-16) [code:db/migrate.py] [code:db/bootstrap.py]
-- ✗ `mysqldump`로 개발 데이터를 넣는다. 다만 **개발 중 쌓인 로그를 가져갈지는 그때 정한다** — 테스트 대화가 섞여 있으면 버리는 편이 낫다
-- ✓ 환경변수만 바꾸고 연결 확인(2026-10-16) [code:db/conn.py:50]
-
-실제로는 `mysqldump`를 쓰지 않았다. 클러스터 DB는 픽스처 시드로 새로 시작했고, 개발 중 쌓인 테스트 대화는 가져가지 않았다. [docs:02_pipeline/14_deployment.md] <!-- 인프라 확인(2026-11-19 인프라 관리자 답, ronanlab-infra fd9c6cc 판): 픽스처 시드는 apps/petmint/jobs/init-db.yaml:5, :42 --> <!-- 확인 못 함: mysqldump를 안 쓴 것과 테스트 대화를 안 가져간 것은 인프라 저장소와 기록에도 없음(2026-11-19 인프라 관리자 답) -->
+클러스터로 옮긴 기록(2026-10-16)은 `docs/archive/12_data_storage_log.md`로 옮겼다.
 
 #### 1-3. 인스턴스 구성
 
-클러스터에 MySQL 인스턴스 **하나**만 둔다(StatefulSet + PVC). 데이터베이스를 `petmint`와 `insurance_core`로 나누고, 계정도 나눠 각자 자기 데이터베이스만 접근하게 한다. `insurance_core`는 고객 원장이고 `petmint_app` 계정은 SELECT만 가진다(4절). Secret은 네임스페이스별로 둔다. RUNSHOES를 같은 클러스터에 올릴 때 `runshoes` 데이터베이스와 계정을 같은 방식으로 추가한다 — 초기화 Job의 `BOOTSTRAP_APPS`에 넣으면 된다. [code:db/bootstrap.py:5-8] [code:db/bootstrap.py:19-21] [code:db/bootstrap.py:40-46]
+클러스터에 MySQL 인스턴스 **하나**만 둔다(StatefulSet + PVC). 데이터베이스를 `petmint`와 `insurance_core`로 나누고, 계정도 나눠 각자 자기 데이터베이스만 접근하게 한다. `insurance_core`는 고객 원장이고 `petmint_app` 계정은 SELECT만 가진다(아래). Secret은 네임스페이스별로 둔다. RUNSHOES를 같은 클러스터에 올릴 때 `runshoes` 데이터베이스와 계정을 같은 방식으로 추가한다 — 초기화 Job의 `BOOTSTRAP_APPS`에 넣으면 된다. [code:db/bootstrap.py:5-8] [code:db/bootstrap.py:19-21] [code:db/bootstrap.py:40-46]
+
+- **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다) [code:app/services/auth.py:84-125]
+- **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절. [code:db/migrations/insurance_core/0001_init.sql:1-4] [code:db/bootstrap.py:8] [docs:02_pipeline/14_deployment.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 insurance_core.customers 10행 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, customers 10행 --> <!-- 확인 못 함: 고객 픽스처 파일 app/fixtures/customers.json은 개인정보가 들 수 있어 열지 않음 -->
 
 #### 1-4. 지난 대화 삭제는 숨김이다
 
@@ -247,6 +243,8 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 
 세션에 고정하면 이 둘이 기록되지 않는다. 중복은 늘어나지만(턴당 두세 줄) 로그는 추측이 섞이면 쓸모가 없다.
 
+- **중복이 있다.** 같은 scope가 턴마다 반복된다. 정확성과 바꿔 받은 것이다
+
 #### 2-2. 외래키만으로는 "그때 조건"이 남지 않는다
 
 로그에 `pet_id`만 적어두면, 반년 뒤에 해피가 고급형에서 실속형으로 바뀌었을 때 과거 로그를 열어보면 **실속형으로 보인다.** 외래키는 "P001을 찾아가라"는 화살표일 뿐, 그 시점 값을 얼려두지 않는다.
@@ -265,11 +263,7 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 
 △ 다만 오래된 로그는 본문만 비우고 조문 번호는 남기는 보관 정책을 나중에 붙인다. IT팀이 품질을 보는 것은 대개 최근 로그이고, 파인튜닝 데이터로 쓸 만한 것은 그 전에 따로 뽑으면 된다.
 
-#### 2-4. 인스턴스를 나누지 않는다
-
-데이터베이스가 다르면 데이터는 섞이지 않지만, 같은 프로세스라 한쪽이 죽으면 둘 다 죽는다. 그런데 둘 다 포트폴리오고 트래픽도 없으므로, 16GB에 GPU 모델들이 올라가는 것을 생각하면 인스턴스 둘은 아깝다. 계정 분리로 최소 권한은 지킨다.
-
-#### 2-5. 언제 MySQL로 옮기는가
+#### 2-4. 언제 MySQL로 옮기는가
 
 초안은 JSONL 파일이었다 — 쓰기만 하고 08 평가에서 통째로 읽으면 충분했기 때문이다. 그러나 세 가지가 걸렸다.
 
@@ -279,9 +273,9 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 
 세션도 같은 DB에 넣으면서 두 번째 문제가 풀렸다.
 
-#### 2-6. 지우기를 숨김으로 바꾸는 이유
+#### 2-5. 지우기를 숨김으로 바꾸는 이유
 
-상담원 화면에서 대화를 치웠다고 턴·검색 결과·평가까지 사라지면, 0절의 재현 목표와 2-5절의 책임 추적이 동시에 깨진다. 그 둘은 MySQL로 온 이유 자체다.
+상담원 화면에서 대화를 치웠다고 턴·검색 결과·평가까지 사라지면, 0절의 재현 목표와 2-4절의 책임 추적이 동시에 깨진다. 그 둘은 MySQL로 온 이유 자체다.
 
 목록에서 치우는 것은 상담원의 작업 공간 정리이지 기록 폐기가 아니다. 둘을 같은 동작으로 묶으면 한쪽을 포기해야 한다.
 
@@ -299,18 +293,22 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 | scope를 JSON 한 덩어리로 | 모양이 바뀌어도 상관없어 편하나 "고급형 고객 질문만" 같은 조회가 번거롭다. 칼럼으로 펼치고 테이블을 나눈다. |
 | scope를 sessions에 붙임 | 상담 중 고객이 안 바뀐다는 생각에서 출발했으나, 반려동물 전환과 가정 질문을 담지 못한다(2-1절) |
 
+#### 3-1. 인스턴스를 나누지 않는다(그때는 이렇게 보았다)
+
+지금 구성과 다른 옛 설계의 까닭이다. 지금은 petmint 네임스페이스에 Primary와 Replica를 두고, 런슈즈는 자기 runshoes-mysql을 쓴다(2026-11-19 인프라 관리자 답).
+
+데이터베이스가 다르면 데이터는 섞이지 않지만, 같은 프로세스라 한쪽이 죽으면 둘 다 죽는다. 그런데 둘 다 포트폴리오고 트래픽도 없으므로, 16GB에 GPU 모델들이 올라가는 것을 생각하면 인스턴스 둘은 아깝다. 계정 분리로 최소 권한은 지킨다.
+
 ---
 
 ### 4. 남은 한계
 
-- **중복이 있다.** 같은 scope가 턴마다 반복된다. 정확성과 바꿔 받은 것이다
-- **보관 정책이 없다.** 일단 전부 남기고, 데이터가 쌓인 뒤에 오래된 본문을 비우는 정책을 붙인다
-- **인사 원장도 별도 DB다.** 직원 신원·급여·휴가는 `insurance_core`, 앱 계정·로그인 세션은 `petmint`. 로그인할 때 두 데이터베이스를 따로 읽는다(조인하지 않는다) [code:app/services/auth.py:84-125]
-- **고객 원장은 별도 DB다.** `insurance_core`에 기간계를 흉내 낸 테이블을 두고 `petmint_app`은 SELECT만 한다. 데이터베이스가 다르므로 `customer_id`에 외래키를 걸 수 없고, 그것이 경계가 있다는 표시다. 내용은 여전히 픽스처 10명이다. 상세는 14번 2-3절. [code:db/migrations/insurance_core/0001_init.sql:1-4] [code:db/bootstrap.py:8] [docs:02_pipeline/14_deployment.md] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 insurance_core.customers 10행 --> <!-- 2026-11-19 잼: 개발 DB 읽기 전용 COUNT, customers 10행 --> <!-- 확인 못 함: 고객 픽스처 파일 app/fixtures/customers.json은 개인정보가 들 수 있어 열지 않음 -->
+- **보관 정책이 없다.** 일단 전부 남기고, 데이터가 쌓인 뒤에 오래된 본문을 비우는 정책을 붙인다. 까닭: 턴당 약 5KB라 1년 900MB, 상담원 몇 명 규모에서는 버틸 수준이다(2-3절)
+- **백업은 root 계정으로 뜬다.** 백업 전용 계정(SELECT·SHOW VIEW·TRIGGER·EVENT만)을 만들면 Secret이 하나 늘고 `db.bootstrap`을 고쳐야 해 미뤘다 [code:db/bootstrap.py] 까닭: 같은 줄(Secret이 하나 늘고 db.bootstrap을 고쳐야 한다)
+
+조건: 우리가 고르지 않은 것
+
 - **백업이 같은 물리 디스크에 있다.** MySQL PVC(w1 VM 디스크)와 백업(호스트 `~/backup`)이 같은 호스트 NVMe 위다. 실수로 지운 데이터·잘못된 마이그레이션은 되돌리지만 디스크 고장에는 못 버틴다. 바깥 사본은 아직 없다(1-5절) <!-- 2026-11-19 잼: df -h, lsblk, findmnt -T, virsh domblklist k8s-cluster_w1-k8s. ~/backup, /srv/nfs/backup/petmint, w1 VM 디스크가 모두 /dev/nvme0n1p2 -->
-- **백업은 root 계정으로 뜬다.** 백업 전용 계정(SELECT·SHOW VIEW·TRIGGER·EVENT만)을 만들면 Secret이 하나 늘고 `db.bootstrap`을 고쳐야 해 미뤘다 [code:db/bootstrap.py]
-- **백업 실패를 알리지 않는다.** Job 실패는 `kubectl -n petmint get jobs`와 ArgoCD에서만 보인다
-- **하루 단위다.** 바이너리 로그로 특정 시각까지 되감는 복구(PITR)는 없다 — 마지막 백업 뒤의 대화는 잃는다
 
 ---
 
@@ -330,3 +328,9 @@ FROM admin_views WHERE kind = 'session' AND session_id = '<세션 id>' ORDER BY 
 - [x]  백업 파일로 빈 MySQL에 복구하면 테이블별 행 수가 운영과 같은가(2026-11-10, 19/19, 2026-11-19 지금 테이블은 20개) [c:74397ed] <!-- 클러스터 확인(2026-11-19 인프라 관리자 답): 운영 테이블 20개(petmint 9, insurance_core 11) --> <!-- 확인 못 함: 그날 복구 시험의 행 수는 지난 일이라 다시 잴 수 없음 -->
 - [x]  CronJob이 03:30에 돌아 호스트 `~/backup/mysql/petmint`에 파일이 생기는가 — 2026-11-11 03:30:00 KST `petmint-20261111-033000.sql.gz`(135,942바이트, 3초). sha256 OK, 끝 줄 `Dump completed`, 소유자 uid 1000(all_squash), 권한 640 [code:deploy/scripts/host-nfs-backup-setup.sh:8] <!-- 2026-11-19 잼: ls -l, sha256sum -c, zcat | tail -1, stat -c '%u %a' (135,942바이트, mtime 03:30:00, sha256 OK, 끝 줄 Dump completed, uid 1000, 640) --> <!-- 확인 못 함: 3초는 지난 일이라 다시 잴 수 없음 -->
 - [ ]  복구 절차 1~7을 운영 DB에 그대로 해 본 적이 있는가(지금은 임시 컨테이너 시험만)
+
+#### 옛 절 번호 (코드 주석이 가리키는 것)
+
+| 옛 절 | 새 절 | 내용 |
+| --- | --- | --- |
+| 4절 | 1-3절 | 고객 원장과 인사 원장은 별도 DB, customer_id와 employee_id에 외래키를 걸지 않는 경계 |

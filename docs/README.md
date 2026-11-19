@@ -49,6 +49,7 @@
 | 파일 | 내용 |
 |---|---|
 | `next_rebuild.md` | 다음 FAQ·파인튜닝 재구축 지시서 [docs:next_rebuild.md] |
+| `archive/` | 기록 폴더(B단계에서 떼어 낸 구현 기록과 처음 설계) |
 | `TODO.md` | 나중에 할 일 — 정해 두고 미룬 것(무엇·언제·조건·근거) [docs:TODO.md] [c:be32dca] |
 | `ops/저녁실행.md` | rebuild3 뒤 실행 순서서(명령·시간·성공·실패·건너뛰면) [docs:ops/저녁실행.md] [c:5409464] |
 | `ops/배포기록.md` | 배포·알림 시험처럼 코드 변경 없이 배포를 일으킨 커밋의 기록 [docs:ops/배포기록.md] [c:98f785b] |
