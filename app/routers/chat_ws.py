@@ -1,13 +1,13 @@
 """
 chat_ws.py
-/ws/chat/{session_id} (7-2). 서버 메시지는 전부 turn_id를 가진다(스키마가 강제).
+/ws/chat/{session_id} (1-14). 서버 메시지는 전부 turn_id를 가진다(스키마가 강제).
 
 - 없는·종료된·남의 세션 → accept 후 4404로 닫는다. 사용자 정의 종료 코드는 accept 전에는 보낼 수 없다.
   세션은 메시지마다 다시 본다 — 다른 탭에서 상담을 끝내거나 목록에서 제거했을 수 있다.
-- question의 pet_id는 세션 고객의 반려동물인지 검증한다(6-2). 업무특화가 아니면 pet_id를 받지 않는다.
+- question의 pet_id는 세션 고객의 반려동물인지 검증한다(1-11). 업무특화가 아니면 pet_id를 받지 않는다.
 - 턴 로그(turns·turn_scope·retrieved)는 done을 보내기 전에 쓴다 — done 뒤 목록 새로고침·피드백이 그 턴을 찾을 수 있게.
 - 첫 질문이면(세 모드 모두, 12번 1-1절) 제목 요약을 답변과 나란히 돌리고, done 전에 sessions.title에 한 번 넣는다.
-  업무특화 제목은 고객 조회의 과거 상담 목록이 쓴다(09번 2-2절).
+  업무특화 제목은 고객 조회의 과거 상담 목록이 쓴다(09번 1-3절).
 - 한 턴은 answer.run_turn이 낸 메시지를 그대로 보낸다(sources → calc → token… → references, 되묻기면 clarify에서 멈춤,
   실패면 error). 턴 로그를 쓰고 제목을 넣은 뒤 done — error로 끝난 턴은 done을 보내지 않는다.
 - 되묻기에서 멈춘 턴은 연결마다 들고 있다가 clarify_answer로 잇는다. 응답 전에 새 질문이 오거나 연결이 끊기면 cancelled로 남긴다.

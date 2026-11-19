@@ -2,7 +2,7 @@
 .card { padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; }
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 
-/* 10번 6절 — 크기로 층을 나눈다 */
+/* 10번 1-7절 — 크기로 층을 나눈다 */
 .big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 /* 첫 줄(고객·반려동물)은 참조용 — 상담 중에는 누구인지 이미 안다. 제목처럼 크지 않게(2026-10-21: 이름 36px → --font-sm) */
 .customer { font-size: var(--font-sm); font-weight: var(--font-weight-title); }

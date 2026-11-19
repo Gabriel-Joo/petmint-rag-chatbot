@@ -1,4 +1,4 @@
-// 화면 전환과 세션 수명(10번 2·3·5절)을 여기서 쥔다.
+// 화면 전환과 세션 수명(10번 1-2·1-4·1-6절)을 여기서 쥔다.
 // - 일반·사내규정: 모드별로 지금 보는 세션 하나. 모드를 오가도 유지된다. 세션은 닫지 않는다 —
 //   "새 대화"는 새 세션을 여는 것뿐이고, 앞 대화는 "지난 채팅"에서 다시 열어 이어 쓸 수 있다
 // - 업무특화: 상담 시작 시 생성, 종료로 닫는다. 진입은 전화 받기 / 고객 조회 둘 — 같은 startConsultation으로 수렴
@@ -47,7 +47,7 @@ export default function App({ me, onLogout }: AppProps) {
     } catch (e) { fail(e); }
   }, []);
 
-  /** 종료된 상담 화면을 떠나면 그 대화는 버린다 — 업무특화를 다시 누르면 고객 조회가 뜬다(10번 5절) */
+  /** 종료된 상담 화면을 떠나면 그 대화는 버린다 — 업무특화를 다시 누르면 고객 조회가 뜬다(10번 1-6절) */
   const leaveEndedConsult = () => {
     if (consult?.ended) {
       dropChat(consult.session.session_id);
@@ -88,7 +88,7 @@ export default function App({ me, onLogout }: AppProps) {
     setChatSessions((prev) => ({ ...prev, [mode]: { session_id: it.session_id, mode, customer_id: null, started_at: it.started_at } }));
   };
 
-  /** 4404를 받은 일반·사내규정 — 그 모드의 빈 대화창에서 새 세션(09 6-2) */
+  /** 4404를 받은 일반·사내규정 — 그 모드의 빈 대화창에서 새 세션(09 1-11) */
   const chatSessionLost = useCallback((mode: ChatMode) => {
     setChatSessions((prev) => {
       if (prev[mode]) dropChat(prev[mode]!.session_id);
@@ -97,7 +97,7 @@ export default function App({ me, onLogout }: AppProps) {
     void openChatSession(mode);
   }, [openChatSession]);
 
-  /** 업무특화 진입점 하나 — 전화 받기와 고객 조회가 여기로 모인다(10번 3절) */
+  /** 업무특화 진입점 하나 — 전화 받기와 고객 조회가 여기로 모인다(10번 1-4절) */
   const startConsultation = useCallback(async (customer: Customer) => {
     setStarting(true);
     try {
@@ -123,7 +123,7 @@ export default function App({ me, onLogout }: AppProps) {
     setEnding(false);
   };
 
-  /** 4404를 받은 업무특화 — 고객 조회로 돌아간다(09 6-2) */
+  /** 4404를 받은 업무특화 — 고객 조회로 돌아간다(09 1-11) */
   const consultLost = useCallback(() => {
     setConsult((prev) => {
       if (prev) dropChat(prev.session.session_id);

@@ -1,6 +1,6 @@
 import s from "./ExclusionBanner.module.css";
 
-/** 질문이 부담보 조건에 걸리는가 — 모델이 아니라 코드가 대조한다(09 2-3).
+/** 질문이 부담보 조건에 걸리는가 — 모델이 아니라 코드가 대조한다(09 1-4).
  *  지금은 글자 대조(공백 무시 전체 일치, 또는 3글자 이상 낱말 일치)뿐이다. "무릎" ↔ "슬개골" 같은 동의어는 못 잡는다 */
 export function matchExclusions(question: string, conditions: string[]): string[] {
   const q = question.replace(/\s+/g, "");

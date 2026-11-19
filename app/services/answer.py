@@ -1,17 +1,17 @@
 """
 answer.py
-한 턴의 파이프라인(09 8절): scope → 검색·조립 → 되묻기 판정 → 계산 카드 → 생성 → used_references.
+한 턴의 파이프라인(09 1-17절): scope → 검색·조립 → 되묻기 판정 → 계산 카드 → 생성 → used_references.
 결과는 WS 서버 메시지로 흘려보낸다 — sources → (calc) → token… → references, 되묻기면 sources → clarify에서 멈춘다,
 실패면 error. done은 chat_ws가 턴 로그(ctx.log)를 쓴 뒤 보낸다.
 
 고정된 결정(구현 때 바꾸지 말 것):
-- 고객 정보·대화 이력은 프롬프트에 넣지 않는다(5절). prompts.build_messages(customer=, history=)는 NotImplementedError —
+- 고객 정보·대화 이력은 프롬프트에 넣지 않는다(1-9절). prompts.build_messages(customer=, history=)는 NotImplementedError —
   등급은 SearchScope가, 자기부담금·부담보는 계산 카드·배너(코드)가, 멀티턴은 context.py가 맡는다(모드별 — 일반만 이력 전달).
-- 재작성기는 베이스 모델(5절). 재작성된 질문은 화면에 보여준다.
-- 되묻기: 상위 결과의 section_name이 서로 다른 (유형, 등급) 조합일 때만. 가정 질문은 안 한다(4절).
+- 재작성기는 베이스 모델(1-9절). 재작성된 질문은 화면에 보여준다.
+- 되묻기: 상위 결과의 section_name이 서로 다른 (유형, 등급) 조합일 때만. 가정 질문은 안 한다(1-8절).
 - 금액 계산은 limit_table이 하고 모델은 손대지 않는다.
 
-검색·조립은 노트북·평가와 같은 코드다(3-3절) — rag_context.build_full_context에 SearchEngine 대신 Retriever(HTTP)를 넘긴다.
+검색·조립은 노트북·평가와 같은 코드다(1-6절) — rag_context.build_full_context에 SearchEngine 대신 Retriever(HTTP)를 넘긴다.
 build_full_context·used_references가 동기(HTTP·Milvus·SequenceMatcher)라 asyncio.to_thread로 돌린다 — 그냥 부르면
 이벤트 루프가 막혀 다른 세션의 수신이 멈춘다.
 
@@ -309,7 +309,7 @@ def named_section(question: str, pet: Pet | None) -> str | None:
 
 def clarify_options(results: list[dict], scope: SearchScope | None) -> dict[str, str] | None:
     """상위 결과의 의료비 특약들이 서로 다른 (유형, 등급) 조합이면 선택지(표시 문구 → section_name). 아니면 None.
-    같은 유형·등급이면 통원/입원 한도가 같아 묻지 않는다(4절). 범위에 등급이 없으면(인사규정·일반) 늘 None"""
+    같은 유형·등급이면 통원/입원 한도가 같아 묻지 않는다(1-8절). 범위에 등급이 없으면(인사규정·일반) 늘 None"""
     if scope is None or scope.medical is None:
         return None
     medical = MEDICAL_SECTIONS[scope.species]

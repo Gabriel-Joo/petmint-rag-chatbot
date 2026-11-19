@@ -16,7 +16,7 @@ interface Props {
   starting: boolean;
 }
 
-/** 고객 조회 — 전화 없이 상담을 시작하는 두 번째 입구(10번 3절). 종은 상담 화면에서 반려동물을 고르면 따라온다 */
+/** 고객 조회 — 전화 없이 상담을 시작하는 두 번째 입구(10번 1-4절). 종은 상담 화면에서 반려동물을 고르면 따라온다 */
 export function CustomerSelect({ onStart, starting }: Props) {
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [recent, setRecent] = useState<Map<string, string>>(new Map()); // customer_id → 마지막 상담 시각(내림차순)

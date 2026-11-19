@@ -1,6 +1,6 @@
 """
 retrieval.py
-search-service HTTP 호출(09 7-3). 앱은 GPU를 쓰지 않는다 — KURE·리랭커·Milvus 조회는 호스트의 search-service가 하고,
+search-service HTTP 호출(09 1-15). 앱은 GPU를 쓰지 않는다 — KURE·리랭커·Milvus 조회는 호스트의 search-service가 하고,
 앱은 SearchScope를 넘겨 관련 청크 top-k만 받는다. 모드마다 리트리버가 다르다(업무특화=약관, 사내규정=인사규정, 일반=없음).
 
 발췌 조립(섹션 가중, 그래프로 참조 조문 붙이기, 길이 예산)은 Pod가 한다 — GPU가 필요 없고 규칙이 자주 바뀌어

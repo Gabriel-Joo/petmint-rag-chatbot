@@ -1,7 +1,7 @@
 // ============================================================================
 // API 층 — 백엔드 호출은 이 파일 하나에 모은다. 화면·훅은 이 파일의 export만 쓴다.
 //
-// 09 7-1(REST)·7-2(WS) 그대로. 경로는 상대 경로(/api, /ws)라 개발 중에는 vite 프록시가,
+// 09 1-13(REST)·1-14(WS) 그대로. 경로는 상대 경로(/api, /ws)라 개발 중에는 vite 프록시가,
 // 배포에서는 같은 오리진의 FastAPI가 받는다. 상담원 신원(agent_email)은 서버가 정한다 — Cloudflare Access 헤더(PETMINT_AUTH=access)
 // 또는 로그인 쿠키(app, HttpOnly라 스크립트가 읽지 못한다). 프론트는 신원을 보내지 않는다.
 // ============================================================================
@@ -122,7 +122,7 @@ export function getCustomer(customerId: string): Promise<Customer> {
   return request("GET", `/api/customers/${encodeURIComponent(customerId)}`);
 }
 
-/** GET /api/customers/{id}/sessions — 그 고객의 과거 상담 목록(09 2-2). 남이 받은 상담도 나온다 */
+/** GET /api/customers/{id}/sessions — 그 고객의 과거 상담 목록(09 1-3). 남이 받은 상담도 나온다 */
 export function listCustomerSessions(customerId: string, limit = 50): Promise<CustomerSessionSummary[]> {
   return request("GET", `/api/customers/${encodeURIComponent(customerId)}/sessions${qs({ limit })}`);
 }

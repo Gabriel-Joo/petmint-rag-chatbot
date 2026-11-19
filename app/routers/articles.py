@@ -1,5 +1,5 @@
 """
-조항 원문(7-1). Milvus id가 아니라 구조 경로로 받는다 — id는 재색인하면 바뀐다.
+조항 원문(1-13). Milvus id가 아니라 구조 경로로 받는다 — id는 재색인하면 바뀐다.
 경로 값이 null인 조문(보통약관의 section_name, 별표 등의 article_num)은 NULL_SEGMENT로 보낸다.
 section_name에 '/'가 든 것이 있어('【별표4】 민사소송 인지액 /【별표5】 송달료') path 변환기로 받는다.
 본문은 ContextBuilder.fetch_article_content를 그대로 부른다(Milvus 행을 원문 순서로 잇는다) — 평가와 같은 코드.

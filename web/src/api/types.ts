@@ -1,4 +1,4 @@
-// app/schemas.py와 같은 모양(09 6·7절). 서버가 계산해서 내려주는 값(Policy.type)도 응답에 들어 있다.
+// app/schemas.py와 같은 모양(09 1-10·1-13절). 서버가 계산해서 내려주는 값(Policy.type)도 응답에 들어 있다.
 
 export type Mode = "일반" | "사내규정" | "업무특화";
 export type Species = "강아지" | "고양이";
@@ -80,7 +80,7 @@ export interface SessionDetail extends SessionOut {
   turns: TurnOut[];
 }
 
-/** GET /api/customers/{id}/sessions 한 줄 — 그 고객의 과거 상담(09 2-2). 담당 상담원과 무관하게 전부, 시작 시각 역순 */
+/** GET /api/customers/{id}/sessions 한 줄 — 그 고객의 과거 상담(09 1-3). 담당 상담원과 무관하게 전부, 시작 시각 역순 */
 export interface CustomerSessionSummary {
   session_id: string;
   mode: Mode;
@@ -105,7 +105,7 @@ export interface ScopeRow {
   excluded_conditions: string[];
 }
 
-/** 멀티턴 처리 종류(09 5절) — rewrite: 사내규정 재작성 / concat: 업무특화 앞 질문과 이어서 검색 / history: 일반 이력 전달 */
+/** 멀티턴 처리 종류(09 1-9절) — rewrite: 사내규정 재작성 / concat: 업무특화 앞 질문과 이어서 검색 / history: 일반 이력 전달 */
 export type ContextKind = "rewrite" | "concat" | "history";
 
 /** 후속 질문을 앞 대화로 어떻게 풀었는지 — 화면의 ↳ 줄 */
@@ -220,7 +220,7 @@ export interface DayRow {
   payout: number;
 }
 
-/** 의료비 계산 카드(09 2-3) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도.
+/** 의료비 계산 카드(09 1-4) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도.
  *  kind가 없으면(법률비용 카드 전에 저장된 턴) 의료비다. days 이하가 없으면(10-21 여러 날 계산 전 카드) 하루·정확 */
 export interface MedicalCalc {
   kind?: "medical";

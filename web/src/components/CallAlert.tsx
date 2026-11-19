@@ -9,7 +9,7 @@ interface Props {
   onReject: () => void;
 }
 
-/** 전역 전화 알림(10번 1절). 어느 화면에서든 같은 자리에 뜬다 */
+/** 전역 전화 알림(10번 1-1절). 어느 화면에서든 같은 자리에 뜬다 */
 export function CallAlert({ ringing, notice, onAccept, onReject }: Props) {
   if (!ringing) {
     return notice ? <div className={`raised chat-text ${s.notice}`} role="status">{notice}</div> : null;

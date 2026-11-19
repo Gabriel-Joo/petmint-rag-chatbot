@@ -63,7 +63,7 @@ CREATE TABLE turn_scope (
 CREATE TABLE retrieved (
     turn_id        CHAR(36)     NOT NULL,
     `rank`         SMALLINT     NOT NULL,          -- 0부터. RANK는 MySQL 8 예약어라 따옴표가 필요하다
-    graph_key      VARCHAR(512) NOT NULL,          -- 조문 식별 기준 키(rag_context.graph_key, 09번 6-3절)
+    graph_key      VARCHAR(512) NOT NULL,          -- 조문 식별 기준 키(rag_context.graph_key, 09번 1-12절)
     corpus         VARCHAR(20)  NOT NULL,          -- 강아지 / 고양이 / 인사규정. 리트리버가 늘면 값만 늘린다(앱이 검증)
     section        VARCHAR(100) NOT NULL,
     section_name   VARCHAR(200) NULL,              -- 보통약관은 NULL

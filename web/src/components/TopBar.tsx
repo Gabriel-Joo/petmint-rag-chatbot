@@ -10,7 +10,7 @@ const MODES: Mode[] = ["일반", "업무특화", "사내규정"];
 
 interface Props {
   current: Mode | null;
-  /** 상담 진행 중 — 모드 전환 잠김(10번 5절) */
+  /** 상담 진행 중 — 모드 전환 잠김(10번 1-6절) */
   locked: boolean;
   onHome: () => void;
   onMode: (m: Mode) => void;
@@ -68,7 +68,7 @@ export function TopBar({ current, locked, onHome, onMode, autoRing, onAutoRing, 
 
       {/* 오른쪽: 전화 묶음 → 상담원. 늘 첫 줄 오른쪽 끝 — 모드·상담 중 표시로 자리가 바뀌지 않는다(2026-10-28) */}
       <div className={s.rightCol}>
-        {/* 개발·시연용 가상 전화(10번 1절) */}
+        {/* 개발·시연용 가상 전화(10번 1-1절) */}
         <div className={s.callWrap} ref={menuRef}>
           <button className={s.menuBtn} aria-label="전화 메뉴" aria-expanded={menuOpen} aria-controls="call-menu"
                   onClick={() => setMenuOpen((v) => !v)}>

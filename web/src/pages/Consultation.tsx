@@ -16,7 +16,7 @@ import s from "./Consultation.module.css";
 export interface ConsultState {
   session: SessionOut;
   customer: Customer;
-  /** 상담 종료 후에도 화면에 머문다 — 세션만 닫히고 대화는 읽기 전용(10번 5절) */
+  /** 상담 종료 후에도 화면에 머문다 — 세션만 닫히고 대화는 읽기 전용(10번 1-6절) */
   ended: boolean;
 }
 
@@ -24,7 +24,7 @@ interface Props {
   consult: ConsultState;
   onEnd: () => void;
   ending: boolean;
-  /** 4404 — 업무특화는 고객 조회로 돌아간다(09 6-2) */
+  /** 4404 — 업무특화는 고객 조회로 돌아간다(09 1-11) */
   onSessionLost: () => void;
 }
 

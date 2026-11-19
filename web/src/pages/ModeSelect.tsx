@@ -13,7 +13,7 @@ import { ArchDiagram } from "../components/ArchDiagram";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import s from "./ModeSelect.module.css";
 
-// 09 2-1. 캐릭터는 평소 정지 이미지, 카드에 마우스를 올리면 영상(10-6). 파일명은 모드 키(general, hr, domain)
+// 09 1-2. 캐릭터는 평소 정지 이미지, 카드에 마우스를 올리면 영상(10-6). 파일명은 모드 키(general, hr, domain)
 // 배경은 투명하다 — 세 이미지·영상의 배경색이 제각각(253~255)이고 비네팅·발밑 그림자가 있어 어떤 --card 값으로도 다 맞출 수 없었다.
 //   png: 배경 투명(RGBA). 영상: webm(VP9, 알파) 먼저, 알파를 못 쓰는 브라우저(Safari)는 mp4 — 배경을 --card 색으로 채운 판이다
 /** intro: 대사. 줄마다 한 줄 — 줄바꿈 위치를 정해 둔다 */
@@ -47,7 +47,7 @@ function CharacterCard({ c, onSelect, copy = false, clickable }: {
   const video = useRef<HTMLVideoElement>(null);
   const hover = useRef(0); // 들어오고 나갈 때마다 오른다 — 늦게 온 재생 알림이 이미 끝난 호버의 것인지 가린다
   const [playing, setPlaying] = useState(false);
-  // 한 번에 하나만 보인다(11번 9절). 영상이 투명(webm)이라 겹치면 뒤의 정지 이미지가 비친다 — 숨기는 쪽은 visibility로
+  // 한 번에 하나만 보인다(11번 1-9절). 영상이 투명(webm)이라 겹치면 뒤의 정지 이미지가 비친다 — 숨기는 쪽은 visibility로
   // 렌더에서 뺀다. 둘 다 .frame 안에 같은 크기·위치로 겹쳐 있어 하나를 빼도 자리가 움직이지 않는다
   const showVideo = playing && !reduced;
 
@@ -72,7 +72,7 @@ function CharacterCard({ c, onSelect, copy = false, clickable }: {
     const v = video.current;
     if (!v) return;
     v.pause();
-    v.currentTime = 0; // 다시 호버하면 시작 자세부터(11번 9절)
+    v.currentTime = 0; // 다시 호버하면 시작 자세부터(11번 1-9절)
   };
 
   return (

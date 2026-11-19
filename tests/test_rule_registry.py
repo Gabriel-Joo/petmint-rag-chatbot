@@ -1,5 +1,5 @@
 """코드 답 규칙 등록부(code_rules) — 순서, 규칙끼리 겹침(알려진 것 말고 새로 생기면 실패), 다음 턴이 알아보는 문구.
-겹침 표는 docs/02_pipeline/16_code_answers.md 3-1절과 같아야 한다 — 규칙을 바꾸다 새 겹침이 생기면 순서를 정하고 표와 KNOWN을 같이 고친다"""
+겹침 표는 docs/02_pipeline/16_code_answers.md 4-1절과 같아야 한다 — 규칙을 바꾸다 새 겹침이 생기면 순서를 정하고 표와 KNOWN을 같이 고친다"""
 
 import json
 import unittest
@@ -17,7 +17,7 @@ ORDER = ["reply_turn", "not_enrolled", "annual", "needs_amount", "hypothetical",
          "exclusion", "proviso", "named_cover", "injury_followup", "disease_ask"]
 NEEDS_HISTORY = {"reply_turn", "injury_followup"}          # 앞 턴이 있어야 발동 — 단독 질문 겹침 검사에서 뺀다
 KNOWN = {("올해 남은 입원 한도가 얼마예요?", ("annual", "limit")),
-         ("슬개골 탈구로 입원했는데 보험금 얼마나 나와요?", ("needs_amount", "exclusion"))}   # docs/16 3-1절
+         ("슬개골 탈구로 입원했는데 보험금 얼마나 나와요?", ("needs_amount", "exclusion"))}   # docs/16 4-1절
 
 
 def questions():

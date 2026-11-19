@@ -6,13 +6,13 @@ import s from "./CustomerCard.module.css";
 interface Props {
   customer: Customer;
   pet: Pet;
-  /** 종 토글 — 반려동물이 둘 이상이면 하나씩 본다(10번 6절) */
+  /** 종 토글 — 반려동물이 둘 이상이면 하나씩 본다(10번 1-7절) */
   toggle?: ReactNode;
   /** 카드 오른쪽 위 조작(과거 상담 등) */
   actions?: ReactNode;
 }
 
-/** 전화를 받자마자 훑는 카드(10번 6절). 약관 시행일·종료일은 고객 레코드에 없고 조회 API도 아직 없어 띄우지 않는다 */
+/** 전화를 받자마자 훑는 카드(10번 1-7절). 약관 시행일·종료일은 고객 레코드에 없고 조회 API도 아직 없어 띄우지 않는다 */
 export function CustomerCard({ customer, pet, toggle, actions }: Props) {
   const exclusions = pet.policies.flatMap((p) => p.excluded_conditions);
   const docs = [...new Map(pet.policies.map((p) => [p.doc_id, p])).values()];

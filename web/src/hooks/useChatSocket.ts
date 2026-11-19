@@ -1,5 +1,5 @@
-// WS 수신 + turn_id별 상태(09 8절). 대화 상태와 소켓은 컴포넌트가 아니라 이 모듈의 저장소(session_id별)에 둔다 —
-// 일반·사내규정은 모드를 오가며 화면이 내려가도 대화가 남아야 하기 때문이다(10번 2절).
+// WS 수신 + turn_id별 상태(09 1-17절). 대화 상태와 소켓은 컴포넌트가 아니라 이 모듈의 저장소(session_id별)에 둔다 —
+// 일반·사내규정은 모드를 오가며 화면이 내려가도 대화가 남아야 하기 때문이다(10번 1-2절).
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { getSessionTurns, openChatSocket, type ChatSocket } from "../api/client";
@@ -118,7 +118,7 @@ function connect(sessionId: string): ChatSocket {
   return e.socket;
 }
 
-/** 상담 종료 — 소켓만 닫고 대화는 읽기 전용으로 남긴다(10번 5절) */
+/** 상담 종료 — 소켓만 닫고 대화는 읽기 전용으로 남긴다(10번 1-6절) */
 export function closeChatSocket(sessionId: string) {
   const e = store.get(sessionId);
   if (!e) return;

@@ -107,7 +107,7 @@ export function TurnView({ turn, onClarify, inlineSources, exclusions = [], petL
   );
 }
 
-/** 후속 질문을 어떻게 풀었는지(09 5절) — 상담원이 해석을 확인하고 틀렸으면 고쳐 물을 수 있게. 질문 말풍선 바로 아래 오른쪽 */
+/** 후속 질문을 어떻게 풀었는지(09 1-9절) — 상담원이 해석을 확인하고 틀렸으면 고쳐 물을 수 있게. 질문 말풍선 바로 아래 오른쪽 */
 function ContextLine({ ctx }: { ctx: TurnContextInfo }) {
   const text =
     ctx.kind === "rewrite" ? ctx.text

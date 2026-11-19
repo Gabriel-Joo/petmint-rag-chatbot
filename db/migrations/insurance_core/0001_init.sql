@@ -1,7 +1,7 @@
--- insurance_core 0001_init.sql — 보험사 기간계를 흉내 낸 고객 원장(09번 6-1절 JSON을 그대로 편다).
+-- insurance_core 0001_init.sql — 보험사 기간계를 흉내 낸 고객 원장(09번 1-10절 JSON을 그대로 편다).
 -- 챗봇(petmint)은 이 데이터베이스를 읽기만 한다(petmint_app = SELECT). 적재·수정은 insurance_seed 계정.
--- petmint 쪽에서 여기로 외래키를 걸지 않는다 — 데이터베이스가 다르고, 그것이 경계다(12번 4절: customer_id는 문자열).
--- 유형(Ⅰ/Ⅱ/Ⅲ)은 저장하지 않는다 — section_name에서 계산한다(09번 6-1절). 약관 시행일·종료일도 복사하지 않는다(청크 메타에서 조회).
+-- petmint 쪽에서 여기로 외래키를 걸지 않는다 — 데이터베이스가 다르고, 그것이 경계다(12번 1-3절: customer_id는 문자열).
+-- 유형(Ⅰ/Ⅱ/Ⅲ)은 저장하지 않는다 — section_name에서 계산한다(09번 1-10절). 약관 시행일·종료일도 복사하지 않는다(청크 메타에서 조회).
 
 CREATE TABLE customers (
     customer_id VARCHAR(32)  NOT NULL,

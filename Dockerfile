@@ -1,4 +1,4 @@
-# 펫퍼민트 상담 앱 — FastAPI + React 빌드물 한 컨테이너(09번 7-3·8절).
+# 펫퍼민트 상담 앱 — FastAPI + React 빌드물 한 컨테이너(09번 1-15·1-17절).
 # GPU를 쓰는 Ollama·search-service는 GPU 호스트에 남고, 이 컨테이너가 네트워크로 부른다.
 # 접속 정보는 전부 실행할 때 환경변수로 준다(12번 1-2절) — 이미지에 .env를 넣지 않는다(.dockerignore).
 # 약관 청크·참조 그래프도 넣지 않는다(01번 "모델·데이터 사내 서버 상주, 외부 유출 0건") — 이미지는 Harbor로 나간다.
@@ -29,7 +29,7 @@ COPY app/requirements.txt app/requirements.txt
 RUN pip install -r app/requirements.txt \
  && useradd --no-log-init --uid 10001 --no-create-home petmint
 
-# 09번 8절 구조 그대로. data/는 앱이 import하는 모듈(.py)만 — 약관 데이터·notebooks/·data/faq/·data/finetune/은 넣지 않는다.
+# 09번 1-17절 구조 그대로. data/는 앱이 import하는 모듈(.py)만 — 약관 데이터·notebooks/·data/faq/·data/finetune/은 넣지 않는다.
 # 파일은 root 소유로 둔다(앱이 코드를 고쳐 쓸 일이 없다). 실행만 비root로
 COPY app/ app/
 COPY db/ db/
@@ -43,5 +43,5 @@ ENV PETMINT_CHUNKS_DIR=/var/lib/petmint/chunks \
 USER petmint
 
 EXPOSE 8000
-# 세션이 DB에 있으므로 worker를 늘려도 된다(09번 7-3절). 늘리려면 --workers N을 덧붙인다
+# 세션이 DB에 있으므로 worker를 늘려도 된다(09번 1-15절). 늘리려면 --workers N을 덧붙인다
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

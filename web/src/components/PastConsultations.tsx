@@ -17,7 +17,7 @@ interface Props {
 
 type View = { kind: "list" } | { kind: "detail"; sessionId: string };
 
-/** 고객 하나에 딸린 과거 상담(09 2-2). 고객 조회 카드와 상담 화면 고객 카드 두 곳에서 부른다 — 둘 다 모달로 덮는다.
+/** 고객 하나에 딸린 과거 상담(09 1-3). 고객 조회 카드와 상담 화면 고객 카드 두 곳에서 부른다 — 둘 다 모달로 덮는다.
  *  상담 화면에서 화면을 바꾸지 않는 이유: 진행 중 상담을 잃는다. 모달은 상담 화면 위에 덮일 뿐이라 세션·WS는 그대로다.
  *  열린 과거 상담은 소유자와 무관하게 읽기 전용이다 — 입력창이 없고, 이어서 질문할 수 없다 */
 export function PastConsultations({ customer, excludeSessionId }: Props) {

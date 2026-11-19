@@ -7,7 +7,7 @@ import s from "./SourcePanel.module.css";
 interface Props {
   items: SourceItem[];
   references: ReferenceItem[];
-  /** side = PC 오른쪽 2단 패널, inline = 모바일·대화창의 답변 아래 접힌 영역(09 2-3). 같은 데이터, 배치만 다르다 */
+  /** side = PC 오른쪽 2단 패널, inline = 모바일·대화창의 답변 아래 접힌 영역(09 1-4). 같은 데이터, 배치만 다르다 */
   variant: "side" | "inline";
 }
 

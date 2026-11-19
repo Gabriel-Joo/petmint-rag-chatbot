@@ -6,7 +6,7 @@ import s from "./CalcCard.module.css";
 /** 금액이 모델 답변이 아니라 약관 표에서 나왔다는 표시 — 답변이 거절하거나 다른 금액을 말해도 카드가 무엇인지 알 수 있게 */
 const BASIS = "금액은 약관 표로 계산한 값";
 
-/** 계산 카드(09 2-3) — 서버 계산 결과를 그대로 보여준다. 모델은 계산에 손대지 않는다. kind로 의료비·법률비용·한도·날짜별 입력을 가른다.
+/** 계산 카드(09 1-4) — 서버 계산 결과를 그대로 보여준다. 모델은 계산에 손대지 않는다. kind로 의료비·법률비용·한도·날짜별 입력을 가른다.
  *  onAnswer: 날짜별 입력 카드가 마지막 턴일 때만 — 채운 값을 다음 질문으로 보낸다. 없으면 입력칸은 읽기 전용 */
 export function CalcCard({ calc, onAnswer }: { calc: CalcResult; onAnswer?: (text: string) => void }) {
   if (calc.kind === "legal") return <LegalCard calc={calc} />;

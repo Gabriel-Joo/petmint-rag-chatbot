@@ -1,6 +1,6 @@
 """
 seed_consultations.py
-관리자 화면 시드 상담(2026-11-12, docs/13 2-5절) — db/fixtures/seed_consultations.json의 질문을 **챗봇에 실제로 물어** 상담을 만든다.
+관리자 화면 시드 상담(2026-11-12, docs/archive/13_access_and_tunnel_log.md 관리자 화면 시드 상담 절) — db/fixtures/seed_consultations.json의 질문을 **챗봇에 실제로 물어** 상담을 만든다.
 답 · 발췌(retrieved) · 근거 조항(references) · 계산 카드는 운영 경로 그대로 남는다. 시각만 나중에 SQL로 흩는다.
 
   python scripts/seed_consultations.py run https://petmint.ronanlab.dev out.json [batch]   # 1) 묻기 — 체험 로그인으로 직원마다 들어간다

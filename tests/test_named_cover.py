@@ -114,7 +114,7 @@ class Fires(unittest.TestCase):
         self.assertNotEqual(key, "named_cover")
 
     def test_payout_yesno_with_name(self, _):
-        """「감기로 입원했는데 보험금 나와요?」 — 얼마 없이 보험금이 나오는지는 보장 질문(2026-11-12, 16번 3-3). 병명이 있으면 ⑪′가 받는다"""
+        """「감기로 입원했는데 보험금 나와요?」 — 얼마 없이 보험금이 나오는지는 보장 질문(2026-11-12, 16번 3-1). 병명이 있으면 ⑪′가 받는다"""
         for q in ("감기로 입원했는데 보험금 나와요?", "초코 장염으로 통원했는데 보험금 나오나요?", "기침 때문에 병원 다녀왔는데 보험금 받을 수 있나요?"):
             key, text = run(q)
             self.assertEqual(key, "named_cover", q)

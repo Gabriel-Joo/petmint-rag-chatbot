@@ -152,7 +152,7 @@ def replay(paths: list[str]):
           f"| 전체로 고른 것: {pick({a: score(r) for a, r in rows_by.items()})}")
 
 
-# 판정 기준(사용자 확정 2026-10-16, rebuild2 기준선) — docs/next_rebuild.md 8절
+# 판정 기준(사용자 확정 2026-10-16, rebuild2 기준선) — docs/archive/next_rebuild_log.md 8-3절
 # A1 범위: 기준선(rebuild 21 → rebuild2 12)을 잰 범위 = answerable에서 점검 당시 발췌가 깨졌던 5문항을 뺀 80문항(85문항 전체도 함께 적는다)
 A1_EXCLUDE = {"R004", "R009", "R062", "R063", "R090"}
 CRITERIA = {"answerable_refused_max": 12, "grade_refused_max": 11, "na_refused_min": 14, "search_gold_in_refused_max": 8}

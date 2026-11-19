@@ -19,7 +19,7 @@ interface Props {
   onOpenSession: (s: SessionSummary) => void;
   /** 지난 채팅을 목록에서 제거했다 — 지금 보던 대화였으면 새 대화로 바꾼다 */
   onSessionDeleted: (sessionId: string) => void;
-  /** 4404 — 이 모드는 고객 조회가 없으므로 빈 대화창에서 새 세션을 연다(09 6-2) */
+  /** 4404 — 이 모드는 고객 조회가 없으므로 빈 대화창에서 새 세션을 연다(09 1-11) */
   onSessionLost: () => void;
 }
 
@@ -51,7 +51,7 @@ function saveWidth(w: number) {
   try { localStorage.setItem(WIDTH_KEY, String(w)); } catch { /* 이번 화면에서만 */ }
 }
 
-/** 일반·사내규정 대화창 — 같은 컴포넌트, 모드만 다르다. 상담원 개인의 작업 공간(10번 2절) */
+/** 일반·사내규정 대화창 — 같은 컴포넌트, 모드만 다르다. 상담원 개인의 작업 공간(10번 1-2절) */
 export function Chat({ mode, session, onNewChat, onOpenSession, onSessionDeleted, onSessionLost }: Props) {
   const sessionId = session?.session_id ?? null;
   const chat = useChatSocket(sessionId);

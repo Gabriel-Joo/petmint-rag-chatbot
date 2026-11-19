@@ -14,14 +14,14 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 @router.get("", response_model=list[SessionSummary])
 def list_sessions(mode: Literal["일반", "사내규정"], limit: int = Query(50, ge=1, le=200),
                   store: SessionStore = Depends(deps.sessions), agent: str = Depends(deps.agent)):
-    """지난 채팅(10번 2-1절) — 이 상담원의 것만, 그 모드만. 업무특화는 목록이 없다(고객 조회 '최근 상담'이 맡는다)"""
+    """지난 채팅(10번 1-3절) — 이 상담원의 것만, 그 모드만. 업무특화는 목록이 없다(고객 조회 '최근 상담'이 맡는다)"""
     return store.list(agent, mode, limit)
 
 
 @router.post("", response_model=SessionOut, status_code=201)
 def start_session(body: SessionCreate, store: SessionStore = Depends(deps.sessions),
                   customers: CustomerStore = Depends(deps.customers), agent: str = Depends(deps.agent)):
-    """업무특화만 고객을 거친다(1-2). 일반·사내규정은 "새 대화"마다 새 세션"""
+    """업무특화만 고객을 거친다(2-2). 일반·사내규정은 "새 대화"마다 새 세션"""
     if body.mode == "업무특화":
         if body.customer_id is None:
             raise HTTPException(422, "업무특화 모드는 customer_id가 필요하다")
@@ -36,7 +36,7 @@ def start_session(body: SessionCreate, store: SessionStore = Depends(deps.sessio
 @router.get("/{session_id}", response_model=SessionDetail)
 def get_session(session_id: str, store: SessionStore = Depends(deps.sessions),
                 log: TurnLogStore = Depends(deps.turn_log), agent: str = Depends(deps.agent)):
-    """세션 상세 — turns·retrieved에서 복원. 내 세션, 또는 고객이 있는 세션(업무특화)이면 남의 것도 연다(09번 7-1절).
+    """세션 상세 — turns·retrieved에서 복원. 내 세션, 또는 고객이 있는 세션(업무특화)이면 남의 것도 연다(09번 1-13절).
     남의 일반·사내규정 세션과 제거한 세션은 404. 바꾸는 작업(PATCH·DELETE·WS·피드백)은 여전히 내 것만"""
     s = store.get_readable(session_id, agent)
     if s is None:

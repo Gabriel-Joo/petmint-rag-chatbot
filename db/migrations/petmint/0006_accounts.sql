@@ -1,6 +1,6 @@
 -- petmint 0006_accounts.sql — 앱 자체 로그인(2026-10-28, 13번 2-1절). 직원 신원(이름·이메일·재직)은 기간계 insurance_core.employees에 있고
 -- 앱은 그것을 읽기만 한다. 여기에는 앱이 쓰는 값만 둔다 — 역할·비밀번호 해시·잠금·로그인 세션.
--- employee_id는 다른 데이터베이스라 외래키를 걸지 않는다(customer_id와 같은 경계, 12번 4절).
+-- employee_id는 다른 데이터베이스라 외래키를 걸지 않는다(customer_id와 같은 경계, 12번 1-3절).
 -- sessions.agent_email은 그대로다 — 로그인한 직원의 이메일이 들어간다. 퇴직자의 상담 기록이 남아야 하므로 외래키를 걸지 않는다.
 
 CREATE TABLE accounts (

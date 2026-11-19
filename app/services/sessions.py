@@ -2,12 +2,12 @@
 sessions.py
 세션 저장소 — MySQL sessions(12번). 재시작해도 남는다.
 
-- 모드마다 수명이 다르다(10번 2절). 업무특화는 상담 종료로 ended_at을 찍고, 끝난 상담은 읽기 전용이다.
+- 모드마다 수명이 다르다(10번 1-2절). 업무특화는 상담 종료로 ended_at을 찍고, 끝난 상담은 읽기 전용이다.
   일반·사내규정은 닫히지 않는다(ended_at NULL = 이어 쓸 수 있다). 무활동 정리는 없다.
 - 지난 채팅 "목록에서 제거"는 deleted_at만 찍는다. turns 이하 로그는 지우지 않는다(12번 1-4절).
-- 읽기와 쓰기가 다르다(09번 7-1절). 바꾸는 작업(update·end·hide·WS용 get_open)과 내 목록(list)은 agent_email로 거른다 —
+- 읽기와 쓰기가 다르다(09번 1-13절). 바꾸는 작업(update·end·hide·WS용 get_open)과 내 목록(list)은 agent_email로 거른다 —
   남의 세션은 없는 세션과 같다. 읽기(get_readable)는 고객이 있는 세션(업무특화)에 한해 남의 것도 연다 — 다른 상담원이 받은
-  고객도 다시 전화하기 때문이다(09번 2-2절). 일반·사내규정은 남의 개인 작업 공간이라 열리지 않는다.
+  고객도 다시 전화하기 때문이다(09번 1-3절). 일반·사내규정은 남의 개인 작업 공간이라 열리지 않는다.
   고객 단위 목록(recent_customers·customer_sessions)은 상담원으로 거르지 않는다.
 - pet_id는 세션에 두지 않는다 — 메시지(턴)에만 담는다.
 - 동기 메서드다. REST는 스레드풀에서, WS는 asyncio.to_thread로 부른다.
@@ -126,7 +126,7 @@ class SessionStore:
         return self._update("SET deleted_at = :at", dict(sid=session_id, agent=agent_email, at=now()))
 
     def history(self, session_id: str) -> list[SessionTurn]:
-        """대화 문맥(5절) — 정상 완료된 앞 턴, 오래된 순. source_keys는 답변이 쓴 근거의 graph_key"""
+        """대화 문맥(1-9절) — 정상 완료된 앞 턴, 오래된 순. source_keys는 답변이 쓴 근거의 graph_key"""
         with self.engine.connect() as c:
             turns = c.execute(text("SELECT turn_id, pet_id, question, rewritten_question, answer FROM turns"
                                    " WHERE session_id = :sid AND status = 'ok' ORDER BY created_at, turn_id"),
@@ -143,7 +143,7 @@ class SessionStore:
                             source_keys=by_turn.get(t.turn_id, [])) for t in turns]
 
     def customer_sessions(self, customer_id: str, limit: int) -> list[Session]:
-        """그 고객의 과거 상담(09번 2-2절) — started_at 역순. 담당 상담원과 무관하게 전부. 질문이 없던 상담(제목 없음)은
+        """그 고객의 과거 상담(09번 1-3절) — started_at 역순. 담당 상담원과 무관하게 전부. 질문이 없던 상담(제목 없음)은
         열어 읽을 것이 없으므로 뺀다"""
         with self.engine.connect() as c:
             rows = c.execute(text(f"SELECT {_COLS} FROM sessions WHERE customer_id = :cid AND deleted_at IS NULL"
@@ -153,7 +153,7 @@ class SessionStore:
 
     def recent_customers(self, limit: int) -> list[tuple[str, datetime]]:
         """고객별 마지막 상담 시각(업무특화). 종료했으면 종료 시각, 아니면 시작 시각.
-        상담원으로 거르지 않는다 — 09번 2-2절: "아까 그 고객"을 다시 찾는 고객 단위 목록이고, 다른 상담원이 받은 고객도
+        상담원으로 거르지 않는다 — 09번 1-3절: "아까 그 고객"을 다시 찾는 고객 단위 목록이고, 다른 상담원이 받은 고객도
         다시 전화할 수 있다. 상담원 필터는 지난 대화 목록(일반·사내규정, 개인 작업 공간)에만 건다"""
         with self.engine.connect() as c:
             rows = c.execute(text(

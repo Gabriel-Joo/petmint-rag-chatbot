@@ -1,7 +1,7 @@
 """
 search_service/main.py
-search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 7-3절). 호스트(GPU)에서 띄우고 Pod의 앱이 부른다.
-검색 로직은 여기 두지 않는다 — 노트북 01~08은 SearchEngine을 직접 import하고, 서비스만 HTTP로 같은 코드를 부른다(3-3절).
+search-service — data/search_engine.py를 감싸는 얇은 HTTP 래퍼(09번 1-15절). 호스트(GPU)에서 띄우고 Pod의 앱이 부른다.
+검색 로직은 여기 두지 않는다 — 노트북 01~08은 SearchEngine을 직접 import하고, 서비스만 HTTP로 같은 코드를 부른다(1-6절).
 
   POST /search  {query, scope, top_k, candidate_k, expand?, variant?} → SearchEngine.search의 list[dict] 그대로
                 expand·variant는 실험용(기본 끔) — 보내지 않으면 예전과 같은 결과

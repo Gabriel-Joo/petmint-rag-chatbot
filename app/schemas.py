@@ -1,11 +1,11 @@
 """
 schemas.py
-09 UI 데이터 모델 — 고객(6-1)·세션(6-2)·턴 로그(6-3)·REST 본문(7-1)·WS 메시지(7-2).
+09 UI 데이터 모델 — 고객(1-10)·세션(1-11)·턴 로그(1-12)·REST 본문(1-13)·WS 메시지(1-14).
 
 - 모든 모델은 extra="forbid": 설계에 없는 필드가 조용히 들어오지 않게 한다
   (Policy에 type을 넣거나, 세션에 pet_id를, 로그에 이름·전화번호를 넣으면 검증에서 막힌다).
-- Policy.type은 저장하지 않고 section_name에서 계산한다(6-1) — 값을 두 곳에 두면 어긋날 수 있다.
-- WS 메시지는 type으로 구분하는 discriminated union. 서버 → 클라이언트 메시지는 전부 turn_id를 가진다(6-3).
+- Policy.type은 저장하지 않고 section_name에서 계산한다(1-10) — 값을 두 곳에 두면 어긋날 수 있다.
+- WS 메시지는 type으로 구분하는 discriminated union. 서버 → 클라이언트 메시지는 전부 turn_id를 가진다(1-12).
 """
 
 from datetime import date, datetime
@@ -17,7 +17,7 @@ from data.rag_context import infer_type_from_section_name
 from data.search_scope import GRADES
 
 Mode = Literal["일반", "사내규정", "업무특화"]
-# 멀티턴 처리 종류(09번 5절) — rewrite: 사내규정, 베이스 모델 재작성 / concat: 업무특화, 앞 질문과 이어 붙여 검색 / history: 일반, 이력 전달
+# 멀티턴 처리 종류(09번 1-9절) — rewrite: 사내규정, 베이스 모델 재작성 / concat: 업무특화, 앞 질문과 이어 붙여 검색 / history: 일반, 이력 전달
 ContextKind = Literal["rewrite", "concat", "history"]
 Species = Literal["강아지", "고양이"]
 # 조항 원문 API는 사내규정 코퍼스도 받는다(근거 조항 열기 — 2026-10-23 운영에서 422). 상담 턴의 반려동물 종(Species)과 따로 둔다
@@ -96,11 +96,11 @@ class Customer(_Model):
 # ----- 6-2 세션 (MySQL sessions, 12번) -----
 
 class SessionTurn(_Model):
-    """대화 문맥(5절 재작성·앞 턴 발췌 이월)에 쓰는 앞 턴 하나 — turns·retrieved에서 복원한다"""
+    """대화 문맥(1-9절 재작성·앞 턴 발췌 이월)에 쓰는 앞 턴 하나 — turns·retrieved에서 복원한다"""
     turn_id: str
     pet_id: str | None                             # 6-2: pet_id는 세션이 아니라 메시지(턴)에 담는다
     question: str
-    rewritten_question: str | None = None          # 5절 재작성 결과
+    rewritten_question: str | None = None          # 1-9절 재작성 결과
     answer: str | None = None
     source_keys: list[str] = Field(default_factory=list)   # 답변이 쓴 근거(retrieved.used)의 graph_key
 
@@ -164,7 +164,7 @@ class TurnLog(_Model):
     turn_id: str
     session_id: str
     question: str
-    rewritten_question: str | None = None          # 기준 질문 — 사내규정 재작성 / 업무특화 이어 붙인 앞 질문(09번 5절)
+    rewritten_question: str | None = None          # 기준 질문 — 사내규정 재작성 / 업무특화 이어 붙인 앞 질문(09번 1-9절)
     follow_up: str | None = None                   # 후속으로 본 규칙(followup.follow_up_reason). None이면 단독
     context_kind: ContextKind | None = None
     context_turns: int | None = None               # 일반 — 전달한 이력 턴 수
@@ -175,8 +175,8 @@ class TurnLog(_Model):
     species: Species | None = None
     breed: str | None = None
     pet_age: int | None = None
-    is_hypothetical: bool = False                  # 가정 질문(질문에 쓴 등급으로 검색, 09번 4절)
-    clarified: bool = False                        # 되묻기 발동(09번 4절)
+    is_hypothetical: bool = False                  # 가정 질문(질문에 쓴 등급으로 검색, 09번 1-8절)
+    clarified: bool = False                        # 되묻기 발동(09번 1-8절)
     chosen_section: str | None = None              # 되묻기로 고르거나 앞 턴에서 이어 쓴 특약
     code_rule: str | None = None                   # 답한 코드 규칙(code_rules.Rule.key·hr_personal). None이면 모델 답(docs/16 5절)
     refused: bool | None = None                    # 답이 거절 문구인가(data/refusal — 평가와 같은 판정). ok 턴만, 나머지 None(0009)
@@ -233,7 +233,7 @@ class DayRow(_Model):
 
 
 class MedicalCalc(_Model):
-    """의료비 계산 카드(09번 2-3절) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도(daycalc).
+    """의료비 계산 카드(09번 1-4절) — 날마다 (치료비 - 자기부담금) × 보상비율을 그날 한도까지, 합계에 연간 남은 한도(daycalc).
     exact=False면 날짜별 금액을 몰라 범위(range_min~range_max)이고 payout은 고르게 나뉘었다고 본 추정이다.
     days 이하 필드는 2026-10-21 여러 날 계산 전에 저장된 카드에는 없다(기본값 = 하루·정확)"""
     kind: Literal["medical"] = "medical"
@@ -367,7 +367,7 @@ class TurnOut(_Model):
 
 
 class SessionDetail(SessionOut):
-    """GET /api/sessions/{id} — 세션과 그 턴(오래된 순). 고객이 있는 세션은 남의 것도 열린다(09번 7-1절) —
+    """GET /api/sessions/{id} — 세션과 그 턴(오래된 순). 고객이 있는 세션은 남의 것도 열린다(09번 1-13절) —
     agent_email로 누가 안내한 내용인지 보인다. 연 쪽에서는 소유자와 무관하게 읽기 전용이다"""
     agent_email: str                               # 그 상담을 담당했던 상담원
     title: str | None
@@ -377,7 +377,7 @@ class SessionDetail(SessionOut):
 
 
 class CustomerSessionSummary(_Model):
-    """GET /api/customers/{id}/sessions 한 줄 — 그 고객의 과거 상담(09번 2-2절)"""
+    """GET /api/customers/{id}/sessions 한 줄 — 그 고객의 과거 상담(09번 1-3절)"""
     session_id: str
     mode: Mode
     title: str
@@ -510,7 +510,7 @@ class DoneMsg(_ServerMsg):
 
 
 class ContextMsg(_ServerMsg):
-    """멀티턴 — 후속 질문을 앞 대화로 어떻게 풀었는지(09번 5절). 후속 질문이면 sources 앞에 한 번.
+    """멀티턴 — 후속 질문을 앞 대화로 어떻게 풀었는지(09번 1-9절). 후속 질문이면 sources 앞에 한 번.
     rewrite: text = 재작성된 질문 / concat: text = 이어 붙인 앞 질문(기준 질문) / history: turns = 전달한 이력 턴 수"""
     type: Literal["context"] = "context"
     kind: ContextKind

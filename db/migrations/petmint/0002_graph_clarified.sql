@@ -3,7 +3,7 @@
 --   그래프 확장분은 청크가 아니다(여러 청크를 이은 본문이거나 약관 밖 법령) — graph_key·section을 강제하지 않는다.
 --   검색 행의 보장(rank·graph_key·section 필수)은 CHECK로 DB가 지킨다. content는 두 쪽 다 NOT NULL(재현의 핵심).
 --   그래프 행은 content·article_title·citation_label로 읽는다. 법령 박스는 citation_label로 식별한다.
--- turns: clarified(09번 4절 되묻기). 기록 경로는 되묻기 구현 때 붙인다.
+-- turns: clarified(09번 1-8절 되묻기). 기록 경로는 되묻기 구현 때 붙인다.
 -- 테이블이 비어 있을 때 적용했다(이관 없음).
 
 ALTER TABLE retrieved

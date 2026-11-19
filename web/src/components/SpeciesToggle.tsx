@@ -9,7 +9,7 @@ interface Props {
   disabled?: boolean;
 }
 
-/** 반려동물이 둘 이상일 때 하나씩 고른다(09 2-3, 10번 6절). 고른 pet_id가 질문 메시지에 실린다 — 세션에는 두지 않는다 */
+/** 반려동물이 둘 이상일 때 하나씩 고른다(09 1-4, 10번 1-7절). 고른 pet_id가 질문 메시지에 실린다 — 세션에는 두지 않는다 */
 export function SpeciesToggle({ pets, value, onChange, disabled }: Props) {
   if (pets.length < 2) return null;
   return (

@@ -1,6 +1,6 @@
 """
 customers.py
-고객 원장 읽기 + 검증 + pet → SearchScope 변환(09 6-1).
+고객 원장 읽기 + 검증 + pet → SearchScope 변환(09 1-10).
 
 고객은 보험사 기간계(insurance_core)에 있고 챗봇은 읽기만 한다(SELECT 계정). 원장은 앱 밖에서 바뀌므로 캐시하지 않고
 요청마다 읽는다 — 등급이 바뀌면 다음 턴부터 새 등급이 scope에 들어가고, 지난 턴은 turn_scope 스냅샷 그대로다(12번 2-2절).
@@ -8,7 +8,7 @@ customers.py
 검증하는 이유: section_name에 오타가 나면 검색 필터가 조용히 0건이 된다. 기동 때 전체를 검증해 하나라도 어긋나면
 기동(lifespan)을 실패시키고, 읽을 때마다 같은 검증을 다시 건다(기동 뒤에 원장이 바뀌었을 수 있다). 약관 식별자
 (doc_id·product_name·policy_version)와 가입일(약관 effective_date 이후)도 청크 메타와 대조한다.
-SearchScope는 data/search_scope.py를 그대로 쓴다 — 08 평가와 같은 필터여야 한다(3-3).
+SearchScope는 data/search_scope.py를 그대로 쓴다 — 08 평가와 같은 필터여야 한다(1-6).
 """
 
 import json
@@ -114,7 +114,7 @@ def _validate(customers: list[Customer], docs: dict[str, dict[str, PolicyDoc]]) 
 
 
 def _fetch(engine: Engine, customer_id: str | None = None) -> list[Customer]:
-    """원장 네 테이블(고객·반려동물·특약·청구 이력) → Customer(09 6-1 JSON 모양). customer_id를 주면 그 고객만.
+    """원장 네 테이블(고객·반려동물·특약·청구 이력) → Customer(09 1-10 JSON 모양). customer_id를 주면 그 고객만.
     순서는 seq(픽스처 순서), 청구 이력은 치료일 순"""
     where, params = ("WHERE customer_id = :cid", dict(cid=customer_id)) if customer_id else ("", {})
     with engine.connect() as c:
@@ -192,7 +192,7 @@ class CustomerStore:
         return found[0] if found else None
 
     def pet_of(self, customer_id: str, pet_id: str) -> Pet | None:
-        """그 고객의 반려동물이면 Pet, 아니면 None — 메시지의 pet_id가 세션 고객의 것인지 검증(6-2).
+        """그 고객의 반려동물이면 Pet, 아니면 None — 메시지의 pet_id가 세션 고객의 것인지 검증(1-11).
         턴마다 원장을 다시 읽는다 — 이 값이 그 턴의 스냅샷(turn_scope)이 된다"""
         c = self.get(customer_id)
         return next((p for p in c.pets if p.pet_id == pet_id), None) if c else None

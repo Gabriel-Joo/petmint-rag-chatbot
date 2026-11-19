@@ -1,4 +1,4 @@
-/* 관리자 화면(2026-11-12, 13번 2-5절) — 대화 화면 배율(.chat-text) 안의 기존 토큰만 쓴다(11번 5절).
+/* 관리자 화면(2026-11-12, 13번 2-5절) — 대화 화면 배율(.chat-text) 안의 기존 토큰만 쓴다(11번 1-5절).
    목록은 지난 상담 창(PastConsultations)과 같은 줄 모양, 대화는 지난 상담 창과 같은 --font-md, 표는 --font-xs */
 .page { max-width: 1600px; margin: 0 auto; padding: 16px 24px 32px; display: flex; flex-direction: column; gap: 12px; font-size: var(--font-sm); }
 
