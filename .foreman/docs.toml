@@ -12,9 +12,10 @@ not_code = [".md", ".png", ".jpg", ".svg", ".lock", "*package-lock.json", "*pack
 
 [sets]
 docs = "docs/"
+notion = "notion/"                    # 사람이 읽는 노션 기술문서 원고(2026-11-19 문서 정리 D단계에서 새로 씀). 차례는 docs/manuscript_guide.md 1절
 
 [check]
-sets = ["docs"]
+sets = ["docs", "notion"]
 numbered_only = []                    # 번호 없는 편(README, requirements, pipeline, TODO, next_rebuild)도 본다
 head_at = "top"
 fenced = true
@@ -22,6 +23,6 @@ kinds = ["c", "docs", "code"]
 files_at = "read"
 claim = '\d|“|”'
 claim_min = 0
-banned = []
+banned = ["notion"]                   # 금지어(IP, 도메인, 홈 경로, 토큰 꼴, 포트)는 사람이 읽는 원고에만 건다. docs는 내부 주소를 써도 된다
 cover_by = ["docs"]
 dashdot_base = "261913e"              # 새 줄 em dash와 가운뎃점 검사의 기준 커밋. 넣은 때의 펫퍼민트 main(2026-11-19). 기존 줄은 C단계에서
