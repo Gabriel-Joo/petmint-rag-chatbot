@@ -167,7 +167,7 @@ QA마다 `checks: [{check: 검사명, action: drop/fix/flag, detail: 사유}]`�
 | --- | --- | --- | --- |
 | Qwen3-14B (thinking 끔) | 42% | 12% | 1.3 (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:7] |
 | Qwen3-14B (thinking 켬) | 50% | 6% | 7.5 (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:7] |
-| Gemma 4 12B | 77% | 15% | 1.5 (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:6-7] |
+| Gemma 4 12B | 75% | 15% | 1.5 (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:6-7] [c:3f49bb5] <!-- 원자료: data/faq/review/judge_dev_candidates_20261013.json 의 참조를 함께 준 88건을 2026-11-19 다시 세면 Gemma 75/15(코드 주석 data/faq_judge.py:7 의 77%는 낡음, TODO petmint-14). 처음 문서 값 183건(Gemma 69/24, Kanana 56/31)은 같은 파일의 참조 없음 95건(1회차 63, 2회차 32)과 참조 있음 88건을 합친 값으로 보인다(Gemma를 합쳐 세면 68/24) --> |
 | Kanana 1.5 8B | 53% | 29% | 0.9 (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:8] |
 | A.X 4.0 Light | 28% | 23% | — (2026-10-12~2026-10-13 사이) [code:data/faq_judge.py:8] |
 

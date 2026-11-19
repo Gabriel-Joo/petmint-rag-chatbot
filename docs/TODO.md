@@ -47,3 +47,6 @@
 - **petmint-13** 홈 모드 카드 넘김 화살표의 `font-size: 22px`가 「크기는 새로 만들지 않는다」에 걸리는지 (2026-11-19)
   언제: 정하지 않음. 규칙 원문은 「새 배율 · px을 만들지 않고 이미 있는 글자 크기 토큰만 쓴다」(11번 1절, 2026-11-12)라 새 크기를 막는 뜻과 토큰 밖 값을 막는 뜻이 한 문장에 함께 있어 가를 수 없다. 22px는 같은 날 넘김 화살표를 더한 커밋에서 들어왔고, 글자가 아니라 44px 단추 안 화살표 글리프다 [code:web/src/pages/ModeSelect.module.css:229] [c:f30cf58] [docs:02_pipeline/11_design_system.md:77]
   나온 곳: 문서 정리 A단계 근거 달기(2026-11-19), `docs/02_pipeline/11_design_system.md`
+- **petmint-14** 06 심판 코드 주석의 Gemma 재현율 77%를 원자료 값 75%로 (2026-11-19)
+  언제: 정하지 않음. `data/faq_judge.py` 머리 주석은 「후보(개발용 1·2차 88건): Gemma 4 12B 재현 77%」라고 적는데, 원자료 `data/faq/review/judge_dev_candidates_20261013.json`의 참조를 함께 준 88건을 다시 세면 75%다(오탐 15%와 다른 모델 값은 맞다). 문서(06번 4-2절 표)는 75%로 고쳤다. 같은 수가 두 곳에 있고 코드 쪽이 틀렸다 [code:data/faq_judge.py:7] [c:3f49bb5]
+  나온 곳: 문서 정리 A단계 원자료 대조(2026-11-19), `docs/02_pipeline/06_quality_check.md` 4-2절
