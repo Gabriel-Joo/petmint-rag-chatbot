@@ -1,5 +1,5 @@
 <!--
-다루는 곳: data/prompts.py, data/finetune_data.py, data/rebuild.py, data/answer_eval.py, data/ckpt_select.py, data/faq_rag.py, data/faq_units.py, data/eval/answer_eval_labels.json, data/eval220.py, scripts/rebuild5_chain.sh, scripts/rebuild5b_chain.sh, scripts/ckpt_select220.py, scripts/rebuild5_verdict.py, scripts/eval_judge.py, scripts/prod_measure.sh
+다루는 곳: data/prompts.py, data/finetune_data.py, data/rebuild.py, data/answer_eval.py, data/ckpt_select.py, data/faq_rag.py, data/faq_units.py, data/eval/answer_eval_labels.json, data/eval220.py, scripts/rebuild5_chain.sh, scripts/rebuild5b_chain.sh, scripts/ckpt_select220.py, scripts/rebuild5_verdict.py, scripts/eval_judge.py, scripts/prod_measure.sh, notebooks/07_파인튜닝.ipynb, scripts/eval_serving.py, scripts/eval_check_prompts.py, scripts/stage_eval.sh, scripts/stage6_chain.sh, scripts/stage7_pre.sh, scripts/probe_length.py, scripts/probe_train_gold.py, tests/test_stage4.py, tests/test_stage5.py
 읽은 커밋: 6710b83
 -->
 > 학습·평가 완료. 재구축은 rebuild(2026-10-15, 10절)부터 rebuild5b까지 했고, 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)다. rebuild5·5b는 불채택(11절). [code:data/rebuild.py:1-3] [code:scripts/prod_measure.sh:6] [code:data/review/rebuild5_verdict.md] [code:data/review/rebuild5b_verdict.md] [c:c5c1ca7] <!-- 확인 못 함: 운영에서 도는 모델은 클러스터 설정(ronanlab-infra)이라 저장소에서 볼 수 없다 -->
@@ -9,7 +9,7 @@
 
 ### 0. 목표
 
-06번이 검증한 FAQ로 Tri-7B를 QLoRA 파인튜닝한다. [code:data/finetune_data.py:1-3] <!-- 근거: 노트북 07(notebooks/07_파인튜닝.ipynb) 셀 3. 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 -->
+06번이 검증한 FAQ로 Tri-7B를 QLoRA 파인튜닝한다. [code:data/finetune_data.py:1-3] [code:notebooks/07_파인튜닝.ipynb:149-170]
 
 **학습시키는 것**: 주어진 약관 발췌를 읽고 상담원 말투로 답하는 능력
 
@@ -190,11 +190,11 @@ clause_mix (예외·단서 섞기)  17%
 | 항목 | 이전 | 이번 | 이유 |
 | --- | --- | --- | --- |
 | loss 범위 | 전체 | 답변 토큰만 | 발췌를 넣으면 loss 대부분이 원문 암기에 쓰인다 [code:data/prompts.py:179-182] |
-| 패딩 | 고정 768 | 동적 + `group_by_length` | 계산의 2/3가 패딩이었다 <!-- 근거: 노트북 07 셀 4의 DataCollatorForSeq2Seq와 train_sampling_strategy="group_by_length". 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 --> |
+| 패딩 | 고정 768 | 동적 + `group_by_length` | 계산의 2/3가 패딩이었다 [code:notebooks/07_파인튜닝.ipynb:335] [code:notebooks/07_파인튜닝.ipynb:395] |
 | val 분할 | 무작위 | `unit_id` 단위 | 같은 조항의 비슷한 질문이 train/val에 나뉘면 val loss가 실제보다 낮게 나온다 [code:data/finetune_data.py:11] [code:data/finetune_data.py:133-134] |
 | 목표 답변 | "근거: …" 포함 | 제거 | 근거 표기는 코드가 조립한다 [code:data/finetune_data.py:12] [code:data/prompts.py:185-186] |
 
-**메모리**: batch 1, MAX_LENGTH 3072. 평균 샘플이 이전의 약 2배라 OOM 여부는 첫 20 step으로 확인한다. [code:data/finetune_data.py:112] <!-- 근거: 노트북 07 셀 4 per_device_train_batch_size=1 -->
+**메모리**: batch 1, MAX_LENGTH 3072. 평균 샘플이 이전의 약 2배라 OOM 여부는 첫 20 step으로 확인한다. [code:data/finetune_data.py:112] [code:notebooks/07_파인튜닝.ipynb:376]
 
 ---
 
@@ -211,9 +211,9 @@ clause_mix (예외·단서 섞기)  17%
 
 2분 동안 step 2에 머물렀고 free 메모리가 7.8MB → 3.6MB로 줄었다. GPU에 다른 프로세스는 없었다. (2026-10-13 기준) <!-- 확인 못 함: 첫 실행 로그는 저장소에 없다 -->
 
-**원인 ① 설정 실수**: 사전 점검(최대 할당 14.1GiB / 예약 15.1GiB)은 `expandable_segments` 없이 측정했는데, 그 뒤에 이 설정을 테스트 없이 넣었다. 여유가 0.4GiB뿐이라 메모리 매핑에 실패해도 OOM으로 멈추지 않고 재시도를 반복하며 진행하지 못했다. (2026-10-13 기준) <!-- 근거: 노트북 07 셀 4 주석 「2026-10-13: 최장 묶음 첫 step GPU 최대 할당 14.1 → 9.9GiB」 -->
+**원인 ① 설정 실수**: 사전 점검(최대 할당 14.1GiB / 예약 15.1GiB)은 `expandable_segments` 없이 측정했는데, 그 뒤에 이 설정을 테스트 없이 넣었다. 여유가 0.4GiB뿐이라 메모리 매핑에 실패해도 OOM으로 멈추지 않고 재시도를 반복하며 진행하지 못했다. (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:337]
 
-**원인 ② 진짜 병목**: loss는 답변 토큰(평균 45개)에만 거는데, 모델은 **시퀀스 전체(최대 3,064위치) × 어휘 128,256개의 logits를 fp32로** 만들고 있었다. (2026-10-13 기준) <!-- 근거: 노트북 07 셀 2 출력 「답변 토큰 평균 45」와 셀 4 주석 -->
+**원인 ② 진짜 병목**: loss는 답변 토큰(평균 45개)에만 거는데, 모델은 **시퀀스 전체(최대 3,064위치) × 어휘 128,256개의 logits를 fp32로** 만들고 있었다. (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:84] [code:notebooks/07_파인튜닝.ipynb:338-339]
 
 ```
 logits 한 벌  3,072 × 128,256 × 4B ≈ 1.6GB
@@ -230,7 +230,7 @@ python
 def collate(features):    batch = data_collator(features)    first = (batch["labels"] != -100).float().argmax(dim=1)    batch["logits_to_keep"] = int(batch["labels"].shape[1] - first.min()) + 1    return batch
 ```
 
-loss 정의는 바꾸지 않았다. HF 기본 loss와 `tail_loss`를 같은 샘플로 계산해 상대오차 1e-3 이하임을 확인했다. (2026-10-13 기준) <!-- 근거: 노트북 07 셀 4 주석 「loss 동일 — 상대오차 ≤1.5e-6」, 문서의 1e-3 이하와 어긋나지는 않는다 -->
+loss 정의는 바꾸지 않았다. HF 기본 loss와 `tail_loss`를 같은 샘플로 계산해 상대오차 1e-3 이하임을 확인했다. (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:337]
 
 |  | 수정 전 | 수정 후 |
 | --- | --- | --- |
@@ -238,7 +238,7 @@ loss 정의는 바꾸지 않았다. HF 기본 loss와 `tail_loss`를 같은 샘�
 | 예약 | 15.1GiB | 10.67GiB (2026-10-13 기준) <!-- 확인 못 함: 예약 10.67GiB는 노트북 출력에 없다 --> |
 | 메모리 경고 | 반복 | 0건 |
 
-> `gradient_checkpointing`을 켜는 것이 첫 대응이었지만, 확인해보니 이미 켜져 있었다(셀 4와 `prepare_model_for_kbit_training` 양쪽에서). <!-- 근거: 노트북 07 셀 4 gradient_checkpointing=True, 셀 3 prepare_model_for_kbit_training --> 증상만 보고 흔한 처방을 하기 전에 **실제로 무엇이 메모리를 쓰는지** 확인해야 했다.
+> `gradient_checkpointing`을 켜는 것이 첫 대응이었지만, 확인해보니 이미 켜져 있었다(셀 4와 `prepare_model_for_kbit_training` 양쪽에서). [code:notebooks/07_파인튜닝.ipynb:394] [code:notebooks/07_파인튜닝.ipynb:167] 증상만 보고 흔한 처방을 하기 전에 **실제로 무엇이 메모리를 쓰는지** 확인해야 했다.
 > 
 
 #### 8-2. 학습 데이터
@@ -249,13 +249,13 @@ loss 정의는 바꾸지 않았다. HF 기본 loss와 `tail_loss`를 같은 샘�
 | val | 532 (55단위) (2026-10-13 기준) |
 | distract (정답 + 방해) | 3,164 (65.8%) (2026-10-13 기준) |
 | gold_only (정답만) | 1,163 (24.2%) (2026-10-13 기준) |
-| no_answer (답 없음) | 484 (10.1%) (2026-10-13 기준) <!-- 근거: 노트북 07 셀 1 출력 「train 4811건(511단위), val 532건(55단위)」「distract 3164, gold_only 1163, no_answer 484」 --> |
+| no_answer (답 없음) | 484 (10.1%) (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:14-15] |
 
 목표 비율(70/20/10)과 조금 다르다. [code:data/finetune_data.py:20] 답 없음이 될 수 있는 QA는 모두 정답+방해도 될 수 있으므로, 답 없음 10%만큼 정답+방해 몫이 줄어든다.
 
 **val은 `unit_id` 단위로 나눴다.** train과 겹치는 단위는 0개다. [code:data/finetune_data.py:133-134] [code:data/finetune_data.py:815-817] (2026-10-13 기준) 무작위로 나누면 같은 조항의 비슷한 질문이 양쪽에 들어가 val loss가 실제보다 낮게 나온다.
 
-**토큰 길이**: 평균 1,209 / 중앙 1,073 / p90 2,057 / 최대 3,064. 설계 때 추정한 1,500보다 짧았다. (2026-10-13 기준) <!-- 근거: 노트북 07 셀 2 출력 「길이 평균 1209 / 중앙 1073 / p90 2057 / 최대 3064」 -->
+**토큰 길이**: 평균 1,209 / 중앙 1,073 / p90 2,057 / 최대 3,064. 설계 때 추정한 1,500보다 짧았다. (2026-10-13 기준) [code:notebooks/07_파인튜닝.ipynb:84]
 
 > 이전 방식(발췌 없음)은 샘플당 약 250토큰이었다. 발췌를 넣으면서 epoch당 학습 토큰이 4.5배로 늘었다. "5,343건은 적지 않은가"라는 우려에 대한 답이기도 하다. (2026-10-13 기준)
 > 
@@ -276,18 +276,18 @@ LoRA 16.7M 파라미터 (전체 7.54B의 0.22%)
 | 200 | 0.4070 | 0.3898 |
 | 250 | 0.3584 | 0.3836 |
 | 300 | 0.2716 | 0.3822 |
-| 302 | 0.2716 | **0.3821** <!-- 근거: 노트북 07 셀 4 출력 표와 train_runtime 10270초(2시간 51분). 날짜: 학습은 첫 평가(2026-10-14 10:11) 전에 끝났지만 시작한 날(10-13 또는 10-14)을 가리지 못해 기준일을 달지 않았다 --> |
+| 302 | 0.2716 | **0.3821** [code:notebooks/07_파인튜닝.ipynb:206-238] [code:notebooks/07_파인튜닝.ipynb:321] <!-- 잰 날짜 모름 --> |
 
 **val loss가 끝까지 떨어졌다.** 과적합 신호가 없다 — 데이터가 부족하면 val이 먼저 멈추거나 올라간다.
 
-step 300에서 train이 0.3584 → 0.2716으로 크게 떨어진 것은 2 epoch 끝물에 같은 데이터를 두 번째 보면서 생긴 변화다. val이 따라 오르지 않았으므로 아직 암기 단계는 아니다. <!-- 근거: 노트북 07 셀 4 출력의 step 250, 300 loss -->
+step 300에서 train이 0.3584 → 0.2716으로 크게 떨어진 것은 2 epoch 끝물에 같은 데이터를 두 번째 보면서 생긴 변화다. val이 따라 오르지 않았으므로 아직 암기 단계는 아니다. [code:notebooks/07_파인튜닝.ipynb:226-233]
 
 > 학습을 더 돌려도 됐을 수준이지만, 2 epoch로 고정한 설계를 유지했다. 더 돌릴지는 다음 절의 실제 답변 품질을 보고 정한다.
 > 
 
 #### 8-4. 생성 샘플 — 유형별로 다르게 나왔다
 
-학습 직후 세 유형을 하나씩 확인했다. <!-- 근거: 노트북 07 셀 6 출력(val 샘플 종류별 1건) -->
+학습 직후 세 유형을 하나씩 확인했다. [code:notebooks/07_파인튜닝.ipynb:446-460]
 
 **정답 + 방해 발췌 (성공)**
 
@@ -345,11 +345,11 @@ step 300에서 train이 0.3584 → 0.2716으로 크게 떨어진 것은 2 epoch 
 | gold | base | 97 | 12 | 89 | 383자 (2026-10-14 기준) |
 | gold | ft | 97 | **36** | 53 | 70자 (2026-10-14 기준) |
 | no_answer | base | 20 | 2 | - | 597자 (2026-10-14 기준) |
-| no_answer | ft | 20 | 14 | - | 66자 [code:data/review/eval_results_summary.md:34] (2026-10-14 기준) <!-- 평균 길이는 data/review/answer_eval_20261014_1011_rag-1_4811건.md 머리 표. 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 --> |
+| no_answer | ft | 20 | 14 | - | 66자 [code:data/review/eval_results_summary.md:34] (2026-10-14 기준) [code:data/review/answer_eval_20261014_1011_rag-1_4811건.md:7-12] |
 
 **파인튜닝 모델이 베이스보다 나쁘다.** 정답 발췌가 눈앞에 있는데 36건을 거절했다. [code:data/review/eval_results_summary.md:34] (2026-10-14 기준)
 
-거절 문구는 36건 모두 토씨 하나 다르지 않았다. [code:data/review/refusal_overlap_20261015.md:52] (2026-10-14 기준) 판단의 결과가 아니라 **하나의 출력 모드를 외운 것**이다.
+거절 문구는 36건 모두 토씨 하나 다르지 않았다. [code:data/review/refusal_overlap_20261015.md:52] (2026-10-14~2026-10-15 사이) 판단의 결과가 아니라 **하나의 출력 모드를 외운 것**이다.
 
 #### 답한 것은 베이스보다 낫다
 
@@ -381,7 +381,7 @@ no_answer의 방해 발췌를 `pick_distractors`가 "답변 핵심 명사 50% �
         R056 "고급형인데 해지하면 환급금 있나요?"     → 거절
 ```
 
-"고급형"이 발췌에 없다는 이유로 거절한다. 바로 옆에 "3영업일"이 적혀 있는데도. <!-- 근거: data/review/answer_eval_20261014_1011_rag-1_4811건.md 의 R001, R056 -->
+"고급형"이 발췌에 없다는 이유로 거절한다. 바로 옆에 "3영업일"이 적혀 있는데도. [code:data/review/answer_eval_20261014_1011_rag-1_4811건.md:15-25] [code:data/review/answer_eval_20261014_1011_rag-1_4811건.md:911-923]
 
 거절 분포에서도 등급언급_타섹션이 15/19(78.9%)로 가장 높다. 반대로 한도·별표·꼬리는 0%다 — 계산·표 기반 질문은 멀쩡하다. (2026-10-14 기준) <!-- 확인 못 함: 4811건 평가의 카테고리별 거절 표는 git 밖 결과 파일에 있다. 재구축 뒤 평가에서는 17/19였다(data/review/refusal_overlap_20261015.md:86) -->
 
@@ -392,7 +392,7 @@ coverage_type이 None인 단위의 발췌 끝에 "이 조항은 가입 등급·�
 | 그룹 | 해소 |
 | --- | --- |
 | 등급 거절 15건 | **1건 (6.7%)** (2026-10-14 기준) |
-| 등급 외 거절 21건 | **7건 (33%)** (2026-10-14 기준) <!-- 근거: data/review/answer_eval_compare_20261014_1222_…_note.md. 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 --> |
+| 등급 외 거절 21건 | **7건 (33%)** (2026-10-14 기준) [code:data/review/answer_eval_compare_20261014_1222_answer_eval_20261014_1011_rag-1_4811건_vs_answer_eval_20261014_1210_rag-1_4811건_note.md:10-11] |
 
 **대조군이 더 많이 풀렸다.** 등급 정보를 채운 효과가 아니라 프롬프트가 한 줄 길어진 효과다.
 
@@ -415,7 +415,7 @@ no_answer 거절은 14→15로 유지됐고 근거 반영도 53→62로 올랐�
 
 coverage_type이 지정된 단위(R026~029, R080 "고급형 수술 한도가 얼마인가요?")는 등급이 답을 가르므로 건드리지 않았다.
 
-변환 19건 중 5건은 어구를 떼면 어색해진다("기본형 가입했는데" → "가입했는데"). 문법은 깨지지 않으나 결과 해석 시 따로 본다. (2026-10-14 기준) <!-- 근거: data/review/answer_eval_20261014_1326_rag-1_4811건_qnorm_questions.md. 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 -->
+변환 19건 중 5건은 어구를 떼면 어색해진다("기본형 가입했는데" → "가입했는데"). 문법은 깨지지 않으나 결과 해석 시 따로 본다. (2026-10-14 기준) [code:data/review/answer_eval_20261014_1326_rag-1_4811건_qnorm_questions.md:3] <!-- 확인 못 함: 어색해지는 5건은 이 기록에 따로 세어져 있지 않다 -->
 
 B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 동일**하다. 이 두 그룹에서 답이 달라지면 정규화와 무관한 흔들림이다. [code:data/answer_eval.py:26-27]
 
@@ -459,7 +459,7 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
 
 #### 미반영 사항
 
-`train.jsonl`은 사람 대상 조항 제외 규칙 이전에 만들어졌다. 제외 대상 863건(18%)이 그대로 들어 있다 — 보통약관 제24조 14건, 장해분류표 561건 등. 코드(`faq_units.EXCLUDE_ARTICLES`)에는 반영됐으나 데이터는 재빌드되지 않았다. [code:data/faq_units.py:25] [code:data/faq_units.py:29-32] [code:data/finetune_data.py:13] (2026-10-14 기준) <!-- 확인 못 함: 863건, 14건, 561건은 git 밖 train.jsonl을 센 값 -->
+`train.jsonl`은 사람 대상 조항 제외 규칙 이전에 만들어졌다. 제외 대상 863건(18%)이 그대로 들어 있다 — 보통약관 제24조 14건, 장해분류표 561건 등. 코드(`faq_units.EXCLUDE_ARTICLES`)에는 반영됐으나 데이터는 재빌드되지 않았다. [code:data/faq_units.py:25] [code:data/faq_units.py:29-32] [code:data/finetune_data.py:13] (2026-10-13~2026-10-15 사이) <!-- 확인 못 함: 863건, 14건, 561건은 git 밖 train.jsonl을 센 값 -->
 
 #### 다음 — distractor 선정 방식
 
@@ -535,13 +535,13 @@ B와 달리 **등급 외 21건과 no_answer 20건은 프롬프트가 완전히 �
 | 0.1~0.2 | 76% | 44% (2026-10-15 기준) |
 | 0.2~0.3 | 61% | 27% (2026-10-15 기준) |
 | 0.3~0.4 | 35% | 19% [code:data/review/refusal_overlap_20261015.md:104-112] (2026-10-15 기준) |
-| 0.4 이상 | 4% 이하 | 5% 이하 (2026-10-15 기준) <!-- 안 맞음: 문서는 「0.4 이상 4% 이하 / 5% 이하」, 측정 기록은 「0.4~0.5 98/722 (14%) / 128/1197 (11%)」(data/review/refusal_overlap_20261015.md:110). 4%와 5%는 0.5~0.6 구간 값이다 --> |
+| 0.4 이상 | 14% 이하 | 11% 이하 [code:data/review/refusal_overlap_20261015.md:110-112] (2026-10-15 기준) |
 
 학습 전체의 no_answer 비율은 10%인데 0.1~0.3 구간에서는 27~44%로 올라간다. [code:data/review/refusal_overlap_20261015.md:22] (2026-10-15 기준) 평가 거절률도 이 비율을 따라 움직인다. **"겹침이 낮으면 모른다고 한다"를 배운 것으로 본다** — 같이 움직이는 것을 본 것이지 인과를 직접 잰 것은 아니다.
 
-질문 길이도 같은 방향이다. 평가 질문은 중앙 26자인데 학습셋에서 30자 이하는 2.4%(163건)뿐이고 그중 no_answer가 17.8%다. 60자 넘는 질문에서는 8.2%다. [code:data/review/refusal_overlap_20261015.md:87] [code:data/review/refusal_overlap_20261015.md:120-123] (2026-10-15 기준) <!-- 안 맞음: 문서는 「30자 이하」「60자 넘는」, 측정 기록은 「30자 미만」「60자 이상」(data/review/refusal_overlap_20261015.md:120, 123) -->
+질문 길이도 같은 방향이다. 평가 질문은 중앙 26자인데 학습셋에서 30자 미만은 2.4%(163건)뿐이고 그중 no_answer가 17.8%다. 60자 이상 질문에서는 8.2%다. [code:data/review/refusal_overlap_20261015.md:87] [code:data/review/refusal_overlap_20261015.md:120-123] (2026-10-15 기준)
 
-**평가 세트가 학습 분포의 끝에 몰려 있다.** 둘 다 거절한 문항의 겹침 중앙 0.188은 학습 양성 기준 하위 10.7%, 둘 다 답한 문항의 0.294도 하위 9.3%다. [code:data/review/refusal_overlap_20261015.md:99-100] (2026-10-15 기준) <!-- 안 맞음: 문서는 「0.188은 학습 양성 기준 하위 10.7%」, 측정 기록은 「학습 양성의 하위 1.4%, 학습 no_answer의 하위 10.7%」(data/review/refusal_overlap_20261015.md:99) -->
+**평가 세트가 학습 분포의 끝에 몰려 있다.** 둘 다 거절한 문항의 겹침 중앙 0.188은 학습 양성 기준 하위 1.4%, 둘 다 답한 문항의 0.294도 하위 9.3%다. [code:data/review/refusal_overlap_20261015.md:99-100] (2026-10-15 기준)
 
 #### 10-5. 재작성은 원인이 아니다
 
@@ -583,7 +583,7 @@ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)가 운영 모델로 남는다. �
 
 rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습 목표로 썼다. 학습 때 모델이 보는 발췌는 서빙 검색 결과와 달랐고, 서빙 평가에서 **정답 조항이 프롬프트에 있는데도 거절하는 턴**이 회당 15턴 안팎 남았다. C는 학습 발췌를 서빙 발췌와 같게 맞추려 했다. [code:data/review/rebuild5_verdict.md:11] (2026-10-22 기준)
 
-- 질문은 05·06에서 통과한 final 7,483건을 그대로 쓴다. 06에서 incomplete로 버린 4,769건은 쓰지 않았다(파일럿에서 효율이 나빴다) [code:data/review/rebuild5_progress_20261021.md:253-255] (2026-10-22 기준) <!-- 안 맞음: 문서는 「4,769건은 쓰지 않았다」, 코드 머리 주석은 「incomplete로 4,769건을 버렸다 … 그 질문도 되살려 쓴다」(data/faq_rag.py:7). 쓰지 않기로 한 것은 측정 기록 253줄의 사용자 결정이다 -->
+- 질문은 05·06에서 통과한 final 7,483건을 그대로 쓴다. 06에서 incomplete로 버린 4,769건은 쓰지 않았다(파일럿에서 효율이 나빴다) [code:data/review/rebuild5_progress_20261021.md:253-255] [code:data/faq_rag.py:300-304] (2026-10-22 기준)
 - 질문마다 서빙 B 경로(청크 v3 조각으로 찾고 부모를 보여 줌, 질의 확장, 1차 후보 20, 상위 3, 예산 2,400)로 발췌를 만든다 [code:data/faq_rag.py:8] [code:data/faq_rag.py:12] [code:data/faq_rag.py:19-20]
 - 그 발췌만 보고 qwen3:14b가 "결론 + 단서"로 답을 새로 쓴다. 발췌에 답이 없으면 거절 문장을 쓴다 [code:data/faq_rag.py:13] [code:data/faq_rag.py:42]
 - 판정 ①은 발췌를 기준으로 gemma4:12b가 본다. 판정 ②는 원문 단위를 기준으로 06 심판이 보되 뒤집힘·값·용어만 센다. 그 뒤 숫자가 발췌에 있는지와 계산을 코드로 검사한다 [code:data/faq_rag.py:14-16]
@@ -610,14 +610,14 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 
 | 기준 | rebuild4 | rebuild5 | rebuild5b |
 |---|---|---|---|
-| 1 정답이 프롬프트에 있는데 거절 | 14.7 | 7.0 ✅ | 21.3 ❌ (2026-10-23 기준) |
-| 2 판정 정확 | 50.7 | 54.0 ❌ | 44.3 ❌ (2026-10-23 기준) |
-| 3 판정 틀림 | 9.0 | **20.0 ❌** | **13.3 ❌** (2026-10-23 기준) |
-| 4 판정 예외누락 | 7.3 | 10.7 ❌ | 4.7 ✅ (2026-10-23 기준) |
-| 5 N축 거절 | 16/16 | 16/16 ✅ | 16/16 ✅ (2026-10-23 기준) |
-| 6 축별 정확 최저 | | −0.7 ✅ | S축 −6.0 ❌ [code:data/review/rebuild5_verdict.md:9-16] [code:data/review/rebuild5b_verdict.md:9-16] (2026-10-23 기준) |
-| 학습 샘플(train) | 7,376 | 5,640 | 6,098 [code:data/review/eval_results_summary.md:82] [code:data/review/rebuild5_progress_20261021.md:266] [code:data/review/rebuild5_progress_20261021.md:302] (2026-10-23 기준) |
-| 거절 샘플 비율 | 10% | 4.8% | 24.2% [code:data/review/rebuild5_progress_20261021.md:287] (2026-10-23 기준) |
+| 1 정답이 프롬프트에 있는데 거절 | 14.7 | 7.0 ✅ | 21.3 ❌ (2026-10-22~2026-10-23 사이) |
+| 2 판정 정확 | 50.7 | 54.0 ❌ | 44.3 ❌ (2026-10-22~2026-10-23 사이) |
+| 3 판정 틀림 | 9.0 | **20.0 ❌** | **13.3 ❌** (2026-10-22~2026-10-23 사이) |
+| 4 판정 예외누락 | 7.3 | 10.7 ❌ | 4.7 ✅ (2026-10-22~2026-10-23 사이) |
+| 5 N축 거절 | 16/16 | 16/16 ✅ | 16/16 ✅ (2026-10-22~2026-10-23 사이) |
+| 6 축별 정확 최저 | | −0.7 ✅ | S축 −6.0 ❌ [code:data/review/rebuild5_verdict.md:9-16] [code:data/review/rebuild5b_verdict.md:9-16] (2026-10-22~2026-10-23 사이) |
+| 학습 샘플(train) | 7,376 | 5,640 | 6,098 [code:data/review/eval_results_summary.md:82] [code:data/review/rebuild5_progress_20261021.md:266] [code:data/review/rebuild5_progress_20261021.md:302] (2026-10-19~2026-10-23 사이) |
+| 거절 샘플 비율 | 10% | 4.8% | 24.2% [code:data/review/rebuild5_progress_20261021.md:287] (2026-10-22~2026-10-23 사이) |
 | 선택 체크포인트 | 462 | 250 | 250 [code:data/review/eval_results_summary.md:17] [code:data/review/rebuild5_progress_20261021.md:267] [code:data/review/rebuild5_progress_20261021.md:304] |
 
 **rebuild5** — C 전량을 그대로 학습했다(answer 4,161 · 경고 1,831 · 거절 299 · 버림 1,192). 거절은 크게 줄었지만 줄어든 거절이 대부분 틀린 답이 되었다. 판정 이동(3회 합)은 거절→틀림 33, 거절→정확 12였다. [code:data/review/rebuild5_progress_20261021.md:266] [code:data/review/rebuild5_progress_20261021.md:281] (2026-10-22 기준)
@@ -642,7 +642,7 @@ rebuild4까지는 05가 원문 단위(조항 하나)를 보고 쓴 답을 학습
 |---|---|---|---|
 | rebuild4 ckpt462 | 51 | 10 | 31 (2026-10-23 기준) |
 | rebuild5 ckpt250 | 51 | 18 | 18 (2026-10-23 기준) |
-| rebuild5 ckpt50 | 34 | 13 | 40 (2026-10-22 기준) <!-- 확인 못 함: ckpt50 줄은 체크포인트 선택표(data/review/ckpt_select220_rag-1_5640건_rebuild5_20261022_1930.md)에만 있고 점검기가 한글 파일 이름을 찾지 못해 code 표시로 달지 않았다 --> |
+| rebuild5 ckpt50 | 34 | 13 | 40 (2026-10-22 기준) [code:data/review/ckpt_select220_rag-1_5640건_rebuild5_20261022_1930.md:7] |
 | rebuild5b ckpt300 | 46 | 13 | 30 (2026-10-23 기준) |
 | rebuild5b ckpt250 | 43 | 9 | 41 [code:data/review/rebuild5_progress_20261021.md:316] (2026-10-23 기준) |
 

@@ -1,5 +1,5 @@
 <!--
-다루는 곳: app/routers/auth.py, app/services/auth.py, app/deps.py, app/config.py, app/main.py, app/services/demo.py, app/services/rate_limit.py, app/routers/chat_ws.py, app/routers/admin.py, app/services/admin.py, app/routers/sessions.py, app/services/sessions.py, db/employees.py, db/migrations/petmint/0006_accounts.sql, db/migrations/petmint/0010_auth_session_demo.sql, db/migrations/petmint/0011_admin_views.sql, db/migrations/petmint/0012_accounts_precreated.sql, web/src/auth/, web/src/components/FlowCarousel.tsx, web/src/pages/Admin.tsx, scripts/seed_consultations.py, db/fixtures/seed_consultations.json
+다루는 곳: app/routers/auth.py, app/services/auth.py, app/deps.py, app/config.py, app/main.py, app/services/demo.py, app/services/rate_limit.py, app/routers/chat_ws.py, app/routers/admin.py, app/services/admin.py, app/routers/sessions.py, app/services/sessions.py, db/employees.py, db/migrations/petmint/0006_accounts.sql, db/migrations/petmint/0010_auth_session_demo.sql, db/migrations/petmint/0011_admin_views.sql, db/migrations/petmint/0012_accounts_precreated.sql, web/src/auth/, web/src/components/FlowCarousel.tsx, web/src/pages/Admin.tsx, scripts/seed_consultations.py, db/fixtures/seed_consultations.json, tests/test_auth.py, tests/test_admin.py
 읽은 커밋: 6710b83
 -->
 > 상태: 구축 완료. 운영은 앱 자체 인증(`PETMINT_AUTH=app`)으로 돈다. petmint.ronanlab.dev의 Access 정책은 데모 시연 때 상대방이 들어갈 수 있도록 사용자가 의도적으로 제거했다 — 지금은 앱 로그인(`/api/auth/me` 미로그인 401)만 건다(2026-11-09 확인). ollama.ronanlab.dev(학교 PC용 Ollama 터널)는 Service Token 정책(`ollama-school-pc`)으로 막혀 있다(2026-11-09 다시 걸음, 1-3절). [code:app/config.py:89] [code:app/routers/auth.py:33-44] <!-- 확인 못 함: 운영 설정과 Cloudflare Access 정책은 저장소 밖 -->
@@ -128,7 +128,7 @@ RUNSHOES는 호스트 방식, 펫민트는 클러스터 방식으로 **발전한
 
 #### 2-3. 터널 설정은 클러스터 단위, Access는 프로젝트 단위
 
-터널 ConfigMap은 **다섯 호스트(petmint·argocd·harbor·jenkins·runshoes)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다. <!-- 확인 못 함: 터널 ConfigMap은 다른 저장소(ronanlab-infra) -->
+터널 ConfigMap은 **일곱 호스트(petmint·argocd·harbor·jenkins·runshoes, grafana, prometheus)가 한 파일에 들어 있어 쪼갤 수 없다.** 호스트가 클러스터 단위로 묶이므로 `ronanlab-infra` 저장소도 프로젝트별이 아니라 클러스터 단위로 묶었다 — Harbor·Jenkins·ArgoCD·터널은 펫민트의 것이 아니라 클러스터의 것이다. <!-- 확인 못 함: 터널 ConfigMap은 다른 저장소(ronanlab-infra) -->
 
 반면 **Access 정책은 호스트마다 따로 건다.** 프로젝트가 늘어나면 정책도 각각 추가하면 된다.
 
@@ -241,10 +241,10 @@ python -m db.employees disable E2018032                  # 앱 접근만 끊는�
 - [x]  (app 모드) 임시 비밀번호 → 변경 강제 → 앱, 세션 행을 지우면 다음 요청에서 로그인 화면, 로그아웃 — 로컬 브라우저 1440·400px
 - [x]  (app 모드) 로그인한 직원 이메일이 `sessions.agent_email`에 들어간다
 - [x]  (access 모드) 로그인 화면 없이 지금과 같다 — `/api/auth/login` 404, 헤더 이메일이 원장에 있으면 이름이 붙는다 [code:app/routers/auth.py:23-25] [code:app/routers/auth.py:33-44]
-- [x]  (체험) 꺼지면 두 API 404 · 화면에 없음, 켜면 카드 10장(상담원 9 · 관리자 1), 카드를 누르면 `is_demo` 세션, 비밀번호 변경 403, 퇴직 사번 400, 잠긴 계정도 체험은 됨(잠금은 남음), IP 15분 제한 429 — `tests/test_auth.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_auth.py] [c:f613431] <!-- 안 맞음: 문서는 「켜면 카드 10장(상담원 9 · 관리자 1)」, 코드는 앱 계정이 있는 직원만 「SELECT employee_id, role FROM accounts WHERE disabled_at IS NULL」(app/services/auth.py:98-99)이고 0012가 7명만 만든다(db/migrations/petmint/0012_accounts_precreated.sql:12-23). 0012 전 기록이다 -->
+- [x]  (체험) 꺼지면 두 API 404 · 화면에 없음, 켜면 카드 10장(상담원 9 · 관리자 1, 그날 0012 전 기록. 지금은 앱 계정이 있는 직원만이라 7장, 관리자 1과 상담원 6), 카드를 누르면 `is_demo` 세션, 비밀번호 변경 403, 퇴직 사번 400, 잠긴 계정도 체험은 됨(잠금은 남음), IP 15분 제한 429 — `tests/test_auth.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_auth.py] [c:f613431] [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
 - [x]  (체험) 같은 쿠키로 1분에 11번 물으면 11번째가 `rate_limited`이고 턴으로 남지 않는다 — 로컬 WS 2026-11-12(사내규정 개인화 질문 11번) [code:app/routers/chat_ws.py:121-122]
 - [x]  (체험) 로그인 화면 1280 · 400px — 카드 2열 · 1열, 관리자 따로
-- [x]  (체험) 운영에서 켠 뒤 바깥 주소로 카드 → 로그인 → 사내규정 개인화 답 — 2026-11-12 https://petmint.ronanlab.dev: 카드 10장, 류채원 체험 로그인 200(`is_demo`, 쿠키 HttpOnly · Secure · SameSite=Lax), 비밀번호 변경 403, 사내규정 "제 연차 며칠 남았어요?" → 코드 답 "2일 남았습니다"(제17 · 18조, 4ms), 로그아웃 뒤 `/me` 401. 상단 "체험 계정" 표시는 화면으로 보지 않았다(응답의 `is_demo`까지) <!-- 확인 못 함: 운영 바깥 주소에서 잰 응답 --> <!-- 안 맞음: 문서는 「카드 10장」, 코드는 0012 뒤 계정 7개만 체험 풀이다(db/migrations/petmint/0012_accounts_precreated.sql:12-23, app/services/auth.py:95-106). 0012 전 기록이다 -->
+- [x]  (체험) 운영에서 켠 뒤 바깥 주소로 카드 → 로그인 → 사내규정 개인화 답 — 2026-11-12 https://petmint.ronanlab.dev: 카드 10장(그날 0012 전 기록, 지금은 7장), 류채원 체험 로그인 200(`is_demo`, 쿠키 HttpOnly · Secure · SameSite=Lax), 비밀번호 변경 403, 사내규정 "제 연차 며칠 남았어요?" → 코드 답 "2일 남았습니다"(제17 · 18조, 4ms), 로그아웃 뒤 `/me` 401. 상단 "체험 계정" 표시는 화면으로 보지 않았다(응답의 `is_demo`까지) <!-- 확인 못 함: 운영 바깥 주소에서 잰 응답 --> [code:app/services/auth.py:95-106] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23]
 - [x]  (관리자) 관리자 · 체험 관리자 200, 상담원 · access 모드 404, 로그인 없음 401, 기간 31일 넘으면 422, 일반 세션 404, 원장 밖 사번 404, 열람 기록이 남는다(체험 여부 포함), 급여 · 평가 · 휴가 테이블을 쿼리에 넣지 않는다 — `tests/test_admin.py`(DB 포함), 로컬 서버 2026-11-12 [code:tests/test_admin.py] [c:06536d3]
 - [x]  (관리자) 여섯 폭(1920 · 1440 · 1280 · 1024 · 800 · 400) × 비밀번호 관리자 · 체험 관리자 · 상담원 — 페이지 가로 넘침 0, 헤더 높이 전과 같음, 상담원 화면에 「관리」 없음 · 관리자 API 넷 404 — 로컬 헤드리스 크롬 2026-11-12
 - [x]  (계정 미리 만들기) 0012 뒤 계정 7개(관리자 1 · 상담원 6), 조현석 · 문태양 · 류채원 · 황재민 계정 없음, 체험 카드 7장, 계정 없는 사번 체험 로그인 400이고 계정이 생기지 않는다 — `tests/test_auth.py`, 로컬 서버 2026-11-12 [code:tests/test_auth.py] [code:db/migrations/petmint/0012_accounts_precreated.sql:12-23] [c:a2ddb7f]

@@ -2,7 +2,7 @@
 다루는 곳: app/, web/, search_service/, data/hr_preprocess.py, data/hr_index.py
 읽은 커밋: 6710b83
 -->
-> 상태: 요구사항 확정. R1~R3 충족, R4 진행 중 — 세 모드 모두 운영 서버에서 답한다: search-service 연결과 업무특화 모델 rebuild4(2026-10-21, 14번 1-11절), 인사규정 색인(hr_regulation 49건, 02번), 앱 로그인과 사내규정 개인화(2026-10-28, 14번 1-16·1-17절). 남은 것은 동시 접속 검증, 다음 재학습(rebuild5 C안은 두 번 기준 미달로 접음, 07번). [docs:02_pipeline/14_deployment.md:214] [docs:02_pipeline/14_deployment.md:317] [docs:02_pipeline/14_deployment.md:341] [docs:02_pipeline/02_embedding_index.md:1] [docs:02_pipeline/07_finetuning.md:574] [code:app/services/answer.py:183-193] [c:ddfc740] <!-- 확인 못 함: 운영 서버에서 답하는지는 클러스터 상태라 저장소 밖 -->
+> 상태: 요구사항 확정. R1~R3 충족, R4 진행 중 — 세 모드 모두 운영 서버에서 답한다: search-service 연결과 업무특화 모델 rebuild4(2026-10-21, 14번 1-4절), 인사규정 색인(hr_regulation 49건, 02번), 앱 로그인과 사내규정 개인화(2026-10-28, 14번 1-16·1-17절). 남은 것은 동시 접속 검증, 다음 재학습(rebuild5 C안은 두 번 기준 미달로 접음, 07번). [docs:02_pipeline/14_deployment.md:73] [docs:02_pipeline/14_deployment.md:165] [docs:02_pipeline/14_deployment.md:317] [docs:02_pipeline/14_deployment.md:341] [docs:02_pipeline/02_embedding_index.md:1] [docs:02_pipeline/07_finetuning.md:574] [code:app/services/answer.py:183-193] [c:ddfc740] <!-- 확인 못 함: 운영 서버에서 답하는지는 클러스터 상태라 저장소 밖 -->
 
 ## 프로젝트 한 줄 요약
 
@@ -22,10 +22,10 @@
 
 | 번호 | 요구사항 | 비고 | 현재 |
 | --- | --- | --- | --- |
-| R1 | ChatGPT와 유사한 LLM 서비스를 사내에 자체 구축 | 외부 클라우드 LLM 사용 시 데이터 유출 우려 | ✓ Tri-7B 로컬 서빙(GGUF 변환·Ollama 등록), 외부 API 호출 0건. ✓ 일반 모드 답변 생성을 배포 서버에서 확인(2026-10-18). ✓ 업무특화는 search-service와 어댑터 모델 `kabyul-tri-7b-rag1-rebuild4-ckpt462`로 운영(2026-10-21, 14번 1-11절). [code:app/services/llm.py:34] [code:app/config.py:66-71] [code:app/services/answer.py:192-193] [docs:02_pipeline/00_model_setup.md] [docs:02_pipeline/14_deployment.md:73] [c:12a4e2b] <!-- 확인 못 함: 운영 모델 이름은 ConfigMap 값이라 저장소 밖(코드 기본값은 tri-7b-rag-1) --> |
-| R2 | 모바일과 사내 PC 모두에서 채팅 서비스 접속 | 외부 네트워크에서도 접근 가능하게 구성 | ✓ 반응형 + Cloudflare Tunnel + Access [code:web/src/auth/Login.module.css:67] [docs:02_pipeline/13_access_and_tunnel.md:1] <!-- 확인 못 함: 터널과 Access 정책은 Cloudflare 설정이라 저장소 밖. 13번 상태 줄은 petmint의 Access 정책을 지웠다고 적었다 --> |
+| R1 | ChatGPT와 유사한 LLM 서비스를 사내에 자체 구축 | 외부 클라우드 LLM 사용 시 데이터 유출 우려 | ✓ Tri-7B 로컬 서빙(GGUF 변환·Ollama 등록), 외부 API 호출 0건. ✓ 일반 모드 답변 생성을 배포 서버에서 확인(2026-10-18). ✓ 업무특화는 search-service와 어댑터 모델 `kabyul-tri-7b-rag1-rebuild4-ckpt462`로 운영(2026-10-21, 14번 1-4절). [code:app/services/llm.py:34] [code:app/config.py:66-71] [code:app/services/answer.py:192-193] [docs:02_pipeline/00_model_setup.md] [docs:02_pipeline/14_deployment.md:73] [c:12a4e2b] <!-- 확인 못 함: 운영 모델 이름은 ConfigMap 값이라 저장소 밖(코드 기본값은 tri-7b-rag-1) --> |
+| R2 | 모바일과 사내 PC 모두에서 채팅 서비스 접속 | 외부 네트워크에서도 접근 가능하게 구성 | ✓ 반응형 + Cloudflare Tunnel + 앱 로그인(`PETMINT_AUTH=app`. Access 정책은 데모 시연을 위해 사용자가 지웠다, 2026-11-09 확인, 13번) [code:web/src/auth/Login.module.css:67] [code:app/config.py:89] [code:app/routers/auth.py:33-44] [docs:02_pipeline/13_access_and_tunnel.md:1] <!-- 확인 못 함: 터널과 Access 정책은 Cloudflare 설정이라 저장소 밖. 13번 상태 줄은 petmint의 Access 정책을 지웠다고 적었다 --> |
 | R3 | 사내 규정 등 자사 한정 정보에도 답변 | 범용 모델로는 불가, RAG 필요 | ✓ 인사규정 전처리(청크 49, 그래프 7엣지). ✓ Milvus 색인(hr_regulation 49건)·search-service 운영(02번). ✓ 사내규정 개인화 — 로그인한 직원 본인 연차·퇴직금·급여 등을 인사 원장으로 코드가 답한다(2026-10-28, 14번 1-17절) [code:data/hr_preprocess.py] [code:data/hr_index.py] [code:search_service/main.py:119-122] [code:app/services/hr_personal.py:431] [docs:02_pipeline/02_embedding_index.md:1] [docs:02_pipeline/03b_reference_graph.md:76] [docs:02_pipeline/14_deployment.md:341] |
-| R4 | 자사 업무에 특화된 LLM 모델 제공 | 범용 모델의 한계, 파인튜닝 필요 | ✓ 파인튜닝 학습. rebuild4가 운영 모델이다(07번 10·11절, 14번 1-11절) [docs:02_pipeline/07_finetuning.md:472] [docs:02_pipeline/07_finetuning.md:574] [docs:02_pipeline/14_deployment.md:73] [code:data/finetune_data.py] [code:data/rebuild.py] |
+| R4 | 자사 업무에 특화된 LLM 모델 제공 | 범용 모델의 한계, 파인튜닝 필요 | ✓ 파인튜닝 학습. rebuild4가 운영 모델이다(07번 10·11절, 14번 1-11절) [docs:02_pipeline/07_finetuning.md:472] [docs:02_pipeline/07_finetuning.md:574] [docs:02_pipeline/14_deployment.md:73] [code:data/finetune_data.py] [code:data/rebuild.py] [code:notebooks/07_파인튜닝.ipynb] |
 
 ### 비기능 요구사항
 

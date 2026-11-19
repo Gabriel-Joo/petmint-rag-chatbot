@@ -1,5 +1,5 @@
 <!--
-다루는 곳: data/refusal.py, scripts/refusal_rescore.py, db/migrations/petmint/0009_turn_refused_search_ms.sql, deploy/host/milvus/docker-compose.yml, tests/test_refusal.py, tests/test_turn_metrics.py
+다루는 곳: data/refusal.py, scripts/refusal_rescore.py, db/migrations/petmint/0009_turn_refused_search_ms.sql, deploy/host/milvus/docker-compose.yml, tests/test_refusal.py, tests/test_turn_metrics.py, scripts/verify_cases.py, scripts/verify_modes.py
 읽은 커밋: 6710b83
 -->
 > 상태: ✓ 설치(2026-11-10, 인프라 가용성 묶음 2 — 전부 w4). 원본은 ronanlab-infra `apps/monitoring/README.md`. 아래 2절 이후는 처음 설계(2026-10-18)이고, 설치하며 바뀐 것은 이 상자에만 적는다: <!-- 확인 못 함: 설치 상태와 원본 README는 다른 저장소(~/ronanlab-infra apps/monitoring/README.md)와 클러스터 -->
@@ -57,7 +57,7 @@
 
 | 대상 | 방법 | 상태 |
 | --- | --- | --- |
-| Milvus | 호스트 `192.168.122.1:9091/metrics`를 긁어 `up`만 남긴다(내부 지표는 버림) | △ 설정만. 2026-11-02부터 9091은 `127.0.0.1`에만 열려 있어 지금 설정으로는 닿지 않는다 — 적용 전에 게시 주소를 정한다 <!-- 안 맞음: 문서는 「9091은 `127.0.0.1`에만 열려 있어」, 코드는 「- ${MILVUS_VM_BIND:-192.168.122.1}:${MILVUS_METRICS_PORT:-9091}:9091」(deploy/host/milvus/docker-compose.yml:72, 2026-11-11 커밋 327c913) --> |
+| Milvus | 호스트 `192.168.122.1:9091/metrics`를 긁어 `up`만 남긴다(내부 지표는 버림) | ✓ 2026-11-11부터 9091은 `127.0.0.1`과 `192.168.122.1`(VM 사설망)에 열려 있어 클러스터에서 닿는다 [code:deploy/host/milvus/docker-compose.yml:71-72] [c:327c913] <!-- 확인 못 함: up 여부는 클러스터 Prometheus(~/ronanlab-infra apps/monitoring/README.md가 2026-11-11 milvus 1/1로 적음) --> |
 | Ollama | `/metrics`가 없다 — blackbox-exporter로 `GET /api/version` 프로브가 필요하다 | △ 구성 없음 <!-- 확인 못 함: 상태 상자는 json-exporter로 본다고 적었다. 구성은 ~/ronanlab-infra apps/monitoring/ --> |
 | search-service | `GET /health`(ok 필드) — blackbox-exporter 또는 search-service에 `/metrics` 추가 | △ 구성 없음(search-service는 호스트 `petmint-search`로 돈다) [code:search_service/main.py:103-124] [code:deploy/host/petmint-search.service] |
 | model-service(공용) | `GET http://192.168.122.1:8200/health` — blackbox-exporter. 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다(14번 4절). search-service `/health`도 model-service에 닿지 않으면 503이라 간접으로는 보인다 | △ 구성 없음(2026-11-11 분리 뒤, search-service와 같은 상태) [code:search_service/main.py:106-124] [docs:02_pipeline/14_deployment.md:594] |
@@ -128,7 +128,7 @@ ronanlab-infra/
 
 #### 4-1. 거절 판정 — 2026-11-12에 바꿨다
 
-`turns.refused`와 평가(`scripts/eval_serving` · `verify_cases`), `db/rule_report`는 같은 함수 `data/refusal.refused`를 쓴다. **2026-11-12 배포분부터 C안**이다. 그 전 턴의 `turns.refused`는 다시 계산하지 않았다 — 11-12 이전 값은 예전 판정(v1)이다. [code:app/services/answer.py:549] [code:scripts/eval_serving.py:146-150] [code:db/rule_report.py:29-35] [code:data/refusal.py:28] [c:6078a79] <!-- 안 맞음: 문서는 「평가(`scripts/eval_serving` · `verify_cases`) … 같은 함수 `data/refusal.refused`를 쓴다」, 코드는 「from data.refusal import REFUSAL_PHRASES」(scripts/verify_cases.py:23)로 문구 목록만 가져오고 verify_modes가 「hit = [p for p in REFUSAL_PHRASES if norm(p) in ans]」(scripts/verify_modes.py:94)로 문구만 대조한다 --> <!-- 확인 못 함: 이전 턴 값을 다시 계산하지 않았는지는 운영 DB -->
+`turns.refused`와 평가(`scripts/eval_serving`), `db/rule_report`는 같은 함수 `data/refusal.refused`를 쓴다(`verify_cases`, `verify_modes`는 같은 파일의 문구 목록 `REFUSAL_PHRASES`만 쓴다). **2026-11-12 배포분부터 C안**이다. 그 전 턴의 `turns.refused`는 다시 계산하지 않았다 — 11-12 이전 값은 예전 판정(v1)이다. [code:app/services/answer.py:549] [code:scripts/eval_serving.py:146-150] [code:db/rule_report.py:29-35] [code:data/refusal.py:28] [c:6078a79] [code:scripts/verify_cases.py:23] [code:scripts/verify_modes.py:93-95] <!-- 확인 못 함: 이전 턴 값을 다시 계산하지 않았는지는 운영 DB -->
 
 | | v1(~2026-11-12) | 현재(C안) |
 | --- | --- | --- |
@@ -140,9 +140,9 @@ ronanlab-infra/
 계기: 권태호 "저는 언제 정년이에요?"(11-11)가 정년을 바르게 답했는데 거절로 찍혔다. 걸린 것은 "규정에서 직접 확인되지는 않습니다"가 아니라(그 말은 "확인되지 않"과 글자가 다르다) 맨 끝 맺음말 "인사부서에 확인"이었다. [code:data/refusal.py:23-24] [code:data/refusal.py:31-32] <!-- 확인 못 함: 질문과 답은 운영 DB -->
 
 **바꾸기 전에 잰 것**
-- 운영(`refused`가 있는 85턴, 대부분 시드 상담): 거절 22 → 18(25.9% → 21.2%). 빠진 넷 — 정년 · 남은 연차 수당 · 부산 출장비(맺음말), 백내장(코드 답 + 나이 참고 줄). 남은 18은 NO_ANSWER 그대로 9 · NO_ANSWER + 참고 줄 4 · "규정에 없다"가 답인 것 1(칠순 경조휴가) · 부분 답 4(아래) (2026-11-12 기준) <!-- 확인 못 함: 운영 DB 턴으로 센 수 -->
-- 과거 평가(저장된 `eval_serving` 38회분, 모델 답 11,279턴): 거절 4,568 → 4,321(247턴 바뀜, 32회분). **바뀐 247턴은 모두 나이 참고 줄 때문**이었고 gemma 판정(`.judge.json`)이 "거절"로 본 것은 0. gemma "거절"과의 일치 9,079 → 9,325 / 9,592. 합격 · 불합격이 바뀌는 것은 거절해야 하는 N축뿐이고 1,517 → 1,516 / 1,590(한 문항 — 모델은 답했는데 참고 줄로 거절 처리되던 것). 그래서 **과거 보고의 거절 건수는 나이 참고 줄을 넣은 뒤(2026-10-24 `AGE_CODE`) 회차마다 몇 건~10여 건 많게 적혀 있다**. 다른 합격 수는 그대로다 (2026-11-12 기준) [code:scripts/refusal_rescore.py:1-8] [c:98c24de] [c:6078a79] <!-- 확인 못 함: 저장된 eval_serving 결과는 git 밖(logs/) -->
-- 쓰지 않은 안 — 위치로 가르기(거절 문장이 본문 앞일 때만): gemma 일치는 98.8%로 더 오르지만 베이스 모델 회차의 N축 통과가 18 → 1 · 15 → 0으로 무너졌다. 서두를 깐 뒤 "…명시되어 있지 않습니다"로 거절하는 진짜 거절을 놓친다(사용자 — 쓰지 않는다) (2026-11-12 기준) [code:data/refusal.py:15] <!-- 확인 못 함: 측정 결과 원자료는 git 밖 -->
+- 운영(`refused`가 있는 85턴, 대부분 시드 상담): 거절 22 → 18(25.9% → 21.2%). 빠진 넷 — 정년 · 남은 연차 수당 · 부산 출장비(맺음말), 백내장(코드 답 + 나이 참고 줄). 남은 18은 NO_ANSWER 그대로 9 · NO_ANSWER + 참고 줄 4 · "규정에 없다"가 답인 것 1(칠순 경조휴가) · 부분 답 4(아래) (2026-11-11~2026-11-12 사이) <!-- 확인 못 함: 운영 DB 턴으로 센 수 -->
+- 과거 평가(저장된 `eval_serving` 38회분, 모델 답 11,279턴): 거절 4,568 → 4,321(247턴 바뀜, 32회분). **바뀐 247턴은 모두 나이 참고 줄 때문**이었고 gemma 판정(`.judge.json`)이 "거절"로 본 것은 0. gemma "거절"과의 일치 9,079 → 9,325 / 9,592. 합격 · 불합격이 바뀌는 것은 거절해야 하는 N축뿐이고 1,517 → 1,516 / 1,590(한 문항 — 모델은 답했는데 참고 줄로 거절 처리되던 것). 그래서 **과거 보고의 거절 건수는 나이 참고 줄을 넣은 뒤(2026-10-24 `AGE_CODE`) 회차마다 몇 건~10여 건 많게 적혀 있다**. 다른 합격 수는 그대로다 (2026-11-11~2026-11-12 사이) [code:scripts/refusal_rescore.py:1-8] [c:98c24de] [c:6078a79] <!-- 확인 못 함: 저장된 eval_serving 결과는 git 밖(logs/) -->
+- 쓰지 않은 안 — 위치로 가르기(거절 문장이 본문 앞일 때만): gemma 일치는 98.8%로 더 오르지만 베이스 모델 회차의 N축 통과가 18 → 1 · 15 → 0으로 무너졌다. 서두를 깐 뒤 "…명시되어 있지 않습니다"로 거절하는 진짜 거절을 놓친다(사용자 — 쓰지 않는다) (2026-11-11~2026-11-12 사이) [code:data/refusal.py:15] <!-- 확인 못 함: 측정 결과 원자료는 git 밖 -->
 
 **과거 수치 다시 내기**: `data.refusal.refused_v1`가 예전 판정 그대로다. 새로 잴 때 `python -m scripts.eval_serving … --refusal v1`(결과 JSON에 `refusal_judge`가 남는다), 저장된 결과를 다시 셀 때 `python -m scripts.refusal_rescore <eval_serving_*.json …>`(두 판 · gemma 일치 · N축을 나란히 낸다). [code:data/refusal.py:54-57] [code:scripts/eval_serving.py:360-366] [code:scripts/refusal_rescore.py:1-8]
 

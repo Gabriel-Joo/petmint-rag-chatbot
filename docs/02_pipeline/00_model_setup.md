@@ -52,7 +52,7 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 **GGUF 변환 이유**: llama.cpp/Ollama가 서빙할 수 있는 포맷이 GGUF다. HF 원본(safetensors)은 Ollama가 직접 읽지 못해 변환이 필수였다.
 
-**양자화(Q4_K_M) 선택 이유**: 16GB VRAM 안에서 추론과 QLoRA 학습이 함께 돌아야 하는데, f16(15.1GB)은 여유 공간이 거의 없어진다. Q4_K_M으로 4.4GB까지 줄여 공간을 확보했다. [code:notebooks/00_모델_준비.ipynb:554] [code:notebooks/00_모델_준비.ipynb:909] (2026-10-18 기준)
+**양자화(Q4_K_M) 선택 이유**: 16GB VRAM 안에서 추론과 QLoRA 학습이 함께 돌아야 하는데, f16(15.1GB)은 여유 공간이 거의 없어진다. Q4_K_M으로 4.4GB까지 줄여 공간을 확보했다. [code:notebooks/00_모델_준비.ipynb:554] [code:notebooks/00_모델_준비.ipynb:909] (2026-09-29까지)
 
 **Ollama를 택한 이유(vLLM 대신)**: 지금 단계는 1인 개발·로컬 실험 단계라, "동시에 여러 사람이 접속해도 빠르게" 처리해야 하는 vLLM의 강점(Continuous Batching, PagedAttention)이 아직 필요 없다. 반면 Ollama는 GGUF를 네이티브로 바로 읽고, 여러 모델을 쉽게 바꿔가며 실험할 수 있어 개발 단계에 더 적합했다.
 
@@ -64,11 +64,11 @@ Hugging Face에서 Tri-7B(Apache 2.0) 원본을 받아, GGUF로 변환·양자�
 
 #### 4-1. GGUF 변환 — EXAONE 때와 달리 인자 패치 없이 성공
 
-EXAONE 3.5는 특수 구조라 변환 과정에서 추가 패치가 필요했는데, Tri-7B는 **llama 구조**를 그대로 따르고 있어 `convert_hf_to_gguf.py`의 표준 변환 경로와 바로 호환된다. f16 GGUF(15.1GB) 변환이 추가 조치 없이 한 번에 성공했다. [code:notebooks/00_모델_준비.ipynb:148] [code:notebooks/00_모델_준비.ipynb:554-556] (2026-10-18 기준)
+EXAONE 3.5는 특수 구조라 변환 과정에서 추가 패치가 필요했는데, Tri-7B는 **llama 구조**를 그대로 따르고 있어 `convert_hf_to_gguf.py`의 표준 변환 경로와 바로 호환된다. f16 GGUF(15.1GB) 변환이 추가 조치 없이 한 번에 성공했다. [code:notebooks/00_모델_준비.ipynb:148] [code:notebooks/00_모델_준비.ipynb:554-556] (2026-09-29까지)
 
 #### 4-2. 양자화(Q4_K_M) — `--override-kv` 생략 시도 → 성공
 
-EXAONE은 `exaone.attention.layer_norm_rms_epsilon`이라는 비표준 키 이름 때문에 `--override-kv`로 명시적으로 키를 지정해야만 양자화가 돌았다. Tri-7B는 llama 구조라 이 문제가 없을 거라고 판단해 override 없이 먼저 시도했고, 실제로 문제없이 성공했다(14357MB → 4411MB, 4.92 BPW). [code:notebooks/00_모델_준비.ipynb:908-909] [code:notebooks/00_모델_준비.ipynb:918-922] (2026-10-18 기준)
+EXAONE은 `exaone.attention.layer_norm_rms_epsilon`이라는 비표준 키 이름 때문에 `--override-kv`로 명시적으로 키를 지정해야만 양자화가 돌았다. Tri-7B는 llama 구조라 이 문제가 없을 거라고 판단해 override 없이 먼저 시도했고, 실제로 문제없이 성공했다(14357MB → 4411MB, 4.92 BPW). [code:notebooks/00_모델_준비.ipynb:908-909] [code:notebooks/00_모델_준비.ipynb:918-922] (2026-09-29까지)
 
 > 이 두 결정은 "EXAONE에서 필요했던 우회책이, 모델 구조가 다르면 필요 없을 수 있다"는 가설을 먼저 세우고 그 가설을 검증하는 순서로 진행했다.
 > 
@@ -85,14 +85,14 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 **해결**: `docker update --restart unless-stopped`로 변경. `always`가 아니라 `unless-stopped`를 고른 이유는, 의도적으로 멈춘 컨테이너는 재부팅 후에도 꺼진 채로 두는 쪽이 자연스럽기 때문이다. [code:deploy/host/milvus/docker-compose.yml:24] [code:deploy/host/milvus/docker-compose.yml:49] <!-- 확인 못 함: Ollama 컨테이너 설정은 저장소에 없다 -->
 
-> 함께 겪은 것: Milvus는 재부팅으로 내장 etcd 데이터가 손상돼 `panic: etcdserver: leader changed`로 기동 실패했다. 볼륨을 비우고 재색인해 복구했는데, 이후로는 재부팅 전에 `docker stop`으로 먼저 멈춰 etcd가 정리할 시간을 주는 쪽으로 절차를 바꿨다. [code:deploy/host/milvus/docker-compose.yml:1-8] <!-- 안 맞음: 문서는 「재부팅 전에 `docker stop`으로 먼저 멈춰 etcd가 정리할 시간을 주는 쪽으로 절차를 바꿨다」, 코드는 「외부 etcd (2026-11-02, embedded etcd에서 옮김)」「Milvus는 etcd /health가 true(리더 있음)일 때까지 기다린 뒤 시작한다」(deploy/host/milvus/docker-compose.yml:1, 7) -->
+> 함께 겪은 것: Milvus는 재부팅으로 내장 etcd 데이터가 손상돼 `panic: etcdserver: leader changed`로 기동 실패했다. 볼륨을 비우고 재색인해 복구했는데, 2026-11-02부터는 etcd를 Milvus 밖의 별도 컨테이너로 띄우고, Milvus는 etcd `/health`가 true(리더 있음)일 때까지 기다린 뒤 시작한다. [code:deploy/host/milvus/docker-compose.yml:1-8] [code:deploy/host/milvus/docker-compose.yml:21-24] [code:deploy/host/milvus/docker-compose.yml:62]
 > 
 
 ---
 
 ### 5. 동작 확인
 
-한국어 응답 정상, 응답 속도 1.8~3.0초 (측정 2회) [code:notebooks/00_모델_준비.ipynb:1318] [code:notebooks/00_모델_준비.ipynb:1321] (2026-10-18 기준)
+한국어 응답 정상, 응답 속도 1.8~3.0초 (측정 2회) [code:notebooks/00_모델_준비.ipynb:1318] [code:notebooks/00_모델_준비.ipynb:1321] (2026-09-29~2026-10-13 사이)
 
 단, 파인튜닝 전(원본) 상태라 우리 약관의 세부 내용은 알지 못한다 — "보험금 청구서류 접수 후 얼마나 빠르게 받을 수 있나요?"라는 질문에 "1~2주일" 같은 일반적인 보험 상식으로 답한다(실제 펫퍼민트 약관의 정확한 지급기일은 반영하지 못함). [code:notebooks/00_모델_준비.ipynb:1334]
 
@@ -104,7 +104,7 @@ Modelfile의 FROM에 호스트 경로(`/home/kopo17/...`)를 그대로 지정해
 
 | 도구 | 용도 |
 | --- | --- |
-| `huggingface_hub.snapshot_download` | Tri-7B 원본 다운로드 (29GB) [code:notebooks/00_모델_준비.ipynb:43] [code:notebooks/00_모델_준비.ipynb:61] (2026-10-18 기준) |
+| `huggingface_hub.snapshot_download` | Tri-7B 원본 다운로드 (29GB) [code:notebooks/00_모델_준비.ipynb:43] [code:notebooks/00_모델_준비.ipynb:61] (2026-09-29까지) |
 | `llama.cpp/convert_hf_to_gguf.py` | HF 포맷 → GGUF(f16) 변환 [code:notebooks/00_모델_준비.ipynb:563] |
-| `llama.cpp/build/bin/llama-quantize` | f16 GGUF → Q4_K_M 양자화 (4.4GB) [code:notebooks/00_모델_준비.ipynb:909] [code:notebooks/00_모델_준비.ipynb:922] (2026-10-18 기준) |
+| `llama.cpp/build/bin/llama-quantize` | f16 GGUF → Q4_K_M 양자화 (4.4GB) [code:notebooks/00_모델_준비.ipynb:909] [code:notebooks/00_모델_준비.ipynb:922] (2026-09-29까지) |
 | Docker + Ollama | 컨테이너 내부에서 Tri-7B 서빙 [code:notebooks/00_모델_준비.ipynb:1304] |

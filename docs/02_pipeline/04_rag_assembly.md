@@ -1,5 +1,5 @@
 <!--
-다루는 곳: data/rag_context.py, data/search_scope.py, data/search_engine.py, data/search_regression.py, data/eval/search_regression.json, notebooks/04_RAG_전체_조립.ipynb
+다루는 곳: data/rag_context.py, data/search_scope.py, data/search_engine.py, data/search_regression.py, data/eval/search_regression.json, notebooks/04_RAG_전체_조립.ipynb, scripts/search_regression_run.py, tests/test_retrieval_variant.py
 읽은 커밋: 6710b83
 -->
 > 상태: ✓ 조립 모듈(data/rag_context.py)과 SearchScope 필터 교체·검색 문장 정리(9절)는 2026-10-13까지 구현, 05(FAQ 생성)·08(평가)이 이 경로를 쓴다. ✓ 09 서비스 경로(answer.py → search-service → build_full_context)는 운영 중이다(search-service는 호스트 systemd `petmint-search.service`, :8100. 서빙 설정 v3·부모 표시·질의 확장은 docs/14). △ 이웃 청크 포함(10절)은 검토만 했다. [code:data/rag_context.py:632-648] [code:data/search_scope.py:1-13] [code:app/services/answer.py:224-225] [code:deploy/host/petmint-search.service:21] [docs:02_pipeline/14_deployment.md] [c:ba373fe] <!-- 확인 못 함: 운영 중인지는 호스트 서비스 상태라 저장소에서 볼 수 없다 -->
@@ -38,7 +38,7 @@ results = client.query(..., limit=3)
 
 참조 조문을 조회할 때 `limit=3`이 걸려 있었다. 그런데 Milvus는 (제목행, 1항, 2항, …) 순서로 반환하므로, **3항 이후가 통째로 빠졌다.** [code:data/rag_context.py:375-384]
 
-측정해보니 584건 중 **210건(36%)** 이 잘린 상태로 LLM에 들어가고 있었다. 일반조항 제17조는 제목과 ①·②항까지만 들어가고 ③·④항이 사라졌다. (2026-10-18 기준) <!-- 확인 못 함: 584건, 210건은 저장소에 남은 측정 기록이 없다 -->
+측정해보니 584건 중 **210건(36%)** 이 잘린 상태로 LLM에 들어가고 있었다. 일반조항 제17조는 제목과 ①·②항까지만 들어가고 ③·④항이 사라졌다. (2026-10-13 이전) <!-- 확인 못 함: 584건, 210건은 저장소에 남은 측정 기록이 없다 -->
 
 `limit=100`으로 올리고 `(paragraph_num, chunk_index)` 순으로 정렬해 결합하도록 고쳤다(한 조문의 최대 청크 수는 33개라 100이면 충분하다). [code:data/rag_context.py:375-384]
 
@@ -103,7 +103,7 @@ results = client.query(..., limit=3)
 1일당 {고급형: 100만원 / 기본형: 50만원 / 실속형: 30만원}
 ```
 
-**9,289자 → 3,436자**로 줄었다. (2026-10-12 기준) <!-- 안 맞음: 문서는 「9,289자 → 3,436자」(바로 위 줄은 9,458자), 코드는 「제1조 9458자」(data/rag_context.py:439), 기록은 「9458자 → 3369자」(KNOWN_ISSUES.md:110) -->
+**9,458자 → 3,369자**로 줄었다. (2026-10-12 기준) [code:data/rag_context.py:439] [code:KNOWN_ISSUES.md:110]
 
 다만 1차 구현에서 계산식이 깨졌다. 중괄호 그룹 16개 중 12개에서 괄호 짝이 경계에서 끊겼다. (2026-10-12 기준) [code:KNOWN_ISSUES.md:126-127] [code:data/rag_context.py:140-142]
 
@@ -124,7 +124,7 @@ results = client.query(..., limit=3)
  타인의 사망을 보험금 지급사유로 하는 계약에는...
 ```
 
-이런 citation은 다른 조로 이동할 필요 없이 **같은 조 본문에서 직접 추출**한다. 추출 패턴이 03-1의 `find_inline_law_box`와 달라 10건을 놓치고 있었다(【「 중첩, "제59조의4" 같은 조의N 형태). 대부분을 맞췄으나 두 정규식이 완전히 같지는 않아, 03-1은 박스로 본 것을 04번이 못 뽑는 경우가 종별 3건 남아 있다 — 보통약관 2건과 장애인전용보험전환 특별약관 1건이다. (2026-10-18 기준) [code:data/rag_context.py:228-244] [code:notebooks/03-1_citation_해석.ipynb:202] <!-- 확인 못 함: 놓친 10건과 종별 3건은 저장소에 남은 측정 기록이 없다 -->
+이런 citation은 다른 조로 이동할 필요 없이 **같은 조 본문에서 직접 추출**한다. 추출 패턴이 03-1의 `find_inline_law_box`와 달라 10건을 놓치고 있었다(【「 중첩, "제59조의4" 같은 조의N 형태). 대부분을 맞췄으나 두 정규식이 완전히 같지는 않아, 03-1은 박스로 본 것을 04번이 못 뽑는 경우가 종별 3건 남아 있다 — 보통약관 2건과 장애인전용보험전환 특별약관 1건이다. (2026-10-18 이전) [code:data/rag_context.py:228-244] [code:notebooks/03-1_citation_해석.ipynb:202] <!-- 확인 못 함: 놓친 10건과 종별 3건은 저장소에 남은 측정 기록이 없다 -->
 
 **조문 번호 표기**: 03번 citation에는 `article_num=59`로만 저장돼 "의4"가 빠진다. 그대로 쓰면 LLM에 "소득세법 제59조"가 들어가는데, 소득세법 제59조는 "근로소득세액공제"고 제59조의4가 "특별세액공제"로 **완전히 다른 조문**이다. 상담원이 그걸 보고 안내하면 틀린 정보가 나간다. [code:data/rag_context.py:232-233]
 

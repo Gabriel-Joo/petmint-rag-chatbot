@@ -6,7 +6,7 @@
 
 이 폴더에는 성격이 다른 두 종류의 문서가 있다. 섞지 않는다.
 
-폴더 구조는 노션과 같다(2026-11-09). 노션 「02. 파이프라인 설계」 아래 단계 문서는 `02_pipeline/`에, 상위 문서 둘은 이 폴더 바로 아래에 둔다. 운영 기록·체크리스트는 `ops/`에 둔다. 그림은 `img/`. [docs:02_pipeline/00_model_setup.md] [docs:img/01_preprocessing_20261007.png] [c:5409464] <!-- 확인 못 함: 노션 폴더 구조는 저장소 밖 -->
+폴더 구조는 노션과 같다(2026-11-09). 노션 「02. 파이프라인 설계」 아래 단계 문서는 `02_pipeline/`에, 상위 문서 둘은 이 폴더 바로 아래에 둔다. 운영 기록·체크리스트는 `ops/`에 둔다. 그림은 `img/`. [docs:02_pipeline/00_model_setup.md] [docs:ops/모드검증.md] [docs:img/01_preprocessing_20261007.png] [c:5409464] <!-- 확인 못 함: 노션 폴더 구조는 저장소 밖 -->
 
 ## 파일 이름 규칙
 
@@ -50,9 +50,9 @@
 |---|---|
 | `next_rebuild.md` | 다음 FAQ·파인튜닝 재구축 지시서 [docs:next_rebuild.md] |
 | `TODO.md` | 나중에 할 일 — 정해 두고 미룬 것(무엇·언제·조건·근거) [docs:TODO.md] [c:be32dca] |
-| `ops/저녁실행.md` | rebuild3 뒤 실행 순서서(명령·시간·성공·실패·건너뛰면) [c:5409464] |
-| `ops/배포기록.md` | 배포·알림 시험처럼 코드 변경 없이 배포를 일으킨 커밋의 기록 [c:98f785b] |
-| `ops/모드검증.md` | 일반·사내규정·업무특화 모드 검증 체크리스트(질문·정답 — `scripts/verify_modes.py`·`scripts/verify_cases.py`와 같다) [c:5409464] [code:scripts/verify_modes.py:31] [code:scripts/verify_modes.py:271-280] [code:scripts/verify_cases.py] |
+| `ops/저녁실행.md` | rebuild3 뒤 실행 순서서(명령·시간·성공·실패·건너뛰면) [docs:ops/저녁실행.md] [c:5409464] |
+| `ops/배포기록.md` | 배포·알림 시험처럼 코드 변경 없이 배포를 일으킨 커밋의 기록 [docs:ops/배포기록.md] [c:98f785b] |
+| `ops/모드검증.md` | 일반·사내규정·업무특화 모드 검증 체크리스트(질문·정답 — `scripts/verify_modes.py`·`scripts/verify_cases.py`와 같다) [docs:ops/모드검증.md] [c:5409464] [code:scripts/verify_modes.py:31] [code:scripts/verify_modes.py:271-280] [code:scripts/verify_cases.py] |
 
 측정 기록과 검수 결과는 `docs/`가 아니라 `data/review/`에 둔다. [code:data/review/]
 

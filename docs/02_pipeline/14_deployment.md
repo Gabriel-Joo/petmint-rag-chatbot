@@ -1,5 +1,5 @@
 <!--
-다루는 곳: Dockerfile, .dockerignore, Jenkinsfile, app/config.py, app/main.py, app/services/policy_data.py, app/fixtures/customers.example.json, db/conn.py, db/bootstrap.py, db/migrate.py, db/employees.py, db/rule_report.py, db/seed_insurance_core.py, db/migrations/, db/fixtures/employees.json, deploy/host/petmint-search.service, deploy/scripts/host-nfs-setup.sh, search_service/, data/model_client.py, scripts/search_parity.py
+다루는 곳: Dockerfile, .dockerignore, Jenkinsfile, app/config.py, app/main.py, app/services/policy_data.py, app/fixtures/customers.example.json, db/conn.py, db/bootstrap.py, db/migrate.py, db/employees.py, db/rule_report.py, db/seed_insurance_core.py, db/migrations/, db/fixtures/employees.json, deploy/host/petmint-search.service, deploy/scripts/host-nfs-setup.sh, search_service/, data/model_client.py, scripts/search_parity.py, scripts/rollout_measure.sh, scripts/rollout_table.py, scripts/coverage_measure.sh, scripts/coverage_chain.sh, scripts/coverage_table.py, scripts/crowding_count.py, scripts/pool_chain.sh, scripts/sibling_sim.py, scripts/offtarget_probe.py, scripts/rejudge_chain.sh, tests/test_coverage_code.py, tests/test_rule_first.py
 읽은 커밋: 6710b83
 -->
 > 상태: 운영 중. 이미지·CI는 2026-10-15, 클러스터 이주·ArgoCD는 2026-10-16, App of Apps는 2026-11-02, GitHub 웹훅은 2026-11-03 완료. ArgoCD 자동 Sync는 2026-11-11(1-25절). 남은 것은 4절의 한계. [code:Dockerfile] [code:Jenkinsfile] [c:afefd07] <!-- 확인 못 함: App of Apps, 웹훅, 자동 Sync 날짜는 infra 저장소 apps/ 와 클러스터 기록 -->
@@ -35,7 +35,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 2단계  python:3.14-slim   앱과 1단계의 dist/ 만 담는다. 비root(uid 10001)로 실행
 ```
 
-최종 이미지 **528MB**. node·npm·tsc는 남지 않는다. [code:Dockerfile:12-30] (2026-10-15 기준) <!-- 확인 못 함: 이미지 크기는 빌드 결과(Harbor) -->
+최종 이미지 **528MB**. node·npm·tsc는 남지 않는다. [code:Dockerfile:12-30] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 이미지 크기는 빌드 결과(Harbor) -->
 
 **이미지에 담는 것과 담지 않는 것**
 
@@ -43,7 +43,7 @@ GPU를 쓰는 것은 호스트에 남기고 나머지를 Pod로 올린다. **약
 | --- | --- |
 | `app/`, `db/`, `data/*.py` | `data/chunks/`, `data/graph/` — 약관 [code:Dockerfile:34-36] [code:.dockerignore:22-24] |
 | `web/dist/` (1단계 산출물) |  `app/fixtures/` 전체 — 고객 원장은 시드 Job이 DB에 넣는다 [code:Dockerfile:37] [code:.dockerignore:25-26] [code:db/seed_insurance_core.py:7-13] |
-|  | `models/` (47GB), `notebooks/`, `data/faq/`, `data/finetune/` [code:.dockerignore:1] [code:.dockerignore:15-21] (2026-10-15 기준) |
+|  | `models/` (47GB), `notebooks/`, `data/faq/`, `data/finetune/` [code:.dockerignore:1] [code:.dockerignore:15-21] (2026-10-15 이전) |
 |  | `.env` [code:.dockerignore:6-8] |
 
 `.dockerignore`가 빌드 컨텍스트 단계에서 먼저 걸러낸다. 이미지에 안 들어가는 것과 빌드 과정에 아예 안 실리는 것은 다르다 — 후자여야 중간 레이어에도 남지 않는다. [code:.dockerignore:1-2]
@@ -560,7 +560,7 @@ private 저장소라도 "사내 서버 상주"는 아니다. 그리고 약관은
 
 CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 노드도 Pod 도 빌드도 같은 주소를 쓰고, Let's Encrypt 인증서로 검증된다. 나중의 ArgoCD → Harbor 도 같이 풀린다.
 
-적용 전에 같은 버전을 Docker 에 띄워 문법을 확인했고, 적용 뒤 argocd·jenkins·github·Docker Hub 는 공개 주소 그대로 풀리는 것과 터널 4/4 를 확인했다. (2026-10-15 기준) <!-- 확인 못 함: 클러스터에서 한 확인 -->
+적용 전에 같은 버전을 Docker 에 띄워 문법을 확인했고, 적용 뒤 argocd·jenkins·github·Docker Hub 는 공개 주소 그대로 풀리는 것과 터널 4/4 를 확인했다. (2026-10-15 이전) <!-- 확인 못 함: 클러스터에서 한 확인 -->
 
 #### 2-7. ArgoCD 에 넘길 때 지킨 세 가지
 
@@ -570,7 +570,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 **처음엔 수동 Sync 로 둔다.** 매니페스트가 의도대로 반영되는지 눈으로 확인한 뒤 자동으로 바꾼다(2026-11-11 바꿨다, 1-25절). 개발은 로컬(uvicorn + vite), 클러스터는 운영만으로 간다 — 단일 환경이라 개발·운영 네임스페이스를 가를 수 없다(4절). [code:web/vite.config.ts] [code:app/config.py:99-102] <!-- 확인 못 함: 자동 Sync 전환은 infra 저장소 apps/petmint/app.yaml 과 클러스터 -->
 
-넘겨받는 순간은 안전했다. 처음 상태는 OutOfSync 였고, 14개 리소스의 diff 가 모두 ArgoCD 추적 라벨 하나뿐이었다. Sync 뒤에도 앱 Pod 와 mysql-0 의 UID 가 같아 교체되지 않았다. (2026-10-16 기준) <!-- 확인 못 함: ArgoCD 와 클러스터에서 본 값 -->
+넘겨받는 순간은 안전했다. 처음 상태는 OutOfSync 였고, 14개 리소스의 diff 가 모두 ArgoCD 추적 라벨 하나뿐이었다. Sync 뒤에도 앱 Pod 와 mysql-0 의 UID 가 같아 교체되지 않았다. (2026-10-16~2026-10-18 사이) <!-- 확인 못 함: ArgoCD 와 클러스터에서 본 값 -->
 
 ---
 
@@ -578,10 +578,10 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 
 | 시도 | 결과 |
 | --- | --- |
-| 약관 데이터를 git에 올려 이미지에 담기 | 6.4MB라 크기는 문제가 아니었으나 01번의 외부 유출 0건 원칙에 어긋난다. 런타임 마운트로 바꿨다 [docs:requirements.md] [code:.dockerignore:22-24] [code:app/services/policy_data.py:1-8] (2026-10-15 기준) |
-| 단일 스테이지 이미지 | node와 python을 한 이미지에 담으면 빌드 도구가 최종 이미지에 남는다. 멀티스테이지로 528MB까지 줄였다 [code:Dockerfile:12-37] (2026-10-15 기준) <!-- 확인 못 함: 이미지 크기는 빌드 결과 --> |
-| `chown -R` 레이어 | 비root 실행을 위해 소유권을 바꿨더니 레이어가 크게 늘었다. 멀티스테이지에서 `--chown`으로 복사하도록 바꿔 569MB → 528MB로 줄였다 [code:Dockerfile:29-37] [code:Dockerfile:43] (2026-10-15 기준) <!-- 안 맞음: 문서는 「멀티스테이지에서 `--chown`으로 복사하도록 바꿔」, 코드는 「# 파일은 root 소유로 둔다(앱이 코드를 고쳐 쓸 일이 없다). 실행만 비root로」와 「COPY app/ app/」(Dockerfile:33-34), --chown 없음(git log -S 로 Dockerfile 이력에도 없음) --> |
-| `data/rag_context.py`의 pymilvus import를 함수 안으로 | 251MB를 줄일 수 있으나 05·06 노트북과 공유하는 모듈이다. 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 3-3절)을 깨면서까지 줄일 이유가 없고, ContextBuilder를 붙이면 실제로 필요해진다. 손대지 않았다 [code:data/rag_context.py:15] [code:app/main.py:21] [code:app/main.py:46] [docs:02_pipeline/09_ui_design.md] (2026-10-15 기준) |
+| 약관 데이터를 git에 올려 이미지에 담기 | 6.4MB라 크기는 문제가 아니었으나 01번의 외부 유출 0건 원칙에 어긋난다. 런타임 마운트로 바꿨다 [docs:requirements.md] [code:.dockerignore:22-24] [code:app/services/policy_data.py:1-8] (2026-10-15~2026-10-18 사이) |
+| 단일 스테이지 이미지 | node와 python을 한 이미지에 담으면 빌드 도구가 최종 이미지에 남는다. 멀티스테이지로 528MB까지 줄였다 [code:Dockerfile:12-37] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 이미지 크기는 빌드 결과 --> |
+| `chown -R` 레이어 | 비root 실행을 위해 소유권을 바꿨더니 레이어가 크게 늘었다. 소유권을 바꾸지 않고 파일은 root 소유로 COPY하며 실행만 비root(uid 10001)로 바꿨다. 569MB → 528MB로 줄었으나 무엇으로 줄었는지는 기록에 없다 [code:Dockerfile:29-30] [code:Dockerfile:33-37] [code:Dockerfile:43] (2026-10-15~2026-10-18 사이) |
+| `data/rag_context.py`의 pymilvus import를 함수 안으로 | 251MB를 줄일 수 있으나 05·06 노트북과 공유하는 모듈이다. 평가와 서비스가 같은 코드를 쓴다는 원칙(09번 3-3절)을 깨면서까지 줄일 이유가 없고, ContextBuilder를 붙이면 실제로 필요해진다. 손대지 않았다 [code:data/rag_context.py:15] [code:app/main.py:21] [code:app/main.py:46] [docs:02_pipeline/09_ui_design.md] (2026-10-15~2026-10-18 사이) |
 | GPU 패스스루로 Ollama를 Pod에 | 호스트에서 GPU 드라이버를 떼어내야 한다. 호스트 Ollama를 포기하는 대가가 크다 |
 | 검색을 CPU로 돌려 Pod에 | 리랭커가 후보를 쌍으로 비교하는 구조라 지연이 크게 늘어난다. 고객 전화를 받으며 쓰는 도구에 맞지 않는다 |
 | 노드 `/etc/hosts`에 Ingress 주소 추가 | 이름은 풀렸으나 443이 열려 있지 않아 connection refused. NodePort는 30000~32767만 쓸 수 있다 <!-- 확인 못 함: 클러스터에서 한 시도 --> |
@@ -602,7 +602,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [ ]  **model-service가 죽으면 펫퍼민트와 런슈즈 둘 다 검색이 멈춘다. 전에는 펫퍼민트만 멈췄다(2026-11-11 분리 뒤).** 이때 search-service는 `/search` · `/embed` · `/health`가 503(models "unreachable")이 되고 앱은 `search_unavailable`을 낸다. model-service 없이 search-service를 띄우면 기동이 실패하고 systemd Restart가 다시 시도한다(시험에서 확인) [code:search_service/main.py:14] [code:search_service/main.py:81-82] [code:search_service/main.py:98-99] [code:search_service/main.py:106-124] [code:app/services/answer.py:226-228] [code:deploy/host/petmint-search.service:41-42]
 - [ ]  **재부팅 순서가 한 단계 늘었는데 실제 재부팅 시험은 하지 않았다(2026-11-11 사용자).** 확인할 것은 1-26절 [code:deploy/host/petmint-search.service:12]
 - [ ]  **Milvus는 아직 호스트 도커다.** GPU를 쓰지 않으므로 Pod로 옮길 수 있으나, standalone이라도 etcd와 MinIO가 따라붙어 자원을 더 먹는다. search-service와 함께 옮길지 판단한다.
-- [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다 [code:app/requirements.txt] [code:data/rag_context.py:15] (2026-10-15 기준) <!-- 확인 못 함: 레이어 크기는 빌드 결과 -->
+- [ ]  **이미지 크기의 절반이 pymilvus다.** pip 레이어 251MB 중 상당 부분이 pandas·numpy·grpc다. 3절 표의 이유로 두었다 [code:app/requirements.txt] [code:data/rag_context.py:15] (2026-10-15~2026-10-18 사이) <!-- 확인 못 함: 레이어 크기는 빌드 결과 -->
 - [ ]  **DB 마이그레이션은 되돌아가지 않는다.** 매니페스트는 ArgoCD가 Git 기준으로 되돌리지만 스키마는 아니다. 깨는 변경이 생기면 그때 정한다
 - [ ]  **libvirt 관리망(192.168.121.x)은 DHCP다.** VM을 다시 만들면 주소가 바뀐다. 노드 설정에는 고정 IP인 사설망(192.168.122.x)을 쓴다 <!-- 확인 못 함: 호스트 libvirt 와 Vagrantfile -->
 - [ ]  **ArgoCD는 `ssl-passthrough`를 뺀 상태다.** 나중에 그 플래그를 켜면 붙인 인증서가 쓰이지 않는다
@@ -642,7 +642,7 @@ CoreDNS 는 **이미지 이름이 어디서나 같아진다는 점**이 크다. 
 - [x]  푸시하면 Jenkins가 빌드해 Harbor에 태그가 올라가는가
 - [x]  Jenkins가 매니페스트 태그를 바꿔 push하는가
 - [x]  ArgoCD가 그 변경을 감지하는가 (3분 조회) <!-- 확인 못 함: ArgoCD 설정은 클러스터 -->
-- [x]  Sync하면 Pod가 한 대씩 새 태그로 교체되는가 (부하 중 HTTP 7,941건 실패 0) (2026-10-16 기준) <!-- 확인 못 함: 클러스터에서 잰 값 -->
+- [x]  Sync하면 Pod가 한 대씩 새 태그로 교체되는가 (부하 중 HTTP 7,941건 실패 0) (2026-10-16~2026-10-18 사이) <!-- 확인 못 함: 클러스터에서 잰 값 -->
 - [x]  매니페스트 변경이 빌드를 다시 트리거하지 않는가 [code:Jenkinsfile:12-13] [code:Jenkinsfile:137]
 - [x]  kubectl로 바꾸면 ArgoCD가 OutOfSync로 잡는가
 - [x]  Pod에서 호스트의 Ollama·Milvus·search-service에 닿는가

@@ -172,7 +172,7 @@ C를 하면 쌍 구성(build)과 질문 추가(rewrite)의 효과가 섞이지 �
 
 학습 뒤 할 것: 세 모델(베이스·4811·rebuild)+rebuild2를 같은 코드로(청크 선택 수정 반영) 정답 발췌 입력·검색 입력(top 3) 두 가지로 잰다. [code:data/answer_eval.py:214] [c:c8d9211]
 rebuild 체크포인트 350·400·426, rebuild2 체크포인트 전부를 잰다. [c:c8d9211]
-검색 입력 사전 확인(모델 없이): gold 97건 중 정답 조문이 top 3 안 81건(1위 66), answerable 69/85. [code:data/review/answer_eval_rebuild2_20261016.md:35-43] [c:c8d9211] (2026-10-15 기준)
+검색 입력 사전 확인(모델 없이): gold 97건 중 정답 조문이 top 3 안 81건(1위 66), answerable 69/85. [code:data/review/answer_eval_rebuild2_20261016.md:35-43] [c:c8d9211] (2026-10-15 기준) <!-- 확인 못 함: 출처 기록을 찾지 못함(81건, 1위 66. 69/85만 걸어 둔 기록이 받친다) -->
 
 **build 결과(22:08)** — 첫 실행은 확인 검사에서 멈췄다(qwen3:14b가 no_answer 760건 중 162건 = 21.3%를 답 있음으로 봄, 상한 15%). [code:data/review/na_confirm_qwen_check12_20261015.md:3] [code:data/finetune_data.py:76] (2026-10-15 기준)
 12건을 읽어 보니 과함 8 · 맞음 3 · 애매 1(`data/review/na_confirm_qwen_check12_20261015.md`) — 비율 대부분이 확인 모델의 과잉 판정이다. [code:data/review/na_confirm_qwen_check12_20261015.md:20] (2026-10-15 기준)
@@ -237,8 +237,8 @@ B-1: rebuild의 학습용 final(7,598 QA)에 새 build 설정만 적용(`--name=
 - 버린 2,691건은 검색 top 6이 전부 정답 단위이거나 답이 글자로 든 발췌였다. 60건 표본을 다시 검색해 보니 top 12에서 40건, [code:data/rebuild.py:38] [c:657dcab] (2026-10-16 기준)
   top 20에서 47건이 방해 후보를 얻었다. [c:657dcab] (2026-10-16 기준)
 - B-1은 rebuild의 질문을 썼다. 이 중 실제로 재작성된 것은 4,007/7,598뿐이다. 순서 B에서는 05 QA 전부를 재작성하므로 [c:657dcab] (2026-10-16 기준)
-  질문과 정답 발췌의 겹침이 낮아진다. 실험 G(n≈40)에서 겹침 0.2 미만 비율은 rebuild final 5.3%, A(재작성 없음) 2.3%, [code:data/review/exp_g_gen_model_20261016_1253.md] [c:657dcab] (2026-10-16 기준)
-  B_qwen(qwen 재작성) 11.1%였다. B-1은 이 변화를 반영하지 못해 비관적인 쪽으로 기운 예측이다. [c:657dcab]
+  질문과 정답 발췌의 겹침이 낮아진다. 실험 G(n≈40)에서 겹침 0.2 미만 비율은 rebuild final 5.3%, A(재작성 없음) 2.3%, [c:657dcab] (2026-10-16 기준) <!-- 확인 못 함: 출처 기록을 찾지 못함 -->
+  B_qwen(qwen 재작성) 11.1%였다. B-1은 이 변화를 반영하지 못해 비관적인 쪽으로 기운 예측이다. [c:657dcab] <!-- 확인 못 함: 출처 기록을 찾지 못함 -->
 
 사용자 결정(B-1 뒤): 방해 후보는 top 20으로 늘리고 그래도 없으면 gold_only로 남긴다 · B-1′(qwen 재작성 후 build) 실행 · [code:data/rebuild.py:38] [c:026a7b9]
 등급 어구는 재작성의 대체 방식(전체 10%) · 미달이면 07번 10-7절 3번(짧은 구어체 양성). [code:data/rebuild.py:52] [docs:02_pipeline/07_finetuning.md:565] [c:026a7b9]

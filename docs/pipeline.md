@@ -1,5 +1,5 @@
 <!--
-다루는 곳: data/, db/, app/, web/, search_service/, deploy/, Dockerfile, .dockerignore, Jenkinsfile, .env.example
+다루는 곳: data/, db/, app/, web/, search_service/, deploy/, Dockerfile, .dockerignore, Jenkinsfile, .env.example, CLAUDE.md, KNOWN_ISSUES.md
 읽은 커밋: 6710b83
 -->
 > 상태: 00~04 데이터 구축 완료. 05~07 재구축은 rebuild5b까지 했고 운영 모델은 rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`, 07 11절). 08 Ragas는 파일럿 1회(2026-10-18) 뒤 멈춰 있다. 09~14 화면·세션 저장·터널·배포는 구현됐다(클러스터 이주 2026-10-16). 배포 Pod는 호스트 search-service(192.168.122.1:8100, `/health`의 corpora 강아지·고양이·인사규정 모두 true)와 rebuild4 모델을 쓴다(2026-11-09 확인). 15 모니터링은 매니페스트만 작성(2026-10-18, 적용 전). [code:deploy/host/petmint-search.service:21] [code:search_service/main.py:119-124] [docs:02_pipeline/07_finetuning.md:574] [docs:02_pipeline/08_ragas_eval.md] [docs:02_pipeline/15_monitoring.md] [c:2a895d7] <!-- 확인 못 함: 배포 Pod 설정과 /health 응답은 클러스터와 실행 중 상태라 저장소 밖 -->
@@ -283,7 +283,7 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
     hr_preprocess.py      인사규정 전처리
     hr_index.py           인사규정 색인
   db/
-    migrations/petmint/          번호 붙인 SQL (0001~0008)
+    migrations/petmint/          번호 붙인 SQL (0001~0012)
     migrations/insurance_core/   고객 원장 스키마
     conn.py               접속 정보 (전부 환경변수, 기본값 없음)
     migrate.py            미적용 파일을 순서대로 적용
@@ -297,12 +297,12 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
                           titles, turn_log, policy_data, context, followup, payout,
                           code_rules, customer_facts, guardrail 등
     routers/              customers, sessions, consultations, articles,
-                          feedback, chat_ws, auth, me
+                          feedback, chat_ws, auth, me, admin
     fixtures/             샘플 고객 (git 제외, example만 올림)
     requirements.txt      컨테이너용 의존성
   web/                    React + TypeScript (Vite)
     src/
-      pages/              ModeSelect / Chat / CustomerSelect / Consultation
+      pages/              ModeSelect / Chat / CustomerSelect / Consultation / Admin
       components/         TopBar, SourcePanel, CalcCard, ExclusionBanner, CallAlert,
                           PastConsultations, TurnView, ArchDiagram 등
       hooks/              useChatSocket, useCallSimulator 등
@@ -311,7 +311,8 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
       styles/             tokens.css(:root), global.css
     dist/                 빌드 결과 — FastAPI가 StaticFiles로 서빙
   deploy/
-    scripts/host-nfs-setup.sh   매니페스트는 ronanlab-infra/apps/petmint/
+    host/                 호스트 systemd 유닛(petmint-search.service), 개발 DB 백업(dev-mysql-backup.sh), milvus/
+    scripts/host-nfs-setup.sh, host-nfs-backup-setup.sh   매니페스트는 ronanlab-infra/apps/petmint/
   models/
     base/Tri-7B/          HF 원본 (safetensors, 29GB)
     gguf/                 Tri-7B·kabyul-tri-7b-rag1-rebuild{4,5,5b} GGUF와 Modelfile
@@ -323,7 +324,7 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
     README.md             문서 목록과 규칙 (노션 사본 아님)
     requirements.md, pipeline.md   상위 설계 문서 (원천은 이 폴더, 노션은 사본)
     02_pipeline/          단계 설계 문서 00~16 (노션 02의 하위 페이지)
-    ops/                  작업 문서 — 저녁실행.md, 모드검증.md (노션 사본 아님)
+    ops/                  작업 문서 — 저녁실행.md, 모드검증.md, 배포기록.md (노션 사본 아님)
     next_rebuild.md       작업 문서 — 재구축 지시서 (노션 사본 아님)
     img/                  문서 그림
   Dockerfile, .dockerignore, Jenkinsfile, .env.example
@@ -332,11 +333,7 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
   _executed/              노트북 실행 결과물 (git 제외)
   KNOWN_ISSUES.md         미해결 항목과 보류 사유
 ```
-<!-- 근거(위 코드 울타리 안 폴더 구조): [code:data/] [code:db/] [code:app/] [code:web/src/] [code:deploy/] [code:Dockerfile] [code:Jenkinsfile] [code:.env.example] [code:KNOWN_ISSUES.md] -->
-<!-- 안 맞음: 문서는 「migrations/petmint/          번호 붙인 SQL (0001~0008)」, 코드는 0001부터 「0012_accounts_precreated.sql」까지(db/migrations/petmint/) -->
-<!-- 안 맞음: 문서 routers 목록에 admin이 없다, 코드는 app/routers/admin.py가 있다. pages 목록에 Admin이 없다, 코드는 web/src/pages/Admin.tsx가 있다 -->
-<!-- 안 맞음: 문서는 deploy/ 아래 「scripts/host-nfs-setup.sh」 하나, 코드는 deploy/host/(petmint-search.service, dev-mysql-backup.sh, milvus/)와 deploy/scripts/host-nfs-backup-setup.sh도 있다 -->
-<!-- 안 맞음: 문서는 docs/ops/ 「저녁실행.md, 모드검증.md」, 코드는 배포기록.md도 있다(docs/README.md 표) -->
+<!-- 근거(위 코드 울타리 안 폴더 구조): [code:data/] [code:db/] [code:db/migrations/petmint/0012_accounts_precreated.sql] [code:app/] [code:app/routers/admin.py] [code:web/src/] [code:web/src/pages/Admin.tsx] [code:deploy/] [code:deploy/host/petmint-search.service] [code:deploy/host/dev-mysql-backup.sh] [code:deploy/host/milvus/] [code:deploy/scripts/host-nfs-backup-setup.sh] [code:Dockerfile] [code:Jenkinsfile] [code:.env.example] [code:KNOWN_ISSUES.md] -->
 
 ---
 
@@ -344,10 +341,10 @@ FAQ를 만들 때는 "이미 정해진 조항 + 그 조항이 참조하는 다�
 
 - vLLM 서빙 최적화, 임베딩 모델 양자화
 - **참조 조문을 엮는 학습 데이터** — 다른 조 참조가 붙은 단위는 39%인데 답변이 그 내용을 쓰는 것은 17%다(최종 데이터 기준 5.9%). 05 프롬프트 수정을 두 번 시도했으나 7B가 지시를 소화하지 못했다(질문 노출 25.8%, fabricated 13.2%, 심판 탈락 76%). 더 큰 모델을 쓰거나 다른 방법이 필요하다 — 코드는 `REF_ROUNDS=0`으로 꺼둔 채로 남겨 두었다 [code:data/faq_generate.py:23] [code:data/faq_generate.py:211] [code:data/review/ref_usage_20261014_2008.md:7] [code:data/review/ref_usage_20261014_2053.md:10] [code:data/review/ref_usage_20261014_2053.md:19] (2026-10-14 기준)
-- **부담보 동의어 대조** — 현재 프론트에서 글자 일치로만 비교한다. "무릎"과 "슬개골" 같은 동의어는 잡지 못한다 [code:web/src/components/ExclusionBanner.tsx:3-8] [code:app/services/payout.py:668-672] [code:app/services/answer.py:238] <!-- 안 맞음: 문서는 「현재 프론트에서 글자 일치로만 비교한다」, 코드는 「③ 같은 부위 다른 이름(SYNONYMS — 무릎뼈·슬관절 ↔ 슬개골)」 서버 대조를 보내고 화면 글자 대조는 그 값이 없을 때만 쓴다(app/services/payout.py:671, web/src/pages/Consultation.tsx:76) -->
+- **부담보 동의어 대조** — ✓ 서버가 대조한다(2026-10-21, `payout.matched_exclusions`). 부담보 이름과 3글자 이상 낱말, 특정질병 분류표(별첨)에서 그 분류에 든 질병 이름, 같은 부위 다른 이름(`SYNONYMS`, `data/synonyms.py`)까지 보고 걸린 것을 화면 배너로 보낸다(`ExclusionsMsg`). 그래서 "무릎"과 "슬개골" 같은 동의어도 잡는다. 화면의 글자 대조는 서버 값이 없는 지난 턴(다시 연 상담, 최근 상담, 관리 화면 기록)에만 쓴다 [code:app/services/payout.py:668-692] [code:app/services/payout.py:695-698] [code:app/services/answer.py:238] [code:web/src/pages/Consultation.tsx:75-76] [code:web/src/components/PastConsultations.tsx:160] [code:web/src/pages/Admin.tsx:238] [code:web/src/components/ExclusionBanner.tsx:3-8] [c:2d01d0f] [c:68f6312]
 - **09번 UI — 메타데이터 선택 받기** ✓ 운영(search-service 연결 2026-10-21 뒤). 고객 레코드의 `section_name`·`coverage_type`으로 만든 `SearchScope`(`customers.scope_for`)를 턴의 검색 범위로 넘긴다(`answer.scope_of`) [code:app/services/customers.py:64-66] [code:app/services/answer.py:183-189]
 - **09번 UI — 판단 불가 시 되묻기** ✓ 09번 4절 조건대로 `answer.clarify_options`가 판정하고 `resume_clarified`가 고른 쪽으로 잇는다 — 로컬·배포 서버 확인(2026-10-20·21, 검증 R3, 09번 4절) [code:app/services/answer.py:268] [code:app/services/answer.py:310] [docs:02_pipeline/09_ui_design.md:254] [docs:02_pipeline/09_ui_design.md:322]
 - **같은 질문으로 양성과 no_answer 쌍 구성** — no_answer를 gold 빼고 만들면 겹침이 구조적으로 낮아져, 모델이 발췌를 읽지 않고 질문 형태만 보고 라벨을 맞힌다. 지금 양쪽에 다 나오는 질문은 11개뿐이다(07번 10절) [docs:02_pipeline/07_finetuning.md:563] [code:data/review/refusal_overlap_20261015.md] (2026-10-15 기준)
-- **VM 메모리 증설** — Vagrantfile 4096 → 8192. 호스트가 61GB에 여유 44GB라 넉넉하다. `vagrant reload`가 필요하므로 아래 노드 재배치와 함께 한다 [c:d833182] (2026-10-18 기준) <!-- 확인 못 함: Vagrantfile과 호스트 메모리는 저장소 밖. 14번 1-24절은 워커 4대 8GB라고 적었다 -->
+- **VM 메모리 증설** — ✓ 워커 Vagrantfile 4096 → 8192, 워커도 3대에서 4대로 늘렸다(2026-11-10, 14번 1-24절). 호스트가 61GB에 여유 44GB라 넉넉하다(2026-10-18 이전). [docs:02_pipeline/14_deployment.md:433] [c:d833182] <!-- 확인 못 함: Vagrantfile과 호스트 메모리는 저장소 밖. 14번 1-24절은 워커 4대 8GB라고 적었다 -->
 - **노드 재배치** — w1에 MySQL+Harbor, w2·w3에 앱, Jenkins는 w3에 둔다. Jenkins와 MySQL을 떼어놓는 것이 핵심이다. Jenkins는 빌드 때 메모리가 튀지만 서비스 경로 밖이다 [c:d833182] <!-- 확인 못 함: 노드 배치는 클러스터라 저장소 밖 -->
 - **사내규정 모드** ✓ 전처리(청크 49개, 참조 그래프 7엣지). ✓ Milvus 색인(hr_regulation 49건)·Pod 쪽 `SearchScope.unrestricted("인사규정")`(`answer.scope_of`)로 운영 — 2절 그림의 사내규정 경로가 돈다(02번 상태 줄, `/health` corpora.인사규정 true 2026-11-09) [code:data/hr_preprocess.py] [code:data/hr_index.py] [code:app/services/answer.py:187-188] [code:search_service/main.py:119-122] [docs:02_pipeline/02_embedding_index.md:1] [docs:02_pipeline/03b_reference_graph.md:76] <!-- 확인 못 함: /health 응답은 실행 중 상태 -->

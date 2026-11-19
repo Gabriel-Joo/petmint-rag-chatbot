@@ -1,10 +1,10 @@
 <!--
-다루는 곳: app/, data/search_scope.py, data/search_engine.py, data/rag_context.py, data/limit_table.py, data/prompts.py, search_service/, db/conn.py, db/migrate.py, db/bootstrap.py, db/seed_insurance_core.py, db/wait_ready.py, db/migrations/, db/fixtures/claims.json, web/src/, deploy/host/petmint-search.service
+다루는 곳: app/, data/search_scope.py, data/search_engine.py, data/rag_context.py, data/limit_table.py, data/prompts.py, search_service/, db/conn.py, db/migrate.py, db/bootstrap.py, db/seed_insurance_core.py, db/wait_ready.py, db/migrations/, db/fixtures/claims.json, web/src/, deploy/host/petmint-search.service, tests/test_context.py, tests/test_followup.py, tests/test_daycalc.py, tests/test_amount_intent.py
 읽은 커밋: 6710b83
 -->
 ---
 
-> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18). ✓ search-service 연결·업무특화 모델 rebuild4 운영(10-21, 14번 1-11절) — 검색 경로·되묻기·계산 카드가 운영에서 돈다. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). ✓ 앱 로그인(7-4절, 10-28). △ cancel·가정 질문 배너는 코드 없음. [code:data/search_scope.py:105-200] [code:app/services/sessions.py] [code:app/config.py:70-71] [code:app/services/answer.py:390] [c:4ed4946] [code:data/review/verify_modes_20261021.md:53] [code:app/services/followup.py:25-36] [code:app/services/context.py:115-156] [code:app/routers/auth.py] [code:app/routers/chat_ws.py:14] [code:app/routers/chat_ws.py:166-167] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 배포 서버 확인과 rebuild4 운영은 클러스터 상태 -->
+> 상태: 설계 확정, 구현 중. ✓ 3절 SearchScope(10-13), 6-2·6-3절 MySQL 연동(10-15), 모델명 환경변수(10-18). ✓ 일반 모드 답변(검색 없이 생성·스트리밍) 배포 서버에서 확인(10-18). ✓ used_references — 가장 길게 겹친 발췌 하나만 채택(실오판 43→21건, 답변 234건)·발췌와 검색 결과를 위치로 짝짓기(10-18). ✓ search-service 연결·업무특화 모델 rebuild4 운영(10-21, 14번 1-4절) — 검색 경로·되묻기·계산 카드가 운영에서 돈다. ✓ 멀티턴(후속 판별 규칙·모드별 처리·↳ 표시, 5절) 로컬 확인(10-21). ✓ 앱 로그인(7-4절, 10-28). △ cancel·가정 질문 배너는 코드 없음. [code:data/search_scope.py:105-200] [code:app/services/sessions.py] [code:app/config.py:70-71] [code:app/services/answer.py:390] [c:4ed4946] [code:data/review/verify_modes_20261021.md:53] [code:app/services/followup.py:25-36] [code:app/services/context.py:115-156] [code:app/routers/auth.py] [code:app/routers/chat_ws.py:14] [code:app/routers/chat_ws.py:166-167] [docs:02_pipeline/14_deployment.md] <!-- 확인 못 함: 배포 서버 확인과 rebuild4 운영은 클러스터 상태 -->
 > 
 
 ---
@@ -120,7 +120,7 @@
 
 **최근 상담 탭이 필요한 이유**: 전화가 무작위로 오므로 방금 통화한 고객이 목록 어딘가에 묻힌다. "아까 그 고객"을 다시 찾을 때 바로 보여야 한다. 세션 기록이 채워주므로 MySQL 연동 후에 제대로 동작한다(6-3절). [code:app/routers/consultations.py:10] [code:app/services/sessions.py:154-162]
 
-> **종 조합으로 나누던 카드 3종(둘 다 보유 / 강아지만 / 고양이만)은 폐기했다 (2026-10-14).** 세 분류의 유일한 차이는 "종 토글을 띄우느냐"였는데, 토글이 종이 아니라 **반려동물 개체 선택**으로 바뀐다(2-3절). 개체를 고르면 종이 따라오고 거기서 약관이 정해지므로, 고객을 종 조합으로 나눌 이유가 없다. 강아지 2마리를 기르는 고객이 어느 분류에도 제대로 들어가지 않았던 것도 같은 이유다. [code:web/src/api/types.ts:38] [code:web/src/components/SpeciesToggle.tsx] <!-- 안 맞음: 문서는 「카드 3종(둘 다 보유 / 강아지만 / 고양이만)은 폐기했다」, 코드는 「def card(self) -> Literal["둘 다 보유", "강아지만", "고양이만"]」(app/schemas.py:86-93, 응답에 computed_field로 남아 있고 화면만 쓰지 않는다) -->
+> **종 조합으로 나누던 카드 3종(둘 다 보유 / 강아지만 / 고양이만)은 화면에서 폐기했다 (2026-10-14).** 고객 응답의 `card` 값은 백엔드에 남아 있고 화면이 쓰지 않는다. 세 분류의 유일한 차이는 "종 토글을 띄우느냐"였는데, 토글이 종이 아니라 **반려동물 개체 선택**으로 바뀐다(2-3절). 개체를 고르면 종이 따라오고 거기서 약관이 정해지므로, 고객을 종 조합으로 나눌 이유가 없다. 강아지 2마리를 기르는 고객이 어느 분류에도 제대로 들어가지 않았던 것도 같은 이유다. [code:web/src/api/types.ts:38] [code:web/src/components/SpeciesToggle.tsx] [code:app/schemas.py:86-93]
 > 
 > 
 > 다만 **샘플 고객 10명은 여러 경우를 덮어야 한다** — 한 종만, 두 종 보유, 같은 종 여러 마리, 통원·입원 등급이 다른 경우, 부담보가 있는 경우. 이것은 픽스처 구성의 문제지 UI 분류의 문제가 아니다. <!-- 확인 못 함: 실제 고객 픽스처는 git 밖이다(app/fixtures/customers.example.json은 1명) -->
@@ -186,11 +186,11 @@
 
 #### 3. 검색 필터 — 설계 검토에서 발견한 결함
 
-**✓ 2026-10-13 구현.** 회귀 세트 93문항 시점에 56/87 → 75/87, MRR 0.569 → 0.677 확인. 지금 세트는 103문항이라 재측정이 필요하다. [code:data/search_scope.py:105-200] [code:data/review/eval_results_summary.md:108-109] [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [c:ba373fe] <!-- 안 맞음: 문서는 「103문항이라 재측정이 필요하다」, data/review/eval_results_summary.md:110에는 같은 날 97문항으로 다시 잰 줄(hit@5 88, MRR 0.745)이 있다 -->
+**✓ 2026-10-13 구현.** 회귀 세트 93문항 시점에 56/87 → 75/87, MRR 0.569 → 0.677 확인. 지금 세트는 103문항이고, 같은 날 정답 조항이 있는 97문항으로 다시 재면 88/97, MRR 0.745다. [code:data/search_scope.py:105-200] [code:data/review/eval_results_summary.md:108-110] [code:data/eval/search_regression.json] [docs:02_pipeline/04_rag_assembly.md] [c:ba373fe]
 
 #### 3-1. 지금 구조에 UI 필터를 그대로 넣으면 검색이 망가진다
 
-`search_engine.py`는 등급·유형 필터를 컬렉션 전체에 건다. <!-- 안 맞음: 이 절은 2026-10-13 고치기 전 구조다. 지금 코드는 「(section_name IS NULL or section_name not in [...])」로 의료비 밖 청크를 살린다(data/search_scope.py:178-194) -->
+`search_engine.py`는 등급·유형 필터를 컬렉션 전체에 걸었다(2026-10-13 SearchScope 전). 지금은 의료비 특약 밖 청크를 늘 통과시킨다. [code:data/search_scope.py:178-194] [code:data/review/eval_results_summary.md:108]
 
 ```python
 coverage_type == "고급형" and type == "Ⅱ"
@@ -205,7 +205,7 @@ coverage_type == "고급형" and type == "Ⅱ"
 → 강아지 928건 중 약 750건
 ```
 
-Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않는다. BM25 쪽도 마찬가지다. 의료비 특약 안에서도 등급 없는 행이 섹션마다 8~13건 있다(제2조 이후 조문). (2026-10-14 기준) <!-- 확인 못 함: 청크 파일(data/chunks)이 git 밖이라 건수를 대조할 수 없다 -->
+Milvus에서 `coverage_type == "고급형"`은 null 행을 통과시키지 않는다. BM25 쪽도 마찬가지다. 의료비 특약 안에서도 등급 없는 행이 섹션마다 8~13건 있다(제2조 이후 조문). <!-- 잰 날짜 모름 --> <!-- 확인 못 함: 청크 파일(data/chunks)이 git 밖이라 건수를 대조할 수 없다 -->
 
 **결과**: 고급형Ⅱ 가입자가 "계약 해지하면 환급금 있나요?"를 물으면 보통약관이 한 건도 안 나오고 의료비 특약 제1조만 돌아온다. [code:data/search_scope.py:178-194] [docs:02_pipeline/04_rag_assembly.md]
 
@@ -233,14 +233,13 @@ or (가입한 의료비 특약 and (내 등급 or 등급 없음))
 data/search_scope.py (신규)
 
 Subscription   section_name, coverage_type
-SearchScope    species, subscriptions, focus_sections
+SearchScope    species, medical, excluded
                milvus_expr()  → Milvus 필터식
                allows(chunk)  → BM25 후보 필터, 같은 의미
                from_query()   → 기존 정규식 동작 (04번 측정 재현용)
 ```
-<!-- 안 맞음: 문서는 「SearchScope    species, subscriptions, focus_sections」, 코드는 「species」「medical: tuple[Subscription, ...] | None」「excluded: frozenset[str]」(data/search_scope.py:105-109). 생성은 for_policies, unrestricted, from_query(data/search_scope.py:121-150) -->
 
-`data/`에 두는 이유는 08번 Ragas 평가도 서비스와 같은 필터를 써야 하기 때문이다. [code:data/search_scope.py] [code:search_service/main.py:6-8]
+`data/`에 두는 이유는 08번 Ragas 평가도 서비스와 같은 필터를 써야 하기 때문이다. [code:data/search_scope.py:99-109] [code:search_service/main.py:6-8]
 
 기존 `_extract_*_filter`는 지우지 않고 `from_query`로 옮긴다. 04번 측정을 같은 결과로 재현할 수 있어야 한다. 앱에서는 정규식을 **가정 질문 감지기**로만 쓴다. [code:data/search_scope.py:58-92] [code:data/search_scope.py:143-150] [code:app/services/payout.py:441] [code:app/services/payout.py:469]
 
@@ -321,7 +320,7 @@ SearchScope    species, subscriptions, focus_sections
 
 - 되묻기 직후 턴: 앞 턴 답이 되묻기 문장이고 이번에 금액을 말했다 — 후속 규칙(금액만 16자 이하)에 안 걸리는 긴 답도. 그 금액은 치료비로 본다(치료비 낱말이 없는 "40만원이요"도 카드가 뜬다) [code:app/services/payout.py:848-858] [code:app/services/context.py:124-128] [code:app/services/followup.py:21]
 - 보상비율은 `limit_table`에서(실속형 50%), 정수 계산. `calculate_payout`이 0.7을 실수로 곱해 1원 모자라던 것도 같이 고쳤다(치료비 4천원~300만원 1천원 간격 5,922개 중 722개, 예: 41,000원 → 7,699원) [code:data/limit_table.py:17] [code:data/limit_table.py:72-89] [c:2d01d0f]
-- 부담보 대조는 화면 배너와 같은 글자 대조(공백 무시 전체 일치 또는 3글자 이상 낱말). 배너도 후속 턴은 기준 질문까지 본다 [code:app/services/payout.py:668-681] [code:app/services/answer.py:236] <!-- 안 맞음: 문서는 「공백 무시 전체 일치 또는 3글자 이상 낱말」, 코드는 그 밖에 「② 특정질병 분류표(별첨)에서 그 분류에 든 질병 이름」「③ 같은 부위 다른 이름(SYNONYMS)」까지 대조한다(app/services/payout.py:669-671) -->
+- 부담보 대조는 화면 배너와 같은 글자 대조(공백 무시 전체 일치 또는 3글자 이상 낱말, 특정질병 분류표에서 그 분류에 든 질병 이름, 같은 부위 다른 이름). 배너도 후속 턴은 기준 질문까지 본다 [code:app/services/payout.py:668-681] [code:app/services/answer.py:236]
 - 응답: 모델을 부르지 않아 0.19~0.39초(전엔 첫 토큰 0.75~2.3초). 처음엔 되묻기 직후 턴만 코드가 답했고, 2026-10-21부터는 의료비 카드가 계산되는 모든 턴을 코드가 답한다 — R2 같은 단독 금액 질문도(`payout.question_turn`, 2-3절·16번 ⑦) [c:2d01d0f] [c:fb31d25] [code:app/services/payout.py:276] [docs:02_pipeline/16_code_answers.md]
 
 ✓ 되묻기 판정·`clarify`·`clarify_answer`로 잇기(answer.py `clarify_options`·`resume_clarified`) — 로컬·배포 서버 확인(10-20·21, 검증 R3). ✓ 금액 되묻기(10-21, 검증 R14·R15). ✓ 여러 날 입원·여러 번 통원 — 날짜별 입력 카드·범위·청구 이력(10-21, 검증 R18~R29). △ 가정 질문 판정(`is_hypothetical`)과 "가입 계약 기준 아님" 배너는 코드 없음 — 가입과 다른 등급·유형의 한도 질문은 가정 등급 한도표(`payout.hypothetical_card`, 2026-10-21, 16번 ⑤)가 답한다. [code:app/services/answer.py:268] [code:app/services/answer.py:310] [code:data/review/verify_modes_20261021.md:21] [code:app/services/answer.py:19] [code:app/services/payout.py:462] <!-- 확인 못 함: 배포 서버 확인은 클러스터 상태 -->
@@ -531,18 +530,18 @@ customer_id · agent_email · mode는 sessions에 있으므로 턴에 중복해 
 
 **`retrieved`에 본문까지 남기는 이유**: 08번 Ragas는 질문·답변·컨텍스트가 모두 필요하다. 키는 `rag_context.graph_key`를 쓴다 — Milvus auto_id는 재색인하면 바뀌므로 쓰지 않는다. [code:data/rag_context.py:61] [code:db/migrations/petmint/0001_init.sql:62-77]
 
-**`prompt_version`·`index_version`**: 이 값이 없으면 로그를 나중에 비교할 수 없다. [code:app/config.py:80-81] <!-- 안 맞음: 문서는 로그 비교에 index_version이 필요하다고 하나, 코드는 「INDEX_VERSION = "unset"」(app/config.py:80)으로 아직 값을 넣지 않는다 -->
+**`prompt_version`·`index_version`**: 이 값이 없으면 로그를 나중에 비교할 수 없다. 지금 `index_version`은 "unset"으로 남는다(재색인 때 올린다). [code:app/config.py:80-81]
 
 **전화번호와 이름은 로그에 넣지 않는다.** `customer_id`만 남긴다. [code:app/schemas.py:121-122]
 
 **저장소는 MySQL이다 (2026-10-14 변경).** 초안은 JSONL 파일이었다 — 쓰기만 하고 08번 평가에서 통째로 읽으면 충분했기 때문이다. 그러나 상담 내역(고객별·기간별 조회)을 붙이면 매번 파일을 처음부터 훑어야 한다. 세션도 DB로 가면 재시작 시 소멸 문제가 풀린다(6-2절). [code:app/services/turn_log.py:87] [code:app/services/sessions.py]
 
-로그 테이블은 **다섯**이다(앱 로그인 accounts·auth_sessions 둘은 따로). 칼럼 상세는 12번 1-1절이 기준이다. [code:db/migrations/petmint/0001_init.sql:1] [code:db/migrations/petmint/0006_accounts.sql] [docs:02_pipeline/12_data_storage.md] <!-- 안 맞음: 문서는 로그 다섯과 로그인 둘만 적었고, 코드에는 관리자 열람 기록 「CREATE TABLE admin_views」(db/migrations/petmint/0011_admin_views.sql:5)도 있다 -->
+로그 테이블은 **다섯**이다(앱 로그인 accounts·auth_sessions 둘과 관리자 열람 기록 admin_views 하나는 따로). 칼럼 상세는 12번 1-1절이 기준이다. [code:db/migrations/petmint/0001_init.sql:1] [code:db/migrations/petmint/0006_accounts.sql] [docs:02_pipeline/12_data_storage.md] [code:db/migrations/petmint/0011_admin_views.sql:5]
 
 | 테이블 | 내용 |
 | --- | --- |
 | sessions | session_id, mode, customer_id, agent_email, title, 시작·종료 시각, deleted_at, pinned [code:db/migrations/petmint/0001_init.sql:7-21] |
-| turns | turn_id, session_id, 질문, 재작성된 질문, 후속 판별(follow_up·context_kind·context_turns), 답변, 반려동물 스냅샷, is_hypothetical, clarified, code_rule, chosen_section, 모델, prompt_version, index_version, first_token_ms, latency_ms, status, payout [code:db/migrations/petmint/0001_init.sql:23-47] [code:db/migrations/petmint/0002_graph_clarified.sql:22-23] [code:db/migrations/petmint/0004_turn_payout.sql] [code:db/migrations/petmint/0005_turn_followup.sql] [code:db/migrations/petmint/0008_turn_code_rule.sql] <!-- 안 맞음: 문서 칼럼 목록에 없는 「refused」「search_ms」가 코드에 있다(db/migrations/petmint/0009_turn_refused_search_ms.sql:9-10) --> |
+| turns | turn_id, session_id, 질문, 재작성된 질문, 후속 판별(follow_up·context_kind·context_turns), 답변, 반려동물 스냅샷, is_hypothetical, clarified, code_rule, refused, chosen_section, 모델, prompt_version, index_version, first_token_ms, latency_ms, search_ms, status, payout [code:db/migrations/petmint/0001_init.sql:23-47] [code:db/migrations/petmint/0002_graph_clarified.sql:22-23] [code:db/migrations/petmint/0004_turn_payout.sql] [code:db/migrations/petmint/0005_turn_followup.sql] [code:db/migrations/petmint/0008_turn_code_rule.sql] [code:db/migrations/petmint/0009_turn_refused_search_ms.sql:9-10] |
 | turn_scope | 그 턴에 적용된 가입 내용. 특약 하나당 한 줄 [code:db/migrations/petmint/0001_init.sql:49-60] |
 | retrieved | turn_id별 검색 결과. 본문까지 남기므로 행이 가장 많다. 그래프로 따라간 조문도 via_graph로 표시해 함께 남긴다 — 그쪽은 청크가 아니라 graph_key·rank·score가 없다 [code:db/migrations/petmint/0002_graph_clarified.sql:9-20] [code:db/migrations/petmint/0003_graph_score.sql] |
 | feedback | turn_id, 평가. 원본 로그는 고치지 않는다 [code:db/migrations/petmint/0001_init.sql:82-90] |
@@ -583,12 +582,17 @@ GET    /api/auth/me                지금 상담원(auth_mode·이름·팀·역�
 POST   /api/auth/login             사번·비밀번호 → HttpOnly 쿠키(app 모드만, access 모드는 404)
 POST   /api/auth/logout            서버 세션 행과 쿠키를 지운다
 POST   /api/auth/password          현재·새 비밀번호. 이 세션만 남기고 그 직원의 다른 로그인을 끊는다
+GET    /api/auth/demo-accounts     체험 카드(퇴직, 중지 아닌 가상 직원). 체험 로그인이 꺼져 있으면 404
+POST   /api/auth/demo              체험 로그인(비밀번호 없이 그 직원으로). 풀 밖 400, 같은 IP 횟수 넘으면 429
+GET    /api/admin/agents           관리자 화면 상담원 목록(from, to 기간, 31일까지). 관리자가 아니면 404
+GET    /api/admin/agents/{employee_id}/sessions   그 상담원의 상담 목록. 열면 admin_views에 남긴다
+GET    /api/admin/sessions/{session_id}           상담 대화 한 건. 열면 admin_views에 남긴다
+GET    /api/admin/employees        직원 목록
 GET    /api/me/profile             사내규정 본인 정보 블록 — 근속·연차(총/사용/잔여)·자격증(사본 제출 여부)·다음 승진 체류 충족일·
                                    수습 종료·정년퇴직일. 급여·평균임금·수당 금액·평가는 없다. 인사 원장에 없거나 퇴직이면 404
 ```
-<!-- 안 맞음: 문서 목록에 없는 경로가 코드에 있다 — 「GET /api/auth/demo-accounts」「POST /api/auth/demo」(app/routers/auth.py:64, 73), 「/api/admin/agents」「/api/admin/agents/{employee_id}/sessions」「/api/admin/sessions/{session_id}」「/api/admin/employees」(app/routers/admin.py:50-75) -->
 
-`/api/auth/*` 밖의 `/api`는 app 모드에서 로그인이 없으면 401, 임시 비밀번호를 아직 안 바꿨으면 403이다. WS는 4401(로그인 없음·만료)·4403(다른 출처)으로 닫는다. [code:app/deps.py:63-71] [code:app/config.py:28-29] [code:app/routers/chat_ws.py:73-75] [code:app/routers/customers.py:11-32] [code:app/routers/sessions.py:14-73] [code:app/routers/consultations.py:10] [code:app/routers/articles.py:25-41] [code:app/routers/feedback.py:10] [code:app/routers/auth.py:33-99] [code:app/routers/me.py:21-25]
+`/api/auth/*` 밖의 `/api`는 app 모드에서 로그인이 없으면 401, 임시 비밀번호를 아직 안 바꿨으면 403이다. WS는 4401(로그인 없음·만료)·4403(다른 출처)으로 닫는다. [code:app/deps.py:63-71] [code:app/config.py:28-29] [code:app/routers/chat_ws.py:73-75] [code:app/routers/customers.py:11-32] [code:app/routers/sessions.py:14-73] [code:app/routers/consultations.py:10] [code:app/routers/articles.py:25-41] [code:app/routers/feedback.py:10] [code:app/routers/auth.py:33-99] [code:app/routers/me.py:21-25] [code:app/routers/admin.py:22-77]
 
 **읽기와 쓰기가 다르다.** 세션을 바꾸는 작업(PATCH·DELETE·WS·피드백)과 내 목록(`GET /api/sessions`)은 `agent_email`로 거르고, 남의 것은 없는 세션과 같게 404다. 반면 **읽기(`GET /api/sessions/{id}`)는 고객이 있는 세션에 한해 남의 것도 열어준다.** [code:app/routers/sessions.py:36-45] [code:app/services/sessions.py:52-60] [code:app/services/sessions.py:69-72]
 
@@ -631,7 +635,7 @@ GET    /api/me/profile             사내규정 본인 정보 블록 — 근속�
 
 **스트리밍을 쓰는 이유**: 7B가 500자를 만들면 5~10초다. 통째로 기다리면 빈 화면이고, 흘려보내면 0.5초 만에 첫 글자가 나온다. 같은 10초인데 체감이 다르다. [code:app/services/answer.py:363-367] <!-- 확인 못 함: 5~10초와 0.5초는 이 문장에 잰 날짜와 기록이 없다 -->
 
-**답변은 Markdown으로 그린다 — 원시 HTML은 넣지 않는다(2026-10-20 사용자 지시, 커밋 `eaa93cb`)**: 세 모드와 과거 상담 모두 `web/src/components/AnswerMarkdown.tsx`(react-markdown 10.1.0 · remark-gfm 4.0.1 · remark-breaks 4.0.0, 버전 고정)로 그린다. 모델 출력이라 HTML 문자열을 넣지 않고 React 요소로만 만든다 — 원시 HTML(rehype-raw)을 붙이지 않아 `<script>`·`<img onerror>`는 글자로 보이고, `javascript:` 같은 링크 주소는 지우고, 이미지는 그리지 않고(외부 요청), 허용 목록(`ALLOWED`) 밖 요소는 내용만 남긴다. 스트리밍 중에는 덜 닫힌 ``` · ** · `를 그릴 때만 임시로 닫는다(`closeOpenMarks`) — 중간 상태 305개에서 기호가 글자째 보인 것 48 → 0(커밋 당시 측정). (2026-10-21 기준) [code:web/src/components/AnswerMarkdown.tsx:8-10] [code:web/src/components/AnswerMarkdown.tsx:38] [code:web/src/components/AnswerMarkdown.tsx:56-57] [code:web/package.json:15-17] [c:eaa93cb] [c:0432050]
+**답변은 Markdown으로 그린다 — 원시 HTML은 넣지 않는다(2026-10-20 사용자 지시, 커밋 `eaa93cb`)**: 세 모드와 과거 상담 모두 `web/src/components/AnswerMarkdown.tsx`(react-markdown 10.1.0 · remark-gfm 4.0.1 · remark-breaks 4.0.0, 버전 고정)로 그린다. 모델 출력이라 HTML 문자열을 넣지 않고 React 요소로만 만든다 — 원시 HTML(rehype-raw)을 붙이지 않아 `<script>`·`<img onerror>`는 글자로 보이고, `javascript:` 같은 링크 주소는 지우고, 이미지는 그리지 않고(외부 요청), 허용 목록(`ALLOWED`) 밖 요소는 내용만 남긴다. 스트리밍 중에는 덜 닫힌 ``` · ** · `를 그릴 때만 임시로 닫는다(`closeOpenMarks`) — 중간 상태 305개에서 기호가 글자째 보인 것 48 → 0(커밋 당시 측정). (2026-10-20~2026-10-21 사이) [code:web/src/components/AnswerMarkdown.tsx:8-10] [code:web/src/components/AnswerMarkdown.tsx:38] [code:web/src/components/AnswerMarkdown.tsx:56-57] [code:web/package.json:15-17] [c:eaa93cb] [c:0432050]
 
 순서는 context(후속이면) → sources → exclusions(걸리면) → calc → token → tables(있으면) → references → done이고, 되묻기면 clarify에서, 실패면 error에서 멈춘다(answer.py·chat_ws.py). `calc`의 `result`는 `CalcResult` — `kind`로 갈리는 medical·legal·limits·days_ask 넷 중 하나다. [code:app/services/answer.py:209-260] [code:app/services/answer.py:390-395] [code:app/services/answer.py:437-451] [code:app/routers/chat_ws.py:11-12] [code:app/schemas.py:341-344]
 
@@ -722,7 +726,7 @@ app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import�
   db.py               DB 연결
   schemas.py          Customer/Pet/Policy, Session, WS 메시지
   routers/
-    customers.py  sessions.py  consultations.py  articles.py  feedback.py  chat_ws.py  auth.py  me.py
+    customers.py  sessions.py  consultations.py  articles.py  feedback.py  chat_ws.py  auth.py  me.py  admin.py
   services/
     customers.py      insurance_core 조회 + 검증 + pet → SearchScope 변환
     sessions.py       MySQL 저장소 (12번)
@@ -736,6 +740,22 @@ app/                  FastAPI, 세션, 고객 데이터, 로그. data를 import�
     titles.py         첫 질문으로 세션 제목 짓기
     turn_log.py       턴·scope·retrieved를 MySQL에 기록 (done 전)
     policy_data.py    약관 청크·그래프 적재
+    followup.py       후속 질문 판별(규칙, 5절)
+    context.py        모드별 멀티턴 처리(이력, 재작성, 이어 붙이기, 5절)
+    intent.py         금액 되묻기의 "받을 금액을 묻는가"(금액 낱말 + 임베딩, 4절)
+    code_rules.py     업무특화 코드 답 규칙 등록부(16번)
+    lexicon.py        코드 답 규칙의 트리거 낱말
+    customer_facts.py 고객 고유 사실(미가입, 연간 잔여 등)을 코드가 답에 넣는다
+    named_cover.py    병명이 있는 보장 질문
+    name_check.py     병명 되묻기에서 병명이 있는지 베이스 모델로 본다
+    guardrail.py      숫자 가드레일(답 속 금액이 발췌, 카드에 없으면 표시)
+    tables.py         답 아래 표 붙이기
+    article_display.py  근거 패널의 약관 원문 표시 블록
+    hr_personal.py    사내규정 개인화(본인 연차, 퇴직금 등을 코드가 답한다)
+    auth.py           앱 자체 인증(사번, 비밀번호, 서버 저장 세션)
+    demo.py           체험 로그인 카드
+    rate_limit.py     체험 세션 질문 수 제한
+    admin.py          관리자 화면 조회(읽기만)
   fixtures/
     customers.example.json   시드용 샘플. 실제 파일은 git에 올리지 않는다
 
@@ -747,23 +767,29 @@ db/                   마이그레이션 (Alembic 안 쓴다 — 앱이 ORM 없�
   bootstrap.py        root로 DB 셋·계정 셋 생성 (멱등)
   seed_insurance_core.py        고객 원장 시드
   wait_ready.py       앱 initContainer가 쓴다
+  employees.py        앱 로그인 계정 관리 명령
+  rule_report.py      코드 답 규칙 운영 집계(숫자만)
+  fixtures/           가상 데이터(claims.json, employees.json, seed_consultations.json, make_employees.py)
 
 web/                  React + TypeScript (Vite)
   src/
-    pages/            ModeSelect / CustomerSelect / Chat / Consultation
+    pages/            ModeSelect / CustomerSelect / Chat / Consultation / Admin
     components/       TopBar, ModeIcon, Composer, ChatHistory, TurnView,
                       SourcePanel, CalcCard, ExclusionBanner, CallAlert,
                       CustomerCard, PastConsultations, SpeciesToggle, ArchDiagram,
-                      AnswerMarkdown, AnswerTable, ArticleText, EmployeeCard
-    auth/             AuthGate, Login (앱 로그인)
+                      AnswerMarkdown, AnswerTable, ArticleText, EmployeeCard,
+                      Badges, FlowCarousel
+    auth/             AuthGate, Login (앱 로그인), DemoCards (체험 카드)
     hooks/            useChatSocket, useCallSimulator, useMediaQuery, useNow,
                       useReducedMotion, useScrollbarWidth
     api/              REST·WS 클라이언트, 타입
+    styles/           디자인 토큰(tokens.css), 전역 스타일(global.css)
+    format.ts         금액, 표시 형식
+    policySummary.ts  고객 조회 카드의 특약 칩
   dist/               빌드 결과 — FastAPI가 StaticFiles로 서빙
 ```
-<!-- 안 맞음: 위 나무는 일부만 적었다. 코드에는 app/routers/admin.py, app/services/의 admin, article_display, auth, code_rules, context, customer_facts, demo, followup, guardrail, hr_personal, intent, lexicon, name_check, named_cover, rate_limit, tables, db/employees.py, db/rule_report.py, web/src/pages/Admin.tsx, web/src/components/Badges.tsx, web/src/components/FlowCarousel.tsx, web/src/auth/DemoCards.tsx도 있다(git ls-files 6710b83) -->
 
-> 빌드 결과를 FastAPI가 서빙하면 컨테이너 하나로 배포된다. [code:app/main.py:98] [code:app/main.py:39-65] [code:app/config.py:70-71] [code:search_service/main.py:43] [code:app/services/retrieval.py:34-38] [code:db/migrate.py:3] [code:db/bootstrap.py] [code:db/wait_ready.py] [code:db/conn.py] [code:db/seed_insurance_core.py] [code:web/src/]
+> 빌드 결과를 FastAPI가 서빙하면 컨테이너 하나로 배포된다. [code:app/main.py:98] [code:app/main.py:39-65] [code:app/config.py:70-71] [code:search_service/main.py:43] [code:app/services/retrieval.py:34-38] [code:db/migrate.py:3] [code:db/bootstrap.py] [code:db/wait_ready.py] [code:db/conn.py] [code:db/seed_insurance_core.py] [code:web/src/] [code:app/services/] [code:app/routers/admin.py] [code:db/employees.py] [code:db/rule_report.py] [code:db/fixtures/]
 > 
 
 `search_scope.py`와 `prompts.py`를 `data/`에 두는 이유는 **08번 평가가 서비스와 같은 필터·프롬프트를 써야** 하기 때문이다. [code:data/search_scope.py] [code:data/prompts.py]
@@ -774,10 +800,10 @@ web/                  React + TypeScript (Vite)
 
 #### 9. 정하지 못한 것
 
-- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번). (2026-10-14 기준) [code:data/hr_preprocess.py] [code:data/hr_index.py:1-8] [code:data/eval/search_regression_hr.json] [code:data/review/eval_results_summary.md:111] [docs:02_pipeline/02_embedding_index.md] <!-- 확인 못 함: 청크와 그래프 파일과 Milvus 행 수는 git 밖과 실행 상태다 -->
+- **"사내규정" 모드의 데이터** — 가상 인사규정 전처리 완료(청크 49개, 참조 그래프 7엣지, 회귀 세트 24문항). ✓ Milvus 색인(hr_regulation, 49건) 적재·search-service로 운영(02번). <!-- 잰 날짜 모름 --> [code:data/hr_preprocess.py] [code:data/hr_index.py:1-8] [code:data/eval/search_regression_hr.json] [code:data/review/eval_results_summary.md:111] [docs:02_pipeline/02_embedding_index.md] <!-- 확인 못 함: 청크와 그래프 파일과 Milvus 행 수는 git 밖과 실행 상태다 -->
 - **멀티턴 재작성의 실제 품질** — 재작성이 충분한지 측정하지 않았다. 부족하면 재작성기만 따로 학습할 수 있다.
 - **LangChain 사용 여부** — 재작성 → 검색 → 생성을 LCEL로 묶을지, 직접 짤지.
-- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-11절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 확인 못 함: 운영 ConfigMap 값은 인프라 저장소와 클러스터에 있다 -->
+- **업무특화 모드가 쓸 어댑터** — ✓ rebuild4(`kabyul-tri-7b-rag1-rebuild4-ckpt462`)를 운영에 쓴다(2026-10-21 ConfigMap, 14번 1-4절). rebuild5(C안)는 두 번 기준을 넘지 못해 접었다(07번 10절). 모델명은 환경변수(PETMINT_MODEL_RAG)라 교체는 ConfigMap 값만 바꾼다. [code:app/config.py:71] [docs:02_pipeline/14_deployment.md] [docs:02_pipeline/07_finetuning.md] <!-- 확인 못 함: 운영 ConfigMap 값은 인프라 저장소와 클러스터에 있다 -->
 
 ---
 
