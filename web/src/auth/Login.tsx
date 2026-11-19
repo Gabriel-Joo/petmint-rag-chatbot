@@ -156,7 +156,7 @@ export function Login({ notice = null, changeFor, onDone }: Props) {
             <div className={`${s.demoGroup} ${s.demoAdmins}`}>
               <h3 className={s.demoTitle}>관리자로 체험하기</h3>
               {admins.map((a) => <DemoCard key={a.employee_id} a={a} busy={busy} onPick={(x) => void tryDemo(x)} admin />)}
-              <p className={s.demoNote}>지금은 상담원과 같은 화면이에요. 관리자 화면은 준비 중입니다.</p>
+              <p className={s.demoNote}>상담원 화면에 더해 관리자 화면에서 상담 기록과 직원 명단을 볼 수 있어요. 읽기만 합니다.</p>
             </div>
           )}
         </section>
