@@ -1,6 +1,6 @@
 <!--
 다루는 곳: app/services/, app/routers/, data/, search_service/, deploy/host/, web/src/
-읽은 커밋: f7bd15c
+읽은 커밋: 077fb87
 -->
 # 10 알려진 한계
 

@@ -1,6 +1,6 @@
 <!--
 다루는 곳: web/src/App.tsx, web/src/pages/, web/src/components/, web/src/hooks/useCallSimulator.ts, app/services/customers.py, data/search_scope.py
-읽은 커밋: f7bd15c
+읽은 커밋: 077fb87
 -->
 # 05 상담 화면
 

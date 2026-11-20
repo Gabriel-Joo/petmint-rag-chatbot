@@ -1,6 +1,6 @@
 <!--
 다루는 곳: web/src/styles/, web/src/assets/fonts/, web/src/assets/characters/, web/src/components/TopBar.tsx, web/src/components/TopBar.module.css, web/src/components/CallAlert.tsx, web/src/components/CallAlert.module.css, web/src/components/CustomerCard.module.css, web/src/pages/ModeSelect.tsx, web/src/pages/ModeSelect.module.css, web/src/pages/CustomerSelect.module.css, web/src/policySummary.ts
-읽은 커밋: f7bd15c
+읽은 커밋: 077fb87
 -->
 # 05-04 디자인
 

@@ -1,6 +1,6 @@
 <!--
 다루는 곳: app/routers/auth.py, app/services/auth.py, app/deps.py, app/config.py, app/services/demo.py, app/services/rate_limit.py, app/routers/chat_ws.py, db/employees.py, db/migrations/petmint/0006_accounts.sql, db/migrations/petmint/0010_auth_session_demo.sql, db/migrations/petmint/0012_accounts_precreated.sql, web/src/auth/, web/src/components/FlowCarousel.tsx
-읽은 커밋: f7bd15c
+읽은 커밋: 077fb87
 -->
 # 07 로그인, 체험 계정, 터널
 
