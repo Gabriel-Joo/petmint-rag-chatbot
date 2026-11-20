@@ -25,4 +25,5 @@ claim = '\d|“|”'
 claim_min = 0
 banned = ["notion", "portfolio"]      # 금지어(IP, 도메인, 홈 경로, 토큰 꼴, 포트)는 사람이 읽는 원고에만 건다. docs는 내부 주소를 써도 된다
 cover_by = ["docs"]
+code_doc_base = "0439eb4d0221430c4b36eae7575c355804357826"  # .md 문서를 [code:]로 가리킨 새 줄만 틀림으로 센다. 검사가 들어온 때의 펫퍼민트 origin/main(2026-11-20). 옛 줄 282곳(대부분 KNOWN_ISSUES.md, data/review)은 의심으로 둔다(관리자 판단, FOREMAN 안내의 가)
 dashdot_base = "261913e"              # 새 줄 em dash와 가운뎃점 검사의 기준 커밋. 넣은 때의 펫퍼민트 main(2026-11-19). 기존 줄은 C단계에서
