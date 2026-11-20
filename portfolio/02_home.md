@@ -26,7 +26,7 @@
 
 이 서비스에는 실제 전화 교환 장치가 없어 전화를 앱 안에서 가상으로 울립니다. 화면 위의 "자동 전화"를 켜 두면 2~3분마다 한 번씩 울리고, 시연할 때는 "전화 울리기"로 바로 울립니다. 전화를 건 고객은 가상 고객 가운데 무작위로 정해집니다. [docs:02_pipeline/10_consultation_flow.md:22] [docs:02_pipeline/10_consultation_flow.md:26-27] [code:web/src/hooks/useCallSimulator.ts:29]
 
-카드에는 고객 이름과 전화번호, 반려동물의 이름과 품종, 나이가 함께 보여 받기 전에 누구 전화인지 알 수 있습니다. [docs:02_pipeline/11_design_system.md:193] 카드는 10초 동안 떠 있고, 그동안 초록 원 둘레로 고리가 파장처럼 퍼집니다. 남은 초는 숫자와 막대로 줄어듭니다. [docs:02_pipeline/11_design_system.md:177] [docs:02_pipeline/11_design_system.md:5] 받기를 누르면 업무특화 모드로 바뀌며 그 고객의 상담 화면이 열리고, 거절하거나 10초 안에 받지 않으면 "다른 상담원에게 연결됨"이 잠깐 뜹니다. [docs:02_pipeline/10_consultation_flow.md:28-30] 상담이 진행 중일 때는 울리지 않습니다. 실제 상담에서도 통화 중에는 다른 전화가 들어오지 않기 때문입니다. [docs:02_pipeline/10_consultation_flow.md:32]
+카드에는 고객 이름과 전화번호, 반려동물의 이름과 품종, 나이가 함께 보여 받기 전에 누구 전화인지 알 수 있습니다. [docs:02_pipeline/11_design_system.md:193] 사진 속 전화번호는 공개용으로 010-0000-00xx 꼴로 바꾼 번호라, 운영 사이트의 같은 고객 번호와 다릅니다(2026-11-20). 카드는 10초 동안 떠 있고, 그동안 초록 원 둘레로 고리가 파장처럼 퍼집니다. 남은 초는 숫자와 막대로 줄어듭니다. [docs:02_pipeline/11_design_system.md:177] [docs:02_pipeline/11_design_system.md:5] 받기를 누르면 업무특화 모드로 바뀌며 그 고객의 상담 화면이 열리고, 거절하거나 10초 안에 받지 않으면 "다른 상담원에게 연결됨"이 잠깐 뜹니다. [docs:02_pipeline/10_consultation_flow.md:28-30] 상담이 진행 중일 때는 울리지 않습니다. 실제 상담에서도 통화 중에는 다른 전화가 들어오지 않기 때문입니다. [docs:02_pipeline/10_consultation_flow.md:32]
 
 ## 휴대폰에서, 그리고 아래 소개
 
